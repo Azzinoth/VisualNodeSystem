@@ -55,18 +55,18 @@ void FEVisualNodeSystem::moveNodesTo(FEVisualNodeArea* sourceNodeArea, FEVisualN
 	}
 }
 
-//FEEditorNodeArea* FEEditorNodeSystem::createNodeArea(std::vector<FEEditorNode*> nodes)
+//FEVisualNodeArea* FEVisualNodeSystem::createNodeArea(std::vector<FEVisualNode*> nodes)
 //{
-//	createdAreas.push_back(new FEEditorNodeArea());
+//	createdAreas.push_back(new FEVisualNodeArea());
 //
 //	// Copy all nodes to new node area.
-//	std::unordered_map<FEEditorNode*, FEEditorNode*> oldToNewNode;
-//	std::unordered_map<FEEditorNodeSocket*, FEEditorNodeSocket*> oldToNewSocket;
+//	std::unordered_map<FEVisualNode*, FEVisualNode*> oldToNewNode;
+//	std::unordered_map<FEVisualNodeSocket*, FEVisualNodeSocket*> oldToNewSocket;
 //	for (size_t i = 0; i < nodes.size(); i++)
 //	{
-//		FEEditorNode* copyOfNode = FEEditorNode::copyChild(nodes[i]->getType(), nodes[i]);
+//		FEVisualNode* copyOfNode = FEVisualNode::copyChild(nodes[i]->getType(), nodes[i]);
 //		if (copyOfNode == nullptr)
-//			copyOfNode = new FEEditorNode(*nodes[i]);
+//			copyOfNode = new FEVisualNode(*nodes[i]);
 //		copyOfNode->parentArea = createdAreas.back();
 //
 //		createdAreas.back()->nodes.push_back(copyOfNode);
@@ -111,7 +111,7 @@ void FEVisualNodeSystem::moveNodesTo(FEVisualNodeArea* sourceNodeArea, FEVisualN
 //					}
 //
 //					if (shouldAdd)
-//						createdAreas.back()->connections.push_back(new FEEditorNodeConnection(oldToNewSocket[nodes[i]->input[j]->connections[k]], oldToNewSocket[nodes[i]->input[j]]));
+//						createdAreas.back()->connections.push_back(new FEVisualNodeConnection(oldToNewSocket[nodes[i]->input[j]->connections[k]], oldToNewSocket[nodes[i]->input[j]]));
 //				}
 //			}
 //		}
@@ -139,7 +139,7 @@ void FEVisualNodeSystem::moveNodesTo(FEVisualNodeArea* sourceNodeArea, FEVisualN
 //					}
 //
 //					if (shouldAdd)
-//						createdAreas.back()->connections.push_back(new FEEditorNodeConnection(oldToNewSocket[nodes[i]->output[j]], oldToNewSocket[nodes[i]->output[j]->connections[k]]));
+//						createdAreas.back()->connections.push_back(new FEVisualNodeConnection(oldToNewSocket[nodes[i]->output[j]], oldToNewSocket[nodes[i]->output[j]->connections[k]]));
 //				}
 //			}
 //		}
