@@ -1,17 +1,17 @@
-#include "FEEditorNodeSystem.h"
+#include "FEVisualNodeSystem.h"
 
-FEEditorNodeSystem* FEEditorNodeSystem::_instance = nullptr;
+FEVisualNodeSystem* FEVisualNodeSystem::_instance = nullptr;
 
-FEEditorNodeSystem::FEEditorNodeSystem() {}
-FEEditorNodeSystem::~FEEditorNodeSystem() {}
+FEVisualNodeSystem::FEVisualNodeSystem() {}
+FEVisualNodeSystem::~FEVisualNodeSystem() {}
 
-FEEditorNodeArea* FEEditorNodeSystem::createNodeArea()
+FEVisualNodeArea* FEVisualNodeSystem::createNodeArea()
 {
-	createdAreas.push_back(new FEEditorNodeArea());
+	createdAreas.push_back(new FEVisualNodeArea());
 	return createdAreas.back();
 }
 
-void FEEditorNodeSystem::deleteNodeArea(FEEditorNodeArea* nodeArea)
+void FEVisualNodeSystem::deleteNodeArea(FEVisualNodeArea* nodeArea)
 {
 	for (size_t i = 0; i < createdAreas.size(); i++)
 	{
@@ -24,7 +24,7 @@ void FEEditorNodeSystem::deleteNodeArea(FEEditorNodeArea* nodeArea)
 	}
 }
 
-void FEEditorNodeSystem::moveNodesTo(FEEditorNodeArea* sourceNodeArea, FEEditorNodeArea* targetNodeArea, bool selectMovedNodes)
+void FEVisualNodeSystem::moveNodesTo(FEVisualNodeArea* sourceNodeArea, FEVisualNodeArea* targetNodeArea, bool selectMovedNodes)
 {
 	if (sourceNodeArea == nullptr || targetNodeArea == nullptr)
 		return;

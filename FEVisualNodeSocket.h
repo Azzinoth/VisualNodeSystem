@@ -17,7 +17,7 @@ using namespace FocalEngine;
 
 #define NODE_SOCKET_SIZE 5.0f
 
-enum FEEditorNodeSocketType
+enum FEVisualNodeSocketType
 {
 	FE_NODE_SOCKET_COLOR_CHANNEL_OUT = 0,
 	FE_NODE_SOCKET_COLOR_CHANNEL_IN = 1,
@@ -29,47 +29,47 @@ enum FEEditorNodeSocketType
 	FE_NODE_SOCKET_COLOR_RGBA_CHANNEL_IN = 7
 };
 
-class FEEditorNode;
-class FEEditorNodeSocket;
-class FEEditorNodeArea;
-class FEEditorNodeSystem;
+class FEVisualNode;
+class FEVisualNodeSocket;
+class FEVisualNodeArea;
+class FEVisualNodeSystem;
 
-class FEEditorNodeSocket
+class FEVisualNodeSocket
 {
-	friend FEEditorNodeSystem;
-	friend FEEditorNodeArea;
-	friend FEEditorNode;
+	friend FEVisualNodeSystem;
+	friend FEVisualNodeArea;
+	friend FEVisualNode;
 
 	std::string ID;
 	std::string name;
-	FEEditorNode* parent = nullptr;
-	std::vector<FEEditorNodeSocket*> connections;
-	FEEditorNodeSocketType type;
+	FEVisualNode* parent = nullptr;
+	std::vector<FEVisualNodeSocket*> connections;
+	FEVisualNodeSocketType type;
 
 	ImColor* forceColor = nullptr;
 public:
-	FEEditorNodeSocket(FEEditorNode* parent, FEEditorNodeSocketType type, std::string name);
+	FEVisualNodeSocket(FEVisualNode* parent, FEVisualNodeSocketType type, std::string name);
 
-	FEEditorNode* getParent();
-	std::vector<FEEditorNodeSocket*> getConnections();
+	FEVisualNode* getParent();
+	std::vector<FEVisualNodeSocket*> getConnections();
 
 	std::string getID();
 	std::string getName();
 
-	FEEditorNodeSocketType getType();
+	FEVisualNodeSocketType getType();
 
 	bool getForcedConnectionColor(ImColor& color);
 	void setForcedConnectionColor(ImColor* newValue);
 };
 
-class FEEditorNodeConnection
+class FEVisualNodeConnection
 {
-	friend FEEditorNodeSystem;
-	friend FEEditorNodeArea;
-	friend FEEditorNode;
+	friend FEVisualNodeSystem;
+	friend FEVisualNodeArea;
+	friend FEVisualNode;
 
-	FEEditorNodeSocket* out = nullptr;
-	FEEditorNodeSocket* in = nullptr;
+	FEVisualNodeSocket* out = nullptr;
+	FEVisualNodeSocket* in = nullptr;
 
-	FEEditorNodeConnection(FEEditorNodeSocket* out, FEEditorNodeSocket* in);
+	FEVisualNodeConnection(FEVisualNodeSocket* out, FEVisualNodeSocket* in);
 };
