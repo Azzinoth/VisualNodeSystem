@@ -24,121 +24,121 @@ class FEVisualNodeArea
 	FEVisualNodeArea();
 	~FEVisualNodeArea();
 
-	bool clearing = false;
-	ImDrawList* currentDrawList = nullptr;
-	ImGuiWindow* nodeAreaWindow = nullptr;
+	bool bClearing = false;
+	ImDrawList* CurrentDrawList = nullptr;
+	ImGuiWindow* NodeAreaWindow = nullptr;
 
-	std::vector<FEVisualNode*> nodes;
-	FEVisualNode* hovered;
-	bool mouseHovered = false;
+	std::vector<FEVisualNode*> Nodes;
+	FEVisualNode* Hovered;
+	bool bMouseHovered = false;
 
-	std::vector<FEVisualNode*> selected;
-	bool addSelected(FEVisualNode* newNode);
-	bool isSelected(FEVisualNode* node);
+	std::vector<FEVisualNode*> Selected;
+	bool AddSelected(FEVisualNode* NewNode);
+	bool IsSelected(const FEVisualNode* Node) const;
 
-	ImVec2 mouseCursorPosition;
-	ImVec2 mouseCursorSize = ImVec2(1, 1);
-	ImVec2 mouseSelectRegionMin = ImVec2(FLT_MAX, FLT_MAX);
-	ImVec2 mouseSelectRegionMax = ImVec2(FLT_MAX, FLT_MAX);
-	ImGuiWindow* mouseDownIn = nullptr;
+	ImVec2 MouseCursorPosition;
+	ImVec2 MouseCursorSize = ImVec2(1, 1);
+	ImVec2 MouseSelectRegionMin = ImVec2(FLT_MAX, FLT_MAX);
+	ImVec2 MouseSelectRegionMax = ImVec2(FLT_MAX, FLT_MAX);
+	ImGuiWindow* MouseDownIn = nullptr;
 
-	void inputUpdateNode(FEVisualNode* node);
-	void inputUpdateSocket(FEVisualNodeSocket* socket);
+	void InputUpdateNode(FEVisualNode* Node);
+	void InputUpdateSocket(FEVisualNodeSocket* Socket);
 
-	void renderNode(FEVisualNode* node);
-	void renderNodeSockets(FEVisualNode* node);
-	void renderNodeSocket(FEVisualNodeSocket* socket);
-	bool openMainContextMenu = false;
+	void RenderNode(FEVisualNode* Node) const;
+	void RenderNodeSockets(const FEVisualNode* Node) const;
+	void RenderNodeSocket(FEVisualNodeSocket* Socket) const;
+	bool bOpenMainContextMenu = false;
 
-	void drawHermiteLine(ImVec2 p1, ImVec2 p2, int steps, ImColor color);
-	void renderConnection(FEVisualNodeConnection* connection);
-	ImVec2 socketToPosition(FEVisualNodeSocket* socket);
+	void DrawHermiteLine(ImVec2 P1, ImVec2 P2, int Steps, ImColor Color) const;
+	void RenderConnection(const FEVisualNodeConnection* Connection) const;
+	ImVec2 SocketToPosition(const FEVisualNodeSocket* Socket) const;
 
-	std::vector<FEVisualNodeConnection*> connections;
-	std::vector<FEVisualNodeConnection*> getAllConnections(FEVisualNodeSocket* socket);
-	void disconnect(FEVisualNodeConnection*& connection);
+	std::vector<FEVisualNodeConnection*> Connections;
+	std::vector<FEVisualNodeConnection*> GetAllConnections(const FEVisualNodeSocket* Socket) const;
+	void Disconnect(FEVisualNodeConnection*& Connection);
 
-	FEVisualNodeSocket* socketLookingForConnection = nullptr;
-	FEVisualNodeSocket* socketHovered = nullptr;
+	FEVisualNodeSocket* SocketLookingForConnection = nullptr;
+	FEVisualNodeSocket* SocketHovered = nullptr;
 
-	ImVec2 areaPosition;
-	ImVec2 areaSize;
-	ImU32 gridBackgroundColor = IM_COL32(32, 32, 32, 255);
-	ImVec4 gridLinesColor = ImVec4(53.0f / 255.0f, 53.0f / 255.0f, 53.0f / 255.0f, 0.5f);
-	ImVec4 gridBoldLinesColor = ImVec4(27.0f / 255.0f, 27.0f / 255.0f, 27.0f / 255.0f, 1.0f);
-	ImVec2 renderOffset = ImVec2(0.0, 0.0);
+	ImVec2 AreaPosition;
+	ImVec2 AreaSize;
+	ImU32 GridBackgroundColor = IM_COL32(32, 32, 32, 255);
+	ImVec4 GridLinesColor = ImVec4(53.0f / 255.0f, 53.0f / 255.0f, 53.0f / 255.0f, 0.5f);
+	ImVec4 GridBoldLinesColor = ImVec4(27.0f / 255.0f, 27.0f / 255.0f, 27.0f / 255.0f, 1.0f);
+	ImVec2 RenderOffset = ImVec2(0.0, 0.0);
 
-	void(*mainContextMenuFunc)() = nullptr;
-	void inputUpdate();
-	void render();
-	void renderGrid(ImVec2 currentPosition);
+	void(*MainContextMenuFunc)() = nullptr;
+	void InputUpdate();
+	void Render();
+	void RenderGrid(ImVec2 CurrentPosition) const;
 
-	std::vector<void(*)(FEVisualNode*, FE_VISUAL_NODE_EVENT)> nodeEventsCallbacks;
-	void propagateNodeEventsCallbacks(FEVisualNode* node, FE_VISUAL_NODE_EVENT eventToPropagate);
+	std::vector<void(*)(FEVisualNode*, FE_VISUAL_NODE_EVENT)> NodeEventsCallbacks;
+	void PropagateNodeEventsCallbacks(FEVisualNode* Node, FE_VISUAL_NODE_EVENT EventToPropagate) const;
 
-	static bool isNodeIDInList(std::string ID, std::vector<FEVisualNode*> list);
+	static bool IsNodeIDInList(std::string ID, std::vector<FEVisualNode*> List);
 
-	static bool emptyOrFilledByNulls(std::vector<FEVisualNode*> vector)
+	static bool EmptyOrFilledByNulls(const std::vector<FEVisualNode*> Vector)
 	{
-		for (size_t i = 0; i < vector.size(); i++)
+		for (size_t i = 0; i < Vector.size(); i++)
 		{
-			if (vector[i] != nullptr)
+			if (Vector[i] != nullptr)
 				return false;
 		}
 
 		return true;
 	}
 
-	static ImVec2 neededShift;
+	static ImVec2 NeededShift;
 public:
-	void update();
-	void clear();
-	void reset();
+	void Update();
+	void Clear();
+	void Reset();
 
-	ImVec2 getAreaPosition();
-	void setAreaPosition(ImVec2 newValue);
+	ImVec2 GetAreaPosition() const;
+	void SetAreaPosition(ImVec2 NewValue);
 
-	ImVec2 getAreaSize();
-	void setAreaSize(ImVec2 newValue);
+	ImVec2 GetAreaSize() const;
+	void SetAreaSize(ImVec2 NewValue);
 
-	ImVec2 getAreaRenderOffset();
-	void setAreaRenderOffset(ImVec2 offset);
+	ImVec2 GetAreaRenderOffset() const;
+	void SetAreaRenderOffset(ImVec2 Offset);
 
-	void addNode(FEVisualNode* newNode);
-	void deleteNode(FEVisualNode* node);
+	void AddNode(FEVisualNode* NewNode);
+	void DeleteNode(const FEVisualNode* Node);
 
-	void setMainContextMenuFunc(void(*func)());
+	void SetMainContextMenuFunc(void(*Func)());
 
-	void propagateUpdateToConnectedNodes(FEVisualNode* callerNode);
+	void PropagateUpdateToConnectedNodes(const FEVisualNode* CallerNode) const;
 
-	bool tryToConnect(FEVisualNode* outNode, size_t outNodeSocketIndex, FEVisualNode* inNode, size_t inNodeSocketIndex);
-	bool tryToConnect(FEVisualNode* outNode, std::string outSocketID, FEVisualNode* inNode, std::string inSocketID);
-	void setNodeEventCallback(void(*func)(FEVisualNode*, FE_VISUAL_NODE_EVENT));
+	bool TryToConnect(const FEVisualNode* OutNode, size_t OutNodeSocketIndex, const FEVisualNode* InNode, size_t InNodeSocketIndex);
+	bool TryToConnect(const FEVisualNode* OutNode, std::string OutSocketID, const FEVisualNode* InNode, std::string InSocketID);
+	void SetNodeEventCallback(void(*Func)(FEVisualNode*, FE_VISUAL_NODE_EVENT));
 
-	std::string toJson();
-	void saveToFile(const char* fileName);
-	void loadFromFile(const char* fileName);
-	void saveNodesToFile(const char* fileName, std::vector<FEVisualNode*> nodes);
+	std::string ToJson() const;
+	void SaveToFile(const char* FileName) const;
+	void LoadFromFile(const char* FileName);
+	void SaveNodesToFile(const char* FileName, std::vector<FEVisualNode*> Nodes);
 
-	void runOnEachNode(void(*func)(FEVisualNode*));
-	void runOnEachConnectedNode(FEVisualNode* startNode, void(*func)(FEVisualNode*));
+	void RunOnEachNode(void(*Func)(FEVisualNode*));
+	void RunOnEachConnectedNode(FEVisualNode* StartNode, void(*Func)(FEVisualNode*));
 
-	FEVisualNode* getHovered();
-	std::vector<FEVisualNode*> getSelected();
-	void clearSelection();
+	FEVisualNode* GetHovered() const;
+	std::vector<FEVisualNode*> GetSelected();
+	void ClearSelection();
 
-	void getAllNodesAABB(ImVec2& min, ImVec2& max);
-	ImVec2 getAllNodesAABBCenter();
-	ImVec2 getRenderedViewCenter();
+	void GetAllNodesAABB(ImVec2& Min, ImVec2& Max) const;
+	ImVec2 GetAllNodesAABBCenter() const;
+	ImVec2 GetRenderedViewCenter() const;
 
-	std::vector<FEVisualNode*> getNodesByName(std::string nodeName);
-	std::vector<FEVisualNode*> getNodesByType(std::string nodeType);
+	std::vector<FEVisualNode*> GetNodesByName(std::string NodeName) const;
+	std::vector<FEVisualNode*> GetNodesByType(std::string NodeType) const;
 
-	static FEVisualNodeArea* createNodeArea(std::vector<FEVisualNode*> nodes);
-	static FEVisualNodeArea* fromJson(std::string jsonText);
-	static void copyNodesTo(FEVisualNodeArea* sourceNodeArea, FEVisualNodeArea* targetNodeArea);
+	static FEVisualNodeArea* CreateNodeArea(std::vector<FEVisualNode*> Nodes);
+	static FEVisualNodeArea* FromJson(std::string JsonText);
+	static void CopyNodesTo(FEVisualNodeArea* SourceNodeArea, FEVisualNodeArea* TargetNodeArea);
 
-	int getNodeCount();
+	int GetNodeCount() const;
 
-	bool isMouseHovered();
+	bool IsMouseHovered() const;
 };

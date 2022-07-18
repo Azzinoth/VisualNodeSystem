@@ -1,55 +1,55 @@
 #include "FEVisualNodeSocket.h"
 
-FEVisualNodeSocket::FEVisualNodeSocket(FEVisualNode* parent, FEVisualNodeSocketType type, std::string name)
+FEVisualNodeSocket::FEVisualNodeSocket(FEVisualNode* Parent, const FE_VISUAL_NODE_SOCKET_TYPE Type, const std::string Name)
 {
-	this->parent = parent;
-	this->type = type;
-	this->name = name;
-	this->ID = APPLICATION.getUniqueHexID();
+	this->Parent = Parent;
+	this->Type = Type;
+	this->Name = Name;
+	this->ID = APPLICATION.GetUniqueHexID();
 }
 
-std::string FEVisualNodeSocket::getID()
+std::string FEVisualNodeSocket::GetID()
 {
 	return ID;
 }
 
-FEVisualNode* FEVisualNodeSocket::getParent()
+FEVisualNode* FEVisualNodeSocket::GetParent() const
 {
-	return parent;
+	return Parent;
 }
 
-std::vector<FEVisualNodeSocket*> FEVisualNodeSocket::getConnections()
+std::vector<FEVisualNodeSocket*> FEVisualNodeSocket::GetConnections()
 {
-	return connections;
+	return Connections;
 }
 
-std::string FEVisualNodeSocket::getName()
+std::string FEVisualNodeSocket::GetName()
 {
-	return name;
+	return Name;
 }
 
-FEVisualNodeSocketType FEVisualNodeSocket::getType()
+FE_VISUAL_NODE_SOCKET_TYPE FEVisualNodeSocket::GetType() const
 {
-	return type;
+	return Type;
 }
 
-bool FEVisualNodeSocket::getForcedConnectionColor(ImColor& color)
+bool FEVisualNodeSocket::GetForcedConnectionColor(ImColor& Color) const
 {
-	if (forceColor == nullptr)
+	if (ForceColor == nullptr)
 		return false;
 
-	color = *forceColor;
+	Color = *ForceColor;
 
 	return true;
 }
 
-void FEVisualNodeSocket::setForcedConnectionColor(ImColor* newValue)
+void FEVisualNodeSocket::SetForcedConnectionColor(ImColor* NewValue)
 {
-	forceColor = newValue;
+	ForceColor = NewValue;
 }
 
-FEVisualNodeConnection::FEVisualNodeConnection(FEVisualNodeSocket* out, FEVisualNodeSocket* in)
+FEVisualNodeConnection::FEVisualNodeConnection(FEVisualNodeSocket* Out, FEVisualNodeSocket* In)
 {
-	this->out = out;
-	this->in = in;
+	this->Out = Out;
+	this->In = In;
 }

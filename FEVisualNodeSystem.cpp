@@ -1,56 +1,56 @@
 #include "FEVisualNodeSystem.h"
 
-FEVisualNodeSystem* FEVisualNodeSystem::_instance = nullptr;
+FEVisualNodeSystem* FEVisualNodeSystem::Instance = nullptr;
 
 FEVisualNodeSystem::FEVisualNodeSystem() {}
 FEVisualNodeSystem::~FEVisualNodeSystem() {}
 
-FEVisualNodeArea* FEVisualNodeSystem::createNodeArea()
+FEVisualNodeArea* FEVisualNodeSystem::CreateNodeArea()
 {
-	createdAreas.push_back(new FEVisualNodeArea());
-	return createdAreas.back();
+	CreatedAreas.push_back(new FEVisualNodeArea());
+	return CreatedAreas.back();
 }
 
-void FEVisualNodeSystem::deleteNodeArea(FEVisualNodeArea* nodeArea)
+void FEVisualNodeSystem::DeleteNodeArea(const FEVisualNodeArea* NodeArea)
 {
-	for (size_t i = 0; i < createdAreas.size(); i++)
+	for (size_t i = 0; i < CreatedAreas.size(); i++)
 	{
-		if (createdAreas[i] == nodeArea)
+		if (CreatedAreas[i] == NodeArea)
 		{
-			delete createdAreas[i];
-			createdAreas.erase(createdAreas.begin() + i, createdAreas.begin() + i + 1);
+			delete CreatedAreas[i];
+			CreatedAreas.erase(CreatedAreas.begin() + i, CreatedAreas.begin() + i + 1);
 			return;
 		}
 	}
 }
 
-void FEVisualNodeSystem::moveNodesTo(FEVisualNodeArea* sourceNodeArea, FEVisualNodeArea* targetNodeArea, bool selectMovedNodes)
+void FEVisualNodeSystem::MoveNodesTo(FEVisualNodeArea* SourceNodeArea, FEVisualNodeArea* TargetNodeArea, const bool SelectMovedNodes)
 {
-	if (sourceNodeArea == nullptr || targetNodeArea == nullptr)
+	if (SourceNodeArea == nullptr || TargetNodeArea == nullptr)
 		return;
 
-	for (size_t i = 0; i < sourceNodeArea->nodes.size(); i++)
+	for (size_t i = 0; i < SourceNodeArea->Nodes.size(); i++)
 	{
 		//targetNodeArea->nodes.push_back(sourceNodeArea->nodes[i]);
-		targetNodeArea->addNode(sourceNodeArea->nodes[i]);
+		TargetNodeArea->AddNode(SourceNodeArea->Nodes[i]);
 	}
-	size_t sourceNodeCount = sourceNodeArea->nodes.size();
-	sourceNodeArea->nodes.clear();
+	const size_t SourceNodeCount = SourceNodeArea->Nodes.size();
+	SourceNodeArea->Nodes.clear();
 
-	for (size_t i = 0; i < sourceNodeArea->connections.size(); i++)
+	for (size_t i = 0; i < SourceNodeArea->Connections.size(); i++)
 	{
-		targetNodeArea->connections.push_back(sourceNodeArea->connections[i]);
+		TargetNodeArea->Connections.push_back(SourceNodeArea->Connections[i]);
 	}
-	sourceNodeArea->connections.clear();
-	sourceNodeArea->clear();
+	SourceNodeArea->Connections.clear();
+	SourceNodeArea->Clear();
 
 	// Select moved nodes.
-	if (selectMovedNodes)
+	if (SelectMovedNodes)
 	{
-		targetNodeArea->selected.clear();
-		for (size_t i = targetNodeArea->nodes.size() - sourceNodeCount; i < targetNodeArea->nodes.size(); i++)
+		TargetNodeArea->Selected.clear();
+		for (size_t i = TargetNodeArea->Nodes.size() - SourceNodeCount; i < TargetNodeArea->Nodes.size(); i++)
 		{
-			targetNodeArea->selected.push_back(targetNodeArea->nodes[i]);
+			TargetNodeArea->Selected.push_back(TargetNodeArea->Nodes[i]);
 		}
 	}
 }

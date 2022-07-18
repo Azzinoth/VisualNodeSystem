@@ -27,8 +27,8 @@ class FEVisualNodeSocket;
 
 struct FEVisualNodeChildFunc
 {
-	std::function<FEVisualNode* (Json::Value data)> JsonToObj;
-	std::function<FEVisualNode* (FEVisualNode& src)> copyConstructor;
+	std::function<FEVisualNode* (Json::Value Data)> JsonToObj;
+	std::function<FEVisualNode* (FEVisualNode& Src)> CopyConstructor;
 };
 
 #define VISUAL_NODE_CHILD_PRIVATE_PART(CLASS_NAME)			\
@@ -82,84 +82,84 @@ protected:
 
 	virtual ~FEVisualNode();
 
-	FEVisualNodeArea* parentArea = nullptr;
+	FEVisualNodeArea* ParentArea = nullptr;
 	std::string ID;
-	ImVec2 position;
-	ImVec2 size;
+	ImVec2 Position;
+	ImVec2 Size;
 
-	ImVec2 clientRegionMin;
-	ImVec2 clientRegionMax;
+	ImVec2 ClientRegionMin;
+	ImVec2 ClientRegionMax;
 
-	std::string name;
-	std::string type;
-	bool shouldBeDestroyed = false;
-	bool couldBeDestroyed = true;
+	std::string Name;
+	std::string Type;
+	bool bShouldBeDestroyed = false;
+	bool bCouldBeDestroyed = true;
 
-	std::vector<FEVisualNodeSocket*> input;
-	std::vector<FEVisualNodeSocket*> output;
+	std::vector<FEVisualNodeSocket*> Input;
+	std::vector<FEVisualNodeSocket*> Output;
 
-	ImVec2 leftTop;
-	ImVec2 rightBottom;
+	ImVec2 LeftTop;
+	ImVec2 RightBottom;
 
-	ImColor titleBackgroundColor = ImColor(120, 150, 25);
-	ImColor titleBackgroundColorHovered = ImColor(140, 190, 35);
+	ImColor TitleBackgroundColor = ImColor(120, 150, 25);
+	ImColor TitleBackgroundColorHovered = ImColor(140, 190, 35);
 
-	bool hovered = false;
-	void setIsHovered(bool newValue);
+	bool bHovered = false;
+	void SetIsHovered(bool NewValue);
 
-	FE_VISUAL_NODE_STYLE style = FE_VISUAL_NODE_STYLE_DEFAULT;
+	FE_VISUAL_NODE_STYLE Style = FE_VISUAL_NODE_STYLE_DEFAULT;
 
-	virtual void draw();
-	virtual bool canConnect(FEVisualNodeSocket* ownSocket, FEVisualNodeSocket* candidateSocket, char** msgToUser = nullptr);
-	virtual void socketEvent(FEVisualNodeSocket* ownSocket, FEVisualNodeSocket* connectedSocket, FE_VISUAL_NODE_SOCKET_EVENT eventType);
-	virtual bool openContextMenu();
+	virtual void Draw();
+	virtual bool CanConnect(FEVisualNodeSocket* OwnSocket, FEVisualNodeSocket* CandidateSocket, char** MsgToUser = nullptr);
+	virtual void SocketEvent(FEVisualNodeSocket* OwnSocket, FEVisualNodeSocket* ConnectedSocket, FE_VISUAL_NODE_SOCKET_EVENT EventType);
+	virtual bool OpenContextMenu();
 
-	void updateClientRegion();
+	void UpdateClientRegion();
 
-	static std::unordered_map<std::string, FEVisualNodeChildFunc> childClasses;
-	static FEVisualNode* constructChild(std::string childClassName, Json::Value data);
-	static FEVisualNode* copyChild(std::string childClassName, FEVisualNode* child);
+	static std::unordered_map<std::string, FEVisualNodeChildFunc> ChildClasses;
+	static FEVisualNode* ConstructChild(std::string ChildClassName, Json::Value Data);
+	static FEVisualNode* CopyChild(std::string ChildClassName, FEVisualNode* Child);
 public:
 	FEVisualNode(std::string ID = "");
-	FEVisualNode(const FEVisualNode& src);
+	FEVisualNode(const FEVisualNode& Src);
 
-	std::string getID();
+	std::string GetID();
 
-	ImVec2 getPosition();
-	void setPosition(ImVec2 newValue);
+	ImVec2 GetPosition() const;
+	void SetPosition(ImVec2 NewValue);
 
-	ImVec2 getSize();
-	void setSize(ImVec2 newValue);
+	ImVec2 GetSize() const;
+	void SetSize(ImVec2 NewValue);
 
-	ImVec2 getClientRegionSize();
-	ImVec2 getClientRegionPosition();
+	ImVec2 GetClientRegionSize();
+	ImVec2 GetClientRegionPosition();
 
-	std::string getName();
-	void setName(std::string newValue);
+	std::string GetName();
+	void SetName(std::string NewValue);
 
-	std::string getType() const;
+	std::string GetType() const;
 
-	void addInputSocket(FEVisualNodeSocket* socket);
-	void addOutputSocket(FEVisualNodeSocket* socket);
+	void AddInputSocket(FEVisualNodeSocket* Socket);
+	void AddOutputSocket(FEVisualNodeSocket* Socket);
 
-	static bool isSocketTypeIn(FEVisualNodeSocketType type);
+	static bool IsSocketTypeIn(FE_VISUAL_NODE_SOCKET_TYPE Type);
 
-	virtual Json::Value toJson();
-	virtual void fromJson(Json::Value json);
+	virtual Json::Value ToJson();
+	virtual void FromJson(Json::Value Json);
 
-	bool getForcedOutSocketColor(ImColor& color, size_t socketIndex);
-	void setForcedOutSocketColor(ImColor* newValue, size_t socketIndex);
+	bool GetForcedOutSocketColor(ImColor& Color, size_t SocketIndex) const;
+	void SetForcedOutSocketColor(ImColor* NewValue, size_t SocketIndex) const;
 
-	size_t inputSocketCount();
-	size_t outSocketCount();
+	size_t InputSocketCount() const;
+	size_t OutSocketCount() const;
 
-	std::vector<FEVisualNode*> getConnectedNodes();
-	virtual FEVisualNode* getLogicallyNextNode();
+	std::vector<FEVisualNode*> GetConnectedNodes() const;
+	virtual FEVisualNode* GetLogicallyNextNode();
 
-	static void registerChildNodeClass(FEVisualNodeChildFunc functions, std::string className);
+	static void RegisterChildNodeClass(FEVisualNodeChildFunc Functions, std::string ClassName);
 
-	FE_VISUAL_NODE_STYLE getStyle();
-	void setStyle(FE_VISUAL_NODE_STYLE newValue);
+	FE_VISUAL_NODE_STYLE GetStyle() const;
+	void SetStyle(FE_VISUAL_NODE_STYLE NewValue);
 
-	bool isHovered();
+	bool IsHovered() const;
 };

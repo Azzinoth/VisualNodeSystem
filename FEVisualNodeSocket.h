@@ -17,7 +17,7 @@ using namespace FocalEngine;
 
 #define NODE_SOCKET_SIZE 5.0f
 
-enum FEVisualNodeSocketType
+enum FE_VISUAL_NODE_SOCKET_TYPE
 {
 	FE_NODE_SOCKET_COLOR_CHANNEL_OUT = 0,
 	FE_NODE_SOCKET_COLOR_CHANNEL_IN = 1,
@@ -41,25 +41,25 @@ class FEVisualNodeSocket
 	friend FEVisualNode;
 
 	std::string ID;
-	std::string name;
-	FEVisualNode* parent = nullptr;
-	std::vector<FEVisualNodeSocket*> connections;
-	FEVisualNodeSocketType type;
+	std::string Name;
+	FEVisualNode* Parent = nullptr;
+	std::vector<FEVisualNodeSocket*> Connections;
+	FE_VISUAL_NODE_SOCKET_TYPE Type;
 
-	ImColor* forceColor = nullptr;
+	ImColor* ForceColor = nullptr;
 public:
-	FEVisualNodeSocket(FEVisualNode* parent, FEVisualNodeSocketType type, std::string name);
+	FEVisualNodeSocket(FEVisualNode* Parent, FE_VISUAL_NODE_SOCKET_TYPE Type, std::string Name);
 
-	FEVisualNode* getParent();
-	std::vector<FEVisualNodeSocket*> getConnections();
+	FEVisualNode* GetParent() const;
+	std::vector<FEVisualNodeSocket*> GetConnections();
 
-	std::string getID();
-	std::string getName();
+	std::string GetID();
+	std::string GetName();
 
-	FEVisualNodeSocketType getType();
+	FE_VISUAL_NODE_SOCKET_TYPE GetType() const;
 
-	bool getForcedConnectionColor(ImColor& color);
-	void setForcedConnectionColor(ImColor* newValue);
+	bool GetForcedConnectionColor(ImColor& Color) const;
+	void SetForcedConnectionColor(ImColor* NewValue);
 };
 
 class FEVisualNodeConnection
@@ -68,8 +68,8 @@ class FEVisualNodeConnection
 	friend FEVisualNodeArea;
 	friend FEVisualNode;
 
-	FEVisualNodeSocket* out = nullptr;
-	FEVisualNodeSocket* in = nullptr;
+	FEVisualNodeSocket* Out = nullptr;
+	FEVisualNodeSocket* In = nullptr;
 
-	FEVisualNodeConnection(FEVisualNodeSocket* out, FEVisualNodeSocket* in);
+	FEVisualNodeConnection(FEVisualNodeSocket* Out, FEVisualNodeSocket* In);
 };

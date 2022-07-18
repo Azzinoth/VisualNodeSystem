@@ -1,383 +1,382 @@
 #include "FEVisualNode.h"
 
-std::unordered_map<std::string, FEVisualNodeChildFunc> FEVisualNode::childClasses;
+std::unordered_map<std::string, FEVisualNodeChildFunc> FEVisualNode::ChildClasses;
 
-FEVisualNode::FEVisualNode(std::string ID)
+FEVisualNode::FEVisualNode(const std::string ID)
 {
 	this->ID = ID;
-	if (ID == "")
-		this->ID = APPLICATION.getUniqueHexID();
+	if (ID.empty())
+		this->ID = APPLICATION.GetUniqueHexID();
 
-	setSize(ImVec2(200, 80));
-	setName("FEVisualNode");
-	type = "FEVisualNode";
+	SetSize(ImVec2(200, 80));
+	SetName("FEVisualNode");
+	Type = "FEVisualNode";
 }
 
-FEVisualNode::FEVisualNode(const FEVisualNode& src)
+FEVisualNode::FEVisualNode(const FEVisualNode& Src)
 {
-	parentArea = src.parentArea;
-	ID = APPLICATION.getUniqueHexID();
-	position = src.position;
-	size = src.size;
+	ParentArea = Src.ParentArea;
+	ID = APPLICATION.GetUniqueHexID();
+	Position = Src.Position;
+	Size = Src.Size;
 
-	clientRegionMin = src.clientRegionMin;
-	clientRegionMax = src.clientRegionMax;
+	ClientRegionMin = Src.ClientRegionMin;
+	ClientRegionMax = Src.ClientRegionMax;
 
-	name = src.name;
-	type = src.type;
-	shouldBeDestroyed = false;
+	Name = Src.Name;
+	Type = Src.Type;
+	bShouldBeDestroyed = false;
 
-	leftTop = src.leftTop;
-	rightBottom = src.rightBottom;
+	LeftTop = Src.LeftTop;
+	RightBottom = Src.RightBottom;
 
-	titleBackgroundColor = src.titleBackgroundColor;
-	titleBackgroundColorHovered = src.titleBackgroundColorHovered;
+	TitleBackgroundColor = Src.TitleBackgroundColor;
+	TitleBackgroundColorHovered = Src.TitleBackgroundColorHovered;
 
-	for (size_t i = 0; i < src.input.size(); i++)
+	for (size_t i = 0; i < Src.Input.size(); i++)
 	{
-		input.push_back(new FEVisualNodeSocket(this, src.input[i]->getType(), src.input[i]->getName()));
+		Input.push_back(new FEVisualNodeSocket(this, Src.Input[i]->GetType(), Src.Input[i]->GetName()));
 	}
 
-	for (size_t i = 0; i < src.output.size(); i++)
+	for (size_t i = 0; i < Src.Output.size(); i++)
 	{
-		output.push_back(new FEVisualNodeSocket(this, src.output[i]->getType(), src.output[i]->getName()));
+		Output.push_back(new FEVisualNodeSocket(this, Src.Output[i]->GetType(), Src.Output[i]->GetName()));
 	}
 }
 
 FEVisualNode::~FEVisualNode()
 {
-	for (int i = 0; i < int(input.size()); i++)
+	for (int i = 0; i < static_cast<int>(Input.size()); i++)
 	{
-		delete input[i];
-		input.erase(input.begin() + i, input.begin() + i + 1);
+		delete Input[i];
+		Input.erase(Input.begin() + i, Input.begin() + i + 1);
 		i--;
 	}
 
-	for (int i = 0; i < int(output.size()); i++)
+	for (int i = 0; i < static_cast<int>(Output.size()); i++)
 	{
-		delete output[i];
-		output.erase(output.begin() + i, output.begin() + i + 1);
+		delete Output[i];
+		Output.erase(Output.begin() + i, Output.begin() + i + 1);
 		i--;
 	}
 }
 
-std::string FEVisualNode::getID()
+std::string FEVisualNode::GetID()
 {
 	return ID;
 }
 
-ImVec2 FEVisualNode::getPosition()
+ImVec2 FEVisualNode::GetPosition() const
 {
-	return position;
+	return Position;
 }
 
-void FEVisualNode::setPosition(ImVec2 newValue)
+void FEVisualNode::SetPosition(const ImVec2 NewValue)
 {
-	position = newValue;
+	Position = NewValue;
 }
 
-ImVec2 FEVisualNode::getSize()
+ImVec2 FEVisualNode::GetSize() const
 {
-	if (getStyle() == FE_VISUAL_NODE_STYLE_CIRCLE)
+	if (GetStyle() == FE_VISUAL_NODE_STYLE_CIRCLE)
 		return ImVec2(NODE_DIAMETER, NODE_DIAMETER);
 	
-	return size;
+	return Size;
 }
 
-void FEVisualNode::setSize(ImVec2 newValue)
+void FEVisualNode::SetSize(const ImVec2 NewValue)
 {
-	size = newValue;
+	Size = NewValue;
 }
 
-std::string FEVisualNode::getName()
+std::string FEVisualNode::GetName()
 {
-	return name;
+	return Name;
 }
 
-void FEVisualNode::setName(std::string newValue)
+void FEVisualNode::SetName(const std::string NewValue)
 {
-	if (newValue.size() > FE_VISUAL_NODE_NAME_MAX_LENGHT)
+	if (NewValue.size() > FE_VISUAL_NODE_NAME_MAX_LENGHT)
 		return;
 
-	name = newValue;
+	Name = NewValue;
 }
 
-void FEVisualNode::addInputSocket(FEVisualNodeSocket* socket)
+void FEVisualNode::AddInputSocket(FEVisualNodeSocket* Socket)
 {
-	if (socket == nullptr || !FEVisualNode::isSocketTypeIn(socket->type))
+	if (Socket == nullptr || !FEVisualNode::IsSocketTypeIn(Socket->Type))
 		return;
 
-	input.push_back(socket);
+	Input.push_back(Socket);
 }
 
-void FEVisualNode::addOutputSocket(FEVisualNodeSocket* socket)
+void FEVisualNode::AddOutputSocket(FEVisualNodeSocket* Socket)
 {
-	if (socket == nullptr || FEVisualNode::isSocketTypeIn(socket->type))
+	if (Socket == nullptr || FEVisualNode::IsSocketTypeIn(Socket->Type))
 		return;
 
-	output.push_back(socket);
+	Output.push_back(Socket);
 }
 
-bool FEVisualNode::isSocketTypeIn(FEVisualNodeSocketType type)
+bool FEVisualNode::IsSocketTypeIn(const FE_VISUAL_NODE_SOCKET_TYPE Type)
 {
-	static FEVisualNodeSocketType inSocketTypes[] = { FE_NODE_SOCKET_COLOR_CHANNEL_IN,
+	static FE_VISUAL_NODE_SOCKET_TYPE InSocketTypes[] = { FE_NODE_SOCKET_COLOR_CHANNEL_IN,
 													  FE_NODE_SOCKET_FLOAT_CHANNEL_IN,
 													  FE_NODE_SOCKET_COLOR_RGB_CHANNEL_IN,
 													  FE_NODE_SOCKET_COLOR_RGBA_CHANNEL_IN };
 
-	static FEVisualNodeSocketType outSocketTypes[] = { FE_NODE_SOCKET_COLOR_CHANNEL_OUT,
+	static FE_VISUAL_NODE_SOCKET_TYPE OutSocketTypes[] = { FE_NODE_SOCKET_COLOR_CHANNEL_OUT,
 													   FE_NODE_SOCKET_FLOAT_CHANNEL_OUT,
 													   FE_NODE_SOCKET_COLOR_RGB_CHANNEL_OUT,
 													   FE_NODE_SOCKET_COLOR_RGBA_CHANNEL_OUT};
 
-	int typesCount = (sizeof(inSocketTypes) + sizeof(outSocketTypes)) / sizeof(FEVisualNodeSocketType);
-	for (size_t i = 0; i < sizeof(inSocketTypes) / sizeof(FEVisualNodeSocketType); i++)
+	for (size_t i = 0; i < sizeof(InSocketTypes) / sizeof(FE_VISUAL_NODE_SOCKET_TYPE); i++)
 	{
-		if (inSocketTypes[i] == type)
+		if (InSocketTypes[i] == Type)
 			return true;
 	}
 
 	return false;
 }
 
-void FEVisualNode::draw()
+void FEVisualNode::Draw()
 {
 }
 
-void FEVisualNode::socketEvent(FEVisualNodeSocket* ownSocket, FEVisualNodeSocket* connectedSocket, FE_VISUAL_NODE_SOCKET_EVENT eventType)
+void FEVisualNode::SocketEvent(FEVisualNodeSocket* OwnSocket, FEVisualNodeSocket* ConnectedSocket, FE_VISUAL_NODE_SOCKET_EVENT EventType)
 {
 
 }
 
-bool FEVisualNode::canConnect(FEVisualNodeSocket* ownSocket, FEVisualNodeSocket* candidateSocket, char** msgToUser)
+bool FEVisualNode::CanConnect(FEVisualNodeSocket* OwnSocket, FEVisualNodeSocket* CandidateSocket, char** MsgToUser)
 {
-	if (ownSocket == candidateSocket)
+	if (OwnSocket == CandidateSocket)
 		return false;
 
 	// Own sockets can't be connected.
-	if (candidateSocket->getParent() == this)
+	if (CandidateSocket->GetParent() == this)
 		return false;
 
 	return true;
 }
 
-std::string FEVisualNode::getType() const
+std::string FEVisualNode::GetType() const
 {
-	return type;
+	return Type;
 }
 
-Json::Value FEVisualNode::toJson()
+Json::Value FEVisualNode::ToJson()
 {
 	Json::Value result;
 
 	result["ID"] = ID;
-	result["nodeType"] = type;
-	result["position"]["x"] = position.x;
-	result["position"]["y"] = position.y;
-	result["size"]["x"] = size.x;
-	result["size"]["y"] = size.y;
-	result["name"] = name;
+	result["nodeType"] = Type;
+	result["position"]["x"] = Position.x;
+	result["position"]["y"] = Position.y;
+	result["size"]["x"] = Size.x;
+	result["size"]["y"] = Size.y;
+	result["name"] = Name;
 
-	for (size_t i = 0; i < input.size(); i++)
+	for (size_t i = 0; i < Input.size(); i++)
 	{
-		result["input"][std::to_string(i)]["ID"] = input[i]->getID();
-		result["input"][std::to_string(i)]["name"] = input[i]->getName();
-		result["input"][std::to_string(i)]["type"] = input[i]->getType();
+		result["input"][std::to_string(i)]["ID"] = Input[i]->GetID();
+		result["input"][std::to_string(i)]["name"] = Input[i]->GetName();
+		result["input"][std::to_string(i)]["type"] = Input[i]->GetType();
 	}
 
-	for (size_t i = 0; i < output.size(); i++)
+	for (size_t i = 0; i < Output.size(); i++)
 	{
-		result["output"][std::to_string(i)]["ID"] = output[i]->getID();
-		result["output"][std::to_string(i)]["name"] = output[i]->getName();
-		result["output"][std::to_string(i)]["type"] = output[i]->getType();
+		result["output"][std::to_string(i)]["ID"] = Output[i]->GetID();
+		result["output"][std::to_string(i)]["name"] = Output[i]->GetName();
+		result["output"][std::to_string(i)]["type"] = Output[i]->GetType();
 	}
 
 	return result;
 }
 
-void FEVisualNode::fromJson(Json::Value json)
+void FEVisualNode::FromJson(Json::Value Json)
 {
-	ID = json["ID"].asCString();
-	type = json["nodeType"].asCString();
-	position.x = json["position"]["x"].asFloat();
-	position.y = json["position"]["y"].asFloat();
-	size.x = json["size"]["x"].asFloat();
-	size.y = json["size"]["y"].asFloat();
-	name = json["name"].asCString();
+	ID = Json["ID"].asCString();
+	Type = Json["nodeType"].asCString();
+	Position.x = Json["position"]["x"].asFloat();
+	Position.y = Json["position"]["y"].asFloat();
+	Size.x = Json["size"]["x"].asFloat();
+	Size.y = Json["size"]["y"].asFloat();
+	Name = Json["name"].asCString();
 
-	std::vector<Json::String> inputsList = json["input"].getMemberNames();
-	for (size_t i = 0; i < input.size(); i++)
+	const std::vector<Json::String> InputsList = Json["input"].getMemberNames();
+	for (size_t i = 0; i < Input.size(); i++)
 	{
-		delete input[i];
-		input[i] = nullptr;
+		delete Input[i];
+		Input[i] = nullptr;
 	}
-	input.resize(inputsList.size());
-	for (size_t i = 0; i < inputsList.size(); i++)
+	Input.resize(InputsList.size());
+	for (size_t i = 0; i < InputsList.size(); i++)
 	{
-		std::string ID = json["input"][std::to_string(i)]["ID"].asCString();
-		std::string name = json["input"][std::to_string(i)]["name"].asCString();
-		FEVisualNodeSocketType type = FE_NODE_SOCKET_FLOAT_CHANNEL_IN;
-		if (json["input"][std::to_string(i)].isMember("type"))
-			type = FEVisualNodeSocketType(json["input"][std::to_string(i)]["type"].asInt());
+		const std::string ID = Json["input"][std::to_string(i)]["ID"].asCString();
+		const std::string name = Json["input"][std::to_string(i)]["name"].asCString();
+		FE_VISUAL_NODE_SOCKET_TYPE type = FE_NODE_SOCKET_FLOAT_CHANNEL_IN;
+		if (Json["input"][std::to_string(i)].isMember("type"))
+			type = static_cast<FE_VISUAL_NODE_SOCKET_TYPE>(Json["input"][std::to_string(i)]["type"].asInt());
 
-		input[i] = new FEVisualNodeSocket(this, type, name);
-		input[i]->ID = ID;
+		Input[i] = new FEVisualNodeSocket(this, type, name);
+		Input[i]->ID = ID;
 	}
 
-	std::vector<Json::String> outputsList = json["output"].getMemberNames();
-	for (size_t i = 0; i < output.size(); i++)
+	const std::vector<Json::String> OutputsList = Json["output"].getMemberNames();
+	for (size_t i = 0; i < Output.size(); i++)
 	{
-		delete output[i];
-		output[i] = nullptr;
+		delete Output[i];
+		Output[i] = nullptr;
 	}
-	output.resize(outputsList.size());
-	for (size_t i = 0; i < outputsList.size(); i++)
+	Output.resize(OutputsList.size());
+	for (size_t i = 0; i < OutputsList.size(); i++)
 	{
-		std::string ID = json["output"][std::to_string(i)]["ID"].asCString();
-		std::string name = json["output"][std::to_string(i)]["name"].asCString();
-		FEVisualNodeSocketType type = FE_NODE_SOCKET_FLOAT_CHANNEL_OUT;
-		if (json["output"][std::to_string(i)].isMember("type"))
-			type = FEVisualNodeSocketType(json["output"][std::to_string(i)]["type"].asInt());
+		const std::string ID = Json["output"][std::to_string(i)]["ID"].asCString();
+		const std::string name = Json["output"][std::to_string(i)]["name"].asCString();
+		FE_VISUAL_NODE_SOCKET_TYPE type = FE_NODE_SOCKET_FLOAT_CHANNEL_OUT;
+		if (Json["output"][std::to_string(i)].isMember("type"))
+			type = static_cast<FE_VISUAL_NODE_SOCKET_TYPE>(Json["output"][std::to_string(i)]["type"].asInt());
 
-		output[i] = new FEVisualNodeSocket(this, type, name);
-		output[i]->ID = ID;
+		Output[i] = new FEVisualNodeSocket(this, type, name);
+		Output[i]->ID = ID;
 	}
 }
 
-void FEVisualNode::updateClientRegion()
+void FEVisualNode::UpdateClientRegion()
 {
-	float longestInputSocketTextW = 0.0f;
-	for (size_t i = 0; i < input.size(); i++)
+	float LongestInputSocketTextW = 0.0f;
+	for (size_t i = 0; i < Input.size(); i++)
 	{
-		ImVec2 textSize = ImGui::CalcTextSize(input[i]->getName().c_str());
-		if (textSize.x > longestInputSocketTextW)
-			longestInputSocketTextW = textSize.x;
+		const ImVec2 TextSize = ImGui::CalcTextSize(Input[i]->GetName().c_str());
+		if (TextSize.x > LongestInputSocketTextW)
+			LongestInputSocketTextW = TextSize.x;
 	}
 
-	float longestOutputSocketTextW = 0.0f;
-	for (size_t i = 0; i < output.size(); i++)
+	float LongestOutputSocketTextW = 0.0f;
+	for (size_t i = 0; i < Output.size(); i++)
 	{
-		ImVec2 textSize = ImGui::CalcTextSize(output[i]->getName().c_str());
-		if (textSize.x > longestOutputSocketTextW)
-			longestOutputSocketTextW = textSize.x;
+		const ImVec2 TextSize = ImGui::CalcTextSize(Output[i]->GetName().c_str());
+		if (TextSize.x > LongestOutputSocketTextW)
+			LongestOutputSocketTextW = TextSize.x;
 	}
 
-	clientRegionMin.x = leftTop.x + NODE_SOCKET_SIZE * 5.0f + longestInputSocketTextW + 2.0f;
-	clientRegionMax.x = rightBottom.x - NODE_SOCKET_SIZE * 5.0f - longestOutputSocketTextW - 2.0f;
+	ClientRegionMin.x = LeftTop.x + NODE_SOCKET_SIZE * 5.0f + LongestInputSocketTextW + 2.0f;
+	ClientRegionMax.x = RightBottom.x - NODE_SOCKET_SIZE * 5.0f - LongestOutputSocketTextW - 2.0f;
 
-	clientRegionMin.y = leftTop.y + NODE_TITLE_HEIGHT + 2.0f;
-	clientRegionMax.y = rightBottom.y - 2.0f;
+	ClientRegionMin.y = LeftTop.y + NODE_TITLE_HEIGHT + 2.0f;
+	ClientRegionMax.y = RightBottom.y - 2.0f;
 }
 
-ImVec2 FEVisualNode::getClientRegionSize()
+ImVec2 FEVisualNode::GetClientRegionSize()
 {
-	updateClientRegion();
-	return clientRegionMax - clientRegionMin;
+	UpdateClientRegion();
+	return ClientRegionMax - ClientRegionMin;
 }
 
-ImVec2 FEVisualNode::getClientRegionPosition()
+ImVec2 FEVisualNode::GetClientRegionPosition()
 {
-	updateClientRegion();
-	return clientRegionMin;
+	UpdateClientRegion();
+	return ClientRegionMin;
 }
 
-size_t FEVisualNode::inputSocketCount()
+size_t FEVisualNode::InputSocketCount() const
 {
-	return input.size();
+	return Input.size();
 }
 
-size_t FEVisualNode::outSocketCount()
+size_t FEVisualNode::OutSocketCount() const
 {
-	return output.size();
+	return Output.size();
 }
 
-bool FEVisualNode::getForcedOutSocketColor(ImColor& color, size_t socketIndex)
+bool FEVisualNode::GetForcedOutSocketColor(ImColor& Color, const size_t SocketIndex) const
 {
-	if (socketIndex < 0 || socketIndex >= output.size())
+	if (SocketIndex < 0 || SocketIndex >= Output.size())
 		return false;
 
-	return output[socketIndex]->getForcedConnectionColor(color);
+	return Output[SocketIndex]->GetForcedConnectionColor(Color);
 }
 
-void FEVisualNode::setForcedOutSocketColor(ImColor* newValue, size_t socketIndex)
+void FEVisualNode::SetForcedOutSocketColor(ImColor* NewValue, const size_t SocketIndex) const
 {
-	if (socketIndex < 0 || socketIndex >= output.size())
+	if (SocketIndex < 0 || SocketIndex >= Output.size())
 		return;
 
-	output[socketIndex]->setForcedConnectionColor(newValue);
+	Output[SocketIndex]->SetForcedConnectionColor(NewValue);
 }
 
-std::vector<FEVisualNode*> FEVisualNode::getConnectedNodes()
+std::vector<FEVisualNode*> FEVisualNode::GetConnectedNodes() const
 {
 	std::vector<FEVisualNode*> result;
-	for (size_t i = 0; i < output.size(); i++)
+	for (size_t i = 0; i < Output.size(); i++)
 	{
-		for (size_t j = 0; j < output[i]->connections.size(); j++)
+		for (size_t j = 0; j < Output[i]->Connections.size(); j++)
 		{
-			result.push_back(output[i]->connections[j]->getParent());
+			result.push_back(Output[i]->Connections[j]->GetParent());
 		}
 	}
 
 	return result;
 }
 
-FEVisualNode* FEVisualNode::getLogicallyNextNode()
+FEVisualNode* FEVisualNode::GetLogicallyNextNode()
 {
-	auto connected = getConnectedNodes();
-	if (connected.size() > 0 && connected[0] != nullptr)
-		return getConnectedNodes()[0];
+	const auto Connected = GetConnectedNodes();
+	if (!Connected.empty() && Connected[0] != nullptr)
+		return GetConnectedNodes()[0];
 	
 	return nullptr;
 }
 
-void FEVisualNode::registerChildNodeClass(FEVisualNodeChildFunc functions, std::string className)
+void FEVisualNode::RegisterChildNodeClass(const FEVisualNodeChildFunc Functions, const std::string ClassName)
 {
-	if (functions.JsonToObj != nullptr && functions.copyConstructor != nullptr && className != "")
+	if (Functions.JsonToObj != nullptr && Functions.CopyConstructor != nullptr && !ClassName.empty())
 	{
-		childClasses[className] = functions;
+		ChildClasses[ClassName] = Functions;
 	}
 }
 
-FEVisualNode* FEVisualNode::constructChild(std::string childClassName, Json::Value data)
+FEVisualNode* FEVisualNode::ConstructChild(const std::string ChildClassName, const Json::Value Data)
 {
-	if (childClasses.find(childClassName) == childClasses.end())
+	if (ChildClasses.find(ChildClassName) == ChildClasses.end())
 		return nullptr;
 
-	return childClasses[childClassName].JsonToObj(data);
+	return ChildClasses[ChildClassName].JsonToObj(Data);
 }
 
-FEVisualNode* FEVisualNode::copyChild(std::string childClassName, FEVisualNode* child)
+FEVisualNode* FEVisualNode::CopyChild(const std::string ChildClassName, FEVisualNode* Child)
 {
-	if (childClasses.find(childClassName) == childClasses.end())
+	if (ChildClasses.find(ChildClassName) == ChildClasses.end())
 		return nullptr;
 
-	return childClasses[childClassName].copyConstructor(*child);
+	return ChildClasses[ChildClassName].CopyConstructor(*Child);
 }
 
-bool FEVisualNode::openContextMenu()
+bool FEVisualNode::OpenContextMenu()
 {
 	return false;
 }
 
-FE_VISUAL_NODE_STYLE FEVisualNode::getStyle()
+FE_VISUAL_NODE_STYLE FEVisualNode::GetStyle() const
 {
-	return style;
+	return Style;
 }
 
-void FEVisualNode::setStyle(FE_VISUAL_NODE_STYLE newValue)
+void FEVisualNode::SetStyle(const FE_VISUAL_NODE_STYLE NewValue)
 {
-	if (int(newValue) < 0 || int(newValue) >= 2)
+	if (static_cast<int>(NewValue) < 0 || static_cast<int>(NewValue) >= 2)
 		return;
 
-	style = newValue;
+	Style = NewValue;
 }
 
-bool FEVisualNode::isHovered()
+bool FEVisualNode::IsHovered() const
 {
-	return hovered;
+	return bHovered;
 }
 
-void FEVisualNode::setIsHovered(bool newValue)
+void FEVisualNode::SetIsHovered(const bool NewValue)
 {
-	hovered = newValue;
+	bHovered = NewValue;
 }

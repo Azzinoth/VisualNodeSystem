@@ -6,7 +6,7 @@ class FEVisualNodeSystem
 {
 	SINGLETON_PRIVATE_PART(FEVisualNodeSystem)
 
-	std::vector<FEVisualNodeArea*> createdAreas;
+	std::vector<FEVisualNodeArea*> CreatedAreas;
 	/*bool isNodeIDInList(std::string ID, std::vector<FEVisualNode*> list)
 	{
 		for (size_t i = 0; i < list.size(); i++)
@@ -20,11 +20,11 @@ class FEVisualNodeSystem
 public:
 	SINGLETON_PUBLIC_PART(FEVisualNodeSystem)
 
-	FEVisualNodeArea* createNodeArea();
+	FEVisualNodeArea* CreateNodeArea();
 	//FEVisualNodeArea* createNodeArea(std::vector<FEVisualNode*> nodes);
-	void deleteNodeArea(FEVisualNodeArea* nodeArea);
+	void DeleteNodeArea(const FEVisualNodeArea* NodeArea);
 
-	void moveNodesTo(FEVisualNodeArea* sourceNodeArea, FEVisualNodeArea* targetNodeArea, bool selectMovedNodes = false);
+	void MoveNodesTo(FEVisualNodeArea* SourceNodeArea, FEVisualNodeArea* TargetNodeArea, bool SelectMovedNodes = false);
 };
 
 #define NODE_SYSTEM FEVisualNodeSystem::getInstance()
