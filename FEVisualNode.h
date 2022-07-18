@@ -36,10 +36,10 @@ class CLASS_NAME##Registration;								\
 class CLASS_NAME : public FEVisualNode						\
 {															\
 friend CLASS_NAME##Registration;							\
-static FEVisualNode* constructorFromJson(Json::Value json);	\
-static FEVisualNode* copyConstructor(FEVisualNode& src);	\
-static CLASS_NAME##Registration* registration;				\
-static FEVisualNodeChildFunc childFunctions;				
+static FEVisualNode* ConstructorFromJson(Json::Value Json);	\
+static FEVisualNode* CopyConstructor(FEVisualNode& Src);	\
+static CLASS_NAME##Registration* Registration;				\
+static FEVisualNodeChildFunc ChildFunctions;				
 
 #define VISUAL_NODE_CHILD_AFTER_CLASS(CLASS_NAME)										\
 class CLASS_NAME##Registration															\
@@ -47,32 +47,32 @@ class CLASS_NAME##Registration															\
 public:																					\
 	CLASS_NAME##Registration()															\
 	{																					\
-		CLASS_NAME::childFunctions.JsonToObj = CLASS_NAME::constructorFromJson;			\
-		CLASS_NAME::childFunctions.copyConstructor = CLASS_NAME::copyConstructor;		\
-		FEVisualNode::registerChildNodeClass(CLASS_NAME::childFunctions, #CLASS_NAME);	\
+		CLASS_NAME::ChildFunctions.JsonToObj = CLASS_NAME::ConstructorFromJson;			\
+		CLASS_NAME::ChildFunctions.CopyConstructor = CLASS_NAME::CopyConstructor;		\
+		FEVisualNode::RegisterChildNodeClass(CLASS_NAME::ChildFunctions, #CLASS_NAME);	\
 	}																					\
 };
 
 
 #define VISUAL_NODE_CHILD_CPP(CLASS_NAME)										\
-FEVisualNode* CLASS_NAME::constructorFromJson(Json::Value json)					\
+FEVisualNode* CLASS_NAME::ConstructorFromJson(Json::Value Json)					\
 {																				\
-	CLASS_NAME* newNode = new CLASS_NAME();										\
-	newNode->fromJson(json);													\
-	return newNode;																\
+	CLASS_NAME* NewNode = new CLASS_NAME();										\
+	NewNode->FromJson(Json);													\
+	return NewNode;																\
 }																				\
 																				\
-FEVisualNode* CLASS_NAME::copyConstructor(FEVisualNode& src)					\
+FEVisualNode* CLASS_NAME::CopyConstructor(FEVisualNode& Src)					\
 {																				\
-	if (src.getType() != #CLASS_NAME)											\
+	if (Src.GetType() != #CLASS_NAME)											\
 		return nullptr;															\
 																				\
-	CLASS_NAME* newNode = new CLASS_NAME(*reinterpret_cast<CLASS_NAME*>(&src));	\
-	return newNode;																\
+	CLASS_NAME* NewNode = new CLASS_NAME(*reinterpret_cast<CLASS_NAME*>(&Src));	\
+	return NewNode;																\
 }																				\
 																				\
-FEVisualNodeChildFunc CLASS_NAME::childFunctions;								\
-CLASS_NAME##Registration* CLASS_NAME::registration = new CLASS_NAME##Registration();
+FEVisualNodeChildFunc CLASS_NAME::ChildFunctions;								\
+CLASS_NAME##Registration* CLASS_NAME::Registration = new CLASS_NAME##Registration();
 
 class FEVisualNode
 {
