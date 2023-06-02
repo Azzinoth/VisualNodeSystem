@@ -1,0 +1,25 @@
+# FILES
+*.VC.db
+*.VC.opendb
+*.sdf
+*.pdb
+*.dll
+*.exe
+*.ilk
+*.opensdf
+*.idb
+*.suo
+*.dylib
+*.sln
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+imgui.ini
+CMakeCache.txt
+cmake_install.cmake
+
+#Folders
+Debug/
+Release/
+.vs/
+CMakeFiles/

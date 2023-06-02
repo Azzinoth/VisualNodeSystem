@@ -1,6 +1,12 @@
 #include "FEVisualNode.h"
 
-std::unordered_map<std::string, FEVisualNodeChildFunc> FEVisualNode::ChildClasses;
+//std::unordered_map<std::string, FEVisualNodeChildFunc> FEVisualNode::ChildClasses;
+
+std::unordered_map<std::string, FEVisualNodeChildFunc>& FEVisualNode::GetChildClasses()
+{
+	static std::unordered_map<std::string, FEVisualNodeChildFunc> ChildClasses;
+	return ChildClasses;
+}
 
 FEVisualNode::FEVisualNode(const std::string ID)
 {
@@ -333,24 +339,24 @@ void FEVisualNode::RegisterChildNodeClass(const FEVisualNodeChildFunc Functions,
 {
 	if (Functions.JsonToObj != nullptr && Functions.CopyConstructor != nullptr && !ClassName.empty())
 	{
-		ChildClasses[ClassName] = Functions;
+		GetChildClasses()[ClassName] = Functions;
 	}
 }
 
 FEVisualNode* FEVisualNode::ConstructChild(const std::string ChildClassName, const Json::Value Data)
 {
-	if (ChildClasses.find(ChildClassName) == ChildClasses.end())
+	if (GetChildClasses().find(ChildClassName) == GetChildClasses().end())
 		return nullptr;
 
-	return ChildClasses[ChildClassName].JsonToObj(Data);
+	return GetChildClasses()[ChildClassName].JsonToObj(Data);
 }
 
 FEVisualNode* FEVisualNode::CopyChild(const std::string ChildClassName, FEVisualNode* Child)
 {
-	if (ChildClasses.find(ChildClassName) == ChildClasses.end())
+	if (GetChildClasses().find(ChildClassName) == GetChildClasses().end())
 		return nullptr;
 
-	return ChildClasses[ChildClassName].CopyConstructor(*Child);
+	return GetChildClasses()[ChildClassName].CopyConstructor(*Child);
 }
 
 bool FEVisualNode::OpenContextMenu()

@@ -116,7 +116,13 @@ protected:
 
 	void UpdateClientRegion();
 
-	static std::unordered_map<std::string, FEVisualNodeChildFunc> ChildClasses;
+	// To overcome rare cases of the static initialization order fiasco
+	static std::unordered_map<std::string, FEVisualNodeChildFunc>& GetChildClasses();
+	//{
+	//	static std::unordered_map<std::string, FEVisualNodeChildFunc> ChildClasses;
+	//	return ChildClasses;
+	//}
+
 	static FEVisualNode* ConstructChild(std::string ChildClassName, Json::Value Data);
 	static FEVisualNode* CopyChild(std::string ChildClassName, FEVisualNode* Child);
 public:
