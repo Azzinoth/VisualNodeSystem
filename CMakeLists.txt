@@ -59,6 +59,8 @@ include_directories(
 	"ThirdParty/"
 )
 
+set(FEVISUAL_NODE_SYSTEM_DIR ${CMAKE_CURRENT_SOURCE_DIR} PARENT_SCOPE)
+
 # Re-export of the variables from child projects
 set(GLEW_LIB_DIR ${GLEW_LIB_DIR} PARENT_SCOPE)
 set(GLFW_LIB_DIR ${GLFW_LIB_DIR} PARENT_SCOPE)
