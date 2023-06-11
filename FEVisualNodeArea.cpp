@@ -746,7 +746,7 @@ void FEVisualNodeArea::InputUpdate()
 
 	if (ImGui::IsMouseDragging(0) && MouseDownIn == NodeAreaWindow)
 	{
-		if (ImGui::IsKeyDown(GLFW_KEY_LEFT_SHIFT) || ImGui::IsKeyDown(GLFW_KEY_RIGHT_SHIFT))
+		if (ImGui::IsKeyDown(static_cast<ImGuiKey>(GLFW_KEY_LEFT_SHIFT)) || ImGui::IsKeyDown(static_cast<ImGuiKey>(GLFW_KEY_RIGHT_SHIFT)))
 		{
 			SocketLookingForConnection = nullptr;
 
@@ -829,7 +829,7 @@ void FEVisualNodeArea::InputUpdate()
 	{
 		if (Hovered != nullptr)
 		{
-			if (!IsSelected(Hovered) && !ImGui::IsKeyDown(GLFW_KEY_LEFT_CONTROL) && !ImGui::IsKeyDown(GLFW_KEY_RIGHT_CONTROL))
+			if (!IsSelected(Hovered) && !ImGui::IsKeyDown(static_cast<ImGuiKey>(GLFW_KEY_LEFT_CONTROL)) && !ImGui::IsKeyDown(static_cast<ImGuiKey>(GLFW_KEY_RIGHT_CONTROL)))
 				Selected.clear();
 			AddSelected(Hovered);
 		}
@@ -922,7 +922,7 @@ void FEVisualNodeArea::InputUpdate()
 		SocketLookingForConnection = nullptr;
 	}
 
-	if (ImGui::IsKeyDown(GLFW_KEY_DELETE))
+	if (ImGui::IsKeyDown(static_cast<ImGuiKey>(GLFW_KEY_DELETE)))
 	{
 		for (size_t i = 0; i < Selected.size(); i++)
 		{
@@ -933,9 +933,9 @@ void FEVisualNodeArea::InputUpdate()
 	}
 
 	static bool WasCopiedToClipboard = false;
-	if (ImGui::IsKeyDown(GLFW_KEY_LEFT_CONTROL) || ImGui::IsKeyDown(GLFW_KEY_RIGHT_CONTROL))
+	if (ImGui::IsKeyDown(static_cast<ImGuiKey>(GLFW_KEY_LEFT_CONTROL)) || ImGui::IsKeyDown(static_cast<ImGuiKey>(GLFW_KEY_RIGHT_CONTROL)))
 	{
-		if (ImGui::IsKeyDown(GLFW_KEY_C))
+		if (ImGui::IsKeyDown(static_cast<ImGuiKey>(GLFW_KEY_C)))
 		{
 			if (!Selected.empty())
 			{
@@ -944,7 +944,7 @@ void FEVisualNodeArea::InputUpdate()
 				delete NewNodeArea;
 			}
 		}
-		else if (ImGui::IsKeyDown(GLFW_KEY_V))
+		else if (ImGui::IsKeyDown(static_cast<ImGuiKey>(GLFW_KEY_V)))
 		{
 			if (!WasCopiedToClipboard)
 			{
@@ -988,7 +988,7 @@ void FEVisualNodeArea::InputUpdate()
 		}
 	}
 
-	if (!ImGui::IsKeyDown(GLFW_KEY_V))
+	if (!ImGui::IsKeyDown(static_cast<ImGuiKey>(GLFW_KEY_V)))
 		WasCopiedToClipboard = false;
 }
 
