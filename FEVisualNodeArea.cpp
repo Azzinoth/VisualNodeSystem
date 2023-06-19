@@ -2,19 +2,17 @@
 
 ImVec2 FEVisualNodeArea::NeededShift = ImVec2();
 
-FEVisualNodeArea::FEVisualNodeArea() {};
+FEVisualNodeArea::FEVisualNodeArea()
+{
+	SetAreaSize(ImVec2(256, 256));
+};
 
 void FEVisualNodeArea::AddNode(FEVisualNode* NewNode)
 {
 	if (NewNode == nullptr)
 		return;
 
-	//if (newNode->parentArea != nullptr)
-	//	newNode->setPosition(newNode->getPosition() + newNode->parentArea->getAreaRenderOffset());
-
 	NewNode->ParentArea = this;
-	//newNode->setPosition(newNode->getPosition() - getAreaRenderOffset());
-
 	Nodes.push_back(NewNode);
 }
 
@@ -53,7 +51,7 @@ void FEVisualNodeArea::RenderNode(FEVisualNode* Node) const
 	}
 	else if (Node->GetStyle() == FE_VISUAL_NODE_STYLE_CIRCLE)
 	{
-		Node->RightBottom = Node->LeftTop + ImVec2(NODE_RADIUS, NODE_RADIUS);
+		Node->RightBottom = Node->LeftTop + ImVec2(NODE_DIAMETER, NODE_DIAMETER);
 	}
 
 	if (IsSelected(Node))
@@ -66,7 +64,7 @@ void FEVisualNodeArea::RenderNode(FEVisualNode* Node) const
 		}
 		else if (Node->GetStyle() == FE_VISUAL_NODE_STYLE_CIRCLE)
 		{
-			ImGui::GetWindowDrawList()->AddCircle(Node->LeftTop + ImVec2(NODE_RADIUS / 2.0f, NODE_RADIUS / 2.0f), NODE_RADIUS + 4.0f, IM_COL32(175, 255, 175, 255), 32, 4.0f);
+			ImGui::GetWindowDrawList()->AddCircle(Node->LeftTop + ImVec2(NODE_DIAMETER / 2.0f, NODE_DIAMETER / 2.0f), NODE_DIAMETER + 4.0f, IM_COL32(175, 255, 175, 255), 32, 4.0f);
 		}
 	}
 
@@ -78,7 +76,7 @@ void FEVisualNodeArea::RenderNode(FEVisualNode* Node) const
 	}
 	else if (Node->GetStyle() == FE_VISUAL_NODE_STYLE_CIRCLE)
 	{
-		ImGui::SetCursorScreenPos(Node->LeftTop - ImVec2(NODE_RADIUS / 2.0f - NODE_RADIUS / 4.0f, NODE_RADIUS / 2.0f - NODE_RADIUS / 4.0f));
+		ImGui::SetCursorScreenPos(Node->LeftTop - ImVec2(NODE_DIAMETER / 2.0f - NODE_DIAMETER / 4.0f, NODE_DIAMETER / 2.0f - NODE_DIAMETER / 4.0f));
 	}
 	Node->Draw();
 
@@ -94,7 +92,7 @@ void FEVisualNodeArea::RenderNode(FEVisualNode* Node) const
 	else if (Node->GetStyle() == FE_VISUAL_NODE_STYLE_CIRCLE)
 	{
 		ImGui::GetWindowDrawList()->AddCircleFilled(Node->LeftTop + (Node->RightBottom - Node->LeftTop) / 2.0f,
-													NODE_RADIUS,
+													NODE_DIAMETER,
 													NodeBackgroundColor, 32);
 	}
 
@@ -118,7 +116,7 @@ void FEVisualNodeArea::RenderNode(FEVisualNode* Node) const
 	}
 	else if (Node->GetStyle() == FE_VISUAL_NODE_STYLE_CIRCLE)
 	{
-		CurrentDrawList->AddCircle(Node->LeftTop + ImVec2(NODE_RADIUS / 2.0f, NODE_RADIUS / 2.0f), NODE_RADIUS + 2.0f, ImColor(100, 100, 100), 32, 2.0f);
+		CurrentDrawList->AddCircle(Node->LeftTop + ImVec2(NODE_DIAMETER / 2.0f, NODE_DIAMETER / 2.0f), NODE_DIAMETER + 2.0f, ImColor(100, 100, 100), 32, 2.0f);
 	}
 
 	RenderNodeSockets(Node);
@@ -244,6 +242,13 @@ void FEVisualNodeArea::Render()
 
 	const ImVec2 CurrentPosition = ImGui::GetCurrentWindow()->Pos + AreaPosition;
 	ImGui::SetNextWindowPos(CurrentPosition);
+
+	if (bFillWindow)
+	{
+		auto NodeAreaParentWindow = ImGui::GetCurrentWindow();
+		SetAreaSize(NodeAreaParentWindow->Size - ImVec2(2, 2)/*NodeAreaParentWindow->WindowPadding*/);
+	}
+
 	ImGui::BeginChild("Nodes area", GetAreaSize(), true, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoMove);
 
 	NodeAreaWindow = ImGui::GetCurrentWindow();
@@ -413,11 +418,11 @@ ImVec2 FEVisualNodeArea::SocketToPosition(const FEVisualNodeSocket* Socket) cons
 
 		const float angle = BeginAngle + step;
 
-		const float NodeCenterX = Socket->Parent->LeftTop.x + NODE_RADIUS / 2.0f;
-		const float NodeCenterY = Socket->Parent->LeftTop.y + NODE_RADIUS / 2.0f;
+		const float NodeCenterX = Socket->Parent->LeftTop.x + NODE_DIAMETER / 2.0f;
+		const float NodeCenterY = Socket->Parent->LeftTop.y + NODE_DIAMETER / 2.0f;
 
-		SocketX = NodeCenterX + NODE_RADIUS * 0.95f * sin(glm::radians(angle));
-		SocketY = NodeCenterY + NODE_RADIUS * 0.95f * cos(glm::radians(angle));
+		SocketX = NodeCenterX + NODE_DIAMETER * 0.95f * sin(glm::radians(angle));
+		SocketY = NodeCenterY + NODE_DIAMETER * 0.95f * cos(glm::radians(angle));
 	}
 
 	return {SocketX, SocketY};
@@ -784,9 +789,9 @@ void FEVisualNodeArea::InputUpdate()
 				else if (Nodes[i]->GetStyle() == FE_VISUAL_NODE_STYLE_CIRCLE)
 				{
 					if (Nodes[i]->LeftTop.x < MouseSelectRegionMin.x + RegionSize.x &&
-						Nodes[i]->LeftTop.x + NODE_RADIUS > MouseSelectRegionMin.x &&
+						Nodes[i]->LeftTop.x + NODE_DIAMETER > MouseSelectRegionMin.x &&
 						Nodes[i]->LeftTop.y < MouseSelectRegionMin.y + RegionSize.y &&
-						NODE_RADIUS + Nodes[i]->LeftTop.y > MouseSelectRegionMin.y)
+						NODE_DIAMETER + Nodes[i]->LeftTop.y > MouseSelectRegionMin.y)
 					{
 						AddSelected(Nodes[i]);
 					}
@@ -1007,8 +1012,8 @@ void FEVisualNodeArea::InputUpdateNode(FEVisualNode* Node)
 	}
 	else if (Node->GetStyle() == FE_VISUAL_NODE_STYLE_CIRCLE)
 	{
-		if (glm::distance(glm::vec2(Node->LeftTop.x + NODE_RADIUS / 2.0f, Node->LeftTop.y + NODE_RADIUS / 2.0f),
-						  glm::vec2(MouseCursorPosition.x, MouseCursorPosition.y)) <= NODE_RADIUS)
+		if (glm::distance(glm::vec2(Node->LeftTop.x + NODE_DIAMETER / 2.0f, Node->LeftTop.y + NODE_DIAMETER / 2.0f),
+						  glm::vec2(MouseCursorPosition.x, MouseCursorPosition.y)) <= NODE_DIAMETER)
 		{
 			Hovered = Node;
 			Node->SetIsHovered(true);
@@ -1527,4 +1532,14 @@ int FEVisualNodeArea::GetNodeCount() const
 bool FEVisualNodeArea::IsMouseHovered() const
 {
 	return bMouseHovered;
+}
+
+bool FEVisualNodeArea::IsAreaFillingWindow()
+{
+	return bFillWindow;
+}
+
+void FEVisualNodeArea::SetIsAreaFillingWindow(bool NewValue)
+{
+	bFillWindow = NewValue;
 }

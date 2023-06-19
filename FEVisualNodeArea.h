@@ -25,6 +25,7 @@ class FEVisualNodeArea
 	~FEVisualNodeArea();
 
 	bool bClearing = false;
+	bool bFillWindow = false;
 	ImDrawList* CurrentDrawList = nullptr;
 	ImGuiWindow* NodeAreaWindow = nullptr;
 
@@ -141,4 +142,7 @@ public:
 	int GetNodeCount() const;
 
 	bool IsMouseHovered() const;
+
+	bool IsAreaFillingWindow();
+	void SetIsAreaFillingWindow(bool NewValue);
 };

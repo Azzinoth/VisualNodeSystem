@@ -10,8 +10,7 @@ enum FE_VISUAL_NODE_STYLE
 
 #define FE_VISUAL_NODE_NAME_MAX_LENGHT 1024
 #define NODE_TITLE_HEIGHT 30.0f
-#define NODE_RADIUS 72.0f
-#define NODE_DIAMETER NODE_RADIUS * 2.0f
+#define NODE_DIAMETER 72.0f
 
 enum FE_VISUAL_NODE_SOCKET_EVENT
 {
@@ -118,10 +117,6 @@ protected:
 
 	// To overcome rare cases of the static initialization order fiasco
 	static std::unordered_map<std::string, FEVisualNodeChildFunc>& GetChildClasses();
-	//{
-	//	static std::unordered_map<std::string, FEVisualNodeChildFunc> ChildClasses;
-	//	return ChildClasses;
-	//}
 
 	static FEVisualNode* ConstructChild(std::string ChildClassName, Json::Value Data);
 	static FEVisualNode* CopyChild(std::string ChildClassName, FEVisualNode* Child);

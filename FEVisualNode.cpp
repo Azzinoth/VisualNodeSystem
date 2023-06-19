@@ -1,7 +1,5 @@
 #include "FEVisualNode.h"
 
-//std::unordered_map<std::string, FEVisualNodeChildFunc> FEVisualNode::ChildClasses;
-
 std::unordered_map<std::string, FEVisualNodeChildFunc>& FEVisualNode::GetChildClasses()
 {
 	static std::unordered_map<std::string, FEVisualNodeChildFunc> ChildClasses;
