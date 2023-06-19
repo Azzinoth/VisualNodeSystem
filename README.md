@@ -1,5 +1,7 @@
 # FEVisualNode System
 
+![build](https://github.com/Azzinoth/FEVisualNodeSystem/actions/workflows/Build.yml/badge.svg?branch=master)
+
 This library provides a powerful framework for creating and managing visual node systems. These are typically used in graphical programming environments, game logic builders, and AI behavior tree editors. I have personally used it in two of my projects:
 
 [Focal Engine Editor](https://github.com/Azzinoth/FocalEngineEditor)
