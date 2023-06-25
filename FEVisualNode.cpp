@@ -39,12 +39,12 @@ FEVisualNode::FEVisualNode(const FEVisualNode& Src)
 
 	for (size_t i = 0; i < Src.Input.size(); i++)
 	{
-		Input.push_back(new FEVisualNodeSocket(this, Src.Input[i]->GetType(), Src.Input[i]->GetName()));
+		Input.push_back(new FEVisualNodeSocket(this, Src.Input[i]->GetType(), Src.Input[i]->GetName(), false));
 	}
 
 	for (size_t i = 0; i < Src.Output.size(); i++)
 	{
-		Output.push_back(new FEVisualNodeSocket(this, Src.Output[i]->GetType(), Src.Output[i]->GetName()));
+		Output.push_back(new FEVisualNodeSocket(this, Src.Output[i]->GetType(), Src.Output[i]->GetName(), true));
 	}
 }
 
@@ -106,41 +106,15 @@ void FEVisualNode::SetName(const std::string NewValue)
 	Name = NewValue;
 }
 
-void FEVisualNode::AddInputSocket(FEVisualNodeSocket* Socket)
+void FEVisualNode::AddSocket(FEVisualNodeSocket* Socket)
 {
-	if (Socket == nullptr || !FEVisualNode::IsSocketTypeIn(Socket->Type))
+	if (Socket == nullptr)
 		return;
 
-	Input.push_back(Socket);
-}
-
-void FEVisualNode::AddOutputSocket(FEVisualNodeSocket* Socket)
-{
-	if (Socket == nullptr || FEVisualNode::IsSocketTypeIn(Socket->Type))
-		return;
-
-	Output.push_back(Socket);
-}
-
-bool FEVisualNode::IsSocketTypeIn(const FE_VISUAL_NODE_SOCKET_TYPE Type)
-{
-	static FE_VISUAL_NODE_SOCKET_TYPE InSocketTypes[] = { FE_NODE_SOCKET_COLOR_CHANNEL_IN,
-													  FE_NODE_SOCKET_FLOAT_CHANNEL_IN,
-													  FE_NODE_SOCKET_COLOR_RGB_CHANNEL_IN,
-													  FE_NODE_SOCKET_COLOR_RGBA_CHANNEL_IN };
-
-	static FE_VISUAL_NODE_SOCKET_TYPE OutSocketTypes[] = { FE_NODE_SOCKET_COLOR_CHANNEL_OUT,
-													   FE_NODE_SOCKET_FLOAT_CHANNEL_OUT,
-													   FE_NODE_SOCKET_COLOR_RGB_CHANNEL_OUT,
-													   FE_NODE_SOCKET_COLOR_RGBA_CHANNEL_OUT};
-
-	for (size_t i = 0; i < sizeof(InSocketTypes) / sizeof(FE_VISUAL_NODE_SOCKET_TYPE); i++)
-	{
-		if (InSocketTypes[i] == Type)
-			return true;
-	}
-
-	return false;
+	if (Socket->bOutput)
+		Output.push_back(Socket);
+	else
+		Input.push_back(Socket);
 }
 
 void FEVisualNode::Draw()
@@ -154,11 +128,16 @@ void FEVisualNode::SocketEvent(FEVisualNodeSocket* OwnSocket, FEVisualNodeSocket
 
 bool FEVisualNode::CanConnect(FEVisualNodeSocket* OwnSocket, FEVisualNodeSocket* CandidateSocket, char** MsgToUser)
 {
+	// Socket can't connect to itself.
 	if (OwnSocket == CandidateSocket)
 		return false;
 
-	// Own sockets can't be connected.
+	// Nodes can't connect to themselves.
 	if (CandidateSocket->GetParent() == this)
+		return false;
+
+	// Output can't connect to output and input can't connect to input.
+	if (OwnSocket->bOutput == CandidateSocket->bOutput)
 		return false;
 
 	return true;
@@ -219,11 +198,9 @@ void FEVisualNode::FromJson(Json::Value Json)
 	{
 		const std::string ID = Json["input"][std::to_string(i)]["ID"].asCString();
 		const std::string name = Json["input"][std::to_string(i)]["name"].asCString();
-		FE_VISUAL_NODE_SOCKET_TYPE type = FE_NODE_SOCKET_FLOAT_CHANNEL_IN;
-		if (Json["input"][std::to_string(i)].isMember("type"))
-			type = static_cast<FE_VISUAL_NODE_SOCKET_TYPE>(Json["input"][std::to_string(i)]["type"].asInt());
+		const std::string type = Json["input"][std::to_string(i)]["type"].asCString();
 
-		Input[i] = new FEVisualNodeSocket(this, type, name);
+		Input[i] = new FEVisualNodeSocket(this, type, name, false);
 		Input[i]->ID = ID;
 	}
 
@@ -238,11 +215,9 @@ void FEVisualNode::FromJson(Json::Value Json)
 	{
 		const std::string ID = Json["output"][std::to_string(i)]["ID"].asCString();
 		const std::string name = Json["output"][std::to_string(i)]["name"].asCString();
-		FE_VISUAL_NODE_SOCKET_TYPE type = FE_NODE_SOCKET_FLOAT_CHANNEL_OUT;
-		if (Json["output"][std::to_string(i)].isMember("type"))
-			type = static_cast<FE_VISUAL_NODE_SOCKET_TYPE>(Json["output"][std::to_string(i)]["type"].asInt());
+		const std::string type = Json["output"][std::to_string(i)]["type"].asCString();
 
-		Output[i] = new FEVisualNodeSocket(this, type, name);
+		Output[i] = new FEVisualNodeSocket(this, type, name, true);
 		Output[i]->ID = ID;
 	}
 }

@@ -142,7 +142,7 @@ void FEVisualNodeArea::RenderNodeSocket(FEVisualNodeSocket* Socket) const
 	const ImVec2 SocketPosition = SocketToPosition(Socket);
 	if (Socket->GetParent()->GetStyle() == FE_VISUAL_NODE_STYLE_DEFAULT)
 	{
-		const bool Input = FEVisualNode::IsSocketTypeIn(Socket->GetType());
+		const bool Input = !Socket->bOutput;
 		// Socket description.
 		const ImVec2 TextSize = ImGui::CalcTextSize(Socket->GetName().c_str());
 
@@ -368,7 +368,7 @@ void FEVisualNodeArea::RenderConnection(const FEVisualNodeConnection* Connection
 
 ImVec2 FEVisualNodeArea::SocketToPosition(const FEVisualNodeSocket* Socket) const
 {
-	const bool Input = FEVisualNode::IsSocketTypeIn(Socket->Type);
+	const bool Input = !Socket->bOutput;
 	float SocketX = 0.0f;
 	float SocketY = 0.0f;
 
@@ -1045,7 +1045,7 @@ void FEVisualNodeArea::InputUpdateSocket(FEVisualNodeSocket* Socket)
 		SocketHovered = Socket;
 	}
 
-	if (SocketHovered == Socket && ImGui::GetIO().MouseClicked[0] && !FEVisualNode::IsSocketTypeIn(Socket->GetType()))
+	if (SocketHovered == Socket && ImGui::GetIO().MouseClicked[0] && Socket->bOutput/*!FEVisualNode::IsSocketTypeIn(Socket->GetType())*/)
 		SocketLookingForConnection = Socket;
 }
 

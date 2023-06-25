@@ -140,10 +140,11 @@ public:
 
 	std::string GetType() const;
 
-	void AddInputSocket(FEVisualNodeSocket* Socket);
-	void AddOutputSocket(FEVisualNodeSocket* Socket);
+	void AddSocket(FEVisualNodeSocket* Socket);
+	/*void AddInputSocket(FEVisualNodeSocket* Socket);
+	void AddOutputSocket(FEVisualNodeSocket* Socket);*/
 
-	static bool IsSocketTypeIn(FE_VISUAL_NODE_SOCKET_TYPE Type);
+	//static bool IsSocketTypeIn(FE_VISUAL_NODE_SOCKET_TYPE Type);
 
 	virtual Json::Value ToJson();
 	virtual void FromJson(Json::Value Json);

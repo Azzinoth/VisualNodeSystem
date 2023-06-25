@@ -1,11 +1,12 @@
 #include "FEVisualNodeSocket.h"
 
-FEVisualNodeSocket::FEVisualNodeSocket(FEVisualNode* Parent, const FE_VISUAL_NODE_SOCKET_TYPE Type, const std::string Name)
+FEVisualNodeSocket::FEVisualNodeSocket(FEVisualNode* Parent, const std::string Type, const std::string Name, bool bOutput)
 {
 	this->Parent = Parent;
 	this->Type = Type;
 	this->Name = Name;
 	this->ID = APPLICATION.GetUniqueHexID();
+	this->bOutput = bOutput;
 }
 
 std::string FEVisualNodeSocket::GetID()
@@ -28,7 +29,7 @@ std::string FEVisualNodeSocket::GetName()
 	return Name;
 }
 
-FE_VISUAL_NODE_SOCKET_TYPE FEVisualNodeSocket::GetType() const
+std::string FEVisualNodeSocket::GetType() const
 {
 	return Type;
 }
