@@ -1,13 +1,13 @@
-#include "FEVisualNodeArea.h"
+#include "VisualNodeArea.h"
 
-ImVec2 FEVisualNodeArea::NeededShift = ImVec2();
+ImVec2 VisualNodeArea::NeededShift = ImVec2();
 
-FEVisualNodeArea::FEVisualNodeArea()
+VisualNodeArea::VisualNodeArea()
 {
 	SetAreaSize(ImVec2(256, 256));
 };
 
-void FEVisualNodeArea::AddNode(FEVisualNode* NewNode)
+void VisualNodeArea::AddNode(VisualNode* NewNode)
 {
 	if (NewNode == nullptr)
 		return;
@@ -16,7 +16,7 @@ void FEVisualNodeArea::AddNode(FEVisualNode* NewNode)
 	Nodes.push_back(NewNode);
 }
 
-FEVisualNodeArea::~FEVisualNodeArea() 
+VisualNodeArea::~VisualNodeArea() 
 {
 	Clear();
 }
@@ -37,7 +37,7 @@ bool ColorPicker3U32(const char* Label, ImU32* Color)
 	return result;
 }
 
-void FEVisualNodeArea::RenderNode(FEVisualNode* Node) const
+void VisualNodeArea::RenderNode(VisualNode* Node) const
 {
 	if (CurrentDrawList == nullptr || Node == nullptr)
 		return;
@@ -45,24 +45,24 @@ void FEVisualNodeArea::RenderNode(FEVisualNode* Node) const
 	ImGui::PushID(Node->GetID().c_str());
 
 	Node->LeftTop = ImGui::GetCurrentWindow()->Pos + Node->GetPosition() + RenderOffset;
-	if (Node->GetStyle() == FE_VISUAL_NODE_STYLE_DEFAULT)
+	if (Node->GetStyle() == VISUAL_NODE_STYLE_DEFAULT)
 	{
 		Node->RightBottom = Node->LeftTop + Node->GetSize();
 	}
-	else if (Node->GetStyle() == FE_VISUAL_NODE_STYLE_CIRCLE)
+	else if (Node->GetStyle() == VISUAL_NODE_STYLE_CIRCLE)
 	{
 		Node->RightBottom = Node->LeftTop + ImVec2(NODE_DIAMETER, NODE_DIAMETER);
 	}
 
 	if (IsSelected(Node))
 	{
-		if (Node->GetStyle() == FE_VISUAL_NODE_STYLE_DEFAULT)
+		if (Node->GetStyle() == VISUAL_NODE_STYLE_DEFAULT)
 		{
 			const ImVec2 LeftTop = Node->LeftTop - ImVec2(4.0f, 4.0f);
 			const ImVec2 RightBottom = Node->RightBottom + ImVec2(4.0f, 4.0f);
 			ImGui::GetWindowDrawList()->AddRect(LeftTop, RightBottom, IM_COL32(175, 255, 175, 255), 16.0f);
 		}
-		else if (Node->GetStyle() == FE_VISUAL_NODE_STYLE_CIRCLE)
+		else if (Node->GetStyle() == VISUAL_NODE_STYLE_CIRCLE)
 		{
 			ImGui::GetWindowDrawList()->AddCircle(Node->LeftTop + ImVec2(NODE_DIAMETER / 2.0f, NODE_DIAMETER / 2.0f), NODE_DIAMETER + 4.0f, IM_COL32(175, 255, 175, 255), 32, 4.0f);
 		}
@@ -70,11 +70,11 @@ void FEVisualNodeArea::RenderNode(FEVisualNode* Node) const
 
 	CurrentDrawList->ChannelsSetCurrent(2);
 	
-	if (Node->GetStyle() == FE_VISUAL_NODE_STYLE_DEFAULT)
+	if (Node->GetStyle() == VISUAL_NODE_STYLE_DEFAULT)
 	{
 		ImGui::SetCursorScreenPos(Node->LeftTop);
 	}
-	else if (Node->GetStyle() == FE_VISUAL_NODE_STYLE_CIRCLE)
+	else if (Node->GetStyle() == VISUAL_NODE_STYLE_CIRCLE)
 	{
 		ImGui::SetCursorScreenPos(Node->LeftTop - ImVec2(NODE_DIAMETER / 2.0f - NODE_DIAMETER / 4.0f, NODE_DIAMETER / 2.0f - NODE_DIAMETER / 4.0f));
 	}
@@ -85,18 +85,18 @@ void FEVisualNodeArea::RenderNode(FEVisualNode* Node) const
 
 	// Drawing node background layer.
 	const ImU32 NodeBackgroundColor = (Hovered == Node || IsSelected(Node)) ? IM_COL32(75, 75, 75, 125) : IM_COL32(60, 60, 60, 125);
-	if (Node->GetStyle() == FE_VISUAL_NODE_STYLE_DEFAULT)
+	if (Node->GetStyle() == VISUAL_NODE_STYLE_DEFAULT)
 	{
 		CurrentDrawList->AddRectFilled(Node->LeftTop, Node->RightBottom, NodeBackgroundColor, 8.0f);
 	}
-	else if (Node->GetStyle() == FE_VISUAL_NODE_STYLE_CIRCLE)
+	else if (Node->GetStyle() == VISUAL_NODE_STYLE_CIRCLE)
 	{
 		ImGui::GetWindowDrawList()->AddCircleFilled(Node->LeftTop + (Node->RightBottom - Node->LeftTop) / 2.0f,
 													NODE_DIAMETER,
 													NodeBackgroundColor, 32);
 	}
 
-	if (Node->GetStyle() == FE_VISUAL_NODE_STYLE_DEFAULT)
+	if (Node->GetStyle() == VISUAL_NODE_STYLE_DEFAULT)
 	{
 		// Drawing caption area.
 		ImVec2 TitleArea = Node->RightBottom;
@@ -114,7 +114,7 @@ void FEVisualNodeArea::RenderNode(FEVisualNode* Node) const
 		ImGui::SetCursorScreenPos(TextPosition);
 		ImGui::Text(Node->GetName().c_str());
 	}
-	else if (Node->GetStyle() == FE_VISUAL_NODE_STYLE_CIRCLE)
+	else if (Node->GetStyle() == VISUAL_NODE_STYLE_CIRCLE)
 	{
 		CurrentDrawList->AddCircle(Node->LeftTop + ImVec2(NODE_DIAMETER / 2.0f, NODE_DIAMETER / 2.0f), NODE_DIAMETER + 2.0f, ImColor(100, 100, 100), 32, 2.0f);
 	}
@@ -124,7 +124,7 @@ void FEVisualNodeArea::RenderNode(FEVisualNode* Node) const
 	ImGui::PopID();
 }
 
-void FEVisualNodeArea::RenderNodeSockets(const FEVisualNode* Node) const
+void VisualNodeArea::RenderNodeSockets(const VisualNode* Node) const
 {
 	for (size_t i = 0; i < Node->Input.size(); i++)
 	{
@@ -137,10 +137,10 @@ void FEVisualNodeArea::RenderNodeSockets(const FEVisualNode* Node) const
 	}
 }
 
-void FEVisualNodeArea::RenderNodeSocket(FEVisualNodeSocket* Socket) const
+void VisualNodeArea::RenderNodeSocket(NodeSocket* Socket) const
 {
 	const ImVec2 SocketPosition = SocketToPosition(Socket);
-	if (Socket->GetParent()->GetStyle() == FE_VISUAL_NODE_STYLE_DEFAULT)
+	if (Socket->GetParent()->GetStyle() == VISUAL_NODE_STYLE_DEFAULT)
 	{
 		const bool Input = !Socket->bOutput;
 		// Socket description.
@@ -186,7 +186,7 @@ void FEVisualNodeArea::RenderNodeSocket(FEVisualNodeSocket* Socket) const
 	CurrentDrawList->AddCircleFilled(SocketPosition, NODE_SOCKET_SIZE, SocketColor);
 }
 
-void FEVisualNodeArea::RenderGrid(ImVec2 CurrentPosition) const
+void VisualNodeArea::RenderGrid(ImVec2 CurrentPosition) const
 {
 	CurrentDrawList->ChannelsSplit(2);
 
@@ -194,12 +194,12 @@ void FEVisualNodeArea::RenderGrid(ImVec2 CurrentPosition) const
 	CurrentPosition.y += RenderOffset.y;
 	
 	// Horizontal lines
-	const int StartingStep = static_cast<int>(ceil(-10000.0f / FE_VISUAL_NODE_GRID_STEP));
-	const int StepCount = static_cast<int>(ceil(10000.0f / FE_VISUAL_NODE_GRID_STEP));
+	const int StartingStep = static_cast<int>(ceil(-10000.0f / VISUAL_NODE_GRID_STEP));
+	const int StepCount = static_cast<int>(ceil(10000.0f / VISUAL_NODE_GRID_STEP));
 	for (int i = StartingStep; i < StepCount; i++)
 	{
-		ImVec2 from = ImVec2(CurrentPosition.x - 10000.0f , CurrentPosition.y + i * FE_VISUAL_NODE_GRID_STEP);
-		ImVec2 to = ImVec2(CurrentPosition.x + 10000.0f, CurrentPosition.y + i * FE_VISUAL_NODE_GRID_STEP);
+		ImVec2 from = ImVec2(CurrentPosition.x - 10000.0f , CurrentPosition.y + i * VISUAL_NODE_GRID_STEP);
+		ImVec2 to = ImVec2(CurrentPosition.x + 10000.0f, CurrentPosition.y + i * VISUAL_NODE_GRID_STEP);
 
 		if (i % 10 != 0)
 		{
@@ -216,8 +216,8 @@ void FEVisualNodeArea::RenderGrid(ImVec2 CurrentPosition) const
 	// Vertical lines
 	for (int i = StartingStep; i < StepCount; i++)
 	{
-		ImVec2 from = ImVec2(CurrentPosition.x + i * FE_VISUAL_NODE_GRID_STEP, CurrentPosition.y - 10000.0f);
-		ImVec2 to = ImVec2(CurrentPosition.x + i * FE_VISUAL_NODE_GRID_STEP, CurrentPosition.y + 10000.0f);
+		ImVec2 from = ImVec2(CurrentPosition.x + i * VISUAL_NODE_GRID_STEP, CurrentPosition.y - 10000.0f);
+		ImVec2 to = ImVec2(CurrentPosition.x + i * VISUAL_NODE_GRID_STEP, CurrentPosition.y + 10000.0f);
 
 		if (i % 10 != 0)
 		{
@@ -234,7 +234,7 @@ void FEVisualNodeArea::RenderGrid(ImVec2 CurrentPosition) const
 	CurrentDrawList->ChannelsMerge();
 }
 
-void FEVisualNodeArea::Render()
+void VisualNodeArea::Render()
 {
 	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(1, 1));
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
@@ -310,12 +310,12 @@ void FEVisualNodeArea::Render()
 	ImGui::PopStyleVar(2);
 }
 
-ImVec2 FEVisualNodeArea::GetAreaSize() const
+ImVec2 VisualNodeArea::GetAreaSize() const
 {
 	return AreaSize;
 }
 
-void FEVisualNodeArea::SetAreaSize(const ImVec2 NewValue)
+void VisualNodeArea::SetAreaSize(const ImVec2 NewValue)
 {
 	if (NewValue.x < 1 || NewValue.y < 1)
 		return;
@@ -323,12 +323,12 @@ void FEVisualNodeArea::SetAreaSize(const ImVec2 NewValue)
 	AreaSize = NewValue;
 }
 
-ImVec2 FEVisualNodeArea::GetAreaPosition() const
+ImVec2 VisualNodeArea::GetAreaPosition() const
 {
 	return AreaPosition;
 }
 
-void FEVisualNodeArea::SetAreaPosition(const ImVec2 NewValue)
+void VisualNodeArea::SetAreaPosition(const ImVec2 NewValue)
 {
 	if (NewValue.x < 0 || NewValue.y < 0)
 		return;
@@ -336,7 +336,7 @@ void FEVisualNodeArea::SetAreaPosition(const ImVec2 NewValue)
 	AreaPosition = NewValue;
 }
 
-void FEVisualNodeArea::DrawHermiteLine(const ImVec2 P1, const ImVec2 P2, const int Steps, const ImColor Color) const
+void VisualNodeArea::DrawHermiteLine(const ImVec2 P1, const ImVec2 P2, const int Steps, const ImColor Color) const
 {
 	const ImVec2 t1 = ImVec2(80.0f, 0.0f);
 	const ImVec2 t2 = ImVec2(80.0f, 0.0f);
@@ -354,7 +354,7 @@ void FEVisualNodeArea::DrawHermiteLine(const ImVec2 P1, const ImVec2 P2, const i
 	CurrentDrawList->PathStroke(Color, false, 3.0f);
 }
 
-void FEVisualNodeArea::RenderConnection(const FEVisualNodeConnection* Connection) const
+void VisualNodeArea::RenderConnection(const VisualNodeConnection* Connection) const
 {
 	if (Connection->Out == nullptr || Connection->In == nullptr)
 		return;
@@ -366,7 +366,7 @@ void FEVisualNodeArea::RenderConnection(const FEVisualNodeConnection* Connection
 	DrawHermiteLine(SocketToPosition(Connection->Out), SocketToPosition(Connection->In), 12, ConnectionColor);
 }
 
-ImVec2 FEVisualNodeArea::SocketToPosition(const FEVisualNodeSocket* Socket) const
+ImVec2 VisualNodeArea::SocketToPosition(const NodeSocket* Socket) const
 {
 	const bool Input = !Socket->bOutput;
 	float SocketX = 0.0f;
@@ -396,7 +396,7 @@ ImVec2 FEVisualNodeArea::SocketToPosition(const FEVisualNodeSocket* Socket) cons
 		}
 	}
 
-	if (Socket->GetParent()->GetStyle() == FE_VISUAL_NODE_STYLE_DEFAULT)
+	if (Socket->GetParent()->GetStyle() == VISUAL_NODE_STYLE_DEFAULT)
 	{
 		SocketX = Input ? Socket->Parent->LeftTop.x + NODE_SOCKET_SIZE * 3 : Socket->Parent->RightBottom.x - NODE_SOCKET_SIZE * 3;
 
@@ -405,7 +405,7 @@ ImVec2 FEVisualNodeArea::SocketToPosition(const FEVisualNodeSocket* Socket) cons
 
 		SocketY = Socket->Parent->LeftTop.y + NODE_TITLE_HEIGHT + SocketSpacing * (SocketIndex + 1) - SocketSpacing / 2.0f;
 	}
-	else if (Socket->GetParent()->GetStyle() == FE_VISUAL_NODE_STYLE_CIRCLE)
+	else if (Socket->GetParent()->GetStyle() == VISUAL_NODE_STYLE_CIRCLE)
 	{
 		const size_t SocketCount = Input ? Socket->Parent->Input.size() : Socket->Parent->Output.size();
 		float BeginAngle = (180.0f / static_cast<float>(SocketCount) / 2.0f);
@@ -428,7 +428,7 @@ ImVec2 FEVisualNodeArea::SocketToPosition(const FEVisualNodeSocket* Socket) cons
 	return {SocketX, SocketY};
 }
 
-void FEVisualNodeArea::Update()
+void VisualNodeArea::Update()
 {
 	InputUpdate();
 
@@ -445,9 +445,9 @@ void FEVisualNodeArea::Update()
 	Render();
 }
 
-std::vector<FEVisualNodeConnection*> FEVisualNodeArea::GetAllConnections(const FEVisualNodeSocket* Socket) const
+std::vector<VisualNodeConnection*> VisualNodeArea::GetAllConnections(const NodeSocket* Socket) const
 {
-	std::vector<FEVisualNodeConnection*> result;
+	std::vector<VisualNodeConnection*> result;
 
 	for (size_t i = 0; i < Connections.size(); i++)
 	{
@@ -458,22 +458,22 @@ std::vector<FEVisualNodeConnection*> FEVisualNodeArea::GetAllConnections(const F
 	return result;
 }
 
-void FEVisualNodeArea::Disconnect(FEVisualNodeConnection*& Connection)
+void VisualNodeArea::Disconnect(VisualNodeConnection*& Connection)
 {
 	for (int i = 0; i < static_cast<int>(Connection->In->Connections.size()); i++)
 	{
 		if (Connection->In->Connections[i] == Connection->Out)
 		{
-			FEVisualNode* parent = Connection->In->Connections[i]->Parent;
+			VisualNode* parent = Connection->In->Connections[i]->Parent;
 			if (!bClearing)
-				PropagateNodeEventsCallbacks(parent, FE_VISUAL_NODE_BEFORE_DISCONNECTED);
+				PropagateNodeEventsCallbacks(parent, VISUAL_NODE_BEFORE_DISCONNECTED);
 
 			Connection->In->Connections.erase(Connection->In->Connections.begin() + i, Connection->In->Connections.begin() + i + 1);
-			Connection->In->Parent->SocketEvent(Connection->In, Connection->Out, bClearing ? FE_VISUAL_NODE_SOCKET_DESTRUCTION : FE_VISUAL_NODE_SOCKET_DISCONNECTED);
+			Connection->In->Parent->SocketEvent(Connection->In, Connection->Out, bClearing ? VISUAL_NODE_SOCKET_DESTRUCTION : VISUAL_NODE_SOCKET_DISCONNECTED);
 			i--;
 
 			if (!bClearing)
-				PropagateNodeEventsCallbacks(parent, FE_VISUAL_NODE_AFTER_DISCONNECTED);
+				PropagateNodeEventsCallbacks(parent, VISUAL_NODE_AFTER_DISCONNECTED);
 		}
 	}
 
@@ -481,15 +481,15 @@ void FEVisualNodeArea::Disconnect(FEVisualNodeConnection*& Connection)
 	{
 		if (Connection->Out->Connections[i] == Connection->In)
 		{
-			FEVisualNode* parent = Connection->Out->Connections[i]->Parent;
+			VisualNode* parent = Connection->Out->Connections[i]->Parent;
 			if (!bClearing)
-				PropagateNodeEventsCallbacks(parent, FE_VISUAL_NODE_BEFORE_DISCONNECTED);
+				PropagateNodeEventsCallbacks(parent, VISUAL_NODE_BEFORE_DISCONNECTED);
 
 			Connection->Out->Connections.erase(Connection->Out->Connections.begin() + i, Connection->Out->Connections.begin() + i + 1);
 			i--;
 
 			if (!bClearing)
-				PropagateNodeEventsCallbacks(parent, FE_VISUAL_NODE_AFTER_DISCONNECTED);
+				PropagateNodeEventsCallbacks(parent, VISUAL_NODE_AFTER_DISCONNECTED);
 		}
 	}
 
@@ -505,7 +505,7 @@ void FEVisualNodeArea::Disconnect(FEVisualNodeConnection*& Connection)
 	}
 }
 
-void FEVisualNodeArea::DeleteNode(const FEVisualNode* Node)
+void VisualNodeArea::DeleteNode(const VisualNode* Node)
 {
 	if (!Node->bCouldBeDestroyed)
 		return;
@@ -514,7 +514,7 @@ void FEVisualNodeArea::DeleteNode(const FEVisualNode* Node)
 	{
 		if (Nodes[i] == Node)
 		{
-			PropagateNodeEventsCallbacks(Nodes[i], FE_VISUAL_NODE_REMOVED);
+			PropagateNodeEventsCallbacks(Nodes[i], VISUAL_NODE_REMOVED);
 
 			for (size_t j = 0; j < Nodes[i]->Input.size(); j++)
 			{
@@ -542,18 +542,18 @@ void FEVisualNodeArea::DeleteNode(const FEVisualNode* Node)
 	}
 }
 
-void FEVisualNodeArea::SetMainContextMenuFunc(void(*Func)())
+void VisualNodeArea::SetMainContextMenuFunc(void(*Func)())
 {
 	MainContextMenuFunc = Func;
 }
 
-void FEVisualNodeArea::Clear()
+void VisualNodeArea::Clear()
 {
 	bClearing = true;
 
 	for (int i = 0; i < static_cast<int>(Nodes.size()); i++)
 	{
-		PropagateNodeEventsCallbacks(Nodes[i], FE_VISUAL_NODE_DESTROYED);
+		PropagateNodeEventsCallbacks(Nodes[i], VISUAL_NODE_DESTROYED);
 		Nodes[i]->bCouldBeDestroyed = true;
 		DeleteNode(Nodes[i]);
 		i--;
@@ -571,7 +571,7 @@ void FEVisualNodeArea::Clear()
 	bClearing = false;
 }
 
-void FEVisualNodeArea::Reset()
+void VisualNodeArea::Reset()
 {
 	Clear();
 
@@ -579,7 +579,7 @@ void FEVisualNodeArea::Reset()
 	NodeEventsCallbacks.clear();
 }
 
-void FEVisualNodeArea::PropagateUpdateToConnectedNodes(const FEVisualNode* CallerNode) const
+void VisualNodeArea::PropagateUpdateToConnectedNodes(const VisualNode* CallerNode) const
 {
 	if (CallerNode == nullptr)
 		return;
@@ -589,7 +589,7 @@ void FEVisualNodeArea::PropagateUpdateToConnectedNodes(const FEVisualNode* Calle
 		auto connections = GetAllConnections(CallerNode->Input[i]);
 		for (size_t j = 0; j < connections.size(); j++)
 		{
-			connections[j]->In->GetParent()->SocketEvent(connections[j]->In, connections[j]->Out, FE_VISUAL_NODE_SOCKET_UPDATE);
+			connections[j]->In->GetParent()->SocketEvent(connections[j]->In, connections[j]->Out, VISUAL_NODE_SOCKET_UPDATE);
 		}
 	}
 
@@ -598,17 +598,17 @@ void FEVisualNodeArea::PropagateUpdateToConnectedNodes(const FEVisualNode* Calle
 		auto connections = GetAllConnections(CallerNode->Output[i]);
 		for (size_t j = 0; j < connections.size(); j++)
 		{
-			connections[j]->In->GetParent()->SocketEvent(connections[j]->In, connections[j]->Out, FE_VISUAL_NODE_SOCKET_UPDATE);
+			connections[j]->In->GetParent()->SocketEvent(connections[j]->In, connections[j]->Out, VISUAL_NODE_SOCKET_UPDATE);
 		}
 	}
 }
 
-ImVec2 FEVisualNodeArea::GetAreaRenderOffset() const
+ImVec2 VisualNodeArea::GetAreaRenderOffset() const
 {
 	return RenderOffset;
 }
 
-void FEVisualNodeArea::SetAreaRenderOffset(const ImVec2 Offset)
+void VisualNodeArea::SetAreaRenderOffset(const ImVec2 Offset)
 {
 	if (Offset.x <= -10000.0f || Offset.x >= 10000.0f ||
 		Offset.y <= -10000.0f || Offset.y >= 10000.0f)
@@ -617,7 +617,7 @@ void FEVisualNodeArea::SetAreaRenderOffset(const ImVec2 Offset)
 	RenderOffset = Offset;
 }
 
-bool FEVisualNodeArea::TryToConnect(const FEVisualNode* OutNode, const size_t OutNodeSocketIndex, const FEVisualNode* InNode, const size_t InNodeSocketIndex)
+bool VisualNodeArea::TryToConnect(const VisualNode* OutNode, const size_t OutNodeSocketIndex, const VisualNode* InNode, const size_t InNodeSocketIndex)
 {
 	if (OutNode->Output.size() <= OutNodeSocketIndex)
 		return false;
@@ -625,39 +625,39 @@ bool FEVisualNodeArea::TryToConnect(const FEVisualNode* OutNode, const size_t Ou
 	if (InNode->Input.size() <= InNodeSocketIndex)
 		return false;
 
-	FEVisualNodeSocket* OutSocket = OutNode->Output[OutNodeSocketIndex];
-	FEVisualNodeSocket* InSocket = InNode->Input[InNodeSocketIndex];
+	NodeSocket* OutSocket = OutNode->Output[OutNodeSocketIndex];
+	NodeSocket* InSocket = InNode->Input[InNodeSocketIndex];
 
 	char* msg = nullptr;
 	const bool result = InSocket->GetParent()->CanConnect(InSocket, OutSocket, &msg);
 
 	if (result)
 	{
-		PropagateNodeEventsCallbacks(OutSocket->GetParent(), FE_VISUAL_NODE_BEFORE_CONNECTED);
-		PropagateNodeEventsCallbacks(InSocket->GetParent(), FE_VISUAL_NODE_BEFORE_CONNECTED);
+		PropagateNodeEventsCallbacks(OutSocket->GetParent(), VISUAL_NODE_BEFORE_CONNECTED);
+		PropagateNodeEventsCallbacks(InSocket->GetParent(), VISUAL_NODE_BEFORE_CONNECTED);
 
 		OutSocket->Connections.push_back(InSocket);
 		InSocket->Connections.push_back(OutSocket);
 
-		Connections.push_back(new FEVisualNodeConnection(OutSocket, InSocket));
+		Connections.push_back(new VisualNodeConnection(OutSocket, InSocket));
 
-		OutSocket->GetParent()->SocketEvent(OutSocket, InSocket, FE_VISUAL_NODE_SOCKET_CONNECTED);
-		InSocket->GetParent()->SocketEvent(InSocket, OutSocket, FE_VISUAL_NODE_SOCKET_CONNECTED);
+		OutSocket->GetParent()->SocketEvent(OutSocket, InSocket, VISUAL_NODE_SOCKET_CONNECTED);
+		InSocket->GetParent()->SocketEvent(InSocket, OutSocket, VISUAL_NODE_SOCKET_CONNECTED);
 
-		PropagateNodeEventsCallbacks(OutSocket->GetParent(), FE_VISUAL_NODE_AFTER_CONNECTED);
-		PropagateNodeEventsCallbacks(InSocket->GetParent(), FE_VISUAL_NODE_AFTER_CONNECTED);
+		PropagateNodeEventsCallbacks(OutSocket->GetParent(), VISUAL_NODE_AFTER_CONNECTED);
+		PropagateNodeEventsCallbacks(InSocket->GetParent(), VISUAL_NODE_AFTER_CONNECTED);
 	}
 
 	return result;
 }
 
-void FEVisualNodeArea::SetNodeEventCallback(void(*Func)(FEVisualNode*, FE_VISUAL_NODE_EVENT))
+void VisualNodeArea::SetNodeEventCallback(void(*Func)(VisualNode*, VISUAL_NODE_EVENT))
 {
 	if (Func != nullptr)
 		NodeEventsCallbacks.push_back(Func);
 }
 
-void FEVisualNodeArea::PropagateNodeEventsCallbacks(FEVisualNode* Node, const FE_VISUAL_NODE_EVENT EventToPropagate) const
+void VisualNodeArea::PropagateNodeEventsCallbacks(VisualNode* Node, const VISUAL_NODE_EVENT EventToPropagate) const
 {
 	for (size_t i = 0; i < NodeEventsCallbacks.size(); i++)
 	{
@@ -666,7 +666,7 @@ void FEVisualNodeArea::PropagateNodeEventsCallbacks(FEVisualNode* Node, const FE
 	}
 }
 
-void FEVisualNodeArea::SaveToFile(const char* FileName) const
+void VisualNodeArea::SaveToFile(const char* FileName) const
 {
 	const std::string json_file = ToJson();
 	std::ofstream SaveFile;
@@ -675,7 +675,7 @@ void FEVisualNodeArea::SaveToFile(const char* FileName) const
 	SaveFile.close();
 }
 
-bool FEVisualNodeArea::IsNodeIDInList(const std::string ID, const std::vector<FEVisualNode*> List)
+bool VisualNodeArea::IsNodeIDInList(const std::string ID, const std::vector<VisualNode*> List)
 {
 	for (size_t i = 0; i < List.size(); i++)
 	{
@@ -686,12 +686,12 @@ bool FEVisualNodeArea::IsNodeIDInList(const std::string ID, const std::vector<FE
 	return false;
 }
 
-void FEVisualNodeArea::SaveNodesToFile(const char* FileName, std::vector<FEVisualNode*> Nodes)
+void VisualNodeArea::SaveNodesToFile(const char* FileName, std::vector<VisualNode*> Nodes)
 {
 	if (Nodes.empty())
 		return;
 
-	const FEVisualNodeArea* NewNodeArea = FEVisualNodeArea::CreateNodeArea(Nodes);
+	const VisualNodeArea* NewNodeArea = VisualNodeArea::CreateNodeArea(Nodes);
 	const std::string json_file = NewNodeArea->ToJson();
 	std::ofstream SaveFile;
 	SaveFile.open(FileName);
@@ -700,23 +700,23 @@ void FEVisualNodeArea::SaveNodesToFile(const char* FileName, std::vector<FEVisua
 	delete NewNodeArea;
 }
 
-void FEVisualNodeArea::RunOnEachNode(void(*Func)(FEVisualNode*))
+void VisualNodeArea::RunOnEachNode(void(*Func)(VisualNode*))
 {
 	if (Func != nullptr)
 		std::for_each(Nodes.begin(), Nodes.end(), Func);
 }
 
-FEVisualNode* FEVisualNodeArea::GetHovered() const
+VisualNode* VisualNodeArea::GetHovered() const
 {
 	return Hovered;
 }
 
-std::vector<FEVisualNode*> FEVisualNodeArea::GetSelected()
+std::vector<VisualNode*> VisualNodeArea::GetSelected()
 {
 	return Selected;
 }
 
-void FEVisualNodeArea::InputUpdate()
+void VisualNodeArea::InputUpdate()
 {
 	MouseCursorPosition = ImVec2(ImGui::GetIO().MousePos.x, ImGui::GetIO().MousePos.y);
 	Hovered = nullptr;
@@ -776,7 +776,7 @@ void FEVisualNodeArea::InputUpdate()
 
 			for (size_t i = 0; i < Nodes.size(); i++)
 			{
-				if (Nodes[i]->GetStyle() == FE_VISUAL_NODE_STYLE_DEFAULT)
+				if (Nodes[i]->GetStyle() == VISUAL_NODE_STYLE_DEFAULT)
 				{
 					if (Nodes[i]->LeftTop.x < MouseSelectRegionMin.x + RegionSize.x &&
 						Nodes[i]->LeftTop.x + Nodes[i]->GetSize().x > MouseSelectRegionMin.x &&
@@ -786,7 +786,7 @@ void FEVisualNodeArea::InputUpdate()
 						AddSelected(Nodes[i]);
 					}
 				}
-				else if (Nodes[i]->GetStyle() == FE_VISUAL_NODE_STYLE_CIRCLE)
+				else if (Nodes[i]->GetStyle() == VISUAL_NODE_STYLE_CIRCLE)
 				{
 					if (Nodes[i]->LeftTop.x < MouseSelectRegionMin.x + RegionSize.x &&
 						Nodes[i]->LeftTop.x + NODE_DIAMETER > MouseSelectRegionMin.x &&
@@ -851,7 +851,7 @@ void FEVisualNodeArea::InputUpdate()
 			// Should we disconnect sockets
 			if (SocketHovered != nullptr && !SocketHovered->Connections.empty())
 			{
-				std::vector<FEVisualNodeConnection*> ImpactedConnections = GetAllConnections(SocketHovered);
+				std::vector<VisualNodeConnection*> ImpactedConnections = GetAllConnections(SocketHovered);
 				for (size_t i = 0; i < ImpactedConnections.size(); i++)
 				{
 					Disconnect(ImpactedConnections[i]);
@@ -944,7 +944,7 @@ void FEVisualNodeArea::InputUpdate()
 		{
 			if (!Selected.empty())
 			{
-				const FEVisualNodeArea* NewNodeArea = FEVisualNodeArea::CreateNodeArea(Selected);
+				const VisualNodeArea* NewNodeArea = VisualNodeArea::CreateNodeArea(Selected);
 				APPLICATION.SetClipboardText(NewNodeArea->ToJson());
 				delete NewNodeArea;
 			}
@@ -965,7 +965,7 @@ void FEVisualNodeArea::InputUpdate()
 				if (!reader->parse(NodesToImport.c_str(), NodesToImport.c_str() + NodesToImport.size(), &data, &err))
 					return;
 
-				FEVisualNodeArea* NewNodeArea = FEVisualNodeArea::FromJson(NodesToImport);
+				VisualNodeArea* NewNodeArea = VisualNodeArea::FromJson(NodesToImport);
 
 				// ***************** Place new nodes in center of a view space *****************
 				const ImVec2 ViewCenter = GetRenderedViewCenter();
@@ -974,12 +974,12 @@ void FEVisualNodeArea::InputUpdate()
 
 				NeededShift = ViewCenter - NodesAABBCenter;
 
-				NewNodeArea->RunOnEachNode([](FEVisualNode* Node) {
+				NewNodeArea->RunOnEachNode([](VisualNode* Node) {
 					Node->SetPosition(Node->GetPosition() + NeededShift);
 				});
 				// ***************** Place new nodes in center of a view space END *****************
 				
-				FEVisualNodeArea::CopyNodesTo(NewNodeArea, this);
+				VisualNodeArea::CopyNodesTo(NewNodeArea, this);
 				
 				// Select pasted nodes.
 				Selected.clear();
@@ -997,9 +997,9 @@ void FEVisualNodeArea::InputUpdate()
 		WasCopiedToClipboard = false;
 }
 
-void FEVisualNodeArea::InputUpdateNode(FEVisualNode* Node)
+void VisualNodeArea::InputUpdateNode(VisualNode* Node)
 {
-	if (Node->GetStyle() == FE_VISUAL_NODE_STYLE_DEFAULT)
+	if (Node->GetStyle() == VISUAL_NODE_STYLE_DEFAULT)
 	{
 		if (Node->LeftTop.x < MouseCursorPosition.x + MouseCursorSize.x &&
 			Node->LeftTop.x + Node->GetSize().x > MouseCursorPosition.x &&
@@ -1010,7 +1010,7 @@ void FEVisualNodeArea::InputUpdateNode(FEVisualNode* Node)
 			Node->SetIsHovered(true);
 		}
 	}
-	else if (Node->GetStyle() == FE_VISUAL_NODE_STYLE_CIRCLE)
+	else if (Node->GetStyle() == VISUAL_NODE_STYLE_CIRCLE)
 	{
 		if (glm::distance(glm::vec2(Node->LeftTop.x + NODE_DIAMETER / 2.0f, Node->LeftTop.y + NODE_DIAMETER / 2.0f),
 						  glm::vec2(MouseCursorPosition.x, MouseCursorPosition.y)) <= NODE_DIAMETER)
@@ -1034,7 +1034,7 @@ void FEVisualNodeArea::InputUpdateNode(FEVisualNode* Node)
 	}
 }
 
-void FEVisualNodeArea::InputUpdateSocket(FEVisualNodeSocket* Socket)
+void VisualNodeArea::InputUpdateSocket(NodeSocket* Socket)
 {
 	const ImVec2 SocketPosition = SocketToPosition(Socket);
 	if (MouseCursorPosition.x >= SocketPosition.x - NODE_SOCKET_SIZE &&
@@ -1049,7 +1049,7 @@ void FEVisualNodeArea::InputUpdateSocket(FEVisualNodeSocket* Socket)
 		SocketLookingForConnection = Socket;
 }
 
-bool FEVisualNodeArea::AddSelected(FEVisualNode* NewNode)
+bool VisualNodeArea::AddSelected(VisualNode* NewNode)
 {
 	if (NewNode == nullptr)
 		return false;
@@ -1064,7 +1064,7 @@ bool FEVisualNodeArea::AddSelected(FEVisualNode* NewNode)
 	return true;
 }
 
-bool FEVisualNodeArea::IsSelected(const FEVisualNode* Node) const
+bool VisualNodeArea::IsSelected(const VisualNode* Node) const
 {
 	if (Node == nullptr)
 		return false;
@@ -1078,12 +1078,12 @@ bool FEVisualNodeArea::IsSelected(const FEVisualNode* Node) const
 	return false;
 }
 
-void FEVisualNodeArea::ClearSelection()
+void VisualNodeArea::ClearSelection()
 {
 	Selected.clear();
 }
 
-void FEVisualNodeArea::GetAllNodesAABB(ImVec2& Min, ImVec2& Max) const
+void VisualNodeArea::GetAllNodesAABB(ImVec2& Min, ImVec2& Max) const
 {
 	Min.x = FLT_MAX;
 	Min.y = FLT_MAX;
@@ -1107,7 +1107,7 @@ void FEVisualNodeArea::GetAllNodesAABB(ImVec2& Min, ImVec2& Max) const
 	}
 }
 
-ImVec2 FEVisualNodeArea::GetAllNodesAABBCenter() const
+ImVec2 VisualNodeArea::GetAllNodesAABBCenter() const
 {
 	ImVec2 min, max;
 	GetAllNodesAABB(min, max);
@@ -1115,7 +1115,7 @@ ImVec2 FEVisualNodeArea::GetAllNodesAABBCenter() const
 	return {min.x + (max.x - min.x) / 2.0f, min.y + (max.y - min.y) / 2.0f};
 }
 
-ImVec2 FEVisualNodeArea::GetRenderedViewCenter() const
+ImVec2 VisualNodeArea::GetRenderedViewCenter() const
 {
 	if (NodeAreaWindow != nullptr)
 	{
@@ -1127,14 +1127,14 @@ ImVec2 FEVisualNodeArea::GetRenderedViewCenter() const
 	}
 }
 
-void FEVisualNodeArea::RunOnEachConnectedNode(FEVisualNode* StartNode, void(*Func)(FEVisualNode*))
+void VisualNodeArea::RunOnEachConnectedNode(VisualNode* StartNode, void(*Func)(VisualNode*))
 {
 	if (Func == nullptr)
 		return;
 
-	static std::unordered_map<FEVisualNode*, bool> SeenNodes;
+	static std::unordered_map<VisualNode*, bool> SeenNodes;
 	SeenNodes.clear();
-	auto bWasNodeSeen = [](FEVisualNode* Node) {
+	auto bWasNodeSeen = [](VisualNode* Node) {
 		if (SeenNodes.find(Node) == SeenNodes.end())
 		{
 			SeenNodes[Node] = true;
@@ -1144,7 +1144,7 @@ void FEVisualNodeArea::RunOnEachConnectedNode(FEVisualNode* StartNode, void(*Fun
 		return true;
 	};
 	
-	std::vector<FEVisualNode*> CurrentNodes;
+	std::vector<VisualNode*> CurrentNodes;
 	CurrentNodes.push_back(StartNode);
 	if (bWasNodeSeen(StartNode))
 		return;
@@ -1161,7 +1161,7 @@ void FEVisualNodeArea::RunOnEachConnectedNode(FEVisualNode* StartNode, void(*Fun
 
 			Func(CurrentNodes[i]);
 
-			std::vector<FEVisualNode*> NewNodes = CurrentNodes[i]->GetConnectedNodes();
+			std::vector<VisualNode*> NewNodes = CurrentNodes[i]->GetConnectedNodes();
 			for (size_t j = 0; j < NewNodes.size(); j++)
 			{
 				CurrentNodes.push_back(NewNodes[j]);
@@ -1175,7 +1175,7 @@ void FEVisualNodeArea::RunOnEachConnectedNode(FEVisualNode* StartNode, void(*Fun
 	}
 }
 
-bool FEVisualNodeArea::TryToConnect(const FEVisualNode* OutNode, const std::string OutSocketID, const FEVisualNode* InNode, const std::string InSocketID)
+bool VisualNodeArea::TryToConnect(const VisualNode* OutNode, const std::string OutSocketID, const VisualNode* InNode, const std::string InSocketID)
 {
 	size_t OutSocketIndex = 0;
 	for (size_t i = 0; i < OutNode->Output.size(); i++)
@@ -1200,18 +1200,18 @@ bool FEVisualNodeArea::TryToConnect(const FEVisualNode* OutNode, const std::stri
 	return TryToConnect(OutNode, OutSocketIndex, InNode, InSocketIndex);
 }
 
-FEVisualNodeArea* FEVisualNodeArea::CreateNodeArea(const std::vector<FEVisualNode*> Nodes)
+VisualNodeArea* VisualNodeArea::CreateNodeArea(const std::vector<VisualNode*> Nodes)
 {
-	FEVisualNodeArea* NewArea = new FEVisualNodeArea();
+	VisualNodeArea* NewArea = new VisualNodeArea();
 
 	// Copy all nodes to new node area.
-	std::unordered_map<FEVisualNode*, FEVisualNode*> OldToNewNode;
-	std::unordered_map<FEVisualNodeSocket*, FEVisualNodeSocket*> OldToNewSocket;
+	std::unordered_map<VisualNode*, VisualNode*> OldToNewNode;
+	std::unordered_map<NodeSocket*, NodeSocket*> OldToNewSocket;
 	for (size_t i = 0; i < Nodes.size(); i++)
 	{
-		FEVisualNode* CopyOfNode = FEVisualNode::CopyChild(Nodes[i]->GetType(), Nodes[i]);
+		VisualNode* CopyOfNode = VisualNode::CopyChild(Nodes[i]->GetType(), Nodes[i]);
 		if (CopyOfNode == nullptr)
-			CopyOfNode = new FEVisualNode(*Nodes[i]);
+			CopyOfNode = new VisualNode(*Nodes[i]);
 		CopyOfNode->ParentArea = NewArea;
 
 		//newArea->nodes.push_back(copyOfNode);
@@ -1257,7 +1257,7 @@ FEVisualNodeArea* FEVisualNodeArea::CreateNodeArea(const std::vector<FEVisualNod
 					}
 
 					if (bShouldAdd)
-						NewArea->Connections.push_back(new FEVisualNodeConnection(OldToNewSocket[Nodes[i]->Input[j]->Connections[k]], OldToNewSocket[Nodes[i]->Input[j]]));
+						NewArea->Connections.push_back(new VisualNodeConnection(OldToNewSocket[Nodes[i]->Input[j]->Connections[k]], OldToNewSocket[Nodes[i]->Input[j]]));
 				}
 			}
 		}
@@ -1285,7 +1285,7 @@ FEVisualNodeArea* FEVisualNodeArea::CreateNodeArea(const std::vector<FEVisualNod
 					}
 
 					if (bShouldAdd)
-						NewArea->Connections.push_back(new FEVisualNodeConnection(OldToNewSocket[Nodes[i]->Output[j]], OldToNewSocket[Nodes[i]->Output[j]->Connections[k]]));
+						NewArea->Connections.push_back(new VisualNodeConnection(OldToNewSocket[Nodes[i]->Output[j]], OldToNewSocket[Nodes[i]->Output[j]->Connections[k]]));
 				}
 			}
 		}
@@ -1294,7 +1294,7 @@ FEVisualNodeArea* FEVisualNodeArea::CreateNodeArea(const std::vector<FEVisualNod
 	return NewArea;
 }
 
-std::string FEVisualNodeArea::ToJson() const
+std::string VisualNodeArea::ToJson() const
 {
 	Json::Value root;
 	std::ofstream SaveFile;
@@ -1340,9 +1340,9 @@ std::string FEVisualNodeArea::ToJson() const
 	return JsonText;
 }
 
-FEVisualNodeArea* FEVisualNodeArea::FromJson(std::string JsonText)
+VisualNodeArea* VisualNodeArea::FromJson(std::string JsonText)
 {
-	FEVisualNodeArea* NewArea = new FEVisualNodeArea();
+	VisualNodeArea* NewArea = new VisualNodeArea();
 
 	if (JsonText.find("{") == std::string::npos || JsonText.find("}") == std::string::npos || JsonText.find(":") == std::string::npos)
 		return NewArea;
@@ -1358,12 +1358,12 @@ FEVisualNodeArea* FEVisualNodeArea::FromJson(std::string JsonText)
 	if (!root.isMember("nodes"))
 		return NewArea;
 
-	std::unordered_map<std::string, FEVisualNode*> LoadedNodes;
+	std::unordered_map<std::string, VisualNode*> LoadedNodes;
 	std::vector<Json::String> NodesList = root["nodes"].getMemberNames();
 	for (size_t i = 0; i < NodesList.size(); i++)
 	{
 		std::string NodeType = root["nodes"][std::to_string(i)]["nodeType"].asCString();
-		FEVisualNode* NewNode = FEVisualNode::ConstructChild(NodeType, root["nodes"][std::to_string(i)]);
+		VisualNode* NewNode = VisualNode::ConstructChild(NodeType, root["nodes"][std::to_string(i)]);
 
 		if (NewNode != nullptr)
 		{
@@ -1395,18 +1395,18 @@ FEVisualNodeArea* FEVisualNodeArea::FromJson(std::string JsonText)
 	return NewArea;
 }
 
-void FEVisualNodeArea::CopyNodesTo(FEVisualNodeArea* SourceNodeArea, FEVisualNodeArea* TargetNodeArea)
+void VisualNodeArea::CopyNodesTo(VisualNodeArea* SourceNodeArea, VisualNodeArea* TargetNodeArea)
 {
 	const size_t NodeShift = TargetNodeArea->Nodes.size();
 
 	// Copy all nodes to new node area.
-	std::unordered_map<FEVisualNode*, FEVisualNode*> OldToNewNode;
-	std::unordered_map<FEVisualNodeSocket*, FEVisualNodeSocket*> OldToNewSocket;
+	std::unordered_map<VisualNode*, VisualNode*> OldToNewNode;
+	std::unordered_map<NodeSocket*, NodeSocket*> OldToNewSocket;
 	for (size_t i = 0; i < SourceNodeArea->Nodes.size(); i++)
 	{
-		FEVisualNode* CopyOfNode = FEVisualNode::CopyChild(SourceNodeArea->Nodes[i]->GetType(), SourceNodeArea->Nodes[i]);
+		VisualNode* CopyOfNode = VisualNode::CopyChild(SourceNodeArea->Nodes[i]->GetType(), SourceNodeArea->Nodes[i]);
 		if (CopyOfNode == nullptr)
-			CopyOfNode = new FEVisualNode(*SourceNodeArea->Nodes[i]);
+			CopyOfNode = new VisualNode(*SourceNodeArea->Nodes[i]);
 		CopyOfNode->ParentArea = SourceNodeArea;
 
 		//targetNodeArea->nodes.push_back(copyOfNode);
@@ -1452,7 +1452,7 @@ void FEVisualNodeArea::CopyNodesTo(FEVisualNodeArea* SourceNodeArea, FEVisualNod
 					}
 
 					if (bShouldAdd)
-						TargetNodeArea->Connections.push_back(new FEVisualNodeConnection(OldToNewSocket[SourceNodeArea->Nodes[i]->Input[j]->Connections[k]], OldToNewSocket[SourceNodeArea->Nodes[i]->Input[j]]));
+						TargetNodeArea->Connections.push_back(new VisualNodeConnection(OldToNewSocket[SourceNodeArea->Nodes[i]->Input[j]->Connections[k]], OldToNewSocket[SourceNodeArea->Nodes[i]->Input[j]]));
 				}
 			}
 		}
@@ -1480,14 +1480,14 @@ void FEVisualNodeArea::CopyNodesTo(FEVisualNodeArea* SourceNodeArea, FEVisualNod
 					}
 
 					if (bShouldAdd)
-						TargetNodeArea->Connections.push_back(new FEVisualNodeConnection(OldToNewSocket[SourceNodeArea->Nodes[i]->Output[j]], OldToNewSocket[SourceNodeArea->Nodes[i]->Output[j]->Connections[k]]));
+						TargetNodeArea->Connections.push_back(new VisualNodeConnection(OldToNewSocket[SourceNodeArea->Nodes[i]->Output[j]], OldToNewSocket[SourceNodeArea->Nodes[i]->Output[j]->Connections[k]]));
 				}
 			}
 		}
 	}
 }
 
-void FEVisualNodeArea::LoadFromFile(const char* FileName)
+void VisualNodeArea::LoadFromFile(const char* FileName)
 {
 	std::ifstream NodesFile;
 	NodesFile.open(FileName);
@@ -1495,14 +1495,14 @@ void FEVisualNodeArea::LoadFromFile(const char* FileName)
 	const std::string FileData((std::istreambuf_iterator<char>(NodesFile)), std::istreambuf_iterator<char>());
 	NodesFile.close();
 
-	FEVisualNodeArea* NewNodeArea = FEVisualNodeArea::FromJson(FileData);
-	FEVisualNodeArea::CopyNodesTo(NewNodeArea, this);
+	VisualNodeArea* NewNodeArea = VisualNodeArea::FromJson(FileData);
+	VisualNodeArea::CopyNodesTo(NewNodeArea, this);
 	delete NewNodeArea;
 }
 
-std::vector<FEVisualNode*> FEVisualNodeArea::GetNodesByName(const std::string NodeName) const
+std::vector<VisualNode*> VisualNodeArea::GetNodesByName(const std::string NodeName) const
 {
-	std::vector<FEVisualNode*> result;
+	std::vector<VisualNode*> result;
 	for (size_t i = 0; i < Nodes.size(); i++)
 	{
 		if (Nodes[i]->GetName() == NodeName)
@@ -1512,9 +1512,9 @@ std::vector<FEVisualNode*> FEVisualNodeArea::GetNodesByName(const std::string No
 	return result;
 }
 
-std::vector<FEVisualNode*> FEVisualNodeArea::GetNodesByType(const std::string NodeType) const
+std::vector<VisualNode*> VisualNodeArea::GetNodesByType(const std::string NodeType) const
 {
-	std::vector<FEVisualNode*> result;
+	std::vector<VisualNode*> result;
 	for (size_t i = 0; i < Nodes.size(); i++)
 	{
 		if (Nodes[i]->GetType() == NodeType)
@@ -1524,22 +1524,22 @@ std::vector<FEVisualNode*> FEVisualNodeArea::GetNodesByType(const std::string No
 	return result;
 }
 
-int FEVisualNodeArea::GetNodeCount() const
+int VisualNodeArea::GetNodeCount() const
 {
 	return static_cast<int>(Nodes.size());
 }
 
-bool FEVisualNodeArea::IsMouseHovered() const
+bool VisualNodeArea::IsMouseHovered() const
 {
 	return bMouseHovered;
 }
 
-bool FEVisualNodeArea::IsAreaFillingWindow()
+bool VisualNodeArea::IsAreaFillingWindow()
 {
 	return bFillWindow;
 }
 
-void FEVisualNodeArea::SetIsAreaFillingWindow(bool NewValue)
+void VisualNodeArea::SetIsAreaFillingWindow(bool NewValue)
 {
 	bFillWindow = NewValue;
 }

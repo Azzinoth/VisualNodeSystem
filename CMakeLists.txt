@@ -5,7 +5,7 @@ set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_CONFIGURATION_TYPES Debug Release)
 
 # set the project name
-project(FEVisualNodeSystem LANGUAGES CXX)
+project(VisualNodeSystem LANGUAGES CXX)
 
 # Turn on the ability to create folders to organize projects (.vcproj)
 # It creates "CMakePredefinedTargets" folder by default and adds CMake
@@ -16,15 +16,15 @@ if(NOT TARGET FEBasicApplication)
   add_subdirectory(SubSystems/FEBasicApplication)
 endif()
 
-file(GLOB FEVisualNodeSystem_SRC
-	"FEVisualNodeSystem.cpp"
-	"FEVisualNodeSystem.h"
-	"FEVisualNodeArea.cpp"
-	"FEVisualNodeArea.h"
-	"FEVisualNode.cpp"
-	"FEVisualNode.h"
-	"FEVisualNodeSocket.cpp"
-	"FEVisualNodeSocket.h"
+file(GLOB VisualNodeSystem_SRC
+	"VisualNodeSystem.cpp"
+	"VisualNodeSystem.h"
+	"VisualNodeArea.cpp"
+	"VisualNodeArea.h"
+	"VisualNode.cpp"
+	"VisualNode.h"
+	"VisualNodeSocket.cpp"
+	"VisualNodeSocket.h"
 )
 
 # *************** THIRD_PARTY ***************
@@ -39,22 +39,22 @@ file(GLOB jsoncpp_SRC
 
 # *************** THIRD_PARTY END ***************
 
-add_library(FEVisualNodeSystem
-			${FEVisualNodeSystem_SRC}
+add_library(VisualNodeSystem
+			${VisualNodeSystem_SRC}
 			# *************** THIRD_PARTY ***************
 			${jsoncpp_SRC}
 )
 
-target_link_libraries(FEVisualNodeSystem FEBasicApplication)
+target_link_libraries(VisualNodeSystem FEBasicApplication)
 
-source_group("Source Files" FILES ${FEVisualNodeSystem_SRC})
+source_group("Source Files" FILES ${VisualNodeSystem_SRC})
 # *************** THIRD_PARTY ***************
 source_group("Source Files/ThirdParty/jsoncpp" FILES ${jsoncpp_SRC})
 
 set(VISUAL_NODE_SYSTEM_THIRDPARTY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty)
 
 # set the startup project
-set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT FEVisualNodeSystem)
+set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT VisualNodeSystem)
 
 include_directories(
 	${GLEW_INCLUDE_DIR}

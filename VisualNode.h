@@ -1,44 +1,44 @@
 #pragma once
 
-#include "FEVisualNodeSocket.h"
+#include "VisualNodeSocket.h"
 
-enum FE_VISUAL_NODE_STYLE
+enum VISUAL_NODE_STYLE
 {
-	FE_VISUAL_NODE_STYLE_DEFAULT = 0,
-	FE_VISUAL_NODE_STYLE_CIRCLE = 1
+	VISUAL_NODE_STYLE_DEFAULT = 0,
+	VISUAL_NODE_STYLE_CIRCLE = 1
 };
 
-#define FE_VISUAL_NODE_NAME_MAX_LENGHT 1024
+#define VISUAL_NODE_NAME_MAX_LENGHT 1024
 #define NODE_TITLE_HEIGHT 30.0f
 #define NODE_DIAMETER 72.0f
 
-enum FE_VISUAL_NODE_SOCKET_EVENT
+enum VISUAL_NODE_SOCKET_EVENT
 {
-	FE_VISUAL_NODE_SOCKET_CONNECTED = 0,
-	FE_VISUAL_NODE_SOCKET_DISCONNECTED = 1,
-	FE_VISUAL_NODE_SOCKET_DESTRUCTION = 2,
-	FE_VISUAL_NODE_SOCKET_UPDATE = 3
+	VISUAL_NODE_SOCKET_CONNECTED = 0,
+	VISUAL_NODE_SOCKET_DISCONNECTED = 1,
+	VISUAL_NODE_SOCKET_DESTRUCTION = 2,
+	VISUAL_NODE_SOCKET_UPDATE = 3
 };
 
-class FEVisualNodeSystem;
-class FEVisualNodeArea;
-class FEVisualNodeSocket;
+class VisualNodeSystem;
+class VisualNodeArea;
+class NodeSocket;
 
-struct FEVisualNodeChildFunc
+struct VisualNodeChildFunc
 {
-	std::function<FEVisualNode* (Json::Value Data)> JsonToObj;
-	std::function<FEVisualNode* (FEVisualNode& Src)> CopyConstructor;
+	std::function<VisualNode* (Json::Value Data)> JsonToObj;
+	std::function<VisualNode* (VisualNode& Src)> CopyConstructor;
 };
 
 #define VISUAL_NODE_CHILD_PRIVATE_PART(CLASS_NAME)			\
 class CLASS_NAME##Registration;								\
-class CLASS_NAME : public FEVisualNode						\
+class CLASS_NAME : public VisualNode						\
 {															\
 friend CLASS_NAME##Registration;							\
-static FEVisualNode* ConstructorFromJson(Json::Value Json);	\
-static FEVisualNode* CopyConstructor(FEVisualNode& Src);	\
+static VisualNode* ConstructorFromJson(Json::Value Json);	\
+static VisualNode* CopyConstructor(VisualNode& Src);	    \
 static CLASS_NAME##Registration* Registration;				\
-static FEVisualNodeChildFunc ChildFunctions;				
+static VisualNodeChildFunc ChildFunctions;				
 
 #define VISUAL_NODE_CHILD_AFTER_CLASS(CLASS_NAME)										\
 class CLASS_NAME##Registration															\
@@ -48,20 +48,20 @@ public:																					\
 	{																					\
 		CLASS_NAME::ChildFunctions.JsonToObj = CLASS_NAME::ConstructorFromJson;			\
 		CLASS_NAME::ChildFunctions.CopyConstructor = CLASS_NAME::CopyConstructor;		\
-		FEVisualNode::RegisterChildNodeClass(CLASS_NAME::ChildFunctions, #CLASS_NAME);	\
+		VisualNode::RegisterChildNodeClass(CLASS_NAME::ChildFunctions, #CLASS_NAME);	\
 	}																					\
 };
 
 
 #define VISUAL_NODE_CHILD_CPP(CLASS_NAME)										\
-FEVisualNode* CLASS_NAME::ConstructorFromJson(Json::Value Json)					\
+VisualNode* CLASS_NAME::ConstructorFromJson(Json::Value Json)					\
 {																				\
 	CLASS_NAME* NewNode = new CLASS_NAME();										\
 	NewNode->FromJson(Json);													\
 	return NewNode;																\
 }																				\
 																				\
-FEVisualNode* CLASS_NAME::CopyConstructor(FEVisualNode& Src)					\
+VisualNode* CLASS_NAME::CopyConstructor(VisualNode& Src)					    \
 {																				\
 	if (Src.GetType() != #CLASS_NAME)											\
 		return nullptr;															\
@@ -70,18 +70,18 @@ FEVisualNode* CLASS_NAME::CopyConstructor(FEVisualNode& Src)					\
 	return NewNode;																\
 }																				\
 																				\
-FEVisualNodeChildFunc CLASS_NAME::ChildFunctions;								\
+VisualNodeChildFunc CLASS_NAME::ChildFunctions;								    \
 CLASS_NAME##Registration* CLASS_NAME::Registration = new CLASS_NAME##Registration();
 
-class FEVisualNode
+class VisualNode
 {
 protected:
-	friend FEVisualNodeSystem;
-	friend FEVisualNodeArea;
+	friend VisualNodeSystem;
+	friend VisualNodeArea;
 
-	virtual ~FEVisualNode();
+	virtual ~VisualNode();
 
-	FEVisualNodeArea* ParentArea = nullptr;
+	VisualNodeArea* ParentArea = nullptr;
 	std::string ID;
 	ImVec2 Position;
 	ImVec2 Size;
@@ -94,8 +94,8 @@ protected:
 	bool bShouldBeDestroyed = false;
 	bool bCouldBeDestroyed = true;
 
-	std::vector<FEVisualNodeSocket*> Input;
-	std::vector<FEVisualNodeSocket*> Output;
+	std::vector<NodeSocket*> Input;
+	std::vector<NodeSocket*> Output;
 
 	ImVec2 LeftTop;
 	ImVec2 RightBottom;
@@ -106,23 +106,23 @@ protected:
 	bool bHovered = false;
 	void SetIsHovered(bool NewValue);
 
-	FE_VISUAL_NODE_STYLE Style = FE_VISUAL_NODE_STYLE_DEFAULT;
+	VISUAL_NODE_STYLE Style = VISUAL_NODE_STYLE_DEFAULT;
 
 	virtual void Draw();
-	virtual bool CanConnect(FEVisualNodeSocket* OwnSocket, FEVisualNodeSocket* CandidateSocket, char** MsgToUser = nullptr);
-	virtual void SocketEvent(FEVisualNodeSocket* OwnSocket, FEVisualNodeSocket* ConnectedSocket, FE_VISUAL_NODE_SOCKET_EVENT EventType);
+	virtual bool CanConnect(NodeSocket* OwnSocket, NodeSocket* CandidateSocket, char** MsgToUser = nullptr);
+	virtual void SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSocket, VISUAL_NODE_SOCKET_EVENT EventType);
 	virtual bool OpenContextMenu();
 
 	void UpdateClientRegion();
 
 	// To overcome rare cases of the static initialization order fiasco
-	static std::unordered_map<std::string, FEVisualNodeChildFunc>& GetChildClasses();
+	static std::unordered_map<std::string, VisualNodeChildFunc>& GetChildClasses();
 
-	static FEVisualNode* ConstructChild(std::string ChildClassName, Json::Value Data);
-	static FEVisualNode* CopyChild(std::string ChildClassName, FEVisualNode* Child);
+	static VisualNode* ConstructChild(std::string ChildClassName, Json::Value Data);
+	static VisualNode* CopyChild(std::string ChildClassName, VisualNode* Child);
 public:
-	FEVisualNode(std::string ID = "");
-	FEVisualNode(const FEVisualNode& Src);
+	VisualNode(std::string ID = "");
+	VisualNode(const VisualNode& Src);
 
 	std::string GetID();
 
@@ -140,11 +140,7 @@ public:
 
 	std::string GetType() const;
 
-	void AddSocket(FEVisualNodeSocket* Socket);
-	/*void AddInputSocket(FEVisualNodeSocket* Socket);
-	void AddOutputSocket(FEVisualNodeSocket* Socket);*/
-
-	//static bool IsSocketTypeIn(FE_VISUAL_NODE_SOCKET_TYPE Type);
+	void AddSocket(NodeSocket* Socket);
 
 	virtual Json::Value ToJson();
 	virtual void FromJson(Json::Value Json);
@@ -155,13 +151,13 @@ public:
 	size_t InputSocketCount() const;
 	size_t OutSocketCount() const;
 
-	std::vector<FEVisualNode*> GetConnectedNodes() const;
-	virtual FEVisualNode* GetLogicallyNextNode();
+	std::vector<VisualNode*> GetConnectedNodes() const;
+	virtual VisualNode* GetLogicallyNextNode();
 
-	static void RegisterChildNodeClass(FEVisualNodeChildFunc Functions, std::string ClassName);
+	static void RegisterChildNodeClass(VisualNodeChildFunc Functions, std::string ClassName);
 
-	FE_VISUAL_NODE_STYLE GetStyle() const;
-	void SetStyle(FE_VISUAL_NODE_STYLE NewValue);
+	VISUAL_NODE_STYLE GetStyle() const;
+	void SetStyle(VISUAL_NODE_STYLE NewValue);
 
 	bool IsHovered() const;
 };

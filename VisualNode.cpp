@@ -1,23 +1,23 @@
-#include "FEVisualNode.h"
+#include "VisualNode.h"
 
-std::unordered_map<std::string, FEVisualNodeChildFunc>& FEVisualNode::GetChildClasses()
+std::unordered_map<std::string, VisualNodeChildFunc>& VisualNode::GetChildClasses()
 {
-	static std::unordered_map<std::string, FEVisualNodeChildFunc> ChildClasses;
+	static std::unordered_map<std::string, VisualNodeChildFunc> ChildClasses;
 	return ChildClasses;
 }
 
-FEVisualNode::FEVisualNode(const std::string ID)
+VisualNode::VisualNode(const std::string ID)
 {
 	this->ID = ID;
 	if (ID.empty())
 		this->ID = APPLICATION.GetUniqueHexID();
 
 	SetSize(ImVec2(200, 80));
-	SetName("FEVisualNode");
-	Type = "FEVisualNode";
+	SetName("VisualNode");
+	Type = "VisualNode";
 }
 
-FEVisualNode::FEVisualNode(const FEVisualNode& Src)
+VisualNode::VisualNode(const VisualNode& Src)
 {
 	ParentArea = Src.ParentArea;
 	ID = APPLICATION.GetUniqueHexID();
@@ -39,16 +39,16 @@ FEVisualNode::FEVisualNode(const FEVisualNode& Src)
 
 	for (size_t i = 0; i < Src.Input.size(); i++)
 	{
-		Input.push_back(new FEVisualNodeSocket(this, Src.Input[i]->GetType(), Src.Input[i]->GetName(), false));
+		Input.push_back(new NodeSocket(this, Src.Input[i]->GetType(), Src.Input[i]->GetName(), false));
 	}
 
 	for (size_t i = 0; i < Src.Output.size(); i++)
 	{
-		Output.push_back(new FEVisualNodeSocket(this, Src.Output[i]->GetType(), Src.Output[i]->GetName(), true));
+		Output.push_back(new NodeSocket(this, Src.Output[i]->GetType(), Src.Output[i]->GetName(), true));
 	}
 }
 
-FEVisualNode::~FEVisualNode()
+VisualNode::~VisualNode()
 {
 	for (int i = 0; i < static_cast<int>(Input.size()); i++)
 	{
@@ -65,48 +65,48 @@ FEVisualNode::~FEVisualNode()
 	}
 }
 
-std::string FEVisualNode::GetID()
+std::string VisualNode::GetID()
 {
 	return ID;
 }
 
-ImVec2 FEVisualNode::GetPosition() const
+ImVec2 VisualNode::GetPosition() const
 {
 	return Position;
 }
 
-void FEVisualNode::SetPosition(const ImVec2 NewValue)
+void VisualNode::SetPosition(const ImVec2 NewValue)
 {
 	Position = NewValue;
 }
 
-ImVec2 FEVisualNode::GetSize() const
+ImVec2 VisualNode::GetSize() const
 {
-	if (GetStyle() == FE_VISUAL_NODE_STYLE_CIRCLE)
+	if (GetStyle() == VISUAL_NODE_STYLE_CIRCLE)
 		return ImVec2(NODE_DIAMETER, NODE_DIAMETER);
 	
 	return Size;
 }
 
-void FEVisualNode::SetSize(const ImVec2 NewValue)
+void VisualNode::SetSize(const ImVec2 NewValue)
 {
 	Size = NewValue;
 }
 
-std::string FEVisualNode::GetName()
+std::string VisualNode::GetName()
 {
 	return Name;
 }
 
-void FEVisualNode::SetName(const std::string NewValue)
+void VisualNode::SetName(const std::string NewValue)
 {
-	if (NewValue.size() > FE_VISUAL_NODE_NAME_MAX_LENGHT)
+	if (NewValue.size() > VISUAL_NODE_NAME_MAX_LENGHT)
 		return;
 
 	Name = NewValue;
 }
 
-void FEVisualNode::AddSocket(FEVisualNodeSocket* Socket)
+void VisualNode::AddSocket(NodeSocket* Socket)
 {
 	if (Socket == nullptr)
 		return;
@@ -117,16 +117,16 @@ void FEVisualNode::AddSocket(FEVisualNodeSocket* Socket)
 		Input.push_back(Socket);
 }
 
-void FEVisualNode::Draw()
+void VisualNode::Draw()
 {
 }
 
-void FEVisualNode::SocketEvent(FEVisualNodeSocket* OwnSocket, FEVisualNodeSocket* ConnectedSocket, FE_VISUAL_NODE_SOCKET_EVENT EventType)
+void VisualNode::SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSocket, VISUAL_NODE_SOCKET_EVENT EventType)
 {
 
 }
 
-bool FEVisualNode::CanConnect(FEVisualNodeSocket* OwnSocket, FEVisualNodeSocket* CandidateSocket, char** MsgToUser)
+bool VisualNode::CanConnect(NodeSocket* OwnSocket, NodeSocket* CandidateSocket, char** MsgToUser)
 {
 	// Socket can't connect to itself.
 	if (OwnSocket == CandidateSocket)
@@ -143,12 +143,12 @@ bool FEVisualNode::CanConnect(FEVisualNodeSocket* OwnSocket, FEVisualNodeSocket*
 	return true;
 }
 
-std::string FEVisualNode::GetType() const
+std::string VisualNode::GetType() const
 {
 	return Type;
 }
 
-Json::Value FEVisualNode::ToJson()
+Json::Value VisualNode::ToJson()
 {
 	Json::Value result;
 
@@ -177,7 +177,7 @@ Json::Value FEVisualNode::ToJson()
 	return result;
 }
 
-void FEVisualNode::FromJson(Json::Value Json)
+void VisualNode::FromJson(Json::Value Json)
 {
 	ID = Json["ID"].asCString();
 	Type = Json["nodeType"].asCString();
@@ -200,7 +200,7 @@ void FEVisualNode::FromJson(Json::Value Json)
 		const std::string name = Json["input"][std::to_string(i)]["name"].asCString();
 		const std::string type = Json["input"][std::to_string(i)]["type"].asCString();
 
-		Input[i] = new FEVisualNodeSocket(this, type, name, false);
+		Input[i] = new NodeSocket(this, type, name, false);
 		Input[i]->ID = ID;
 	}
 
@@ -217,12 +217,12 @@ void FEVisualNode::FromJson(Json::Value Json)
 		const std::string name = Json["output"][std::to_string(i)]["name"].asCString();
 		const std::string type = Json["output"][std::to_string(i)]["type"].asCString();
 
-		Output[i] = new FEVisualNodeSocket(this, type, name, true);
+		Output[i] = new NodeSocket(this, type, name, true);
 		Output[i]->ID = ID;
 	}
 }
 
-void FEVisualNode::UpdateClientRegion()
+void VisualNode::UpdateClientRegion()
 {
 	float LongestInputSocketTextW = 0.0f;
 	for (size_t i = 0; i < Input.size(); i++)
@@ -247,29 +247,29 @@ void FEVisualNode::UpdateClientRegion()
 	ClientRegionMax.y = RightBottom.y - 2.0f;
 }
 
-ImVec2 FEVisualNode::GetClientRegionSize()
+ImVec2 VisualNode::GetClientRegionSize()
 {
 	UpdateClientRegion();
 	return ClientRegionMax - ClientRegionMin;
 }
 
-ImVec2 FEVisualNode::GetClientRegionPosition()
+ImVec2 VisualNode::GetClientRegionPosition()
 {
 	UpdateClientRegion();
 	return ClientRegionMin;
 }
 
-size_t FEVisualNode::InputSocketCount() const
+size_t VisualNode::InputSocketCount() const
 {
 	return Input.size();
 }
 
-size_t FEVisualNode::OutSocketCount() const
+size_t VisualNode::OutSocketCount() const
 {
 	return Output.size();
 }
 
-bool FEVisualNode::GetForcedOutSocketColor(ImColor& Color, const size_t SocketIndex) const
+bool VisualNode::GetForcedOutSocketColor(ImColor& Color, const size_t SocketIndex) const
 {
 	if (SocketIndex < 0 || SocketIndex >= Output.size())
 		return false;
@@ -277,7 +277,7 @@ bool FEVisualNode::GetForcedOutSocketColor(ImColor& Color, const size_t SocketIn
 	return Output[SocketIndex]->GetForcedConnectionColor(Color);
 }
 
-void FEVisualNode::SetForcedOutSocketColor(ImColor* NewValue, const size_t SocketIndex) const
+void VisualNode::SetForcedOutSocketColor(ImColor* NewValue, const size_t SocketIndex) const
 {
 	if (SocketIndex < 0 || SocketIndex >= Output.size())
 		return;
@@ -285,9 +285,9 @@ void FEVisualNode::SetForcedOutSocketColor(ImColor* NewValue, const size_t Socke
 	Output[SocketIndex]->SetForcedConnectionColor(NewValue);
 }
 
-std::vector<FEVisualNode*> FEVisualNode::GetConnectedNodes() const
+std::vector<VisualNode*> VisualNode::GetConnectedNodes() const
 {
-	std::vector<FEVisualNode*> result;
+	std::vector<VisualNode*> result;
 	for (size_t i = 0; i < Output.size(); i++)
 	{
 		for (size_t j = 0; j < Output[i]->Connections.size(); j++)
@@ -299,7 +299,7 @@ std::vector<FEVisualNode*> FEVisualNode::GetConnectedNodes() const
 	return result;
 }
 
-FEVisualNode* FEVisualNode::GetLogicallyNextNode()
+VisualNode* VisualNode::GetLogicallyNextNode()
 {
 	const auto Connected = GetConnectedNodes();
 	if (!Connected.empty() && Connected[0] != nullptr)
@@ -308,7 +308,7 @@ FEVisualNode* FEVisualNode::GetLogicallyNextNode()
 	return nullptr;
 }
 
-void FEVisualNode::RegisterChildNodeClass(const FEVisualNodeChildFunc Functions, const std::string ClassName)
+void VisualNode::RegisterChildNodeClass(const VisualNodeChildFunc Functions, const std::string ClassName)
 {
 	if (Functions.JsonToObj != nullptr && Functions.CopyConstructor != nullptr && !ClassName.empty())
 	{
@@ -316,7 +316,7 @@ void FEVisualNode::RegisterChildNodeClass(const FEVisualNodeChildFunc Functions,
 	}
 }
 
-FEVisualNode* FEVisualNode::ConstructChild(const std::string ChildClassName, const Json::Value Data)
+VisualNode* VisualNode::ConstructChild(const std::string ChildClassName, const Json::Value Data)
 {
 	if (GetChildClasses().find(ChildClassName) == GetChildClasses().end())
 		return nullptr;
@@ -324,7 +324,7 @@ FEVisualNode* FEVisualNode::ConstructChild(const std::string ChildClassName, con
 	return GetChildClasses()[ChildClassName].JsonToObj(Data);
 }
 
-FEVisualNode* FEVisualNode::CopyChild(const std::string ChildClassName, FEVisualNode* Child)
+VisualNode* VisualNode::CopyChild(const std::string ChildClassName, VisualNode* Child)
 {
 	if (GetChildClasses().find(ChildClassName) == GetChildClasses().end())
 		return nullptr;
@@ -332,17 +332,17 @@ FEVisualNode* FEVisualNode::CopyChild(const std::string ChildClassName, FEVisual
 	return GetChildClasses()[ChildClassName].CopyConstructor(*Child);
 }
 
-bool FEVisualNode::OpenContextMenu()
+bool VisualNode::OpenContextMenu()
 {
 	return false;
 }
 
-FE_VISUAL_NODE_STYLE FEVisualNode::GetStyle() const
+VISUAL_NODE_STYLE VisualNode::GetStyle() const
 {
 	return Style;
 }
 
-void FEVisualNode::SetStyle(const FE_VISUAL_NODE_STYLE NewValue)
+void VisualNode::SetStyle(const VISUAL_NODE_STYLE NewValue)
 {
 	if (static_cast<int>(NewValue) < 0 || static_cast<int>(NewValue) >= 2)
 		return;
@@ -350,12 +350,12 @@ void FEVisualNode::SetStyle(const FE_VISUAL_NODE_STYLE NewValue)
 	Style = NewValue;
 }
 
-bool FEVisualNode::IsHovered() const
+bool VisualNode::IsHovered() const
 {
 	return bHovered;
 }
 
-void FEVisualNode::SetIsHovered(const bool NewValue)
+void VisualNode::SetIsHovered(const bool NewValue)
 {
 	bHovered = NewValue;
 }

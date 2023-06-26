@@ -16,30 +16,30 @@ using namespace FocalEngine;
 
 #define NODE_SOCKET_SIZE 5.0f
 
-class FEVisualNode;
-class FEVisualNodeSocket;
-class FEVisualNodeArea;
-class FEVisualNodeSystem;
+class VisualNode;
+class NodeSocket;
+class VisualNodeArea;
+class VisualNodeSystem;
 
-class FEVisualNodeSocket
+class NodeSocket
 {
-	friend FEVisualNodeSystem;
-	friend FEVisualNodeArea;
-	friend FEVisualNode;
+	friend VisualNodeSystem;
+	friend VisualNodeArea;
+	friend VisualNode;
 
 	std::string ID;
 	bool bOutput = false;
 	std::string Type;
 	std::string Name;
-	FEVisualNode* Parent = nullptr;
-	std::vector<FEVisualNodeSocket*> Connections;
+	VisualNode* Parent = nullptr;
+	std::vector<NodeSocket*> Connections;
 
 	ImColor* ForceColor = nullptr;
 public:
-	FEVisualNodeSocket(FEVisualNode* Parent, std::string Type, std::string Name, bool bOutput = false);
+	NodeSocket(VisualNode* Parent, std::string Type, std::string Name, bool bOutput = false);
 
-	FEVisualNode* GetParent() const;
-	std::vector<FEVisualNodeSocket*> GetConnections();
+	VisualNode* GetParent() const;
+	std::vector<NodeSocket*> GetConnections();
 
 	std::string GetID();
 	std::string GetName();
@@ -53,14 +53,14 @@ public:
 	bool isInput() const { return !bOutput; }
 };
 
-class FEVisualNodeConnection
+class VisualNodeConnection
 {
-	friend FEVisualNodeSystem;
-	friend FEVisualNodeArea;
-	friend FEVisualNode;
+	friend VisualNodeSystem;
+	friend VisualNodeArea;
+	friend VisualNode;
 
-	FEVisualNodeSocket* Out = nullptr;
-	FEVisualNodeSocket* In = nullptr;
+	NodeSocket* Out = nullptr;
+	NodeSocket* In = nullptr;
 
-	FEVisualNodeConnection(FEVisualNodeSocket* Out, FEVisualNodeSocket* In);
+	VisualNodeConnection(NodeSocket* Out, NodeSocket* In);
 };

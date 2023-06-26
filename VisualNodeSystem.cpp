@@ -1,17 +1,17 @@
-#include "FEVisualNodeSystem.h"
+#include "VisualNodeSystem.h"
 
-FEVisualNodeSystem* FEVisualNodeSystem::Instance = nullptr;
+VisualNodeSystem* VisualNodeSystem::Instance = nullptr;
 
-FEVisualNodeSystem::FEVisualNodeSystem() {}
-FEVisualNodeSystem::~FEVisualNodeSystem() {}
+VisualNodeSystem::VisualNodeSystem() {}
+VisualNodeSystem::~VisualNodeSystem() {}
 
-FEVisualNodeArea* FEVisualNodeSystem::CreateNodeArea()
+VisualNodeArea* VisualNodeSystem::CreateNodeArea()
 {
-	CreatedAreas.push_back(new FEVisualNodeArea());
+	CreatedAreas.push_back(new VisualNodeArea());
 	return CreatedAreas.back();
 }
 
-void FEVisualNodeSystem::DeleteNodeArea(const FEVisualNodeArea* NodeArea)
+void VisualNodeSystem::DeleteNodeArea(const VisualNodeArea* NodeArea)
 {
 	for (size_t i = 0; i < CreatedAreas.size(); i++)
 	{
@@ -24,7 +24,7 @@ void FEVisualNodeSystem::DeleteNodeArea(const FEVisualNodeArea* NodeArea)
 	}
 }
 
-void FEVisualNodeSystem::MoveNodesTo(FEVisualNodeArea* SourceNodeArea, FEVisualNodeArea* TargetNodeArea, const bool SelectMovedNodes)
+void VisualNodeSystem::MoveNodesTo(VisualNodeArea* SourceNodeArea, VisualNodeArea* TargetNodeArea, const bool SelectMovedNodes)
 {
 	if (SourceNodeArea == nullptr || TargetNodeArea == nullptr)
 		return;

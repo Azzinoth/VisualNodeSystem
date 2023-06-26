@@ -1,14 +1,14 @@
-# FEVisualNode System
+# VisualNode System
 
-![build](https://github.com/Azzinoth/FEVisualNodeSystem/actions/workflows/Build.yml/badge.svg?branch=master)
+![build](https://github.com/Azzinoth/VisualNodeSystem/actions/workflows/Build.yml/badge.svg?branch=master)
 
 This library provides a powerful framework for creating and managing visual node systems. These are typically used in graphical programming environments, game logic builders, and AI behavior tree editors. I have personally used it in two of my projects:
 
 [Focal Engine Editor](https://github.com/Azzinoth/FocalEngineEditor)
-![Focal engine editor material window](https://github.com/Azzinoth/FEVisualNodeSystem/blob/media/Focal%20Engine%20Editor%20example.png)
+![Focal Engine editor material window](https://github.com/Azzinoth/VisualNodeSystem/blob/media/Focal%20Engine%20Editor%20example.png)
 
 [Focal Engine Test Platform](https://github.com/Azzinoth/FocalEngineTestPlatform)
-![Focal engine test platform](https://github.com/Azzinoth/FEVisualNodeSystem/blob/media/Test%20Platform%20example.png)
+![Focal Engine test platform](https://github.com/Azzinoth/VisualNodeSystem/blob/media/Test%20Platform%20example.png)
 
 ## Key Features
 
@@ -32,18 +32,18 @@ This library provides a powerful framework for creating and managing visual node
 
 ## Usage
 
-For a simple example of how to use library, see the [FEVisualNodeSystem Example](https://github.com/Azzinoth/FEVisualNodeSystem-Example).
+For a simple example of how to use library, see the [VisualNodeSystem Example](https://github.com/Azzinoth/VisualNodeSystem-Example).
 
 To add this module to your project, use the following command:
 
 ```bash
-git submodule add https://github.com/Azzinoth/FEVisualNodeSystem
+git submodule add https://github.com/Azzinoth/VisualNodeSystem
 ```
 
 If you want to move the submodule to a folder named "SubSystems", for example, use the following command:
 
 ```bash
-git mv FEVisualNodeSystem SubSystems/
+git mv VisualNodeSystem SubSystems/
 ```
 
 ## Third Party Licenses
