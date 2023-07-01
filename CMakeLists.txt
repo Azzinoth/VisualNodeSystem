@@ -21,6 +21,8 @@ file(GLOB VisualNodeSystem_SRC
 	"VisualNodeSystem.h"
 	"VisualNodeArea.cpp"
 	"VisualNodeArea.h"
+	"VisualNodeFactory.cpp"
+	"VisualNodeFactory.h"
 	"VisualNode.cpp"
 	"VisualNode.h"
 	"VisualNodeSocket.cpp"

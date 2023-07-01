@@ -1,6 +1,6 @@
 #pragma once
 
-#include "VisualNode.h"
+#include "VisualNodeFactory.h"
 
 #define VISUAL_NODE_GRID_STEP 15.0f
 

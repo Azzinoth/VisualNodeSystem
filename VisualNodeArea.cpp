@@ -1045,7 +1045,7 @@ void VisualNodeArea::InputUpdateSocket(NodeSocket* Socket)
 		SocketHovered = Socket;
 	}
 
-	if (SocketHovered == Socket && ImGui::GetIO().MouseClicked[0] && Socket->bOutput/*!FEVisualNode::IsSocketTypeIn(Socket->GetType())*/)
+	if (SocketHovered == Socket && ImGui::GetIO().MouseClicked[0] && Socket->bOutput)
 		SocketLookingForConnection = Socket;
 }
 
@@ -1161,7 +1161,7 @@ void VisualNodeArea::RunOnEachConnectedNode(VisualNode* StartNode, void(*Func)(V
 
 			Func(CurrentNodes[i]);
 
-			std::vector<VisualNode*> NewNodes = CurrentNodes[i]->GetConnectedNodes();
+			std::vector<VisualNode*> NewNodes = CurrentNodes[i]->GetNodesConnectedToOutput();
 			for (size_t j = 0; j < NewNodes.size(); j++)
 			{
 				CurrentNodes.push_back(NewNodes[j]);
@@ -1209,7 +1209,9 @@ VisualNodeArea* VisualNodeArea::CreateNodeArea(const std::vector<VisualNode*> No
 	std::unordered_map<NodeSocket*, NodeSocket*> OldToNewSocket;
 	for (size_t i = 0; i < Nodes.size(); i++)
 	{
-		VisualNode* CopyOfNode = VisualNode::CopyChild(Nodes[i]->GetType(), Nodes[i]);
+		//VisualNode* CopyOfNode = VisualNode::CopyChild(Nodes[i]->GetType(), Nodes[i]);
+		VisualNode* CopyOfNode = NODE_FACTORY.CopyNode(Nodes[i]->GetType(), *Nodes[i]);
+
 		if (CopyOfNode == nullptr)
 			CopyOfNode = new VisualNode(*Nodes[i]);
 		CopyOfNode->ParentArea = NewArea;
@@ -1363,7 +1365,8 @@ VisualNodeArea* VisualNodeArea::FromJson(std::string JsonText)
 	for (size_t i = 0; i < NodesList.size(); i++)
 	{
 		std::string NodeType = root["nodes"][std::to_string(i)]["nodeType"].asCString();
-		VisualNode* NewNode = VisualNode::ConstructChild(NodeType, root["nodes"][std::to_string(i)]);
+		VisualNode* NewNode = NODE_FACTORY.CreateNode(NodeType);
+		NewNode->FromJson(root["nodes"][std::to_string(i)]);
 
 		if (NewNode != nullptr)
 		{
@@ -1404,12 +1407,11 @@ void VisualNodeArea::CopyNodesTo(VisualNodeArea* SourceNodeArea, VisualNodeArea*
 	std::unordered_map<NodeSocket*, NodeSocket*> OldToNewSocket;
 	for (size_t i = 0; i < SourceNodeArea->Nodes.size(); i++)
 	{
-		VisualNode* CopyOfNode = VisualNode::CopyChild(SourceNodeArea->Nodes[i]->GetType(), SourceNodeArea->Nodes[i]);
+		VisualNode* CopyOfNode = NODE_FACTORY.CopyNode(SourceNodeArea->Nodes[i]->GetType(), *SourceNodeArea->Nodes[i]);
 		if (CopyOfNode == nullptr)
 			CopyOfNode = new VisualNode(*SourceNodeArea->Nodes[i]);
 		CopyOfNode->ParentArea = SourceNodeArea;
 
-		//targetNodeArea->nodes.push_back(copyOfNode);
 		TargetNodeArea->AddNode(CopyOfNode);
 
 		// Associate old to new IDs

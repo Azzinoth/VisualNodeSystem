@@ -24,55 +24,6 @@ class VisualNodeSystem;
 class VisualNodeArea;
 class NodeSocket;
 
-struct VisualNodeChildFunc
-{
-	std::function<VisualNode* (Json::Value Data)> JsonToObj;
-	std::function<VisualNode* (VisualNode& Src)> CopyConstructor;
-};
-
-#define VISUAL_NODE_CHILD_PRIVATE_PART(CLASS_NAME)			\
-class CLASS_NAME##Registration;								\
-class CLASS_NAME : public VisualNode						\
-{															\
-friend CLASS_NAME##Registration;							\
-static VisualNode* ConstructorFromJson(Json::Value Json);	\
-static VisualNode* CopyConstructor(VisualNode& Src);	    \
-static CLASS_NAME##Registration* Registration;				\
-static VisualNodeChildFunc ChildFunctions;				
-
-#define VISUAL_NODE_CHILD_AFTER_CLASS(CLASS_NAME)										\
-class CLASS_NAME##Registration															\
-{																						\
-public:																					\
-	CLASS_NAME##Registration()															\
-	{																					\
-		CLASS_NAME::ChildFunctions.JsonToObj = CLASS_NAME::ConstructorFromJson;			\
-		CLASS_NAME::ChildFunctions.CopyConstructor = CLASS_NAME::CopyConstructor;		\
-		VisualNode::RegisterChildNodeClass(CLASS_NAME::ChildFunctions, #CLASS_NAME);	\
-	}																					\
-};
-
-
-#define VISUAL_NODE_CHILD_CPP(CLASS_NAME)										\
-VisualNode* CLASS_NAME::ConstructorFromJson(Json::Value Json)					\
-{																				\
-	CLASS_NAME* NewNode = new CLASS_NAME();										\
-	NewNode->FromJson(Json);													\
-	return NewNode;																\
-}																				\
-																				\
-VisualNode* CLASS_NAME::CopyConstructor(VisualNode& Src)					    \
-{																				\
-	if (Src.GetType() != #CLASS_NAME)											\
-		return nullptr;															\
-																				\
-	CLASS_NAME* NewNode = new CLASS_NAME(*reinterpret_cast<CLASS_NAME*>(&Src));	\
-	return NewNode;																\
-}																				\
-																				\
-VisualNodeChildFunc CLASS_NAME::ChildFunctions;								    \
-CLASS_NAME##Registration* CLASS_NAME::Registration = new CLASS_NAME##Registration();
-
 class VisualNode
 {
 protected:
@@ -114,12 +65,6 @@ protected:
 	virtual bool OpenContextMenu();
 
 	void UpdateClientRegion();
-
-	// To overcome rare cases of the static initialization order fiasco
-	static std::unordered_map<std::string, VisualNodeChildFunc>& GetChildClasses();
-
-	static VisualNode* ConstructChild(std::string ChildClassName, Json::Value Data);
-	static VisualNode* CopyChild(std::string ChildClassName, VisualNode* Child);
 public:
 	VisualNode(std::string ID = "");
 	VisualNode(const VisualNode& Src);
@@ -151,10 +96,8 @@ public:
 	size_t InputSocketCount() const;
 	size_t OutSocketCount() const;
 
-	std::vector<VisualNode*> GetConnectedNodes() const;
-	virtual VisualNode* GetLogicallyNextNode();
-
-	static void RegisterChildNodeClass(VisualNodeChildFunc Functions, std::string ClassName);
+	std::vector<VisualNode*> GetNodesConnectedToInput() const;
+	std::vector<VisualNode*> GetNodesConnectedToOutput() const;
 
 	VISUAL_NODE_STYLE GetStyle() const;
 	void SetStyle(VISUAL_NODE_STYLE NewValue);

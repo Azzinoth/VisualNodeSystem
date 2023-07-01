@@ -1,11 +1,5 @@
 #include "VisualNode.h"
 
-std::unordered_map<std::string, VisualNodeChildFunc>& VisualNode::GetChildClasses()
-{
-	static std::unordered_map<std::string, VisualNodeChildFunc> ChildClasses;
-	return ChildClasses;
-}
-
 VisualNode::VisualNode(const std::string ID)
 {
 	this->ID = ID;
@@ -198,7 +192,11 @@ void VisualNode::FromJson(Json::Value Json)
 	{
 		const std::string ID = Json["input"][std::to_string(i)]["ID"].asCString();
 		const std::string name = Json["input"][std::to_string(i)]["name"].asCString();
-		const std::string type = Json["input"][std::to_string(i)]["type"].asCString();
+
+		// This is a temporary solution for compatibility with old files.
+		std::string type = "FLOAT";
+		if (Json["input"][std::to_string(i)]["type"].type() == Json::stringValue)
+			type = Json["input"][std::to_string(i)]["type"].asCString();
 
 		Input[i] = new NodeSocket(this, type, name, false);
 		Input[i]->ID = ID;
@@ -215,7 +213,11 @@ void VisualNode::FromJson(Json::Value Json)
 	{
 		const std::string ID = Json["output"][std::to_string(i)]["ID"].asCString();
 		const std::string name = Json["output"][std::to_string(i)]["name"].asCString();
-		const std::string type = Json["output"][std::to_string(i)]["type"].asCString();
+
+		// This is a temporary solution for compatibility with old files.
+		std::string type = "FLOAT";
+		if (Json["output"][std::to_string(i)]["type"].type() == Json::stringValue)
+			type = Json["output"][std::to_string(i)]["type"].asCString();
 
 		Output[i] = new NodeSocket(this, type, name, true);
 		Output[i]->ID = ID;
@@ -285,7 +287,21 @@ void VisualNode::SetForcedOutSocketColor(ImColor* NewValue, const size_t SocketI
 	Output[SocketIndex]->SetForcedConnectionColor(NewValue);
 }
 
-std::vector<VisualNode*> VisualNode::GetConnectedNodes() const
+std::vector<VisualNode*> VisualNode::GetNodesConnectedToInput() const
+{
+	std::vector<VisualNode*> result;
+	for (size_t i = 0; i < Input.size(); i++)
+	{
+		for (size_t j = 0; j < Input[i]->Connections.size(); j++)
+		{
+			result.push_back(Input[i]->Connections[j]->GetParent());
+		}
+	}
+
+	return result;
+}
+
+std::vector<VisualNode*> VisualNode::GetNodesConnectedToOutput() const
 {
 	std::vector<VisualNode*> result;
 	for (size_t i = 0; i < Output.size(); i++)
@@ -297,39 +313,6 @@ std::vector<VisualNode*> VisualNode::GetConnectedNodes() const
 	}
 
 	return result;
-}
-
-VisualNode* VisualNode::GetLogicallyNextNode()
-{
-	const auto Connected = GetConnectedNodes();
-	if (!Connected.empty() && Connected[0] != nullptr)
-		return GetConnectedNodes()[0];
-	
-	return nullptr;
-}
-
-void VisualNode::RegisterChildNodeClass(const VisualNodeChildFunc Functions, const std::string ClassName)
-{
-	if (Functions.JsonToObj != nullptr && Functions.CopyConstructor != nullptr && !ClassName.empty())
-	{
-		GetChildClasses()[ClassName] = Functions;
-	}
-}
-
-VisualNode* VisualNode::ConstructChild(const std::string ChildClassName, const Json::Value Data)
-{
-	if (GetChildClasses().find(ChildClassName) == GetChildClasses().end())
-		return nullptr;
-
-	return GetChildClasses()[ChildClassName].JsonToObj(Data);
-}
-
-VisualNode* VisualNode::CopyChild(const std::string ChildClassName, VisualNode* Child)
-{
-	if (GetChildClasses().find(ChildClassName) == GetChildClasses().end())
-		return nullptr;
-
-	return GetChildClasses()[ChildClassName].CopyConstructor(*Child);
 }
 
 bool VisualNode::OpenContextMenu()
