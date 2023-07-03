@@ -179,7 +179,7 @@ void VisualNodeArea::RenderNodeSocket(NodeSocket* Socket) const
 	if (SocketLookingForConnection == Socket)
 	{
 		CurrentDrawList->ChannelsSetCurrent(3);
-		DrawHermiteLine(SocketPosition, ImGui::GetIO().MousePos, 12, ImColor(200, 200, 200));
+		DrawHermiteLine(SocketPosition, ImGui::GetIO().MousePos, 12, ImColor(200, 200, 200), &Socket->ConnectionStyle);
 	}
 
 	// Draw socket icon.
@@ -336,22 +336,86 @@ void VisualNodeArea::SetAreaPosition(const ImVec2 NewValue)
 	AreaPosition = NewValue;
 }
 
-void VisualNodeArea::DrawHermiteLine(const ImVec2 P1, const ImVec2 P2, const int Steps, const ImColor Color) const
+void VisualNodeArea::DrawHermiteLine(const ImVec2 P1, const ImVec2 P2, const int Steps, const ImColor Color, VisualNodeConnectionStyle* Style) const
 {
 	const ImVec2 t1 = ImVec2(80.0f, 0.0f);
 	const ImVec2 t2 = ImVec2(80.0f, 0.0f);
 
-	for (int step = 0; step <= Steps; step++)
+	if (Style->bMarchingAntsEffect)
 	{
-		const float t = static_cast<float>(step) / static_cast<float>(Steps);
-		const float h1 = +2 * t * t * t - 3 * t * t + 1.0f;
-		const float h2 = -2 * t * t * t + 3 * t * t;
-		const float h3 = t * t * t - 2 * t * t + t;
-		const float h4 = t * t * t - t * t;
-		CurrentDrawList->PathLineTo(ImVec2(h1 * P1.x + h2 * P2.x + h3 * t1.x + h4 * t2.x, h1 * P1.y + h2 * P2.y + h3 * t1.y + h4 * t2.y));
-	}
+		double Time = glfwGetTime();
+		int Offset = static_cast<int>(Time * 20.0f * Style->MarchingAntsSpeed) % Steps;
+		ImVec2 LastPoint = ImVec2(0, 0);
 
-	CurrentDrawList->PathStroke(Color, false, 3.0f);
+		for (int Step = 0; Step <= Steps; Step++)
+		{
+			const float t = static_cast<float>(Step) / static_cast<float>(Steps);
+			const float h1 = +2 * t * t * t - 3 * t * t + 1.0f;
+			const float h2 = -2 * t * t * t + 3 * t * t;
+			const float h3 = t * t * t - 2 * t * t + t;
+			const float h4 = t * t * t - t * t;
+
+			ImVec2 CurrentPoint = ImVec2(h1 * P1.x + h2 * P2.x + h3 * t1.x + h4 * t2.x, h1 * P1.y + h2 * P2.y + h3 * t1.y + h4 * t2.y);
+
+			if (Step != 0) // Avoid drawing on the first step because lastPoint is not valid.
+			{
+				float Thickness = 0.0f;
+				float Intensity = 0.0f;
+				if (Style->bMarchingAntsReverseDirection)
+				{
+					Thickness = ((Step + Offset) % Steps < Steps / 10) ? 5.0f : 3.0f;
+					Intensity = ((Step + Offset) % Steps < Steps / 10) ? 1.2f : 1.0f;
+				}
+				else
+				{
+					Thickness = ((Step - Offset + Steps) % Steps < Steps / 10) ? 5.0f : 3.0f;
+					Intensity = ((Step - Offset + Steps) % Steps < Steps / 10) ? 1.2f : 1.0f;
+				}
+
+				ImColor ModifiedColor = ImColor(Color.Value.x * Intensity, Color.Value.y * Intensity, Color.Value.z * Intensity, Color.Value.w);
+				CurrentDrawList->AddLine(LastPoint, CurrentPoint, ModifiedColor, Thickness);
+			}
+
+			LastPoint = CurrentPoint;
+		}
+
+		CurrentDrawList->PathStroke(Color, false, 3.0f);
+	}
+	else if (Style->bPulseEffect)
+	{
+		for (int Step = 0; Step <= Steps; Step++)
+		{
+			const float t = static_cast<float>(Step) / static_cast<float>(Steps);
+			const float h1 = +2 * t * t * t - 3 * t * t + 1.0f;
+			const float h2 = -2 * t * t * t + 3 * t * t;
+			const float h3 = t * t * t - 2 * t * t + t;
+			const float h4 = t * t * t - t * t;
+
+			CurrentDrawList->PathLineTo(ImVec2(h1 * P1.x + h2 * P2.x + h3 * t1.x + h4 * t2.x, h1 * P1.y + h2 * P2.y + h3 * t1.y + h4 * t2.y));
+		}
+
+		double Time = glfwGetTime();
+		float Pulse = (sin(Time * 5 * Style->PulseSpeed) + 1.0f) / 2.0f;
+		Pulse = glm::max(Style->PulseMin, Pulse);
+		ImColor PulseColor = ImColor(Color.Value.x, Color.Value.y, Color.Value.z, Pulse);
+
+		CurrentDrawList->PathStroke(PulseColor, false, 3.0f);
+	}
+	else
+	{
+		for (int Step = 0; Step <= Steps; Step++)
+		{
+			const float t = static_cast<float>(Step) / static_cast<float>(Steps);
+			const float h1 = +2 * t * t * t - 3 * t * t + 1.0f;
+			const float h2 = -2 * t * t * t + 3 * t * t;
+			const float h3 = t * t * t - 2 * t * t + t;
+			const float h4 = t * t * t - t * t;
+
+			CurrentDrawList->PathLineTo(ImVec2(h1 * P1.x + h2 * P2.x + h3 * t1.x + h4 * t2.x, h1 * P1.y + h2 * P2.y + h3 * t1.y + h4 * t2.y));
+		}
+
+		CurrentDrawList->PathStroke(Color, false, 3.0f);
+	}
 }
 
 void VisualNodeArea::RenderConnection(const VisualNodeConnection* Connection) const
@@ -360,10 +424,10 @@ void VisualNodeArea::RenderConnection(const VisualNodeConnection* Connection) co
 		return;
 
 	ImColor ConnectionColor = ImColor(200, 200, 200);
-	if (Connection->Out->ForceColor != nullptr)
-		ConnectionColor = *Connection->Out->ForceColor;
+	if (Connection->Out->ConnectionStyle.ForceColor != nullptr)
+		ConnectionColor = *Connection->Out->ConnectionStyle.ForceColor;
 
-	DrawHermiteLine(SocketToPosition(Connection->Out), SocketToPosition(Connection->In), 12, ConnectionColor);
+	DrawHermiteLine(SocketToPosition(Connection->Out), SocketToPosition(Connection->In), 12, ConnectionColor, &Connection->Out->ConnectionStyle);
 }
 
 ImVec2 VisualNodeArea::SocketToPosition(const NodeSocket* Socket) const

@@ -51,7 +51,7 @@ class VisualNodeArea
 	void RenderNodeSocket(NodeSocket* Socket) const;
 	bool bOpenMainContextMenu = false;
 
-	void DrawHermiteLine(ImVec2 P1, ImVec2 P2, int Steps, ImColor Color) const;
+	void DrawHermiteLine(ImVec2 P1, ImVec2 P2, int Steps, ImColor Color, VisualNodeConnectionStyle* Style) const;
 	void RenderConnection(const VisualNodeConnection* Connection) const;
 	ImVec2 SocketToPosition(const NodeSocket* Socket) const;
 

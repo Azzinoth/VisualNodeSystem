@@ -36,17 +36,17 @@ std::string NodeSocket::GetType() const
 
 bool NodeSocket::GetForcedConnectionColor(ImColor& Color) const
 {
-	if (ForceColor == nullptr)
+	if (ConnectionStyle.ForceColor == nullptr)
 		return false;
 
-	Color = *ForceColor;
+	Color = *ConnectionStyle.ForceColor;
 
 	return true;
 }
 
 void NodeSocket::SetForcedConnectionColor(ImColor* NewValue)
 {
-	ForceColor = NewValue;
+	ConnectionStyle.ForceColor = NewValue;
 }
 
 VisualNodeConnection::VisualNodeConnection(NodeSocket* Out, NodeSocket* In)

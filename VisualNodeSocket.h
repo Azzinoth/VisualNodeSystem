@@ -21,6 +21,20 @@ class NodeSocket;
 class VisualNodeArea;
 class VisualNodeSystem;
 
+struct VisualNodeConnectionStyle
+{
+	ImColor* ForceColor = nullptr;
+
+	bool bMarchingAntsEffect = false;
+	float MarchingAntsSpeed = 1.0f;
+	bool bMarchingAntsReverseDirection = false;
+
+	bool bPulseEffect = true;
+	float PulseSpeed = 1.0f;
+	float PulseMin = 0.1f;
+	float PulseMax = 1.0f;
+};
+
 class NodeSocket
 {
 	friend VisualNodeSystem;
@@ -34,7 +48,7 @@ class NodeSocket
 	VisualNode* Parent = nullptr;
 	std::vector<NodeSocket*> Connections;
 
-	ImColor* ForceColor = nullptr;
+	VisualNodeConnectionStyle ConnectionStyle;
 public:
 	NodeSocket(VisualNode* Parent, std::string Type, std::string Name, bool bOutput = false);
 
