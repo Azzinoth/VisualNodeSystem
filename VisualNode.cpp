@@ -271,20 +271,48 @@ size_t VisualNode::OutSocketCount() const
 	return Output.size();
 }
 
-bool VisualNode::GetForcedOutSocketColor(ImColor& Color, const size_t SocketIndex) const
+bool VisualNode::GetSocketStyle(bool bOutputSocket, size_t SocketIndex, VisualNodeConnectionStyle& Style) const
 {
-	if (SocketIndex < 0 || SocketIndex >= Output.size())
+	if (SocketIndex < 0)
 		return false;
 
-	return Output[SocketIndex]->GetForcedConnectionColor(Color);
+	if (bOutputSocket)
+	{
+		if (SocketIndex >= Output.size())
+			return false;
+
+		Style = Output[SocketIndex]->ConnectionStyle;
+		return true;
+	}
+	else
+	{
+		if (SocketIndex >= Input.size())
+			return false;
+
+		Style = Input[SocketIndex]->ConnectionStyle;
+		return true;
+	}
 }
 
-void VisualNode::SetForcedOutSocketColor(ImColor* NewValue, const size_t SocketIndex) const
+void VisualNode::SetSocketStyle(bool bOutputSocket, size_t SocketIndex, VisualNodeConnectionStyle NewStyle)
 {
-	if (SocketIndex < 0 || SocketIndex >= Output.size())
-		return;
+	if (SocketIndex < 0)
+		return ;
 
-	Output[SocketIndex]->SetForcedConnectionColor(NewValue);
+	if (bOutputSocket)
+	{
+		if (SocketIndex >= Output.size())
+			return;
+
+		Output[SocketIndex]->ConnectionStyle = NewStyle;
+	}
+	else
+	{
+		if (SocketIndex >= Input.size())
+			return;
+
+		Input[SocketIndex]->ConnectionStyle = NewStyle;
+	}
 }
 
 std::vector<VisualNode*> VisualNode::GetNodesConnectedToInput() const

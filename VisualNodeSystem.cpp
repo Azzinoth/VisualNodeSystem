@@ -31,7 +31,6 @@ void VisualNodeSystem::MoveNodesTo(VisualNodeArea* SourceNodeArea, VisualNodeAre
 
 	for (size_t i = 0; i < SourceNodeArea->Nodes.size(); i++)
 	{
-		//targetNodeArea->nodes.push_back(sourceNodeArea->nodes[i]);
 		TargetNodeArea->AddNode(SourceNodeArea->Nodes[i]);
 	}
 	const size_t SourceNodeCount = SourceNodeArea->Nodes.size();
@@ -55,95 +54,20 @@ void VisualNodeSystem::MoveNodesTo(VisualNodeArea* SourceNodeArea, VisualNodeAre
 	}
 }
 
-//FEVisualNodeArea* FEVisualNodeSystem::createNodeArea(std::vector<FEVisualNode*> nodes)
-//{
-//	createdAreas.push_back(new FEVisualNodeArea());
-//
-//	// Copy all nodes to new node area.
-//	std::unordered_map<FEVisualNode*, FEVisualNode*> oldToNewNode;
-//	std::unordered_map<FEVisualNodeSocket*, FEVisualNodeSocket*> oldToNewSocket;
-//	for (size_t i = 0; i < nodes.size(); i++)
-//	{
-//		FEVisualNode* copyOfNode = FEVisualNode::copyChild(nodes[i]->getType(), nodes[i]);
-//		if (copyOfNode == nullptr)
-//			copyOfNode = new FEVisualNode(*nodes[i]);
-//		copyOfNode->parentArea = createdAreas.back();
-//
-//		createdAreas.back()->nodes.push_back(copyOfNode);
-//
-//		// Associate old to new IDs
-//		oldToNewNode[nodes[i]] = copyOfNode;
-//
-//		for (size_t j = 0; j < nodes[i]->input.size(); j++)
-//		{
-//			oldToNewSocket[nodes[i]->input[j]] = copyOfNode->input[j];
-//		}
-//
-//		for (size_t j = 0; j < nodes[i]->output.size(); j++)
-//		{
-//			oldToNewSocket[nodes[i]->output[j]] = copyOfNode->output[j];
-//		}
-//	}
-//
-//	// Than we need to recreate all connections.
-//	for (size_t i = 0; i < nodes.size(); i++)
-//	{
-//		for (size_t j = 0; j < nodes[i]->input.size(); j++)
-//		{
-//			for (size_t k = 0; k < nodes[i]->input[j]->connections.size(); k++)
-//			{
-//				// if node is connected to node that is not in this list just ignore.
-//				if (isNodeIDInList(nodes[i]->input[j]->connections[k]->getParent()->getID(), nodes))
-//				{
-//					createdAreas.back()->nodes[i]->input[j]->connections.push_back(oldToNewSocket[nodes[i]->input[j]->connections[k]]);
-//
-//					// Add connection to node area.
-//					// Maybe we already establish this connecton.
-//					bool shouldAdd = true;
-//					for (size_t l = 0; l < createdAreas.back()->connections.size(); l++)
-//					{
-//						if (createdAreas.back()->connections[l]->in == oldToNewSocket[nodes[i]->input[j]] &&
-//							createdAreas.back()->connections[l]->out == oldToNewSocket[nodes[i]->input[j]->connections[k]])
-//						{
-//							shouldAdd = false;
-//							break;
-//						}
-//					}
-//
-//					if (shouldAdd)
-//						createdAreas.back()->connections.push_back(new FEVisualNodeConnection(oldToNewSocket[nodes[i]->input[j]->connections[k]], oldToNewSocket[nodes[i]->input[j]]));
-//				}
-//			}
-//		}
-//
-//		for (size_t j = 0; j < nodes[i]->output.size(); j++)
-//		{
-//			for (size_t k = 0; k < nodes[i]->output[j]->connections.size(); k++)
-//			{
-//				// if node is connected to node that is not in this list just ignore.
-//				if (isNodeIDInList(nodes[i]->output[j]->connections[k]->getParent()->getID(), nodes))
-//				{
-//					createdAreas.back()->nodes[i]->output[j]->connections.push_back(oldToNewSocket[nodes[i]->output[j]->connections[k]]);
-//
-//					// Add connection to node area.
-//					// Maybe we already establish this connecton.
-//					bool shouldAdd = true;
-//					for (size_t l = 0; l < createdAreas.back()->connections.size(); l++)
-//					{
-//						if (createdAreas.back()->connections[l]->in == oldToNewSocket[nodes[i]->output[j]->connections[k]] &&
-//							createdAreas.back()->connections[l]->out == oldToNewSocket[nodes[i]->output[j]])
-//						{
-//							shouldAdd = false;
-//							break;
-//						}
-//					}
-//
-//					if (shouldAdd)
-//						createdAreas.back()->connections.push_back(new FEVisualNodeConnection(oldToNewSocket[nodes[i]->output[j]], oldToNewSocket[nodes[i]->output[j]->connections[k]]));
-//				}
-//			}
-//		}
-//	}
-//
-//	return createdAreas.back();
-//}
+std::vector<std::pair<std::string, ImColor>> VisualNodeSystem::GetAssociationsOfSocketTypeToColor(std::string SocketType, ImColor Color)
+{
+	std::vector<std::pair<std::string, ImColor>> Result;
+	auto iterator = NodeSocket::SocketTypeToColorAssosiations.begin();
+	while (iterator != NodeSocket::SocketTypeToColorAssosiations.end())
+	{
+		Result.push_back(std::make_pair(iterator->first, iterator->second));
+		iterator++;
+	}
+
+	return Result;
+}
+
+void VisualNodeSystem::AssociateSocketTypeToColor(std::string SocketType, ImColor Color)
+{
+	NodeSocket::SocketTypeToColorAssosiations[SocketType] = Color;
+}

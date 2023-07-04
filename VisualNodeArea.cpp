@@ -178,8 +178,12 @@ void VisualNodeArea::RenderNodeSocket(NodeSocket* Socket) const
 
 	if (SocketLookingForConnection == Socket)
 	{
+		ImColor ConnectionColor = ImColor(200, 200, 200);
+		if (NodeSocket::SocketTypeToColorAssosiations.find(SocketLookingForConnection->GetType()) != NodeSocket::SocketTypeToColorAssosiations.end())
+			ConnectionColor = NodeSocket::SocketTypeToColorAssosiations[SocketLookingForConnection->GetType()];
+
 		CurrentDrawList->ChannelsSetCurrent(3);
-		DrawHermiteLine(SocketPosition, ImGui::GetIO().MousePos, 12, ImColor(200, 200, 200), &Socket->ConnectionStyle);
+		DrawHermiteLine(SocketPosition, ImGui::GetIO().MousePos, 12, ConnectionColor, &Socket->ConnectionStyle);
 	}
 
 	// Draw socket icon.
@@ -424,6 +428,9 @@ void VisualNodeArea::RenderConnection(const VisualNodeConnection* Connection) co
 		return;
 
 	ImColor ConnectionColor = ImColor(200, 200, 200);
+	if (NodeSocket::SocketTypeToColorAssosiations.find(Connection->Out->GetType()) != NodeSocket::SocketTypeToColorAssosiations.end())
+		ConnectionColor = NodeSocket::SocketTypeToColorAssosiations[Connection->Out->GetType()];
+
 	if (Connection->Out->ConnectionStyle.ForceColor != nullptr)
 		ConnectionColor = *Connection->Out->ConnectionStyle.ForceColor;
 

@@ -29,7 +29,7 @@ struct VisualNodeConnectionStyle
 	float MarchingAntsSpeed = 1.0f;
 	bool bMarchingAntsReverseDirection = false;
 
-	bool bPulseEffect = true;
+	bool bPulseEffect = false;
 	float PulseSpeed = 1.0f;
 	float PulseMin = 0.1f;
 	float PulseMax = 1.0f;
@@ -49,6 +49,7 @@ class NodeSocket
 	std::vector<NodeSocket*> Connections;
 
 	VisualNodeConnectionStyle ConnectionStyle;
+	static std::unordered_map<std::string, ImColor> SocketTypeToColorAssosiations;
 public:
 	NodeSocket(VisualNode* Parent, std::string Type, std::string Name, bool bOutput = false);
 

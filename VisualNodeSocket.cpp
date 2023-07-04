@@ -1,5 +1,7 @@
 #include "VisualNodeSocket.h"
 
+std::unordered_map<std::string, ImColor> NodeSocket::SocketTypeToColorAssosiations;
+
 NodeSocket::NodeSocket(VisualNode* Parent, const std::string Type, const std::string Name, bool bOutput)
 {
 	this->Parent = Parent;

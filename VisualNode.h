@@ -90,8 +90,8 @@ public:
 	virtual Json::Value ToJson();
 	virtual void FromJson(Json::Value Json);
 
-	bool GetForcedOutSocketColor(ImColor& Color, size_t SocketIndex) const;
-	void SetForcedOutSocketColor(ImColor* NewValue, size_t SocketIndex) const;
+	bool VisualNode::GetSocketStyle(bool bOutputSocket, size_t SocketIndex, VisualNodeConnectionStyle& Style) const;
+	void SetSocketStyle(bool bOutputSocket, size_t SocketIndex, VisualNodeConnectionStyle NewStyle);
 
 	size_t InputSocketCount() const;
 	size_t OutSocketCount() const;
