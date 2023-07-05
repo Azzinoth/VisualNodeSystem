@@ -23,6 +23,7 @@ VisualNode::VisualNode(const VisualNode& Src)
 
 	Name = Src.Name;
 	Type = Src.Type;
+	Style = Src.Style;
 	bShouldBeDestroyed = false;
 
 	LeftTop = Src.LeftTop;
@@ -134,6 +135,10 @@ bool VisualNode::CanConnect(NodeSocket* OwnSocket, NodeSocket* CandidateSocket, 
 	if (OwnSocket->bOutput == CandidateSocket->bOutput)
 		return false;
 
+	// Types must match.
+	if (OwnSocket->GetType() != CandidateSocket->GetType())
+		return false;
+
 	return true;
 }
 
@@ -148,6 +153,7 @@ Json::Value VisualNode::ToJson()
 
 	result["ID"] = ID;
 	result["nodeType"] = Type;
+	result["nodeStyle"] = Style;
 	result["position"]["x"] = Position.x;
 	result["position"]["y"] = Position.y;
 	result["size"]["x"] = Size.x;
@@ -175,6 +181,8 @@ void VisualNode::FromJson(Json::Value Json)
 {
 	ID = Json["ID"].asCString();
 	Type = Json["nodeType"].asCString();
+	if (Json.isMember("nodeStyle"))
+		Style = VISUAL_NODE_STYLE(Json["nodeStyle"].asInt());
 	Position.x = Json["position"]["x"].asFloat();
 	Position.y = Json["position"]["y"].asFloat();
 	Size.x = Json["size"]["x"].asFloat();
@@ -369,4 +377,14 @@ bool VisualNode::IsHovered() const
 void VisualNode::SetIsHovered(const bool NewValue)
 {
 	bHovered = NewValue;
+}
+
+bool VisualNode::CouldBeMoved() const
+{
+	return bCouldBeMoved;
+}
+
+void VisualNode::SetCouldBeMoved(bool NewValue)
+{
+	bCouldBeMoved = NewValue;
 }

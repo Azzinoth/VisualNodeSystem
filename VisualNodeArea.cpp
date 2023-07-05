@@ -894,7 +894,8 @@ void VisualNodeArea::InputUpdate()
 				{
 					for (size_t i = 0; i < Selected.size(); i++)
 					{
-						Selected[i]->SetPosition(Selected[i]->GetPosition() + ImGui::GetIO().MouseDelta);
+						if (Selected[i]->CouldBeMoved())
+							Selected[i]->SetPosition(Selected[i]->GetPosition() + ImGui::GetIO().MouseDelta);
 					}
 				}
 			}
@@ -1437,6 +1438,18 @@ VisualNodeArea* VisualNodeArea::FromJson(std::string JsonText)
 	{
 		std::string NodeType = root["nodes"][std::to_string(i)]["nodeType"].asCString();
 		VisualNode* NewNode = NODE_FACTORY.CreateNode(NodeType);
+		if (NewNode == nullptr)
+		{
+			if (NodeType == "VisualNode")
+			{
+				NewNode = new VisualNode();
+			}
+			else
+			{
+				continue;
+			}
+		}
+			
 		NewNode->FromJson(root["nodes"][std::to_string(i)]);
 
 		if (NewNode != nullptr)

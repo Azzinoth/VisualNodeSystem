@@ -44,6 +44,7 @@ protected:
 	std::string Type;
 	bool bShouldBeDestroyed = false;
 	bool bCouldBeDestroyed = true;
+	bool bCouldBeMoved = true;
 
 	std::vector<NodeSocket*> Input;
 	std::vector<NodeSocket*> Output;
@@ -103,4 +104,7 @@ public:
 	void SetStyle(VISUAL_NODE_STYLE NewValue);
 
 	bool IsHovered() const;
+
+	bool CouldBeMoved() const;
+	void SetCouldBeMoved(bool NewValue);
 };
