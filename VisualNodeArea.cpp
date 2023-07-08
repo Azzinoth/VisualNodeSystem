@@ -1629,3 +1629,32 @@ void VisualNodeArea::SetIsAreaFillingWindow(bool NewValue)
 {
 	bFillWindow = NewValue;
 }
+
+bool VisualNodeArea::TriggerSocketEvent(NodeSocket* CallerNodeSocket, NodeSocket* TriggeredNodeSocket, VISUAL_NODE_SOCKET_EVENT EventType)
+{
+	if (CallerNodeSocket == nullptr || TriggeredNodeSocket == nullptr)
+		return false;
+
+	if (EventType != VISUAL_NODE_SOCKET_EXECUTE)
+		return false;
+
+	if (TriggeredNodeSocket->GetParent() == nullptr)
+		return false;
+
+	TriggeredNodeSocket->GetParent()->SocketEvent(TriggeredNodeSocket, CallerNodeSocket, EventType);
+
+	return true;
+}
+
+bool VisualNodeArea::TriggerOrphanSocketEvent(VisualNode* Node, VISUAL_NODE_SOCKET_EVENT EventType)
+{
+	if (Node == nullptr)
+		return false;
+
+	if (EventType != VISUAL_NODE_SOCKET_EXECUTE)
+		return false;
+
+	Node->SocketEvent(nullptr, nullptr, EventType);
+
+	return true;
+}

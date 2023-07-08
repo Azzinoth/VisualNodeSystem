@@ -145,4 +145,7 @@ public:
 
 	bool IsAreaFillingWindow();
 	void SetIsAreaFillingWindow(bool NewValue);
+
+	bool TriggerSocketEvent(NodeSocket* CallerNodeSocket, NodeSocket* TriggeredNodeSocket, VISUAL_NODE_SOCKET_EVENT EventType);
+	bool TriggerOrphanSocketEvent(VisualNode* Node, VISUAL_NODE_SOCKET_EVENT EventType);
 };
