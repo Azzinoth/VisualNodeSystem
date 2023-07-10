@@ -1635,7 +1635,7 @@ bool VisualNodeArea::TriggerSocketEvent(NodeSocket* CallerNodeSocket, NodeSocket
 	if (CallerNodeSocket == nullptr || TriggeredNodeSocket == nullptr)
 		return false;
 
-	if (EventType != VISUAL_NODE_SOCKET_EXECUTE)
+	if (EventType != VISUAL_NODE_SOCKET_EXECUTE && EventType != VISUAL_NODE_SOCKET_UPDATE)
 		return false;
 
 	if (TriggeredNodeSocket->GetParent() == nullptr)
