@@ -2,16 +2,17 @@
 
 std::unordered_map<std::string, ImColor> NodeSocket::SocketTypeToColorAssosiations;
 
-NodeSocket::NodeSocket(VisualNode* Parent, const std::string Type, const std::string Name, bool bOutput)
+NodeSocket::NodeSocket(VisualNode* Parent, const std::string Type, const std::string Name, bool bOutput, std::function<void* ()> OutputDataFunction)
 {
 	this->Parent = Parent;
 	this->Type = Type;
 	this->Name = Name;
 	this->ID = APPLICATION.GetUniqueHexID();
 	this->bOutput = bOutput;
+	this->OutputData = OutputDataFunction;
 }
 
-std::string NodeSocket::GetID()
+std::string NodeSocket::GetID() const
 {
 	return ID;
 }
@@ -26,7 +27,7 @@ std::vector<NodeSocket*> NodeSocket::GetConnections()
 	return Connections;
 }
 
-std::string NodeSocket::GetName()
+std::string NodeSocket::GetName() const
 {
 	return Name;
 }
@@ -49,6 +50,11 @@ bool NodeSocket::GetForcedConnectionColor(ImColor& Color) const
 void NodeSocket::SetForcedConnectionColor(ImColor* NewValue)
 {
 	ConnectionStyle.ForceColor = NewValue;
+}
+
+void NodeSocket::SetFunctionToOutputData(std::function<void* ()> NewFunction)
+{
+	OutputData = NewFunction;
 }
 
 VisualNodeConnection::VisualNodeConnection(NodeSocket* Out, NodeSocket* In)

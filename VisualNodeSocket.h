@@ -49,16 +49,18 @@ class NodeSocket
 
 	VisualNodeConnectionStyle ConnectionStyle;
 	static std::unordered_map<std::string, ImColor> SocketTypeToColorAssosiations;
+
+	std::function<void* ()> OutputData = []() { return nullptr; };
 protected:
 	VisualNode* Parent = nullptr;
 public:
-	NodeSocket(VisualNode* Parent, std::string Type, std::string Name, bool bOutput = false);
+	NodeSocket(VisualNode* Parent, std::string Type, std::string Name, bool bOutput = false, std::function<void* ()> OutputDataFunction = []() { return nullptr; });
 
 	VisualNode* GetParent() const;
 	std::vector<NodeSocket*> GetConnections();
 
-	std::string GetID();
-	std::string GetName();
+	std::string GetID() const;
+	std::string GetName() const;
 
 	std::string GetType() const;
 
@@ -68,7 +70,8 @@ public:
 	bool isOutput() const { return bOutput; }
 	bool isInput() const { return !bOutput; }
 	
-	virtual void* GetData() { return nullptr; }
+	void SetFunctionToOutputData(std::function<void* ()> NewFunction);
+	void* GetData() { return OutputData(); }
 };
 
 class VisualNodeConnection

@@ -34,12 +34,12 @@ VisualNode::VisualNode(const VisualNode& Src)
 
 	for (size_t i = 0; i < Src.Input.size(); i++)
 	{
-		Input.push_back(new NodeSocket(this, Src.Input[i]->GetType(), Src.Input[i]->GetName(), false));
+		Input.push_back(new NodeSocket(this, Src.Input[i]->GetType(), Src.Input[i]->GetName(), false, Src.Input[i]->OutputData));
 	}
 
 	for (size_t i = 0; i < Src.Output.size(); i++)
 	{
-		Output.push_back(new NodeSocket(this, Src.Output[i]->GetType(), Src.Output[i]->GetName(), true));
+		Output.push_back(new NodeSocket(this, Src.Output[i]->GetType(), Src.Output[i]->GetName(), true, Src.Output[i]->OutputData));
 	}
 }
 
