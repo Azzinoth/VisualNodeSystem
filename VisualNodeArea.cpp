@@ -513,6 +513,7 @@ void VisualNodeArea::Update()
 		}
 	}
 
+	ProcessSocketEventQueue();
 	Render();
 }
 
@@ -1641,7 +1642,7 @@ bool VisualNodeArea::TriggerSocketEvent(NodeSocket* CallerNodeSocket, NodeSocket
 	if (TriggeredNodeSocket->GetParent() == nullptr)
 		return false;
 
-	TriggeredNodeSocket->GetParent()->SocketEvent(TriggeredNodeSocket, CallerNodeSocket, EventType);
+	SocketEventQueue.push({ TriggeredNodeSocket, CallerNodeSocket, EventType });
 
 	return true;
 }
@@ -1657,4 +1658,15 @@ bool VisualNodeArea::TriggerOrphanSocketEvent(VisualNode* Node, VISUAL_NODE_SOCK
 	Node->SocketEvent(nullptr, nullptr, EventType);
 
 	return true;
+}
+
+void VisualNodeArea::ProcessSocketEventQueue()
+{
+	while (!SocketEventQueue.empty())
+	{
+		SocketEvent Event = SocketEventQueue.front();
+		SocketEventQueue.pop();
+
+		Event.TriggeredNodeSocket->GetParent()->SocketEvent(Event.TriggeredNodeSocket, Event.CallerNodeSocket, Event.EventType);
+	}
 }

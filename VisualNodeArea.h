@@ -91,6 +91,15 @@ class VisualNodeArea
 	}
 
 	static ImVec2 NeededShift;
+
+	struct SocketEvent
+	{
+		NodeSocket* TriggeredNodeSocket;
+		NodeSocket* CallerNodeSocket;
+		VISUAL_NODE_SOCKET_EVENT EventType;
+	};
+	std::queue<SocketEvent> SocketEventQueue;
+	void ProcessSocketEventQueue();
 public:
 	void Update();
 	void Clear();
