@@ -12,6 +12,8 @@ This library provides a powerful framework for creating and managing visual node
 
 ## Key Features
 
+- **Smooth Zoom**: A precise and dynamic zoom functionality, allowing for detailed viewing and efficient navigation.
+
 - **Versatile Node Styles**: This library supports various visual node styles, currently including Default and Circle. You can easily expand this with new styles.
 
 - **Flexible Socket Management**: The library offers functionalities for managing node sockets (input/output). These sockets serve as points of data connection between different nodes.
@@ -20,7 +22,7 @@ This library provides a powerful framework for creating and managing visual node
 
 - **JSON Serialization**: The library provides functionalities to serialize/deserialize the node data to/from JSON format.
 
-- **Macro for Child Node Creation**: The library includes a system for creating child nodes with macros, which enables JSON serialization of custom nodes.
+- **Node Factory For Child Node Creation**: The library includes a system for creating child nodes using node factory, which enables JSON serialization of custom nodes.
 
 - **Custom Context Menus**: The library supports the integration of custom context menus.
 

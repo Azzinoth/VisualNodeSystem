@@ -44,14 +44,14 @@ void VisualNodeArea::RenderNode(VisualNode* Node) const
 
 	ImGui::PushID(Node->GetID().c_str());
 
-	Node->LeftTop = ImGui::GetCurrentWindow()->Pos + Node->GetPosition() + RenderOffset;
+	Node->LeftTop = ImGui::GetCurrentWindow()->Pos + Node->GetPosition() * Zoom + RenderOffset;
 	if (Node->GetStyle() == VISUAL_NODE_STYLE_DEFAULT)
 	{
-		Node->RightBottom = Node->LeftTop + Node->GetSize();
+		Node->RightBottom = Node->LeftTop + Node->GetSize() * Zoom;
 	}
 	else if (Node->GetStyle() == VISUAL_NODE_STYLE_CIRCLE)
 	{
-		Node->RightBottom = Node->LeftTop + ImVec2(NODE_DIAMETER, NODE_DIAMETER);
+		Node->RightBottom = Node->LeftTop + ImVec2(NODE_DIAMETER, NODE_DIAMETER) * Zoom;
 	}
 
 	if (IsSelected(Node))
@@ -60,11 +60,11 @@ void VisualNodeArea::RenderNode(VisualNode* Node) const
 		{
 			const ImVec2 LeftTop = Node->LeftTop - ImVec2(4.0f, 4.0f);
 			const ImVec2 RightBottom = Node->RightBottom + ImVec2(4.0f, 4.0f);
-			ImGui::GetWindowDrawList()->AddRect(LeftTop, RightBottom, IM_COL32(175, 255, 175, 255), 16.0f);
+			ImGui::GetWindowDrawList()->AddRect(LeftTop, RightBottom, IM_COL32(175, 255, 175, 255), 16.0f * Zoom);
 		}
 		else if (Node->GetStyle() == VISUAL_NODE_STYLE_CIRCLE)
 		{
-			ImGui::GetWindowDrawList()->AddCircle(Node->LeftTop + ImVec2(NODE_DIAMETER / 2.0f, NODE_DIAMETER / 2.0f), NODE_DIAMETER + 4.0f, IM_COL32(175, 255, 175, 255), 32, 4.0f);
+			ImGui::GetWindowDrawList()->AddCircle(Node->LeftTop + ImVec2(NODE_DIAMETER / 2.0f, NODE_DIAMETER / 2.0f) * Zoom, NODE_DIAMETER * Zoom + 4.0f, IM_COL32(175, 255, 175, 255), 32, 4.0f);
 		}
 	}
 
@@ -76,7 +76,7 @@ void VisualNodeArea::RenderNode(VisualNode* Node) const
 	}
 	else if (Node->GetStyle() == VISUAL_NODE_STYLE_CIRCLE)
 	{
-		ImGui::SetCursorScreenPos(Node->LeftTop - ImVec2(NODE_DIAMETER / 2.0f - NODE_DIAMETER / 4.0f, NODE_DIAMETER / 2.0f - NODE_DIAMETER / 4.0f));
+		ImGui::SetCursorScreenPos(Node->LeftTop - ImVec2(NODE_DIAMETER / 2.0f - NODE_DIAMETER / 4.0f, NODE_DIAMETER / 2.0f - NODE_DIAMETER / 4.0f) * Zoom);
 	}
 	Node->Draw();
 
@@ -87,12 +87,12 @@ void VisualNodeArea::RenderNode(VisualNode* Node) const
 	const ImU32 NodeBackgroundColor = (Hovered == Node || IsSelected(Node)) ? IM_COL32(75, 75, 75, 125) : IM_COL32(60, 60, 60, 125);
 	if (Node->GetStyle() == VISUAL_NODE_STYLE_DEFAULT)
 	{
-		CurrentDrawList->AddRectFilled(Node->LeftTop, Node->RightBottom, NodeBackgroundColor, 8.0f);
+		CurrentDrawList->AddRectFilled(Node->LeftTop, Node->RightBottom, NodeBackgroundColor, 8.0f * Zoom);
 	}
 	else if (Node->GetStyle() == VISUAL_NODE_STYLE_CIRCLE)
 	{
 		ImGui::GetWindowDrawList()->AddCircleFilled(Node->LeftTop + (Node->RightBottom - Node->LeftTop) / 2.0f,
-													NODE_DIAMETER,
+													NODE_DIAMETER * Zoom,
 													NodeBackgroundColor, 32);
 	}
 
@@ -100,23 +100,23 @@ void VisualNodeArea::RenderNode(VisualNode* Node) const
 	{
 		// Drawing caption area.
 		ImVec2 TitleArea = Node->RightBottom;
-		TitleArea.y = Node->LeftTop.y + NODE_TITLE_HEIGHT;
+		TitleArea.y = Node->LeftTop.y + GetNodeTitleHeight();
 		const ImU32 NodeTitleBackgroundColor = (Hovered == Node || IsSelected(Node)) ? Node->TitleBackgroundColorHovered : Node->TitleBackgroundColor;
 
-		CurrentDrawList->AddRectFilled(Node->LeftTop + ImVec2(1, 1), TitleArea, NodeTitleBackgroundColor, 8.0f);
-		CurrentDrawList->AddRect(Node->LeftTop, Node->RightBottom, ImColor(100, 100, 100), 8.0f);
+		CurrentDrawList->AddRectFilled(Node->LeftTop + ImVec2(1, 1), TitleArea, NodeTitleBackgroundColor, 8.0f * Zoom);
+		CurrentDrawList->AddRect(Node->LeftTop, Node->RightBottom, ImColor(100, 100, 100), 8.0f * Zoom);
 
 		const ImVec2 TextSize = ImGui::CalcTextSize(Node->GetName().c_str());
 		ImVec2 TextPosition;
-		TextPosition.x = Node->LeftTop.x + (Node->GetSize().x / 2) - TextSize.x / 2;
-		TextPosition.y = Node->LeftTop.y + (NODE_TITLE_HEIGHT / 2) - TextSize.y / 2;
+		TextPosition.x = Node->LeftTop.x + (Node->GetSize().x * Zoom / 2) - TextSize.x / 2;
+		TextPosition.y = Node->LeftTop.y + (GetNodeTitleHeight() / 2) - TextSize.y / 2;
 
 		ImGui::SetCursorScreenPos(TextPosition);
 		ImGui::Text(Node->GetName().c_str());
 	}
 	else if (Node->GetStyle() == VISUAL_NODE_STYLE_CIRCLE)
 	{
-		CurrentDrawList->AddCircle(Node->LeftTop + ImVec2(NODE_DIAMETER / 2.0f, NODE_DIAMETER / 2.0f), NODE_DIAMETER + 2.0f, ImColor(100, 100, 100), 32, 2.0f);
+		CurrentDrawList->AddCircle(Node->LeftTop + ImVec2(NODE_DIAMETER / 2.0f, NODE_DIAMETER / 2.0f) * Zoom, NODE_DIAMETER * Zoom + 2.0f, ImColor(100, 100, 100), 32, 2.0f);
 	}
 
 	RenderNodeSockets(Node);
@@ -147,7 +147,7 @@ void VisualNodeArea::RenderNodeSocket(NodeSocket* Socket) const
 		const ImVec2 TextSize = ImGui::CalcTextSize(Socket->GetName().c_str());
 
 		float TextX = SocketPosition.x;
-		TextX += Input ? NODE_SOCKET_SIZE * 2.0f : -NODE_SOCKET_SIZE * 2.0f - TextSize.x;
+		TextX += Input ? GetNodeSocketSize() * 2.0f : -GetNodeSocketSize() * 2.0f - TextSize.x;
 
 		ImGui::SetCursorScreenPos(ImVec2(TextX, SocketPosition.y - TextSize.y / 2.0f));
 		ImGui::Text(Socket->GetName().c_str());
@@ -183,11 +183,11 @@ void VisualNodeArea::RenderNodeSocket(NodeSocket* Socket) const
 			ConnectionColor = NodeSocket::SocketTypeToColorAssosiations[SocketLookingForConnection->GetType()];
 
 		CurrentDrawList->ChannelsSetCurrent(3);
-		DrawHermiteLine(SocketPosition, ImGui::GetIO().MousePos, 12, ConnectionColor, &Socket->ConnectionStyle);
+		DrawHermiteLine(SocketPosition / Zoom, ImGui::GetIO().MousePos / Zoom, 12, ConnectionColor, &Socket->ConnectionStyle);
 	}
 
 	// Draw socket icon.
-	CurrentDrawList->AddCircleFilled(SocketPosition, NODE_SOCKET_SIZE, SocketColor);
+	CurrentDrawList->AddCircleFilled(SocketPosition, GetNodeSocketSize(), SocketColor);
 }
 
 void VisualNodeArea::RenderGrid(ImVec2 CurrentPosition) const
@@ -196,42 +196,45 @@ void VisualNodeArea::RenderGrid(ImVec2 CurrentPosition) const
 
 	CurrentPosition.x += RenderOffset.x;
 	CurrentPosition.y += RenderOffset.y;
+
+	// Adjust grid step size based on zoom level.
+	float ZoomedGridStep = VISUAL_NODE_GRID_STEP * Zoom;
 	
 	// Horizontal lines
-	const int StartingStep = static_cast<int>(ceil(-10000.0f / VISUAL_NODE_GRID_STEP));
-	const int StepCount = static_cast<int>(ceil(10000.0f / VISUAL_NODE_GRID_STEP));
+	const int StartingStep = static_cast<int>(ceil(-GRID_SIZE));
+	const int StepCount = static_cast<int>(ceil(GRID_SIZE));
 	for (int i = StartingStep; i < StepCount; i++)
 	{
-		ImVec2 from = ImVec2(CurrentPosition.x - 10000.0f , CurrentPosition.y + i * VISUAL_NODE_GRID_STEP);
-		ImVec2 to = ImVec2(CurrentPosition.x + 10000.0f, CurrentPosition.y + i * VISUAL_NODE_GRID_STEP);
+		ImVec2 from = ImVec2(CurrentPosition.x - GRID_SIZE * Zoom, CurrentPosition.y + i * ZoomedGridStep);
+		ImVec2 to = ImVec2(CurrentPosition.x + GRID_SIZE * Zoom * 4, CurrentPosition.y + i * ZoomedGridStep);
 
-		if (i % 10 != 0)
+		if (i % BOLD_LINE_FREQUENCY != 0)
 		{
 			CurrentDrawList->ChannelsSetCurrent(1);
-			CurrentDrawList->AddLine(from, to, ImGui::GetColorU32(GridLinesColor), 1);
+			CurrentDrawList->AddLine(from, to, ImGui::GetColorU32(GridLinesColor), DEFAULT_LINE_WIDTH);
 		}
 		else
 		{
 			CurrentDrawList->ChannelsSetCurrent(0);
-			CurrentDrawList->AddLine(from, to, ImGui::GetColorU32(GridBoldLinesColor), 3);
+			CurrentDrawList->AddLine(from, to, ImGui::GetColorU32(GridBoldLinesColor), BOLD_LINE_WIDTH);
 		}
 	}
 
 	// Vertical lines
 	for (int i = StartingStep; i < StepCount; i++)
 	{
-		ImVec2 from = ImVec2(CurrentPosition.x + i * VISUAL_NODE_GRID_STEP, CurrentPosition.y - 10000.0f);
-		ImVec2 to = ImVec2(CurrentPosition.x + i * VISUAL_NODE_GRID_STEP, CurrentPosition.y + 10000.0f);
+		ImVec2 from = ImVec2(CurrentPosition.x + i * ZoomedGridStep, CurrentPosition.y - GRID_SIZE * Zoom);
+		ImVec2 to = ImVec2(CurrentPosition.x + i * ZoomedGridStep, CurrentPosition.y + GRID_SIZE * Zoom * 4);
 
-		if (i % 10 != 0)
+		if (i % BOLD_LINE_FREQUENCY != 0)
 		{
 			CurrentDrawList->ChannelsSetCurrent(1);
-			CurrentDrawList->AddLine(from, to, ImGui::GetColorU32(GridLinesColor), 1);
+			CurrentDrawList->AddLine(from, to, ImGui::GetColorU32(GridLinesColor), DEFAULT_LINE_WIDTH);
 		}
 		else
 		{
 			CurrentDrawList->ChannelsSetCurrent(0);
-			CurrentDrawList->AddLine(from, to, ImGui::GetColorU32(GridBoldLinesColor), 3);
+			CurrentDrawList->AddLine(from, to, ImGui::GetColorU32(GridBoldLinesColor), BOLD_LINE_WIDTH);
 		}
 	}
 
@@ -240,6 +243,11 @@ void VisualNodeArea::RenderGrid(ImVec2 CurrentPosition) const
 
 void VisualNodeArea::Render()
 {
+	ImGuiStyle OriginalStyle = ImGui::GetStyle();
+	ImGuiStyle& ZoomStyle = ImGui::GetStyle();
+	ZoomStyle = OriginalStyle;
+	ZoomStyle.ScaleAllSizes(Zoom * 2.0f);
+	
 	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(1, 1));
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
 	ImGui::PushStyleColor(ImGuiCol_ChildBg, GridBackgroundColor);
@@ -250,10 +258,12 @@ void VisualNodeArea::Render()
 	if (bFillWindow)
 	{
 		auto NodeAreaParentWindow = ImGui::GetCurrentWindow();
-		SetAreaSize(NodeAreaParentWindow->Size - ImVec2(2, 2)/*NodeAreaParentWindow->WindowPadding*/);
+		SetAreaSize(NodeAreaParentWindow->Size - ImVec2(2, 2));
 	}
 
 	ImGui::BeginChild("Nodes area", GetAreaSize(), true, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoMove);
+
+	ImGui::SetWindowFontScale(Zoom);
 
 	NodeAreaWindow = ImGui::GetCurrentWindow();
 	CurrentDrawList = ImGui::GetWindowDrawList();
@@ -312,6 +322,10 @@ void VisualNodeArea::Render()
 	ImGui::EndChild();
 	ImGui::PopStyleColor();
 	ImGui::PopStyleVar(2);
+
+	// Reset to the original style before zooming.
+	ImGuiStyle& CurrentStyle = ImGui::GetStyle();
+	CurrentStyle = OriginalStyle;
 }
 
 ImVec2 VisualNodeArea::GetAreaSize() const
@@ -359,7 +373,7 @@ void VisualNodeArea::DrawHermiteLine(const ImVec2 P1, const ImVec2 P2, const int
 			const float h3 = t * t * t - 2 * t * t + t;
 			const float h4 = t * t * t - t * t;
 
-			ImVec2 CurrentPoint = ImVec2(h1 * P1.x + h2 * P2.x + h3 * t1.x + h4 * t2.x, h1 * P1.y + h2 * P2.y + h3 * t1.y + h4 * t2.y);
+			ImVec2 CurrentPoint = ImVec2(Zoom, Zoom) * ImVec2(h1 * P1.x + h2 * P2.x + h3 * t1.x + h4 * t2.x, h1 * P1.y + h2 * P2.y + h3 * t1.y + h4 * t2.y);
 
 			if (Step != 0) // Avoid drawing on the first step because lastPoint is not valid.
 			{
@@ -377,13 +391,13 @@ void VisualNodeArea::DrawHermiteLine(const ImVec2 P1, const ImVec2 P2, const int
 				}
 
 				ImColor ModifiedColor = ImColor(Color.Value.x * Intensity, Color.Value.y * Intensity, Color.Value.z * Intensity, Color.Value.w);
-				CurrentDrawList->AddLine(LastPoint, CurrentPoint, ModifiedColor, Thickness);
+				CurrentDrawList->AddLine(LastPoint, CurrentPoint, ModifiedColor, Thickness * Zoom);
 			}
 
 			LastPoint = CurrentPoint;
 		}
 
-		CurrentDrawList->PathStroke(Color, false, 3.0f);
+		CurrentDrawList->PathStroke(Color, false, GetConnectionThickness());
 	}
 	else if (Style->bPulseEffect)
 	{
@@ -395,7 +409,7 @@ void VisualNodeArea::DrawHermiteLine(const ImVec2 P1, const ImVec2 P2, const int
 			const float h3 = t * t * t - 2 * t * t + t;
 			const float h4 = t * t * t - t * t;
 
-			CurrentDrawList->PathLineTo(ImVec2(h1 * P1.x + h2 * P2.x + h3 * t1.x + h4 * t2.x, h1 * P1.y + h2 * P2.y + h3 * t1.y + h4 * t2.y));
+			CurrentDrawList->PathLineTo(ImVec2(Zoom, Zoom) * ImVec2(h1 * P1.x + h2 * P2.x + h3 * t1.x + h4 * t2.x, h1 * P1.y + h2 * P2.y + h3 * t1.y + h4 * t2.y));
 		}
 
 		double Time = glfwGetTime();
@@ -403,7 +417,7 @@ void VisualNodeArea::DrawHermiteLine(const ImVec2 P1, const ImVec2 P2, const int
 		Pulse = glm::max(Style->PulseMin, Pulse);
 		ImColor PulseColor = ImColor(Color.Value.x, Color.Value.y, Color.Value.z, Pulse);
 
-		CurrentDrawList->PathStroke(PulseColor, false, 3.0f);
+		CurrentDrawList->PathStroke(PulseColor, false, GetConnectionThickness());
 	}
 	else
 	{
@@ -415,10 +429,10 @@ void VisualNodeArea::DrawHermiteLine(const ImVec2 P1, const ImVec2 P2, const int
 			const float h3 = t * t * t - 2 * t * t + t;
 			const float h4 = t * t * t - t * t;
 
-			CurrentDrawList->PathLineTo(ImVec2(h1 * P1.x + h2 * P2.x + h3 * t1.x + h4 * t2.x, h1 * P1.y + h2 * P2.y + h3 * t1.y + h4 * t2.y));
+			CurrentDrawList->PathLineTo(ImVec2(Zoom, Zoom) * ImVec2(h1 * P1.x + h2 * P2.x + h3 * t1.x + h4 * t2.x, h1 * P1.y + h2 * P2.y + h3 * t1.y + h4 * t2.y));
 		}
 
-		CurrentDrawList->PathStroke(Color, false, 3.0f);
+		CurrentDrawList->PathStroke(Color, false, GetConnectionThickness());
 	}
 }
 
@@ -434,7 +448,7 @@ void VisualNodeArea::RenderConnection(const VisualNodeConnection* Connection) co
 	if (Connection->Out->ConnectionStyle.ForceColor != nullptr)
 		ConnectionColor = *Connection->Out->ConnectionStyle.ForceColor;
 
-	DrawHermiteLine(SocketToPosition(Connection->Out), SocketToPosition(Connection->In), 12, ConnectionColor, &Connection->Out->ConnectionStyle);
+	DrawHermiteLine(SocketToPosition(Connection->Out) / Zoom, SocketToPosition(Connection->In) / Zoom, 12, ConnectionColor, &Connection->Out->ConnectionStyle);
 }
 
 ImVec2 VisualNodeArea::SocketToPosition(const NodeSocket* Socket) const
@@ -469,12 +483,12 @@ ImVec2 VisualNodeArea::SocketToPosition(const NodeSocket* Socket) const
 
 	if (Socket->GetParent()->GetStyle() == VISUAL_NODE_STYLE_DEFAULT)
 	{
-		SocketX = Input ? Socket->Parent->LeftTop.x + NODE_SOCKET_SIZE * 3 : Socket->Parent->RightBottom.x - NODE_SOCKET_SIZE * 3;
+		SocketX = Input ? Socket->Parent->LeftTop.x + GetNodeSocketSize() * 3 : Socket->Parent->RightBottom.x - GetNodeSocketSize() * 3;
 
-		const float HeightForSockets = Socket->Parent->GetSize().y - NODE_TITLE_HEIGHT;
+		const float HeightForSockets = Socket->Parent->GetSize().y * Zoom - GetNodeTitleHeight();
 		const float SocketSpacing = HeightForSockets / (Input ? Socket->Parent->Input.size() : Socket->Parent->Output.size());
 
-		SocketY = Socket->Parent->LeftTop.y + NODE_TITLE_HEIGHT + SocketSpacing * (SocketIndex + 1) - SocketSpacing / 2.0f;
+		SocketY = (Socket->Parent->LeftTop.y + GetNodeTitleHeight() + SocketSpacing * (SocketIndex + 1) - SocketSpacing / 2.0f);
 	}
 	else if (Socket->GetParent()->GetStyle() == VISUAL_NODE_STYLE_CIRCLE)
 	{
@@ -489,11 +503,11 @@ ImVec2 VisualNodeArea::SocketToPosition(const NodeSocket* Socket) const
 
 		const float angle = BeginAngle + step;
 
-		const float NodeCenterX = Socket->Parent->LeftTop.x + NODE_DIAMETER / 2.0f;
-		const float NodeCenterY = Socket->Parent->LeftTop.y + NODE_DIAMETER / 2.0f;
+		const float NodeCenterX = Socket->Parent->LeftTop.x + NODE_DIAMETER * Zoom / 2.0f;
+		const float NodeCenterY = Socket->Parent->LeftTop.y + NODE_DIAMETER * Zoom / 2.0f;
 
-		SocketX = NodeCenterX + NODE_DIAMETER * 0.95f * sin(glm::radians(angle));
-		SocketY = NodeCenterY + NODE_DIAMETER * 0.95f * cos(glm::radians(angle));
+		SocketX = NodeCenterX + NODE_DIAMETER * Zoom * 0.95f * sin(glm::radians(angle));
+		SocketY = NodeCenterY + NODE_DIAMETER * Zoom * 0.95f * cos(glm::radians(angle));
 	}
 
 	return {SocketX, SocketY};
@@ -682,8 +696,8 @@ ImVec2 VisualNodeArea::GetAreaRenderOffset() const
 
 void VisualNodeArea::SetAreaRenderOffset(const ImVec2 Offset)
 {
-	if (Offset.x <= -10000.0f || Offset.x >= 10000.0f ||
-		Offset.y <= -10000.0f || Offset.y >= 10000.0f)
+	if (Offset.x <= -GRID_SIZE || Offset.x >= GRID_SIZE ||
+		Offset.y <= -GRID_SIZE || Offset.y >= GRID_SIZE)
 		return;
 
 	RenderOffset = Offset;
@@ -827,10 +841,10 @@ void VisualNodeArea::InputUpdate()
 		{
 			SocketLookingForConnection = nullptr;
 
-			if (abs(ImGui::GetMouseDragDelta(0).x) > 1 || abs(ImGui::GetMouseDragDelta(0).y) > 1)
+			if (abs(GetMouseDragDelta().x) > 1 || abs(GetMouseDragDelta().y) > 1)
 			{
 				MouseSelectRegionMin = ImGui::GetIO().MouseClickedPos[0];
-				MouseSelectRegionMax = MouseSelectRegionMin + ImGui::GetMouseDragDelta(0);
+				MouseSelectRegionMax = MouseSelectRegionMin + GetMouseDragDelta() / Zoom;
 
 				if (MouseSelectRegionMax.x < MouseSelectRegionMin.x)
 					std::swap(MouseSelectRegionMin.x, MouseSelectRegionMax.x);
@@ -851,9 +865,9 @@ void VisualNodeArea::InputUpdate()
 				if (Nodes[i]->GetStyle() == VISUAL_NODE_STYLE_DEFAULT)
 				{
 					if (Nodes[i]->LeftTop.x < MouseSelectRegionMin.x + RegionSize.x &&
-						Nodes[i]->LeftTop.x + Nodes[i]->GetSize().x > MouseSelectRegionMin.x &&
+						Nodes[i]->LeftTop.x + Nodes[i]->GetSize().x * Zoom > MouseSelectRegionMin.x &&
 						Nodes[i]->LeftTop.y < MouseSelectRegionMin.y + RegionSize.y &&
-						Nodes[i]->GetSize().y + Nodes[i]->LeftTop.y > MouseSelectRegionMin.y)
+						Nodes[i]->GetSize().y * Zoom + Nodes[i]->LeftTop.y > MouseSelectRegionMin.y)
 					{
 						AddSelected(Nodes[i]);
 					}
@@ -861,9 +875,9 @@ void VisualNodeArea::InputUpdate()
 				else if (Nodes[i]->GetStyle() == VISUAL_NODE_STYLE_CIRCLE)
 				{
 					if (Nodes[i]->LeftTop.x < MouseSelectRegionMin.x + RegionSize.x &&
-						Nodes[i]->LeftTop.x + NODE_DIAMETER > MouseSelectRegionMin.x &&
+						Nodes[i]->LeftTop.x + NODE_DIAMETER * Zoom > MouseSelectRegionMin.x &&
 						Nodes[i]->LeftTop.y < MouseSelectRegionMin.y + RegionSize.y &&
-						NODE_DIAMETER + Nodes[i]->LeftTop.y > MouseSelectRegionMin.y)
+						NODE_DIAMETER * Zoom + Nodes[i]->LeftTop.y > MouseSelectRegionMin.y)
 					{
 						AddSelected(Nodes[i]);
 					}
@@ -876,27 +890,27 @@ void VisualNodeArea::InputUpdate()
 			{
 				if (Selected.empty() && SocketHovered == nullptr)
 				{
-					RenderOffset.x += ImGui::GetIO().MouseDelta.x;
-					RenderOffset.y += ImGui::GetIO().MouseDelta.y;
+					RenderOffset.x += GetMouseDelta().x * Zoom;
+					RenderOffset.y += GetMouseDelta().y * Zoom;
 
-					if (RenderOffset.x > 10000.0f)
-						RenderOffset.x = 10000.0f;
+					if (RenderOffset.x > GRID_SIZE * Zoom)
+						RenderOffset.x = GRID_SIZE * Zoom;
 
-					if (RenderOffset.x < -10000.0f)
-						RenderOffset.x = -10000.0f;
+					if (RenderOffset.x < -GRID_SIZE * Zoom)
+						RenderOffset.x = -GRID_SIZE * Zoom;
 
-					if (RenderOffset.y > 10000.0f)
-						RenderOffset.y = 10000.0f;
+					if (RenderOffset.y > GRID_SIZE * Zoom)
+						RenderOffset.y = GRID_SIZE * Zoom;
 
-					if (RenderOffset.y < -10000.0f)
-						RenderOffset.y = -10000.0f;
+					if (RenderOffset.y < -GRID_SIZE * Zoom)
+						RenderOffset.y = -GRID_SIZE * Zoom;
 				}
 				else if (SocketHovered == nullptr)
 				{
 					for (size_t i = 0; i < Selected.size(); i++)
 					{
 						if (Selected[i]->CouldBeMoved())
-							Selected[i]->SetPosition(Selected[i]->GetPosition() + ImGui::GetIO().MouseDelta);
+							Selected[i]->SetPosition(Selected[i]->GetPosition() + GetMouseDelta());
 					}
 				}
 			}
@@ -1068,6 +1082,15 @@ void VisualNodeArea::InputUpdate()
 
 	if (!ImGui::IsKeyDown(static_cast<ImGuiKey>(GLFW_KEY_V)))
 		WasCopiedToClipboard = false;
+
+	if (ImGui::GetIO().MouseWheel > 0)
+	{
+		ApplyZoom(1.0f);
+	}
+	else if (ImGui::GetIO().MouseWheel < 0)
+	{
+		ApplyZoom(-1.0f);
+	}
 }
 
 void VisualNodeArea::InputUpdateNode(VisualNode* Node)
@@ -1075,9 +1098,9 @@ void VisualNodeArea::InputUpdateNode(VisualNode* Node)
 	if (Node->GetStyle() == VISUAL_NODE_STYLE_DEFAULT)
 	{
 		if (Node->LeftTop.x < MouseCursorPosition.x + MouseCursorSize.x &&
-			Node->LeftTop.x + Node->GetSize().x > MouseCursorPosition.x &&
+			Node->LeftTop.x + Node->GetSize().x * Zoom > MouseCursorPosition.x &&
 			Node->LeftTop.y < MouseCursorPosition.y + MouseCursorSize.y &&
-			Node->GetSize().y + Node->LeftTop.y > MouseCursorPosition.y)
+			Node->GetSize().y * Zoom + Node->LeftTop.y > MouseCursorPosition.y)
 		{
 			Hovered = Node;
 			Node->SetIsHovered(true);
@@ -1085,8 +1108,8 @@ void VisualNodeArea::InputUpdateNode(VisualNode* Node)
 	}
 	else if (Node->GetStyle() == VISUAL_NODE_STYLE_CIRCLE)
 	{
-		if (glm::distance(glm::vec2(Node->LeftTop.x + NODE_DIAMETER / 2.0f, Node->LeftTop.y + NODE_DIAMETER / 2.0f),
-						  glm::vec2(MouseCursorPosition.x, MouseCursorPosition.y)) <= NODE_DIAMETER)
+		if (glm::distance(glm::vec2(Node->LeftTop.x + NODE_DIAMETER / 2.0f * Zoom, Node->LeftTop.y + NODE_DIAMETER / 2.0f * Zoom),
+						  glm::vec2(MouseCursorPosition.x, MouseCursorPosition.y)) <= NODE_DIAMETER * Zoom)
 		{
 			Hovered = Node;
 			Node->SetIsHovered(true);
@@ -1110,10 +1133,10 @@ void VisualNodeArea::InputUpdateNode(VisualNode* Node)
 void VisualNodeArea::InputUpdateSocket(NodeSocket* Socket)
 {
 	const ImVec2 SocketPosition = SocketToPosition(Socket);
-	if (MouseCursorPosition.x >= SocketPosition.x - NODE_SOCKET_SIZE &&
-		MouseCursorPosition.x <= SocketPosition.x + NODE_SOCKET_SIZE &&
-		MouseCursorPosition.y >= SocketPosition.y - NODE_SOCKET_SIZE &&
-		MouseCursorPosition.y <= SocketPosition.y + NODE_SOCKET_SIZE)
+	if (MouseCursorPosition.x >= SocketPosition.x - GetNodeSocketSize() &&
+		MouseCursorPosition.x <= SocketPosition.x + GetNodeSocketSize() &&
+		MouseCursorPosition.y >= SocketPosition.y - GetNodeSocketSize() &&
+		MouseCursorPosition.y <= SocketPosition.y + GetNodeSocketSize())
 	{
 		SocketHovered = Socket;
 	}
@@ -1669,4 +1692,40 @@ void VisualNodeArea::ProcessSocketEventQueue()
 
 		Event.TriggeredNodeSocket->GetParent()->SocketEvent(Event.TriggeredNodeSocket, Event.CallerNodeSocket, Event.EventType);
 	}
+}
+
+bool VisualNodeArea::EmptyOrFilledByNulls(const std::vector<VisualNode*> Vector)
+{
+	for (size_t i = 0; i < Vector.size(); i++)
+	{
+		if (Vector[i] != nullptr)
+			return false;
+	}
+
+	return true;
+}
+
+void VisualNodeArea::ApplyZoom(float Delta)
+{
+	ImVec2 MousePosBeforeZoom = (ImGui::GetMousePos() - ImGui::GetCurrentWindow()->Pos - RenderOffset) / Zoom;
+	Zoom += Delta * 0.1f;
+	Zoom = std::max(Zoom, MIN_ZOOM_LEVEL);
+	Zoom = std::min(Zoom, MAX_ZOOM_LEVEL);
+	ImVec2 MousePosAfterZoom = (ImGui::GetMousePos() - ImGui::GetCurrentWindow()->Pos - RenderOffset) / Zoom;
+
+	// Adjust render offset to keep the mouse over the same point after zooming
+	RenderOffset -= (MousePosBeforeZoom - MousePosAfterZoom) * Zoom;
+}
+
+float VisualNodeArea::GetZoomFactor() const
+{
+	return Zoom;
+}
+
+void VisualNodeArea::SetZoomFactor(float NewValue)
+{
+	if (NewValue < MIN_ZOOM_LEVEL || NewValue > MAX_ZOOM_LEVEL)
+		return;
+
+	Zoom = NewValue;
 }
