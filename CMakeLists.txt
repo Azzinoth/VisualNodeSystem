@@ -16,11 +16,17 @@ if(NOT TARGET FEBasicApplication)
   add_subdirectory(SubSystems/FEBasicApplication)
 endif()
 
+file(GLOB VisualNodeArea_SRC
+	"SubSystems/VisualNodeArea/VisualNodeArea.cpp"
+	"SubSystems/VisualNodeArea/VisualNodeArea.h"
+	"SubSystems/VisualNodeArea/VisualNodeAreaLogic.cpp"
+	"SubSystems/VisualNodeArea/VisualNodeAreaInput.cpp"
+	"SubSystems/VisualNodeArea/VisualNodeAreaRendering.cpp"
+)
+
 file(GLOB VisualNodeSystem_SRC
 	"VisualNodeSystem.cpp"
 	"VisualNodeSystem.h"
-	"VisualNodeArea.cpp"
-	"VisualNodeArea.h"
 	"VisualNodeFactory.cpp"
 	"VisualNodeFactory.h"
 	"VisualNode.cpp"
@@ -43,6 +49,7 @@ file(GLOB jsoncpp_SRC
 
 add_library(VisualNodeSystem
 			${VisualNodeSystem_SRC}
+			${VisualNodeArea_SRC}
 			# *************** THIRD_PARTY ***************
 			${jsoncpp_SRC}
 )
@@ -50,6 +57,7 @@ add_library(VisualNodeSystem
 target_link_libraries(VisualNodeSystem FEBasicApplication)
 
 source_group("Source Files" FILES ${VisualNodeSystem_SRC})
+source_group("Source Files/SubSystems/VisualNodeArea/" FILES ${VisualNodeArea_SRC})
 # *************** THIRD_PARTY ***************
 source_group("Source Files/ThirdParty/jsoncpp" FILES ${jsoncpp_SRC})
 

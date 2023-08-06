@@ -1,6 +1,6 @@
 #pragma once
 
-#include "VisualNodeFactory.h"
+#include "../../VisualNodeFactory.h"
 
 #define VISUAL_NODE_GRID_STEP 15.0f
 
@@ -77,6 +77,9 @@ public:
 	static bool IsNodeIDInList(std::string ID, std::vector<VisualNode*> List);
 	static bool EmptyOrFilledByNulls(const std::vector<VisualNode*> Vector);
 
+	bool VisualNodeArea::GetConnectionStyle(VisualNode* Node, bool bOutputSocket, size_t SocketIndex, VisualNodeConnectionStyle& Style) const;
+	void VisualNodeArea::SetConnectionStyle(VisualNode* Node, bool bOutputSocket, size_t SocketIndex, VisualNodeConnectionStyle NewStyle);
+
 private:
 	struct SocketEvent
 	{
@@ -108,9 +111,13 @@ private:
 	ImDrawList* CurrentDrawList = nullptr;
 	ImGuiWindow* NodeAreaWindow = nullptr;
 	std::vector<VisualNode*> Nodes;
-	VisualNode* Hovered;
+
+	VisualNode* HoveredNode;
+	std::vector<VisualNodeConnection*> HoveredConnections;
 	bool bMouseHovered = false;
-	std::vector<VisualNode*> Selected;
+	std::vector<VisualNode*> SelectedNodes;
+	std::vector<VisualNodeConnection*> SelectedConnections;
+
 	ImVec2 MouseCursorPosition;
 	ImVec2 MouseCursorSize = ImVec2(1, 1);
 	ImVec2 MouseSelectRegionMin = ImVec2(FLT_MAX, FLT_MAX);
@@ -130,21 +137,36 @@ private:
 	std::vector<void(*)(VisualNode*, VISUAL_NODE_EVENT)> NodeEventsCallbacks;
 	std::queue<SocketEvent> SocketEventQueue;
 
-	bool AddSelected(VisualNode* NewNode);
-	bool IsSelected(const VisualNode* Node) const;
-	void InputUpdateNode(VisualNode* Node);
-	void InputUpdateSocket(NodeSocket* Socket);
-	void RenderNode(VisualNode* Node) const;
-	void RenderNodeSockets(const VisualNode* Node) const;
-	void RenderNodeSocket(NodeSocket* Socket) const;
-	void DrawHermiteLine(ImVec2 P1, ImVec2 P2, int Steps, ImColor Color, VisualNodeConnectionStyle* Style) const;
-	void RenderConnection(const VisualNodeConnection* Connection) const;
+	
+	void PropagateNodeEventsCallbacks(VisualNode* Node, VISUAL_NODE_EVENT EventToPropagate) const;
+	void ProcessSocketEventQueue();
 	ImVec2 SocketToPosition(const NodeSocket* Socket) const;
 	std::vector<VisualNodeConnection*> GetAllConnections(const NodeSocket* Socket) const;
 	void Disconnect(VisualNodeConnection*& Connection);
+
 	void InputUpdate();
+	void MouseInputUpdate();
+	void KeyboardInputUpdate();
+	bool AddSelected(VisualNode* NewNode);
+	bool IsSelected(const VisualNode* Node) const;
+	bool AddSelected(VisualNodeConnection* NewConnection);
+	bool IsSelected(const VisualNodeConnection* Connection) const;
+	bool UnSelected(const VisualNodeConnection* Connection);
+	bool IsMouseOverConnection(const ImVec2 mousePos, VisualNodeConnection* Connection, const int Steps, const float maxDistance, ImVec2& CollisionPoint = ImVec2());
+	bool IsPointInRegion(const ImVec2& point, const ImVec2& regionMin, const ImVec2& regionMax);
+	bool IsConnectionInRegion(VisualNodeConnection* Connection, const int Steps);
+	void InputUpdateNode(VisualNode* Node);
+	void InputUpdateSocket(NodeSocket* Socket);
+
 	void Render();
 	void RenderGrid(ImVec2 CurrentPosition) const;
-	void PropagateNodeEventsCallbacks(VisualNode* Node, VISUAL_NODE_EVENT EventToPropagate) const;
-	void ProcessSocketEventQueue();
+	void RenderNode(VisualNode* Node) const;
+	void RenderNodeSockets(const VisualNode* Node) const;
+	void RenderNodeSocket(NodeSocket* Socket) const;
+	void DrawHermiteLine(ImVec2 P1, ImVec2 P2, int Steps, ImColor Color, const VisualNodeConnectionStyle* Style) const;
+	void DrawHermiteLine(const ImVec2 P1, const ImVec2 P2, const int Steps, const ImColor Color, const float Thickness) const;
+	void RenderConnection(const VisualNodeConnection* Connection) const;
+	VisualNodeConnectionStyle* GetConnectionStyle(const NodeSocket* ParticipantOfConnection) const;
+
+	bool IsMouseRegionSelectionActive() const;
 };

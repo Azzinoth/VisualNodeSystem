@@ -92,9 +92,6 @@ public:
 	virtual Json::Value ToJson();
 	virtual void FromJson(Json::Value Json);
 
-	bool VisualNode::GetSocketStyle(bool bOutputSocket, size_t SocketIndex, VisualNodeConnectionStyle& Style) const;
-	void SetSocketStyle(bool bOutputSocket, size_t SocketIndex, VisualNodeConnectionStyle NewStyle);
-
 	size_t InputSocketCount() const;
 	size_t OutSocketCount() const;
 
@@ -108,4 +105,6 @@ public:
 
 	bool CouldBeMoved() const;
 	void SetCouldBeMoved(bool NewValue);
+
+	VisualNodeArea* GetParentArea() const;
 };

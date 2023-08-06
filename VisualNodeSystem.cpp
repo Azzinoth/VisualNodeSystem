@@ -46,10 +46,10 @@ void VisualNodeSystem::MoveNodesTo(VisualNodeArea* SourceNodeArea, VisualNodeAre
 	// Select moved nodes.
 	if (SelectMovedNodes)
 	{
-		TargetNodeArea->Selected.clear();
+		TargetNodeArea->SelectedNodes.clear();
 		for (size_t i = TargetNodeArea->Nodes.size() - SourceNodeCount; i < TargetNodeArea->Nodes.size(); i++)
 		{
-			TargetNodeArea->Selected.push_back(TargetNodeArea->Nodes[i]);
+			TargetNodeArea->SelectedNodes.push_back(TargetNodeArea->Nodes[i]);
 		}
 	}
 }

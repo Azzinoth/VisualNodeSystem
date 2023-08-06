@@ -1,6 +1,6 @@
 #pragma once
 
-#include "VisualNodeArea.h"
+#include "SubSystems/VisualNodeArea/VisualNodeArea.h"
 
 class VisualNodeSystem
 {

@@ -279,58 +279,14 @@ size_t VisualNode::OutSocketCount() const
 	return Output.size();
 }
 
-bool VisualNode::GetSocketStyle(bool bOutputSocket, size_t SocketIndex, VisualNodeConnectionStyle& Style) const
-{
-	if (SocketIndex < 0)
-		return false;
-
-	if (bOutputSocket)
-	{
-		if (SocketIndex >= Output.size())
-			return false;
-
-		Style = Output[SocketIndex]->ConnectionStyle;
-		return true;
-	}
-	else
-	{
-		if (SocketIndex >= Input.size())
-			return false;
-
-		Style = Input[SocketIndex]->ConnectionStyle;
-		return true;
-	}
-}
-
-void VisualNode::SetSocketStyle(bool bOutputSocket, size_t SocketIndex, VisualNodeConnectionStyle NewStyle)
-{
-	if (SocketIndex < 0)
-		return ;
-
-	if (bOutputSocket)
-	{
-		if (SocketIndex >= Output.size())
-			return;
-
-		Output[SocketIndex]->ConnectionStyle = NewStyle;
-	}
-	else
-	{
-		if (SocketIndex >= Input.size())
-			return;
-
-		Input[SocketIndex]->ConnectionStyle = NewStyle;
-	}
-}
-
 std::vector<VisualNode*> VisualNode::GetNodesConnectedToInput() const
 {
 	std::vector<VisualNode*> result;
 	for (size_t i = 0; i < Input.size(); i++)
 	{
-		for (size_t j = 0; j < Input[i]->Connections.size(); j++)
+		for (size_t j = 0; j < Input[i]->SocketConnected.size(); j++)
 		{
-			result.push_back(Input[i]->Connections[j]->GetParent());
+			result.push_back(Input[i]->SocketConnected[j]->GetParent());
 		}
 	}
 
@@ -342,9 +298,9 @@ std::vector<VisualNode*> VisualNode::GetNodesConnectedToOutput() const
 	std::vector<VisualNode*> result;
 	for (size_t i = 0; i < Output.size(); i++)
 	{
-		for (size_t j = 0; j < Output[i]->Connections.size(); j++)
+		for (size_t j = 0; j < Output[i]->SocketConnected.size(); j++)
 		{
-			result.push_back(Output[i]->Connections[j]->GetParent());
+			result.push_back(Output[i]->SocketConnected[j]->GetParent());
 		}
 	}
 
@@ -387,4 +343,9 @@ bool VisualNode::CouldBeMoved() const
 void VisualNode::SetCouldBeMoved(bool NewValue)
 {
 	bCouldBeMoved = NewValue;
+}
+
+VisualNodeArea* VisualNode::GetParentArea() const
+{
+	return ParentArea;
 }

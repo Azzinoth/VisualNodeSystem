@@ -22,9 +22,9 @@ VisualNode* NodeSocket::GetParent() const
 	return Parent;
 }
 
-std::vector<NodeSocket*> NodeSocket::GetConnections()
+std::vector<NodeSocket*> NodeSocket::GetConnectedSockets()
 {
-	return Connections;
+	return SocketConnected;
 }
 
 std::string NodeSocket::GetName() const
@@ -37,20 +37,20 @@ std::string NodeSocket::GetType() const
 	return Type;
 }
 
-bool NodeSocket::GetForcedConnectionColor(ImColor& Color) const
-{
-	if (ConnectionStyle.ForceColor == nullptr)
-		return false;
-
-	Color = *ConnectionStyle.ForceColor;
-
-	return true;
-}
-
-void NodeSocket::SetForcedConnectionColor(ImColor* NewValue)
-{
-	ConnectionStyle.ForceColor = NewValue;
-}
+//bool NodeSocket::GetForcedConnectionColor(ImColor& Color) const
+//{
+//	if (ConnectionStyle.ForceColor == nullptr)
+//		return false;
+//
+//	Color = *ConnectionStyle.ForceColor;
+//
+//	return true;
+//}
+//
+//void NodeSocket::SetForcedConnectionColor(ImColor* NewValue)
+//{
+//	ConnectionStyle.ForceColor = NewValue;
+//}
 
 void NodeSocket::SetFunctionToOutputData(std::function<void* ()> NewFunction)
 {
