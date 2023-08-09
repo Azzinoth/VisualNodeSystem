@@ -509,3 +509,70 @@ VisualNodeConnectionStyle* VisualNodeArea::GetConnectionStyle(const NodeSocket* 
 
 	return nullptr;
 }
+
+std::vector<VisualNodeConnectionSegment> VisualNodeArea::GetConnectionSegments(const VisualNodeConnection* Connection) const
+{
+	std::vector<VisualNodeConnectionSegment> Result;
+	VisualNodeConnectionSegment CurrentSegment;
+	
+	ImVec2 BeginPosition;
+	ImVec2 EndPosition;
+
+	if (Connection->RerouteConnections.empty())
+	{
+		BeginPosition = SocketToPosition(Connection->Out);
+		EndPosition = SocketToPosition(Connection->In);
+
+		CurrentSegment.Begin = BeginPosition;
+		CurrentSegment.BeginSocket = Connection->Out;
+		CurrentSegment.End = EndPosition;
+		CurrentSegment.EndSocket = Connection->In;
+		Result.push_back(CurrentSegment);
+	}
+	else
+	{
+		for (size_t i = 0; i < Connection->RerouteConnections.size(); i++)
+		{	
+			// First we will add segment from start to current reroute
+			if (Connection->RerouteConnections[i]->BeginSocket != nullptr)
+			{
+				BeginPosition = SocketToPosition(Connection->RerouteConnections[i]->BeginSocket);
+				CurrentSegment.BeginSocket = Connection->RerouteConnections[i]->BeginSocket;
+			}
+			else
+			{
+				BeginPosition = LocalToScreen(Connection->RerouteConnections[i]->BeginReroute->Position);
+				CurrentSegment.BeginReroute = Connection->RerouteConnections[i]->BeginReroute;
+			}
+			
+			EndPosition = LocalToScreen(Connection->RerouteConnections[i]->Position);
+			CurrentSegment.EndReroute = Connection->RerouteConnections[i];
+
+			CurrentSegment.Begin = BeginPosition;
+			CurrentSegment.End = EndPosition;
+			Result.push_back(CurrentSegment);
+
+			// Than we will add segment from current reroute to end, only if it is last reroute
+			if (i == Connection->RerouteConnections.size() - 1)
+			{
+				CurrentSegment = VisualNodeConnectionSegment();
+				BeginPosition = LocalToScreen(Connection->RerouteConnections[i]->Position);
+				CurrentSegment.BeginReroute = Connection->RerouteConnections[i]/*->BeginReroute*/;
+
+				EndPosition = SocketToPosition(Connection->RerouteConnections[i]->EndSocket);
+				CurrentSegment.EndSocket = Connection->RerouteConnections[i]->EndSocket;
+
+				CurrentSegment.Begin = BeginPosition;
+				CurrentSegment.End = EndPosition;
+				Result.push_back(CurrentSegment);
+			}
+		}
+	}
+
+	return Result;
+}
+
+ImVec2 VisualNodeArea::LocalToScreen(ImVec2 LocalPosition) const
+{
+	return ImGui::GetCurrentWindow()->Pos + LocalPosition * Zoom + RenderOffset;
+}

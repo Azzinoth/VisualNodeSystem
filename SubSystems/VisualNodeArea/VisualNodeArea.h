@@ -99,6 +99,7 @@ private:
 	float MAX_ZOOM_LEVEL = 5.0f;  // Max zoom 500%
 	float MIN_ZOOM_LEVEL = 0.2f;  // Min zoom 20%
 	float GetNodeSocketSize() const { return NODE_SOCKET_SIZE * Zoom; }
+	float GetRerouteNodeSize() const { return NODE_SOCKET_SIZE * Zoom * 1.5f; }
 	float GetNodeTitleHeight() const { return NODE_TITLE_HEIGHT * Zoom; }
 	ImVec2 GetMouseDragDelta() const { return ImGui::GetMouseDragDelta(0) * Zoom; }
 	ImVec2 GetMouseDelta() const { return ImGui::GetIO().MouseDelta / Zoom; }
@@ -117,6 +118,7 @@ private:
 	bool bMouseHovered = false;
 	std::vector<VisualNode*> SelectedNodes;
 	std::vector<VisualNodeConnection*> SelectedConnections;
+	std::vector<VisualNodeRerouteNode*> SelectedRerouteNodes;
 
 	ImVec2 MouseCursorPosition;
 	ImVec2 MouseCursorSize = ImVec2(1, 1);
@@ -127,6 +129,7 @@ private:
 	std::vector<VisualNodeConnection*> Connections;
 	NodeSocket* SocketLookingForConnection = nullptr;
 	NodeSocket* SocketHovered = nullptr;
+	VisualNodeRerouteNode* RerouteNodeHovered = nullptr;
 	ImVec2 AreaPosition;
 	ImVec2 AreaSize;
 	ImU32 GridBackgroundColor = IM_COL32(32, 32, 32, 255);
@@ -136,7 +139,6 @@ private:
 	void(*MainContextMenuFunc)() = nullptr;
 	std::vector<void(*)(VisualNode*, VISUAL_NODE_EVENT)> NodeEventsCallbacks;
 	std::queue<SocketEvent> SocketEventQueue;
-
 	
 	void PropagateNodeEventsCallbacks(VisualNode* Node, VISUAL_NODE_EVENT EventToPropagate) const;
 	void ProcessSocketEventQueue();
@@ -146,17 +148,45 @@ private:
 
 	void InputUpdate();
 	void MouseInputUpdate();
+
+	void LeftMouseClick();
+	void LeftMouseClickNodesUpdate();
+	void LeftMouseClickConnectionsUpdate();
+	void LeftMouseClickRerouteUpdate();
+
+	void RightMouseClick();
+	void RightMouseClickNodesUpdate();
+	void RightMouseClickConnectionsUpdate();
+	void RightMouseClickRerouteUpdate();
+
+	void MouseDragging();
+	void MouseDraggingNodesUpdate();
+	void MouseDraggingConnectionsUpdate();
+	void MouseDraggingRerouteUpdate();
+
 	void KeyboardInputUpdate();
-	bool AddSelected(VisualNode* NewNode);
-	bool IsSelected(const VisualNode* Node) const;
-	bool AddSelected(VisualNodeConnection* NewConnection);
-	bool IsSelected(const VisualNodeConnection* Connection) const;
-	bool UnSelected(const VisualNodeConnection* Connection);
-	bool IsMouseOverConnection(const ImVec2 mousePos, VisualNodeConnection* Connection, const int Steps, const float maxDistance, ImVec2& CollisionPoint = ImVec2());
-	bool IsPointInRegion(const ImVec2& point, const ImVec2& regionMin, const ImVec2& regionMax);
-	bool IsConnectionInRegion(VisualNodeConnection* Connection, const int Steps);
 	void InputUpdateNode(VisualNode* Node);
 	void InputUpdateSocket(NodeSocket* Socket);
+	void MouseInputUpdateConnections();
+	void InputUpdateReroute(VisualNodeRerouteNode* Reroute);
+
+	bool AddSelected(VisualNode* Node);
+	bool IsSelected(const VisualNode* Node) const;
+	bool AddSelected(VisualNodeConnection* Connection);
+	bool IsSelected(const VisualNodeConnection* Connection) const;
+	bool UnSelect(const VisualNodeConnection* Connection);
+	bool AddSelected(VisualNodeRerouteNode* RerouteNode);
+	bool IsSelected(const VisualNodeRerouteNode* RerouteNode) const;
+	bool UnSelect(const VisualNodeRerouteNode* RerouteNode);
+	void UnSelectAllRerouteNodes();
+
+	void ConnectionsDoubleMouseClick();
+	std::vector<VisualNodeConnectionSegment> GetConnectionSegments(const VisualNodeConnection* Connection) const;
+	bool IsMouseOverConnection(VisualNodeConnection* Connection, const int Steps, const float MaxDistance, ImVec2& CollisionPoint = ImVec2());
+	bool IsMouseOverSegment(ImVec2 Begin, ImVec2 End, const int Steps, const float MaxDistance, ImVec2& CollisionPoint = ImVec2());
+	bool IsPointInRegion(const ImVec2& Point, const ImVec2& RegionMin, const ImVec2& RegionMax);
+	bool IsSegmentInRegion(ImVec2 Begin, ImVec2 End, const int Steps);
+	bool IsConnectionInRegion(VisualNodeConnection* Connection, const int Steps);
 
 	void Render();
 	void RenderGrid(ImVec2 CurrentPosition) const;
@@ -166,7 +196,10 @@ private:
 	void DrawHermiteLine(ImVec2 P1, ImVec2 P2, int Steps, ImColor Color, const VisualNodeConnectionStyle* Style) const;
 	void DrawHermiteLine(const ImVec2 P1, const ImVec2 P2, const int Steps, const ImColor Color, const float Thickness) const;
 	void RenderConnection(const VisualNodeConnection* Connection) const;
+	void RenderReroute(const VisualNodeRerouteNode* RerouteNode) const;
 	VisualNodeConnectionStyle* GetConnectionStyle(const NodeSocket* ParticipantOfConnection) const;
 
 	bool IsMouseRegionSelectionActive() const;
+
+	ImVec2 LocalToScreen(ImVec2 LocalPosition) const;
 };

@@ -32,10 +32,6 @@ void VisualNodeArea::MouseInputUpdate()
 	for (size_t i = 0; i < Nodes.size(); i++)
 		Nodes[i]->SetIsHovered(false);
 
-	for (size_t i = 0; i < Connections.size(); i++)
-		Connections[i]->bHovered = false;
-	HoveredConnections.clear();
-
 	for (size_t i = 0; i < Nodes.size(); i++)
 	{
 		InputUpdateNode(Nodes[i]);
@@ -44,196 +40,15 @@ void VisualNodeArea::MouseInputUpdate()
 	}
 
 	if (ImGui::IsMouseDragging(0) && MouseDownIn == NodeAreaWindow)
-	{
-		if (ImGui::IsKeyDown(static_cast<ImGuiKey>(GLFW_KEY_LEFT_SHIFT)) || ImGui::IsKeyDown(static_cast<ImGuiKey>(GLFW_KEY_RIGHT_SHIFT)))
-		{
-			SocketLookingForConnection = nullptr;
-
-			if (abs(GetMouseDragDelta().x) > 1 || abs(GetMouseDragDelta().y) > 1)
-			{
-				MouseSelectRegionMin = ImGui::GetIO().MouseClickedPos[0];
-				MouseSelectRegionMax = MouseSelectRegionMin + GetMouseDragDelta() / Zoom;
-
-				if (MouseSelectRegionMax.x < MouseSelectRegionMin.x)
-					std::swap(MouseSelectRegionMin.x, MouseSelectRegionMax.x);
-
-				if (MouseSelectRegionMax.y < MouseSelectRegionMin.y)
-					std::swap(MouseSelectRegionMin.y, MouseSelectRegionMax.y);
-			}
-		}
-
-		if (IsMouseRegionSelectionActive())
-		{
-			SelectedNodes.clear();
-			const ImVec2 RegionSize = MouseSelectRegionMax - MouseSelectRegionMin;
-
-			for (size_t i = 0; i < Nodes.size(); i++)
-			{
-				if (Nodes[i]->GetStyle() == VISUAL_NODE_STYLE_DEFAULT)
-				{
-					if (Nodes[i]->LeftTop.x < MouseSelectRegionMin.x + RegionSize.x &&
-						Nodes[i]->LeftTop.x + Nodes[i]->GetSize().x * Zoom > MouseSelectRegionMin.x &&
-						Nodes[i]->LeftTop.y < MouseSelectRegionMin.y + RegionSize.y &&
-						Nodes[i]->GetSize().y * Zoom + Nodes[i]->LeftTop.y > MouseSelectRegionMin.y)
-					{
-						AddSelected(Nodes[i]);
-					}
-				}
-				else if (Nodes[i]->GetStyle() == VISUAL_NODE_STYLE_CIRCLE)
-				{
-					if (Nodes[i]->LeftTop.x < MouseSelectRegionMin.x + RegionSize.x &&
-						Nodes[i]->LeftTop.x + NODE_DIAMETER * Zoom > MouseSelectRegionMin.x &&
-						Nodes[i]->LeftTop.y < MouseSelectRegionMin.y + RegionSize.y &&
-						NODE_DIAMETER * Zoom + Nodes[i]->LeftTop.y > MouseSelectRegionMin.y)
-					{
-						AddSelected(Nodes[i]);
-					}
-				}
-			}
-		}
-		else
-		{
-			if (SocketLookingForConnection == nullptr)
-			{
-				if (SelectedNodes.empty() && SocketHovered == nullptr)
-				{
-					RenderOffset.x += GetMouseDelta().x * Zoom;
-					RenderOffset.y += GetMouseDelta().y * Zoom;
-
-					if (RenderOffset.x > GRID_SIZE * Zoom)
-						RenderOffset.x = GRID_SIZE * Zoom;
-
-					if (RenderOffset.x < -GRID_SIZE * Zoom)
-						RenderOffset.x = -GRID_SIZE * Zoom;
-
-					if (RenderOffset.y > GRID_SIZE * Zoom)
-						RenderOffset.y = GRID_SIZE * Zoom;
-
-					if (RenderOffset.y < -GRID_SIZE * Zoom)
-						RenderOffset.y = -GRID_SIZE * Zoom;
-				}
-				else if (SocketHovered == nullptr)
-				{
-					for (size_t i = 0; i < SelectedNodes.size(); i++)
-					{
-						if (SelectedNodes[i]->CouldBeMoved())
-							SelectedNodes[i]->SetPosition(SelectedNodes[i]->GetPosition() + GetMouseDelta());
-					}
-				}
-			}
-		}
-	}
-
-	// If any node is hovered, we don't want to check for hovered connections
-	if (HoveredNode == nullptr)
-	{
-		for (size_t i = 0; i < Connections.size(); i++)
-		{
-			if (IsMouseOverConnection(ImVec2(MouseCursorPosition.x, MouseCursorPosition.y), Connections[i], 12, 10.0f))
-			{
-				Connections[i]->bHovered = true;
-				HoveredConnections.push_back(Connections[i]);
-			}
-
-			if (IsMouseRegionSelectionActive() && SelectedNodes.empty())
-			{
-				if (IsConnectionInRegion(Connections[i], 12))
-				{
-					Connections[i]->bSelected = true;
-					AddSelected(Connections[i]);
-				}
-				else
-				{
-					if (Connections[i]->bSelected)
-						UnSelected(Connections[i]);
-				}
-			}
-		}
-	}
-
-	if (!SelectedNodes.empty())
-	{
-		for (size_t i = 0; i < Connections.size(); i++)
-			Connections[i]->bSelected = false;
-
-		SelectedConnections.clear();
-	}
+		MouseDragging();
 
 	if (ImGui::IsMouseClicked(0))
-	{
-		if (HoveredNode != nullptr)
-		{
-			if (!IsSelected(HoveredNode) && !ImGui::IsKeyDown(static_cast<ImGuiKey>(GLFW_KEY_LEFT_CONTROL)) && !ImGui::IsKeyDown(static_cast<ImGuiKey>(GLFW_KEY_RIGHT_CONTROL)))
-				SelectedNodes.clear();
-			AddSelected(HoveredNode);
-		}
-		else
-		{
-			SelectedNodes.clear();
-		}
-
-		for (size_t i = 0; i < Connections.size(); i++)
-		{
-			if (Connections[i]->bHovered)
-			{
-				Connections[i]->bSelected = true;
-			}
-			else
-			{
-				Connections[i]->bSelected = false;
-			}
-		}
-	}
+		LeftMouseClick();
+	
+	MouseInputUpdateConnections();
 
 	if (ImGui::IsMouseClicked(1))
-	{
-		if (HoveredNode != nullptr)
-		{
-			// Should we disconnect sockets
-			if (SocketHovered != nullptr && !SocketHovered->SocketConnected.empty())
-			{
-				std::vector<VisualNodeConnection*> ImpactedConnections = GetAllConnections(SocketHovered);
-				for (size_t i = 0; i < ImpactedConnections.size(); i++)
-				{
-					Disconnect(ImpactedConnections[i]);
-				}
-			}
-			else
-			{
-				if (SelectedNodes.size() <= 1)
-				{
-					if (!HoveredNode->OpenContextMenu())
-					{
-						bOpenMainContextMenu = true;
-					}
-				}
-				else
-				{
-					if (MainContextMenuFunc != nullptr)
-					{
-						bOpenMainContextMenu = true;
-					}
-					else
-					{
-						HoveredNode->OpenContextMenu();
-					}
-				}
-
-				// If hovered node was already selected do nothing
-				if (AddSelected(HoveredNode))
-				{
-					// But if it was not selected before deselect all other nodes.
-					SelectedNodes.clear();
-					AddSelected(HoveredNode);
-				}
-			}
-		}
-		else
-		{
-			SelectedNodes.clear();
-			bOpenMainContextMenu = true;
-		}
-	}
+		RightMouseClick();
 
 	// Should we connect two sockets ?
 	if (SocketLookingForConnection != nullptr &&
@@ -275,6 +90,257 @@ void VisualNodeArea::MouseInputUpdate()
 	else if (ImGui::GetIO().MouseWheel < 0)
 	{
 		ApplyZoom(-1.0f);
+	}
+}
+
+void VisualNodeArea::LeftMouseClick()
+{
+	LeftMouseClickNodesUpdate();
+	LeftMouseClickConnectionsUpdate();
+	LeftMouseClickRerouteUpdate();
+}
+
+void VisualNodeArea::LeftMouseClickNodesUpdate()
+{
+	if (HoveredNode != nullptr)
+	{
+		if (!IsSelected(HoveredNode) && !ImGui::IsKeyDown(static_cast<ImGuiKey>(GLFW_KEY_LEFT_CONTROL)) && !ImGui::IsKeyDown(static_cast<ImGuiKey>(GLFW_KEY_RIGHT_CONTROL)))
+			SelectedNodes.clear();
+		AddSelected(HoveredNode);
+	}
+	else
+	{
+		SelectedNodes.clear();
+	}
+}
+
+void VisualNodeArea::LeftMouseClickConnectionsUpdate()
+{
+	for (size_t i = 0; i < Connections.size(); i++)
+	{
+		Connections[i]->bSelected = Connections[i]->bHovered ? true : false;
+	}
+}
+
+void VisualNodeArea::LeftMouseClickRerouteUpdate()
+{
+	if (RerouteNodeHovered != nullptr || (HoveredNode != nullptr && IsSelected(HoveredNode)))
+	{
+		if (!IsSelected(RerouteNodeHovered) && !ImGui::IsKeyDown(static_cast<ImGuiKey>(GLFW_KEY_LEFT_CONTROL)) && !ImGui::IsKeyDown(static_cast<ImGuiKey>(GLFW_KEY_RIGHT_CONTROL)))
+		{
+			if (!(HoveredNode != nullptr && IsSelected(HoveredNode)))
+				UnSelectAllRerouteNodes();
+		}
+
+		AddSelected(RerouteNodeHovered);
+	}
+	else
+	{
+		UnSelectAllRerouteNodes();
+	}
+}
+
+void VisualNodeArea::RightMouseClick()
+{
+	RightMouseClickNodesUpdate();
+	RightMouseClickConnectionsUpdate();
+	RightMouseClickRerouteUpdate();
+}
+void VisualNodeArea::RightMouseClickNodesUpdate()
+{
+	if (HoveredNode != nullptr)
+	{
+		// Should we disconnect sockets
+		if (SocketHovered != nullptr && !SocketHovered->SocketConnected.empty())
+		{
+			std::vector<VisualNodeConnection*> ImpactedConnections = GetAllConnections(SocketHovered);
+			for (size_t i = 0; i < ImpactedConnections.size(); i++)
+			{
+				Disconnect(ImpactedConnections[i]);
+			}
+		}
+		else
+		{
+			if (SelectedNodes.size() <= 1)
+			{
+				if (!HoveredNode->OpenContextMenu())
+				{
+					bOpenMainContextMenu = true;
+				}
+			}
+			else
+			{
+				if (MainContextMenuFunc != nullptr)
+				{
+					bOpenMainContextMenu = true;
+				}
+				else
+				{
+					HoveredNode->OpenContextMenu();
+				}
+			}
+
+			// If hovered node was already selected do nothing
+			if (AddSelected(HoveredNode))
+			{
+				// But if it was not selected before deselect all other nodes.
+				SelectedNodes.clear();
+				AddSelected(HoveredNode);
+			}
+		}
+	}
+	else
+	{
+		SelectedNodes.clear();
+		bOpenMainContextMenu = true;
+	}
+}
+
+void VisualNodeArea::RightMouseClickConnectionsUpdate()
+{
+
+}
+
+void VisualNodeArea::RightMouseClickRerouteUpdate()
+{
+
+}
+
+void VisualNodeArea::MouseDragging()
+{
+	if (ImGui::IsKeyDown(static_cast<ImGuiKey>(GLFW_KEY_LEFT_SHIFT)) || ImGui::IsKeyDown(static_cast<ImGuiKey>(GLFW_KEY_RIGHT_SHIFT)))
+	{
+		SocketLookingForConnection = nullptr;
+
+		if (abs(GetMouseDragDelta().x) > 1 || abs(GetMouseDragDelta().y) > 1)
+		{
+			MouseSelectRegionMin = ImGui::GetIO().MouseClickedPos[0];
+			MouseSelectRegionMax = MouseSelectRegionMin + GetMouseDragDelta() / Zoom;
+
+			if (MouseSelectRegionMax.x < MouseSelectRegionMin.x)
+				std::swap(MouseSelectRegionMin.x, MouseSelectRegionMax.x);
+
+			if (MouseSelectRegionMax.y < MouseSelectRegionMin.y)
+				std::swap(MouseSelectRegionMin.y, MouseSelectRegionMax.y);
+		}
+	}
+
+	if (!IsMouseRegionSelectionActive())
+	{
+		if (SocketLookingForConnection == nullptr)
+		{
+			if (SelectedNodes.empty() && SocketHovered == nullptr && SelectedRerouteNodes.empty() && RerouteNodeHovered == nullptr)
+			{
+				RenderOffset.x += GetMouseDelta().x * Zoom;
+				RenderOffset.y += GetMouseDelta().y * Zoom;
+
+				if (RenderOffset.x > GRID_SIZE * Zoom)
+					RenderOffset.x = GRID_SIZE * Zoom;
+
+				if (RenderOffset.x < -GRID_SIZE * Zoom)
+					RenderOffset.x = -GRID_SIZE * Zoom;
+
+				if (RenderOffset.y > GRID_SIZE * Zoom)
+					RenderOffset.y = GRID_SIZE * Zoom;
+
+				if (RenderOffset.y < -GRID_SIZE * Zoom)
+					RenderOffset.y = -GRID_SIZE * Zoom;
+			}
+		}
+	}
+
+	MouseDraggingNodesUpdate();
+	MouseDraggingConnectionsUpdate();
+	MouseDraggingRerouteUpdate();
+}
+
+void VisualNodeArea::MouseDraggingNodesUpdate()
+{
+	if (IsMouseRegionSelectionActive())
+	{
+		SelectedNodes.clear();
+		const ImVec2 RegionSize = MouseSelectRegionMax - MouseSelectRegionMin;
+
+		for (size_t i = 0; i < Nodes.size(); i++)
+		{
+			if (Nodes[i]->GetStyle() == VISUAL_NODE_STYLE_DEFAULT)
+			{
+				if (Nodes[i]->LeftTop.x < MouseSelectRegionMin.x + RegionSize.x &&
+					Nodes[i]->LeftTop.x + Nodes[i]->GetSize().x * Zoom > MouseSelectRegionMin.x &&
+					Nodes[i]->LeftTop.y < MouseSelectRegionMin.y + RegionSize.y &&
+					Nodes[i]->GetSize().y * Zoom + Nodes[i]->LeftTop.y > MouseSelectRegionMin.y)
+				{
+					AddSelected(Nodes[i]);
+				}
+			}
+			else if (Nodes[i]->GetStyle() == VISUAL_NODE_STYLE_CIRCLE)
+			{
+				if (Nodes[i]->LeftTop.x < MouseSelectRegionMin.x + RegionSize.x &&
+					Nodes[i]->LeftTop.x + NODE_DIAMETER * Zoom > MouseSelectRegionMin.x &&
+					Nodes[i]->LeftTop.y < MouseSelectRegionMin.y + RegionSize.y &&
+					NODE_DIAMETER * Zoom + Nodes[i]->LeftTop.y > MouseSelectRegionMin.y)
+				{
+					AddSelected(Nodes[i]);
+				}
+			}
+		}
+	}
+	else
+	{
+		if (SocketLookingForConnection == nullptr && SocketHovered == nullptr)
+		{
+			for (size_t i = 0; i < SelectedNodes.size(); i++)
+			{
+				if (SelectedNodes[i]->CouldBeMoved())
+					SelectedNodes[i]->SetPosition(SelectedNodes[i]->GetPosition() + GetMouseDelta());
+			}
+		}
+	}
+}
+
+void VisualNodeArea::MouseDraggingConnectionsUpdate()
+{
+
+}
+void VisualNodeArea::MouseDraggingRerouteUpdate()
+{
+	// Reroute nodes could be selected with nodes
+	const ImVec2 RegionSize = MouseSelectRegionMax - MouseSelectRegionMin;
+	if (IsMouseRegionSelectionActive())
+	{
+		UnSelectAllRerouteNodes();
+		for (size_t i = 0; i < Connections.size(); i++)
+		{
+			for (size_t j = 0; j < Connections[i]->RerouteConnections.size(); j++)
+			{
+
+				const ImVec2 ReroutePosition = LocalToScreen(Connections[i]->RerouteConnections[j]->Position);
+				if (ReroutePosition.x < MouseSelectRegionMin.x + RegionSize.x &&
+					ReroutePosition.x + GetRerouteNodeSize() > MouseSelectRegionMin.x &&
+					ReroutePosition.y < MouseSelectRegionMin.y + RegionSize.y &&
+					GetRerouteNodeSize() + ReroutePosition.y > MouseSelectRegionMin.y)
+				{
+					Connections[i]->RerouteConnections[j]->bSelected = true;
+					AddSelected(Connections[i]->RerouteConnections[j]);
+				}
+				else
+				{
+					if (Connections[i]->RerouteConnections[j]->bSelected)
+						UnSelect(Connections[i]->RerouteConnections[j]);
+				}
+
+			}
+		}
+	}
+	else
+	{
+		if (SocketLookingForConnection == nullptr && SocketHovered == nullptr)
+		{
+			for (size_t i = 0; i < SelectedRerouteNodes.size(); i++)
+			{
+				SelectedRerouteNodes[i]->Position += GetMouseDelta();
+			}
+		}
 	}
 }
 
@@ -365,15 +431,15 @@ std::vector<VisualNode*> VisualNodeArea::GetSelected()
 	return SelectedNodes;
 }
 
-bool VisualNodeArea::AddSelected(VisualNode* NewNode)
+bool VisualNodeArea::AddSelected(VisualNode* Node)
 {
-	if (NewNode == nullptr)
+	if (Node == nullptr)
 		return false;
 
-	if (IsSelected(NewNode))
+	if (IsSelected(Node))
 		return false;
 
-	SelectedNodes.push_back(NewNode);
+	SelectedNodes.push_back(Node);
 	return true;
 }
 
@@ -391,15 +457,16 @@ bool VisualNodeArea::IsSelected(const VisualNode* Node) const
 	return false;
 }
 
-bool VisualNodeArea::AddSelected(VisualNodeConnection* NewConnection)
+bool VisualNodeArea::AddSelected(VisualNodeConnection* Connection)
 {
-	if (NewConnection == nullptr)
+	if (Connection == nullptr)
 		return false;
 
-	if (IsSelected(NewConnection))
+	if (IsSelected(Connection))
 		return false;
 
-	SelectedConnections.push_back(NewConnection);
+	Connection->bSelected = true;
+	SelectedConnections.push_back(Connection);
 	return true;
 }
 
@@ -417,7 +484,7 @@ bool VisualNodeArea::IsSelected(const VisualNodeConnection* Connection) const
 	return false;
 }
 
-bool VisualNodeArea::UnSelected(const VisualNodeConnection* Connection)
+bool VisualNodeArea::UnSelect(const VisualNodeConnection* Connection)
 {
 	if (Connection == nullptr)
 		return false;
@@ -435,10 +502,66 @@ bool VisualNodeArea::UnSelected(const VisualNodeConnection* Connection)
 	return false;
 }
 
+bool VisualNodeArea::AddSelected(VisualNodeRerouteNode* RerouteNode)
+{
+	if (RerouteNode == nullptr)
+		return false;
+
+	if (IsSelected(RerouteNode))
+		return false;
+
+	RerouteNode->bSelected = true;
+	SelectedRerouteNodes.push_back(RerouteNode);
+	return true;
+}
+
+bool VisualNodeArea::IsSelected(const VisualNodeRerouteNode* RerouteNode) const
+{
+	if (RerouteNode == nullptr)
+		return false;
+
+	for (size_t i = 0; i < SelectedRerouteNodes.size(); i++)
+	{
+		if (SelectedRerouteNodes[i] == RerouteNode)
+			return true;
+	}
+
+	return false;
+}
+
+bool VisualNodeArea::UnSelect(const VisualNodeRerouteNode* RerouteNode)
+{
+	if (RerouteNode == nullptr)
+		return false;
+
+	for (size_t i = 0; i < SelectedRerouteNodes.size(); i++)
+	{
+		if (SelectedRerouteNodes[i] == RerouteNode)
+		{
+			SelectedRerouteNodes[i]->bSelected = false;
+			SelectedRerouteNodes.erase(SelectedRerouteNodes.begin() + i);
+			return true;
+		}
+	}
+
+	return false;
+}
+
+void VisualNodeArea::UnSelectAllRerouteNodes()
+{
+	for (size_t i = 0; i < SelectedRerouteNodes.size(); i++)
+	{
+		SelectedRerouteNodes[i]->bSelected = false;
+	}
+
+	SelectedRerouteNodes.clear();
+}
+
 void VisualNodeArea::ClearSelection()
 {
 	SelectedNodes.clear();
 	SelectedConnections.clear();
+	UnSelectAllRerouteNodes();
 }
 
 void VisualNodeArea::InputUpdateNode(VisualNode* Node)
@@ -483,7 +606,6 @@ bool VisualNodeArea::IsMouseHovered() const
 	return bMouseHovered;
 }
 
-
 void VisualNodeArea::InputUpdateSocket(NodeSocket* Socket)
 {
 	const ImVec2 SocketPosition = SocketToPosition(Socket);
@@ -499,11 +621,36 @@ void VisualNodeArea::InputUpdateSocket(NodeSocket* Socket)
 		SocketLookingForConnection = Socket;
 }
 
-bool VisualNodeArea::IsMouseOverConnection(const ImVec2 mousePos, VisualNodeConnection* Connection, const int Steps, const float maxDistance, ImVec2& CollisionPoint)
+void VisualNodeArea::InputUpdateReroute(VisualNodeRerouteNode* Reroute)
 {
-	ImVec2 p1 = SocketToPosition(Connection->Out);
-	ImVec2 p2 = SocketToPosition(Connection->In);
+	const ImVec2 ReroutePosition = LocalToScreen(Reroute->Position);
+	if (MouseCursorPosition.x >= ReroutePosition.x - GetRerouteNodeSize() &&
+		MouseCursorPosition.x <= ReroutePosition.x + GetRerouteNodeSize() &&
+		MouseCursorPosition.y >= ReroutePosition.y - GetRerouteNodeSize() &&
+		MouseCursorPosition.y <= ReroutePosition.y + GetRerouteNodeSize())
+	{
+		RerouteNodeHovered = Reroute;
+		Reroute->bHovered = true;
+	}
+}
 
+bool VisualNodeArea::IsMouseOverConnection(VisualNodeConnection* Connection, const int Steps, const float MaxDistance, ImVec2& CollisionPoint)
+{
+	if (Connection->RerouteConnections.empty())
+		return IsMouseOverSegment(SocketToPosition(Connection->Out), SocketToPosition(Connection->In), 12, 10.0f);
+
+	std::vector<VisualNodeConnectionSegment> Segments = GetConnectionSegments(Connection);
+	for (size_t i = 0; i < Segments.size(); i++)
+	{
+		if (IsMouseOverSegment(Segments[i].Begin, Segments[i].End, 12, 10.0f))
+			return true;
+	}
+
+	return false;
+}
+
+bool VisualNodeArea::IsMouseOverSegment(ImVec2 Begin, ImVec2 End, const int Steps, const float maxDistance, ImVec2& CollisionPoint)
+{
 	const ImVec2 t1 = ImVec2(80.0f, 0.0f);
 	const ImVec2 t2 = ImVec2(80.0f, 0.0f);
 
@@ -515,7 +662,7 @@ bool VisualNodeArea::IsMouseOverConnection(const ImVec2 mousePos, VisualNodeConn
 		float h3 = t * t * t - 2 * t * t + t;
 		float h4 = t * t * t - t * t;
 
-		ImVec2 segmentStart = ImVec2(h1 * p1.x + h2 * p2.x + h3 * t1.x + h4 * t2.x, h1 * p1.y + h2 * p2.y + h3 * t1.y + h4 * t2.y);
+		ImVec2 SegmentStart = ImVec2(h1 * Begin.x + h2 * End.x + h3 * t1.x + h4 * t2.x, h1 * Begin.y + h2 * End.y + h3 * t1.y + h4 * t2.y);
 
 		t = static_cast<float>(Step + 1) / static_cast<float>(Steps); // Update t for the end segment.
 		h1 = +2 * t * t * t - 3 * t * t + 1.0f;
@@ -523,21 +670,21 @@ bool VisualNodeArea::IsMouseOverConnection(const ImVec2 mousePos, VisualNodeConn
 		h3 = t * t * t - 2 * t * t + t;
 		h4 = t * t * t - t * t;
 
-		ImVec2 segmentEnd = ImVec2(h1 * p1.x + h2 * p2.x + h3 * t1.x + h4 * t2.x, h1 * p1.y + h2 * p2.y + h3 * t1.y + h4 * t2.y);
+		ImVec2 SegmentEnd = ImVec2(h1 * Begin.x + h2 * End.x + h3 * t1.x + h4 * t2.x, h1 * Begin.y + h2 * End.y + h3 * t1.y + h4 * t2.y);
 
 		// Compute the shortest distance from mousePos to the line defined by the segment.
-		ImVec2 segmentDirection = segmentEnd - segmentStart;
-		float segmentLengthSq = ImDot(segmentDirection, segmentDirection);
-		ImVec2 toMousePos = mousePos - segmentStart;
-		float tProj = ImClamp(ImDot(toMousePos, segmentDirection) / segmentLengthSq, 0.0f, 1.0f);
+		ImVec2 SegmentDirection = SegmentEnd - SegmentStart;
+		float SegmentLengthSq = ImDot(SegmentDirection, SegmentDirection);
+		ImVec2 ToMousePos = MouseCursorPosition - SegmentStart;
+		float TProj = ImClamp(ImDot(ToMousePos, SegmentDirection) / SegmentLengthSq, 0.0f, 1.0f);
 
-		ImVec2 projection = segmentStart + ImVec2(tProj, tProj) * segmentDirection;
-		float distance = ImLengthSqr(mousePos - projection);
+		ImVec2 Projection = SegmentStart + ImVec2(TProj, TProj) * SegmentDirection;
+		float Distance = ImLengthSqr(MouseCursorPosition - Projection);
 
 		// If the distance is less than the threshold, the mouse is over the connection.
-		if (distance < maxDistance * maxDistance * Zoom)
+		if (Distance < maxDistance * maxDistance * Zoom)
 		{
-			CollisionPoint = projection;
+			CollisionPoint = Projection;
 			//ImGui::GetWindowDrawList()->AddRectFilled(projection, projection + ImVec2(5, 5), IM_COL32(175, 175, 255, 125), 1.0f);
 			return true;
 		}
@@ -546,9 +693,9 @@ bool VisualNodeArea::IsMouseOverConnection(const ImVec2 mousePos, VisualNodeConn
 	return false;
 }
 
-bool VisualNodeArea::IsPointInRegion(const ImVec2& point, const ImVec2& regionMin, const ImVec2& regionMax)
+bool VisualNodeArea::IsPointInRegion(const ImVec2& Point, const ImVec2& RegionMin, const ImVec2& RegionMax)
 {
-	return (point.x >= regionMin.x && point.x <= regionMax.x && point.y >= regionMin.y && point.y <= regionMax.y);
+	return (Point.x >= RegionMin.x && Point.x <= RegionMax.x && Point.y >= RegionMin.y && Point.y <= RegionMax.y);
 }
 
 int Orientation(const ImVec2& p, const ImVec2& q, const ImVec2& r)
@@ -590,9 +737,21 @@ bool IsLineSegmentIntersecting(const ImVec2& p1, const ImVec2& q1, const ImVec2&
 
 bool VisualNodeArea::IsConnectionInRegion(VisualNodeConnection* Connection, const int Steps)
 {
-	ImVec2 p1 = SocketToPosition(Connection->Out);
-	ImVec2 p2 = SocketToPosition(Connection->In);
+	if (Connection->RerouteConnections.empty())
+		return IsSegmentInRegion(SocketToPosition(Connection->Out), SocketToPosition(Connection->In), 12);
 
+	std::vector<VisualNodeConnectionSegment> Segments = GetConnectionSegments(Connection);
+	for (size_t i = 0; i < Segments.size(); i++)
+	{
+		if (IsSegmentInRegion(Segments[i].Begin, Segments[i].End, 12))
+			return true;
+	}
+
+	return false;
+}
+
+bool VisualNodeArea::IsSegmentInRegion(ImVec2 Begin, ImVec2 End, const int Steps)
+{
 	const ImVec2 t1 = ImVec2(80.0f, 0.0f);
 	const ImVec2 t2 = ImVec2(80.0f, 0.0f);
 
@@ -611,7 +770,7 @@ bool VisualNodeArea::IsConnectionInRegion(VisualNodeConnection* Connection, cons
 		float h3 = t * t * t - 2 * t * t + t;
 		float h4 = t * t * t - t * t;
 
-		ImVec2 segmentStart = ImVec2(h1 * p1.x + h2 * p2.x + h3 * t1.x + h4 * t2.x, h1 * p1.y + h2 * p2.y + h3 * t1.y + h4 * t2.y);
+		ImVec2 segmentStart = ImVec2(h1 * Begin.x + h2 * End.x + h3 * t1.x + h4 * t2.x, h1 * Begin.y + h2 * End.y + h3 * t1.y + h4 * t2.y);
 
 		t = static_cast<float>(Step + 1) / static_cast<float>(Steps); // Update t for the end segment.
 		h1 = +2 * t * t * t - 3 * t * t + 1.0f;
@@ -619,7 +778,7 @@ bool VisualNodeArea::IsConnectionInRegion(VisualNodeConnection* Connection, cons
 		h3 = t * t * t - 2 * t * t + t;
 		h4 = t * t * t - t * t;
 
-		ImVec2 segmentEnd = ImVec2(h1 * p1.x + h2 * p2.x + h3 * t1.x + h4 * t2.x, h1 * p1.y + h2 * p2.y + h3 * t1.y + h4 * t2.y);
+		ImVec2 segmentEnd = ImVec2(h1 * Begin.x + h2 * End.x + h3 * t1.x + h4 * t2.x, h1 * Begin.y + h2 * End.y + h3 * t1.y + h4 * t2.y);
 
 		// If either of the segment's points are in the region, the connection is in the region.
 		if (IsPointInRegion(segmentStart, MouseSelectRegionMin, MouseSelectRegionMax) ||
@@ -644,4 +803,125 @@ bool VisualNodeArea::IsConnectionInRegion(VisualNodeConnection* Connection, cons
 bool VisualNodeArea::IsMouseRegionSelectionActive() const
 {
 	return MouseSelectRegionMin.x != FLT_MAX && MouseSelectRegionMin.y != FLT_MAX && MouseSelectRegionMax.x != FLT_MAX && MouseSelectRegionMax.y != FLT_MAX;
+}
+
+void VisualNodeArea::MouseInputUpdateConnections()
+{
+	for (size_t i = 0; i < Connections.size(); i++)
+		Connections[i]->bHovered = false;
+	HoveredConnections.clear();
+
+	RerouteNodeHovered = nullptr;
+	if (HoveredNode == nullptr)
+	{
+		for (size_t i = 0; i < Connections.size(); i++)
+		{
+			for (size_t j = 0; j < Connections[i]->RerouteConnections.size(); j++)
+			{
+				Connections[i]->RerouteConnections[j]->bHovered = false;
+				InputUpdateReroute(Connections[i]->RerouteConnections[j]);
+
+				if (RerouteNodeHovered != nullptr)
+					break;
+			}
+
+			if (RerouteNodeHovered != nullptr)
+				break;
+		}
+	}
+
+	// If any node is hovered, we don't want to check for hovered connections
+	if (HoveredNode == nullptr && RerouteNodeHovered == nullptr)
+	{
+		for (size_t i = 0; i < Connections.size(); i++)
+		{
+			if (IsMouseOverConnection(Connections[i], 12, 10.0f))
+			{
+				Connections[i]->bHovered = true;
+				HoveredConnections.push_back(Connections[i]);
+			}
+
+			if (IsMouseRegionSelectionActive() && SelectedNodes.empty())
+			{
+				if (IsConnectionInRegion(Connections[i], 12))
+				{
+					Connections[i]->bSelected = true;
+					AddSelected(Connections[i]);
+				}
+				else
+				{
+					if (Connections[i]->bSelected)
+						UnSelect(Connections[i]);
+				}
+			}
+		}
+	}
+
+	if (!SelectedNodes.empty())
+	{
+		for (size_t i = 0; i < Connections.size(); i++)
+			Connections[i]->bSelected = false;
+
+		SelectedConnections.clear();
+	}
+
+	if (ImGui::IsMouseDoubleClicked(0))
+	{
+		ConnectionsDoubleMouseClick();
+	}
+}
+
+void VisualNodeArea::ConnectionsDoubleMouseClick()
+{
+	if (!HoveredConnections.empty())
+	{
+		VisualNodeRerouteNode* NewReroute = new VisualNodeRerouteNode();
+		NewReroute->ID = APPLICATION.GetUniqueHexID();
+		NewReroute->Parent = HoveredConnections[0];
+		NewReroute->Position = (MouseCursorPosition - ImGui::GetWindowPos() - RenderOffset) / Zoom;
+
+		if (HoveredConnections[0]->RerouteConnections.empty())
+		{
+			NewReroute->BeginSocket = HoveredConnections[0]->Out;
+			NewReroute->EndSocket = HoveredConnections[0]->In;
+
+			HoveredConnections[0]->RerouteConnections.push_back(NewReroute);
+			return;
+		}
+		else
+		{
+			std::vector<VisualNodeConnectionSegment> Segments = GetConnectionSegments(HoveredConnections[0]);
+			for (size_t i = 0; i < Segments.size(); i++)
+			{
+				if (IsMouseOverSegment(Segments[i].Begin, Segments[i].End, 12, 10.0f))
+				{
+					if (i == 0)
+					{
+						NewReroute->BeginSocket = Segments[i].BeginSocket;
+					}
+					else
+					{
+						NewReroute->BeginReroute = HoveredConnections[0]->RerouteConnections[i - 1];
+						HoveredConnections[0]->RerouteConnections[i - 1]->EndSocket = nullptr;
+						HoveredConnections[0]->RerouteConnections[i - 1]->EndReroute = NewReroute;
+					}
+
+					if (i < HoveredConnections[0]->RerouteConnections.size())
+					{
+						HoveredConnections[0]->RerouteConnections[i]->BeginSocket = nullptr;
+						HoveredConnections[0]->RerouteConnections[i]->BeginReroute = NewReroute;
+					}
+
+					NewReroute->EndSocket = Segments[i].EndSocket;
+					NewReroute->EndReroute = Segments[i].EndReroute;
+
+					HoveredConnections[0]->RerouteConnections.insert(HoveredConnections[0]->RerouteConnections.begin() + i, NewReroute);
+					return;
+				}
+			}
+		}
+
+		// If we got here, something went wrong.
+		delete NewReroute;
+	}
 }

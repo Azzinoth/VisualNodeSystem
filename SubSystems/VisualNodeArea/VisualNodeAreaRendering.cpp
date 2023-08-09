@@ -7,7 +7,7 @@ void VisualNodeArea::RenderNode(VisualNode* Node) const
 
 	ImGui::PushID(Node->GetID().c_str());
 
-	Node->LeftTop = ImGui::GetCurrentWindow()->Pos + Node->GetPosition() * Zoom + RenderOffset;
+	Node->LeftTop = LocalToScreen(Node->GetPosition());
 	if (Node->GetStyle() == VISUAL_NODE_STYLE_DEFAULT)
 	{
 		Node->RightBottom = Node->LeftTop + Node->GetSize() * Zoom;
@@ -116,7 +116,7 @@ void VisualNodeArea::RenderNodeSocket(NodeSocket* Socket) const
 		ImGui::Text(Socket->GetName().c_str());
 	}
 
-	ImColor SocketColor = ImColor(150, 150, 150);
+	ImColor SocketColor = DEFAULT_NODE_SOCKET_COLOR;
 	if (NodeSocket::SocketTypeToColorAssosiations.find(Socket->GetType()) != NodeSocket::SocketTypeToColorAssosiations.end())
 		SocketColor = NodeSocket::SocketTypeToColorAssosiations[Socket->GetType()];
 
@@ -350,7 +350,7 @@ void VisualNodeArea::DrawHermiteLine(const ImVec2 P1, const ImVec2 P2, const int
 			const float h3 = t * t * t - 2 * t * t + t;
 			const float h4 = t * t * t - t * t;
 
-			ImVec2 CurrentPoint = ImVec2(Zoom, Zoom) * ImVec2(h1 * P1.x + h2 * P2.x + h3 * t1.x + h4 * t2.x, h1 * P1.y + h2 * P2.y + h3 * t1.y + h4 * t2.y);
+			ImVec2 CurrentPoint = ImVec2(h1 * P1.x + h2 * P2.x + h3 * t1.x + h4 * t2.x, h1 * P1.y + h2 * P2.y + h3 * t1.y + h4 * t2.y);
 
 			if (Step != 0) // Avoid drawing on the first step because lastPoint is not valid.
 			{
@@ -386,7 +386,7 @@ void VisualNodeArea::DrawHermiteLine(const ImVec2 P1, const ImVec2 P2, const int
 			const float h3 = t * t * t - 2 * t * t + t;
 			const float h4 = t * t * t - t * t;
 
-			CurrentDrawList->PathLineTo(ImVec2(Zoom, Zoom) * ImVec2(h1 * P1.x + h2 * P2.x + h3 * t1.x + h4 * t2.x, h1 * P1.y + h2 * P2.y + h3 * t1.y + h4 * t2.y));
+			CurrentDrawList->PathLineTo(ImVec2(h1 * P1.x + h2 * P2.x + h3 * t1.x + h4 * t2.x, h1 * P1.y + h2 * P2.y + h3 * t1.y + h4 * t2.y));
 		}
 
 		double Time = glfwGetTime();
@@ -407,7 +407,7 @@ void VisualNodeArea::DrawHermiteLine(const ImVec2 P1, const ImVec2 P2, const int
 			const float h3 = t * t * t - 2 * t * t + t;
 			const float h4 = t * t * t - t * t;
 
-			ImVec2 CurrentPoint = ImVec2(Zoom, Zoom) * ImVec2(h1 * P1.x + h2 * P2.x + h3 * t1.x + h4 * t2.x, h1 * P1.y + h2 * P2.y + h3 * t1.y + h4 * t2.y);
+			ImVec2 CurrentPoint = ImVec2(h1 * P1.x + h2 * P2.x + h3 * t1.x + h4 * t2.x, h1 * P1.y + h2 * P2.y + h3 * t1.y + h4 * t2.y);
 			CurrentDrawList->PathLineTo(CurrentPoint);
 
 			LastPoint = CurrentPoint;
@@ -431,7 +431,7 @@ void VisualNodeArea::DrawHermiteLine(const ImVec2 P1, const ImVec2 P2, const int
 		const float h3 = t * t * t - 2 * t * t + t;
 		const float h4 = t * t * t - t * t;
 
-		ImVec2 CurrentPoint = ImVec2(Zoom, Zoom) * ImVec2(h1 * P1.x + h2 * P2.x + h3 * t1.x + h4 * t2.x, h1 * P1.y + h2 * P2.y + h3 * t1.y + h4 * t2.y);
+		ImVec2 CurrentPoint = ImVec2(h1 * P1.x + h2 * P2.x + h3 * t1.x + h4 * t2.x, h1 * P1.y + h2 * P2.y + h3 * t1.y + h4 * t2.y);
 		CurrentDrawList->PathLineTo(CurrentPoint);
 
 		LastPoint = CurrentPoint;
@@ -449,16 +449,41 @@ void VisualNodeArea::RenderConnection(const VisualNodeConnection* Connection) co
 	if (NodeSocket::SocketTypeToColorAssosiations.find(Connection->Out->GetType()) != NodeSocket::SocketTypeToColorAssosiations.end())
 		CurrentConnectionColor = NodeSocket::SocketTypeToColorAssosiations[Connection->Out->GetType()];
 
-	if (Connection->bSelected)
+	std::vector<VisualNodeConnectionSegment> Segments = GetConnectionSegments(Connection);
+	for (size_t i = 0; i < Segments.size(); i++)
 	{
-		DrawHermiteLine(SocketToPosition(Connection->Out) / Zoom, SocketToPosition(Connection->In) / Zoom, 12, ImColor(55, 255, 55), GetConnectionThickness() + GetConnectionThickness() * 1.2f);
+		ImVec2 BeginPosition = Segments[i].Begin;
+		ImVec2 EndPosition = Segments[i].End;
+
+		if (Connection->bSelected)
+		{
+			DrawHermiteLine(BeginPosition, EndPosition, 12, ImColor(55, 255, 55), GetConnectionThickness() + GetConnectionThickness() * 1.2f);
+		}
+		else if (Connection->bHovered)
+		{
+			DrawHermiteLine(BeginPosition, EndPosition, 12, ImColor(55, 55, 250), GetConnectionThickness() + GetConnectionThickness() * 1.2f);
+		}
+
+		DrawHermiteLine(BeginPosition, EndPosition, 12, CurrentConnectionColor, &Connection->Style);
+
+		// If it is reroute than we should render circle.
+		if (i > 0)
+			RenderReroute(Connection->RerouteConnections[i - 1]);
 	}
-	else if (Connection->bHovered)
+}
+
+void VisualNodeArea::RenderReroute(const VisualNodeRerouteNode* RerouteNode) const
+{
+	if (RerouteNode->bSelected)
 	{
-		DrawHermiteLine(SocketToPosition(Connection->Out) / Zoom, SocketToPosition(Connection->In) / Zoom, 12, ImColor(55, 55, 250), GetConnectionThickness() + GetConnectionThickness() * 1.2f);
+		CurrentDrawList->AddCircleFilled(LocalToScreen(RerouteNode->Position), GetRerouteNodeSize() * 1.2f, ImColor(55, 255, 55));
 	}
-	
-	DrawHermiteLine(SocketToPosition(Connection->Out) / Zoom, SocketToPosition(Connection->In) / Zoom, 12, CurrentConnectionColor, &Connection->Style);
+	else if (RerouteNode->bHovered)
+	{
+		CurrentDrawList->AddCircleFilled(LocalToScreen(RerouteNode->Position), GetRerouteNodeSize() * 1.2f, ImColor(55, 55, 250));
+	}
+
+	CurrentDrawList->AddCircleFilled(LocalToScreen(RerouteNode->Position), GetRerouteNodeSize(), ImColor(DEFAULT_NODE_SOCKET_COLOR.Value + ImColor(15, 25, 15).Value));
 }
 
 ImVec2 VisualNodeArea::SocketToPosition(const NodeSocket* Socket) const

@@ -15,19 +15,15 @@ using namespace FocalEngine;
 #include "jsoncpp/json/json.h"
 
 #define NODE_SOCKET_SIZE 5.0f
+#define DEFAULT_NODE_SOCKET_COLOR ImColor(150, 150, 150)
 #define DEFAULT_NODE_SOCKET_CONNECTION_COLOR ImColor(200, 200, 200)
 #define DEFAULT_NODE_SOCKET_MOUSE_HOVERED_CONNECTION_COLOR ImColor(220, 220, 220)
 
-class VisualNode;
-class NodeSocket;
-class VisualNodeArea;
-class VisualNodeSystem;
-
 class NodeSocket
 {
-	friend VisualNodeSystem;
-	friend VisualNodeArea;
-	friend VisualNode;
+	friend class VisualNodeSystem;
+	friend class VisualNodeArea;
+	friend class VisualNode;
 
 	std::string ID;
 	bool bOutput = false;
@@ -72,19 +68,53 @@ struct VisualNodeConnectionStyle
 	float PulseMax = 1.0f;
 };
 
+class VisualNodeRerouteNode
+{
+	friend class VisualNodeSystem;
+	friend class VisualNodeArea;
+	friend class VisualNodeConnection;
+	friend class VisualNode;
+
+	std::string ID;
+	VisualNodeConnection* Parent = nullptr;
+	ImVec2 Position;
+
+	NodeSocket* BeginSocket = nullptr;
+	VisualNodeRerouteNode* BeginReroute = nullptr;
+
+	NodeSocket* EndSocket = nullptr;
+	VisualNodeRerouteNode* EndReroute = nullptr;
+
+	bool bHovered = false;
+	bool bSelected = false;
+};
+
+struct VisualNodeConnectionSegment
+{
+	ImVec2 Begin;
+	ImVec2 End;
+
+	NodeSocket* BeginSocket = nullptr;
+	VisualNodeRerouteNode* BeginReroute = nullptr;
+
+	NodeSocket* EndSocket = nullptr;
+	VisualNodeRerouteNode* EndReroute = nullptr;
+};
+
 class VisualNodeConnection
 {
-	friend VisualNodeSystem;
-	friend VisualNodeArea;
-	friend VisualNode;
+	friend class VisualNodeSystem;
+	friend class VisualNodeArea;
+	friend class VisualNode;
 
 	NodeSocket* Out = nullptr;
 	NodeSocket* In = nullptr;
 
 	bool bHovered = false;
 	bool bSelected = false;
-
 	VisualNodeConnectionStyle Style;
+
+	std::vector<VisualNodeRerouteNode*> RerouteConnections;
 
 	VisualNodeConnection(NodeSocket* Out, NodeSocket* In);
 };
