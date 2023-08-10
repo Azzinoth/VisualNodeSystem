@@ -576,3 +576,8 @@ ImVec2 VisualNodeArea::LocalToScreen(ImVec2 LocalPosition) const
 {
 	return ImGui::GetCurrentWindow()->Pos + LocalPosition * Zoom + RenderOffset;
 }
+
+ImVec2 VisualNodeArea::ScreenToLocal(ImVec2 ScreenPosition) const
+{
+	return (ScreenPosition - ImGui::GetCurrentWindow()->Pos - RenderOffset) / Zoom;
+}

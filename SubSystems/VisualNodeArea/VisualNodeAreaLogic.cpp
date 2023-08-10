@@ -24,6 +24,21 @@ std::vector<VisualNodeConnection*> VisualNodeArea::GetAllConnections(const NodeS
 
 void VisualNodeArea::Disconnect(VisualNodeConnection*& Connection)
 {
+	if (HoveredConnection == Connection)
+		HoveredConnection = nullptr;
+
+	for (size_t i = 0; i < SelectedConnections.size(); i++)
+	{
+		if (SelectedConnections[i] == Connection)
+		{
+			SelectedConnections.erase(SelectedConnections.begin() + i, SelectedConnections.begin() + i + 1);
+			break;
+		}
+	}
+
+	for (size_t i = 0; i < Connection->RerouteConnections.size(); i++)
+		Delete(Connection->RerouteConnections[i]);
+
 	for (int i = 0; i < static_cast<int>(Connection->In->SocketConnected.size()); i++)
 	{
 		if (Connection->In->SocketConnected[i] == Connection->Out)
@@ -66,6 +81,63 @@ void VisualNodeArea::Disconnect(VisualNodeConnection*& Connection)
 			Connection = nullptr;
 			return;
 		}
+	}
+}
+
+void VisualNodeArea::Delete(VisualNodeRerouteNode*& RerouteNode)
+{
+	if (RerouteNodeHovered == RerouteNode)
+		RerouteNodeHovered = nullptr;
+
+	for (size_t i = 0; i < SelectedRerouteNodes.size(); i++)
+	{
+		if (SelectedRerouteNodes[i] == RerouteNode)
+		{
+			SelectedRerouteNodes.erase(SelectedRerouteNodes.begin() + i, SelectedRerouteNodes.begin() + i + 1);
+			break;
+		}
+	}
+
+	size_t IndexOfRerouteNode = 0;
+	for (size_t i = 0; i < RerouteNode->Parent->RerouteConnections.size(); i++)
+	{
+		if (RerouteNode->Parent->RerouteConnections[i] == RerouteNode)
+		{
+			IndexOfRerouteNode = i;
+			break;
+		}
+	}
+
+	if (RerouteNode->Parent->RerouteConnections.size() > 1)
+	{
+		// If the reroute node is the first one, we need to update the begin socket of the next one
+		if (RerouteNode->Parent->RerouteConnections[0] == RerouteNode)
+		{
+			RerouteNode->Parent->RerouteConnections[1]->BeginSocket = RerouteNode->Parent->RerouteConnections[0]->BeginSocket;
+			RerouteNode->Parent->RerouteConnections[1]->BeginReroute = nullptr;
+		}
+		// If the reroute node is the last one, we need to update the end socket of the previous one
+		else if (RerouteNode->Parent->RerouteConnections.back() == RerouteNode)
+		{
+			RerouteNode->Parent->RerouteConnections[IndexOfRerouteNode - 1]->EndSocket = RerouteNode->Parent->RerouteConnections[IndexOfRerouteNode]->EndSocket;
+			RerouteNode->Parent->RerouteConnections[IndexOfRerouteNode - 1]->EndReroute = nullptr;
+		}
+		// If the reroute node is in the middle, we need to update the previous and next one
+		else
+		{
+			RerouteNode->Parent->RerouteConnections[IndexOfRerouteNode - 1]->EndReroute = RerouteNode->Parent->RerouteConnections[IndexOfRerouteNode + 1];
+			RerouteNode->Parent->RerouteConnections[IndexOfRerouteNode - 1]->EndSocket = nullptr;
+
+			RerouteNode->Parent->RerouteConnections[IndexOfRerouteNode + 1]->BeginReroute = RerouteNode->Parent->RerouteConnections[IndexOfRerouteNode - 1];
+			RerouteNode->Parent->RerouteConnections[IndexOfRerouteNode + 1]->BeginSocket = nullptr;
+		}
+	}
+
+	if (!RerouteNode->Parent->RerouteConnections.empty())
+	{
+		RerouteNode->Parent->RerouteConnections.erase(RerouteNode->Parent->RerouteConnections.begin() + IndexOfRerouteNode, RerouteNode->Parent->RerouteConnections.begin() + IndexOfRerouteNode + 1);
+		delete RerouteNode;
+		RerouteNode = nullptr;
 	}
 }
 

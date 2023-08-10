@@ -109,13 +109,17 @@ private:
 
 	bool bClearing = false;
 	bool bFillWindow = false;
+	bool bMouseHovered = false;
 	ImDrawList* CurrentDrawList = nullptr;
 	ImGuiWindow* NodeAreaWindow = nullptr;
 	std::vector<VisualNode*> Nodes;
 
-	VisualNode* HoveredNode;
-	std::vector<VisualNodeConnection*> HoveredConnections;
-	bool bMouseHovered = false;
+	VisualNode* HoveredNode = nullptr;
+	NodeSocket* SocketLookingForConnection = nullptr;
+	VisualNodeConnection* HoveredConnection = nullptr;
+	NodeSocket* SocketHovered = nullptr;
+	VisualNodeRerouteNode* RerouteNodeHovered = nullptr;
+	
 	std::vector<VisualNode*> SelectedNodes;
 	std::vector<VisualNodeConnection*> SelectedConnections;
 	std::vector<VisualNodeRerouteNode*> SelectedRerouteNodes;
@@ -127,9 +131,7 @@ private:
 	ImGuiWindow* MouseDownIn = nullptr;
 	bool bOpenMainContextMenu = false;
 	std::vector<VisualNodeConnection*> Connections;
-	NodeSocket* SocketLookingForConnection = nullptr;
-	NodeSocket* SocketHovered = nullptr;
-	VisualNodeRerouteNode* RerouteNodeHovered = nullptr;
+
 	ImVec2 AreaPosition;
 	ImVec2 AreaSize;
 	ImU32 GridBackgroundColor = IM_COL32(32, 32, 32, 255);
@@ -145,6 +147,7 @@ private:
 	ImVec2 SocketToPosition(const NodeSocket* Socket) const;
 	std::vector<VisualNodeConnection*> GetAllConnections(const NodeSocket* Socket) const;
 	void Disconnect(VisualNodeConnection*& Connection);
+	void Delete(VisualNodeRerouteNode*& RerouteNode);
 
 	void InputUpdate();
 	void MouseInputUpdate();
@@ -175,6 +178,8 @@ private:
 	bool AddSelected(VisualNodeConnection* Connection);
 	bool IsSelected(const VisualNodeConnection* Connection) const;
 	bool UnSelect(const VisualNodeConnection* Connection);
+	void UnSelectAllConnections();
+
 	bool AddSelected(VisualNodeRerouteNode* RerouteNode);
 	bool IsSelected(const VisualNodeRerouteNode* RerouteNode) const;
 	bool UnSelect(const VisualNodeRerouteNode* RerouteNode);
@@ -201,5 +206,6 @@ private:
 
 	bool IsMouseRegionSelectionActive() const;
 
+	ImVec2 ScreenToLocal(ImVec2 ScreenPosition) const;
 	ImVec2 LocalToScreen(ImVec2 LocalPosition) const;
 };

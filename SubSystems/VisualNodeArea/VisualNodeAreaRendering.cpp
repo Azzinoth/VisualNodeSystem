@@ -153,7 +153,7 @@ void VisualNodeArea::RenderNodeSocket(NodeSocket* Socket) const
 			ConnectionColor = NodeSocket::SocketTypeToColorAssosiations[SocketLookingForConnection->GetType()];
 		
 		CurrentDrawList->ChannelsSetCurrent(3);
-		DrawHermiteLine(SocketPosition / Zoom, ImGui::GetIO().MousePos / Zoom, 12, ConnectionColor, &DefaultConnectionStyle);
+		DrawHermiteLine(SocketPosition, ImGui::GetIO().MousePos, 12, ConnectionColor, &DefaultConnectionStyle);
 	}
 
 	// Draw socket icon.
@@ -618,11 +618,13 @@ void VisualNodeArea::SetIsAreaFillingWindow(bool NewValue)
 
 void VisualNodeArea::ApplyZoom(float Delta)
 {
-	ImVec2 MousePosBeforeZoom = (ImGui::GetMousePos() - ImGui::GetCurrentWindow()->Pos - RenderOffset) / Zoom;
+	ImVec2 MousePosBeforeZoom = ScreenToLocal(ImGui::GetMousePos());
+
 	Zoom += Delta * 0.1f;
 	Zoom = std::max(Zoom, MIN_ZOOM_LEVEL);
 	Zoom = std::min(Zoom, MAX_ZOOM_LEVEL);
-	ImVec2 MousePosAfterZoom = (ImGui::GetMousePos() - ImGui::GetCurrentWindow()->Pos - RenderOffset) / Zoom;
+
+	ImVec2 MousePosAfterZoom = ScreenToLocal(ImGui::GetMousePos());
 
 	// Adjust render offset to keep the mouse over the same point after zooming
 	RenderOffset -= (MousePosBeforeZoom - MousePosAfterZoom) * Zoom;

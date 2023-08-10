@@ -37,21 +37,6 @@ std::string NodeSocket::GetType() const
 	return Type;
 }
 
-//bool NodeSocket::GetForcedConnectionColor(ImColor& Color) const
-//{
-//	if (ConnectionStyle.ForceColor == nullptr)
-//		return false;
-//
-//	Color = *ConnectionStyle.ForceColor;
-//
-//	return true;
-//}
-//
-//void NodeSocket::SetForcedConnectionColor(ImColor* NewValue)
-//{
-//	ConnectionStyle.ForceColor = NewValue;
-//}
-
 void NodeSocket::SetFunctionToOutputData(std::function<void* ()> NewFunction)
 {
 	OutputData = NewFunction;
@@ -61,4 +46,10 @@ VisualNodeConnection::VisualNodeConnection(NodeSocket* Out, NodeSocket* In)
 {
 	this->Out = Out;
 	this->In = In;
+}
+
+VisualNodeConnection::~VisualNodeConnection()
+{
+	for (size_t i = 0; i < RerouteConnections.size(); i++)
+		delete RerouteConnections[i];
 }

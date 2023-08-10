@@ -117,4 +117,5 @@ class VisualNodeConnection
 	std::vector<VisualNodeRerouteNode*> RerouteConnections;
 
 	VisualNodeConnection(NodeSocket* Out, NodeSocket* In);
+	~VisualNodeConnection();
 };
