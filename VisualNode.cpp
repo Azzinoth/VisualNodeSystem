@@ -284,9 +284,9 @@ std::vector<VisualNode*> VisualNode::GetNodesConnectedToInput() const
 	std::vector<VisualNode*> result;
 	for (size_t i = 0; i < Input.size(); i++)
 	{
-		for (size_t j = 0; j < Input[i]->SocketConnected.size(); j++)
+		for (size_t j = 0; j < Input[i]->ConnectedSockets.size(); j++)
 		{
-			result.push_back(Input[i]->SocketConnected[j]->GetParent());
+			result.push_back(Input[i]->ConnectedSockets[j]->GetParent());
 		}
 	}
 
@@ -298,9 +298,9 @@ std::vector<VisualNode*> VisualNode::GetNodesConnectedToOutput() const
 	std::vector<VisualNode*> result;
 	for (size_t i = 0; i < Output.size(); i++)
 	{
-		for (size_t j = 0; j < Output[i]->SocketConnected.size(); j++)
+		for (size_t j = 0; j < Output[i]->ConnectedSockets.size(); j++)
 		{
-			result.push_back(Output[i]->SocketConnected[j]->GetParent());
+			result.push_back(Output[i]->ConnectedSockets[j]->GetParent());
 		}
 	}
 

@@ -167,12 +167,12 @@ void VisualNodeArea::RightMouseClickNodesUpdate()
 	if (HoveredNode != nullptr)
 	{
 		// Should we disconnect sockets
-		if (SocketHovered != nullptr && !SocketHovered->SocketConnected.empty())
+		if (SocketHovered != nullptr && !SocketHovered->ConnectedSockets.empty())
 		{
 			std::vector<VisualNodeConnection*> ImpactedConnections = GetAllConnections(SocketHovered);
 			for (size_t i = 0; i < ImpactedConnections.size(); i++)
 			{
-				Disconnect(ImpactedConnections[i]);
+				Delete(ImpactedConnections[i]);
 			}
 		}
 		else
@@ -371,15 +371,15 @@ void VisualNodeArea::KeyboardInputUpdate()
 
 		for (size_t i = 0; i < SelectedConnections.size(); i++)
 		{
-			Disconnect(SelectedConnections[i]);
+			Delete(SelectedConnections[i]);
+			i--;
 		}
-		SelectedConnections.clear();
 
 		for (size_t i = 0; i < SelectedRerouteNodes.size(); i++)
 		{
 			Delete(SelectedRerouteNodes[i]);
+			i--;
 		}
-		SelectedRerouteNodes.clear();
 	}
 
 	static bool WasCopiedToClipboard = false;
@@ -421,16 +421,37 @@ void VisualNodeArea::KeyboardInputUpdate()
 
 				NewNodeArea->RunOnEachNode([](VisualNode* Node) {
 					Node->SetPosition(Node->GetPosition() + NeededShift);
-					});
+				});
+
+				for (size_t i = 0; i < NewNodeArea->Connections.size(); i++)
+				{
+					for (size_t j = 0; j < NewNodeArea->Connections[i]->RerouteConnections.size(); j++)
+					{
+						NewNodeArea->Connections[i]->RerouteConnections[j]->Position += NeededShift;
+					}
+				}
 				// ***************** Place new nodes in center of a view space END *****************
 
 				VisualNodeArea::CopyNodesTo(NewNodeArea, this);
 
-				// Select pasted nodes.
+				// Unselect all elements.
 				SelectedNodes.clear();
+				UnSelectAllConnections();
+				UnSelectAllRerouteNodes();
+
+				// Select all pasted nodes.
 				for (size_t i = Nodes.size() - NewNodeArea->Nodes.size(); i < Nodes.size(); i++)
 				{
 					SelectedNodes.push_back(Nodes[i]);
+				}
+
+				// Select all pasted reroute nodes.
+				for (size_t i = Connections.size() - NewNodeArea->Connections.size(); i < Connections.size(); i++)
+				{
+					for (size_t j = 0; j < Connections[i]->RerouteConnections.size(); j++)
+					{
+						AddSelected(Connections[i]->RerouteConnections[j]);
+					}
 				}
 
 				delete NewNodeArea;

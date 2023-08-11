@@ -71,6 +71,12 @@ public:
 	bool TriggerSocketEvent(NodeSocket* CallerNodeSocket, NodeSocket* TriggeredNodeSocket, VISUAL_NODE_SOCKET_EVENT EventType);
 	bool TriggerOrphanSocketEvent(VisualNode* Node, VISUAL_NODE_SOCKET_EVENT EventType);
 
+	static bool IsAlreadyConnected(NodeSocket* FirstSocket, NodeSocket* SecondSocket, const std::vector<VisualNodeConnection*>& Connections);
+	static void VisualNodeArea::ProcessConnections(const std::vector<NodeSocket*>& Sockets,
+												   std::unordered_map<NodeSocket*, NodeSocket*>& OldToNewSocket,
+												   VisualNodeArea* TargetArea, size_t NodeShift, const std::vector<VisualNode*>& SourceNodes);
+	static void CopyNodesInternal(const std::vector<VisualNode*>& SourceNodes, VisualNodeArea* TargetArea, const size_t NodeShift = 0);
+
 	static VisualNodeArea* CreateNodeArea(std::vector<VisualNode*> Nodes);
 	static VisualNodeArea* FromJson(std::string JsonText);
 	static void CopyNodesTo(VisualNodeArea* SourceNodeArea, VisualNodeArea* TargetNodeArea);
@@ -146,8 +152,10 @@ private:
 	void ProcessSocketEventQueue();
 	ImVec2 SocketToPosition(const NodeSocket* Socket) const;
 	std::vector<VisualNodeConnection*> GetAllConnections(const NodeSocket* Socket) const;
-	void Disconnect(VisualNodeConnection*& Connection);
-	void Delete(VisualNodeRerouteNode*& RerouteNode);
+	VisualNodeConnection* GetAllConnections(const NodeSocket* FirstSocket, const NodeSocket* SecondSocket) const;
+
+	void Delete(VisualNodeConnection* Connection);
+	void Delete(VisualNodeRerouteNode* RerouteNode);
 
 	void InputUpdate();
 	void MouseInputUpdate();

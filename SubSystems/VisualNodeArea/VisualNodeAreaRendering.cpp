@@ -158,7 +158,7 @@ void VisualNodeArea::RenderNodeSocket(NodeSocket* Socket) const
 
 	// Draw socket icon.
 	CurrentDrawList->AddCircleFilled(SocketPosition, GetNodeSocketSize(), SocketColor);
-	if (Socket->SocketConnected.empty())
+	if (Socket->ConnectedSockets.empty())
 	{
 		float InternalSocketSizeFactor = 0.6f;
 		ImVec2 InternalPartShift = ImVec2(GetNodeSocketSize() * InternalSocketSizeFactor / 32.0f, GetNodeSocketSize() * InternalSocketSizeFactor / 32.0f);

@@ -24,7 +24,7 @@ VisualNode* NodeSocket::GetParent() const
 
 std::vector<NodeSocket*> NodeSocket::GetConnectedSockets()
 {
-	return SocketConnected;
+	return ConnectedSockets;
 }
 
 std::string NodeSocket::GetName() const

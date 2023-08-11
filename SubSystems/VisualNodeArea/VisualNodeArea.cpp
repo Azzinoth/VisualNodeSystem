@@ -142,98 +142,121 @@ void VisualNodeArea::SaveNodesToFile(const char* FileName, std::vector<VisualNod
 	delete NewNodeArea;
 }
 
-VisualNodeArea* VisualNodeArea::CreateNodeArea(const std::vector<VisualNode*> Nodes)
+bool VisualNodeArea::IsAlreadyConnected(NodeSocket* FirstSocket, NodeSocket* SecondSocket, const std::vector<VisualNodeConnection*>& Connections)
 {
-	VisualNodeArea* NewArea = new VisualNodeArea();
+	for (size_t i = 0; i < Connections.size(); i++)
+	{
+		// if node is connected to node that is not in this list just ignore.
+		if (Connections[i]->In == FirstSocket && Connections[i]->Out == SecondSocket)
+			return true;
+	}
 
+	return false;
+}
+
+void VisualNodeArea::ProcessConnections(const std::vector<NodeSocket*>& Sockets,
+										std::unordered_map<NodeSocket*, NodeSocket*>& OldToNewSocket,
+										VisualNodeArea* TargetArea, size_t NodeShift, const std::vector<VisualNode*>& SourceNodes)
+{
+	VisualNodeArea* SourceArea = SourceNodes[0]->GetParentArea();
+
+	for (size_t i = 0; i < Sockets.size(); i++)
+	{
+		NodeSocket* CurrentSocket = Sockets[i];
+		for (const auto& ConnectedSocket : CurrentSocket->ConnectedSockets)
+		{
+			if (IsNodeIDInList(ConnectedSocket->GetParent()->GetID(), SourceNodes))
+			{
+				// Record the connection from the perspective of the output node
+				TargetArea->Nodes[NodeShift]->Output[i]->ConnectedSockets.push_back(OldToNewSocket[ConnectedSocket]);
+
+				// Check maybe we already establish this connection.
+				if (!IsAlreadyConnected(OldToNewSocket[CurrentSocket], OldToNewSocket[ConnectedSocket], TargetArea->Connections))
+				{
+					std::unordered_map<VisualNodeRerouteNode*, VisualNodeRerouteNode*> OldToNewRerouteNode;
+					// Get connection info from old node area.
+					VisualNodeConnection* OldConnection = SourceArea->GetAllConnections(CurrentSocket, ConnectedSocket);
+
+					TargetArea->Connections.push_back(new VisualNodeConnection(OldToNewSocket[CurrentSocket], OldToNewSocket[ConnectedSocket]));
+					VisualNodeConnection* NewConnection = TargetArea->Connections.back();
+
+					// First pass to fill OldToNewRerouteNode map and other information that does not depend on OldToNewRerouteNode map.
+					for (size_t j = 0; j < OldConnection->RerouteConnections.size(); j++)
+					{
+						VisualNodeRerouteNode* OldReroute = OldConnection->RerouteConnections[j];
+						VisualNodeRerouteNode* NewReroute = new VisualNodeRerouteNode();
+						NewReroute->ID = APPLICATION.GetUniqueHexID();
+						NewReroute->Parent = NewConnection;
+						NewReroute->Position = OldReroute->Position;
+
+						if (OldReroute->BeginSocket != nullptr)
+							NewReroute->BeginSocket = OldToNewSocket[OldReroute->BeginSocket];
+						if (OldReroute->EndSocket != nullptr)
+							NewReroute->EndSocket = OldToNewSocket[OldReroute->EndSocket];
+
+						// Associate old to new
+						OldToNewRerouteNode[OldConnection->RerouteConnections[j]] = NewReroute;
+
+						NewConnection->RerouteConnections.push_back(NewReroute);
+					}
+
+					// Second pass to fill all other info.
+					for (size_t j = 0; j < OldConnection->RerouteConnections.size(); j++)
+					{
+						VisualNodeRerouteNode* OldReroute = OldConnection->RerouteConnections[j];
+
+						if (OldReroute->BeginReroute != nullptr)
+							OldToNewRerouteNode[OldReroute]->BeginReroute = OldToNewRerouteNode[OldReroute->BeginReroute];
+						if (OldReroute->EndReroute != nullptr)
+							OldToNewRerouteNode[OldReroute]->EndReroute = OldToNewRerouteNode[OldReroute->EndReroute];
+					}
+				}
+			}
+		}
+	}
+}
+
+void VisualNodeArea::CopyNodesInternal(const std::vector<VisualNode*>& SourceNodes, VisualNodeArea* TargetArea, const size_t NodeShift)
+{
 	// Copy all nodes to new node area.
 	std::unordered_map<VisualNode*, VisualNode*> OldToNewNode;
 	std::unordered_map<NodeSocket*, NodeSocket*> OldToNewSocket;
-	for (size_t i = 0; i < Nodes.size(); i++)
+	for (size_t i = 0; i < SourceNodes.size(); i++)
 	{
-		//VisualNode* CopyOfNode = VisualNode::CopyChild(Nodes[i]->GetType(), Nodes[i]);
-		VisualNode* CopyOfNode = NODE_FACTORY.CopyNode(Nodes[i]->GetType(), *Nodes[i]);
+		VisualNode* CopyOfNode = NODE_FACTORY.CopyNode(SourceNodes[i]->GetType(), *SourceNodes[i]);
 
 		if (CopyOfNode == nullptr)
-			CopyOfNode = new VisualNode(*Nodes[i]);
-		CopyOfNode->ParentArea = NewArea;
+			CopyOfNode = new VisualNode(*SourceNodes[i]);
+		CopyOfNode->ParentArea = TargetArea;
 
-		//newArea->nodes.push_back(copyOfNode);
-		NewArea->AddNode(CopyOfNode);
+		TargetArea->AddNode(CopyOfNode);
 
-		// Associate old to new IDs
-		OldToNewNode[Nodes[i]] = CopyOfNode;
+		// Associate old to new
+		OldToNewNode[SourceNodes[i]] = CopyOfNode;
 
-		for (size_t j = 0; j < Nodes[i]->Input.size(); j++)
+		for (size_t j = 0; j < SourceNodes[i]->Input.size(); j++)
 		{
-			OldToNewSocket[Nodes[i]->Input[j]] = CopyOfNode->Input[j];
+			OldToNewSocket[SourceNodes[i]->Input[j]] = CopyOfNode->Input[j];
 		}
 
-		for (size_t j = 0; j < Nodes[i]->Output.size(); j++)
+		for (size_t j = 0; j < SourceNodes[i]->Output.size(); j++)
 		{
-			OldToNewSocket[Nodes[i]->Output[j]] = CopyOfNode->Output[j];
+			OldToNewSocket[SourceNodes[i]->Output[j]] = CopyOfNode->Output[j];
 		}
 	}
 
-	// Than we need to recreate all connections.
-	for (size_t i = 0; i < Nodes.size(); i++)
+	// Recreate all connections.
+	for (size_t i = 0; i < SourceNodes.size(); i++)
 	{
-		for (size_t j = 0; j < Nodes[i]->Input.size(); j++)
-		{
-			for (size_t k = 0; k < Nodes[i]->Input[j]->SocketConnected.size(); k++)
-			{
-				// if node is connected to node that is not in this list just ignore.
-				if (IsNodeIDInList(Nodes[i]->Input[j]->SocketConnected[k]->GetParent()->GetID(), Nodes))
-				{
-					NewArea->Nodes[i]->Input[j]->SocketConnected.push_back(OldToNewSocket[Nodes[i]->Input[j]->SocketConnected[k]]);
-
-					// Add connection to node area.
-					// Maybe we already establish this connection.
-					bool bShouldAdd = true;
-					for (size_t l = 0; l < NewArea->Connections.size(); l++)
-					{
-						if (NewArea->Connections[l]->In == OldToNewSocket[Nodes[i]->Input[j]] &&
-							NewArea->Connections[l]->Out == OldToNewSocket[Nodes[i]->Input[j]->SocketConnected[k]])
-						{
-							bShouldAdd = false;
-							break;
-						}
-					}
-
-					if (bShouldAdd)
-						NewArea->Connections.push_back(new VisualNodeConnection(OldToNewSocket[Nodes[i]->Input[j]->SocketConnected[k]], OldToNewSocket[Nodes[i]->Input[j]]));
-				}
-			}
-		}
-
-		for (size_t j = 0; j < Nodes[i]->Output.size(); j++)
-		{
-			for (size_t k = 0; k < Nodes[i]->Output[j]->SocketConnected.size(); k++)
-			{
-				// if node is connected to node that is not in this list just ignore.
-				if (IsNodeIDInList(Nodes[i]->Output[j]->SocketConnected[k]->GetParent()->GetID(), Nodes))
-				{
-					NewArea->Nodes[i]->Output[j]->SocketConnected.push_back(OldToNewSocket[Nodes[i]->Output[j]->SocketConnected[k]]);
-
-					// Add connection to node area.
-					// Maybe we already establish this connection.
-					bool bShouldAdd = true;
-					for (size_t l = 0; l < NewArea->Connections.size(); l++)
-					{
-						if (NewArea->Connections[l]->In == OldToNewSocket[Nodes[i]->Output[j]->SocketConnected[k]] &&
-							NewArea->Connections[l]->Out == OldToNewSocket[Nodes[i]->Output[j]])
-						{
-							bShouldAdd = false;
-							break;
-						}
-					}
-
-					if (bShouldAdd)
-						NewArea->Connections.push_back(new VisualNodeConnection(OldToNewSocket[Nodes[i]->Output[j]], OldToNewSocket[Nodes[i]->Output[j]->SocketConnected[k]]));
-				}
-			}
-		}
+		ProcessConnections(SourceNodes[i]->Output, OldToNewSocket, TargetArea, NodeShift + i, SourceNodes);
 	}
+}
+
+
+VisualNodeArea* VisualNodeArea::CreateNodeArea(const std::vector<VisualNode*> Nodes)
+{
+	VisualNodeArea* NewArea = new VisualNodeArea();
+	CopyNodesInternal(Nodes, NewArea);
 
 	return NewArea;
 }
@@ -244,14 +267,14 @@ std::string VisualNodeArea::ToJson() const
 	std::ofstream SaveFile;
 
 	Json::Value NodesData;
-	for (int i = 0; i < static_cast<int>(Nodes.size()); i++)
+	for (size_t i = 0; i < Nodes.size(); i++)
 	{
 		NodesData[std::to_string(i)] = Nodes[i]->ToJson();
 	}
 	root["nodes"] = NodesData;
 
 	Json::Value ConnectionsData;
-	for (int i = 0; i < static_cast<int>(Connections.size()); i++)
+	for (size_t i = 0; i < Connections.size(); i++)
 	{
 		ConnectionsData[std::to_string(i)]["in"]["socket_ID"] = Connections[i]->In->GetID();
 		size_t socket_index = 0;
@@ -272,6 +295,33 @@ std::string VisualNodeArea::ToJson() const
 		}
 		ConnectionsData[std::to_string(i)]["out"]["socket_index"] = socket_index;
 		ConnectionsData[std::to_string(i)]["out"]["node_ID"] = Connections[i]->Out->GetParent()->GetID();
+
+		for (size_t j = 0; j < Connections[i]->RerouteConnections.size(); j++)
+		{
+			ConnectionsData[std::to_string(i)]["reroute_connections"][std::to_string(j)]["reroute_ID"] = Connections[i]->RerouteConnections[j]->ID;
+			ConnectionsData[std::to_string(i)]["reroute_connections"][std::to_string(j)]["position_x"] = Connections[i]->RerouteConnections[j]->Position.x;
+			ConnectionsData[std::to_string(i)]["reroute_connections"][std::to_string(j)]["position_y"] = Connections[i]->RerouteConnections[j]->Position.y;
+
+			std::string BeginSocketID = "";
+			if (Connections[i]->RerouteConnections[j]->BeginSocket)
+				BeginSocketID = Connections[i]->RerouteConnections[j]->BeginSocket->GetID();
+			ConnectionsData[std::to_string(i)]["reroute_connections"][std::to_string(j)]["begin_socket_ID"] = BeginSocketID;
+
+			std::string EndSocketID = "";
+			if (Connections[i]->RerouteConnections[j]->EndSocket)
+				EndSocketID = Connections[i]->RerouteConnections[j]->EndSocket->GetID();
+			ConnectionsData[std::to_string(i)]["reroute_connections"][std::to_string(j)]["end_socket_ID"] = EndSocketID;
+
+			std::string BeginRerouteID = "";
+			if (Connections[i]->RerouteConnections[j]->BeginReroute)
+				BeginRerouteID = Connections[i]->RerouteConnections[j]->BeginReroute->ID;
+			ConnectionsData[std::to_string(i)]["reroute_connections"][std::to_string(j)]["begin_reroute_ID"] = BeginRerouteID;
+
+			std::string EndRerouteID = "";
+			if (Connections[i]->RerouteConnections[j]->EndReroute)
+				EndRerouteID = Connections[i]->RerouteConnections[j]->EndReroute->ID;
+			ConnectionsData[std::to_string(i)]["reroute_connections"][std::to_string(j)]["end_reroute_ID"] = EndRerouteID;
+		}
 	}
 	root["connections"] = ConnectionsData;
 
@@ -339,7 +389,73 @@ VisualNodeArea* VisualNodeArea::FromJson(std::string JsonText)
 		std::string OutNodeID = root["connections"][ConnectionsList[i]]["out"]["node_ID"].asCString();
 
 		if (LoadedNodes.find(OutNodeID) != LoadedNodes.end() && LoadedNodes.find(InNodeID) != LoadedNodes.end())
-			NewArea->TryToConnect(LoadedNodes[OutNodeID], OutSocketID, LoadedNodes[InNodeID], InSocketID);
+			if (!NewArea->TryToConnect(LoadedNodes[OutNodeID], OutSocketID, LoadedNodes[InNodeID], InSocketID))
+				continue;
+
+		VisualNodeConnection* NewConnection = NewArea->Connections.back();
+
+		// First pass to fill information that does not depend other reroutes.
+		std::vector<Json::String> RerouteList = root["connections"][ConnectionsList[i]]["reroute_connections"].getMemberNames();
+		for (size_t j = 0; j < RerouteList.size(); j++)
+		{
+			VisualNodeRerouteNode* NewReroute = new VisualNodeRerouteNode();
+			std::string ID = root["connections"][ConnectionsList[i]]["reroute_connections"][std::to_string(j)]["reroute_ID"].asCString();
+			NewReroute->ID = ID;
+			NewReroute->Parent = NewConnection;
+
+			NewReroute->Position.x = root["connections"][ConnectionsList[i]]["reroute_connections"][std::to_string(j)]["position_x"].asFloat();
+			NewReroute->Position.y = root["connections"][ConnectionsList[i]]["reroute_connections"][std::to_string(j)]["position_y"].asFloat();
+
+			NewConnection->RerouteConnections.push_back(NewReroute);
+		}
+
+		// Second pass to fill pointers.
+		for (size_t j = 0; j < RerouteList.size(); j++)
+		{
+			std::string BeginSocketID = root["connections"][ConnectionsList[i]]["reroute_connections"][std::to_string(j)]["begin_socket_ID"].asCString();
+			if (BeginSocketID != "")
+			{
+				NodeSocket* BeginSocket = NewConnection->Out;
+				if (BeginSocketID == BeginSocket->GetID())
+					NewConnection->RerouteConnections[j]->BeginSocket = BeginSocket;
+			}
+
+			std::string EndSocketID = root["connections"][ConnectionsList[i]]["reroute_connections"][std::to_string(j)]["end_socket_ID"].asCString();
+			if (EndSocketID != "")
+			{
+				NodeSocket* EndSocket = NewConnection->In;
+				if (EndSocketID == EndSocket->GetID())
+					NewConnection->RerouteConnections[j]->EndSocket = EndSocket;
+			}
+
+			std::string BeginRerouteID = root["connections"][ConnectionsList[i]]["reroute_connections"][std::to_string(j)]["begin_reroute_ID"].asCString();
+			if (BeginRerouteID != "")
+			{
+				VisualNodeRerouteNode* BeginReroute = nullptr;
+				for (size_t k = 0; k < NewConnection->RerouteConnections.size(); k++)
+				{
+					if (BeginRerouteID == NewConnection->RerouteConnections[k]->ID)
+						BeginReroute = NewConnection->RerouteConnections[k];
+				}
+				
+				if (BeginReroute != nullptr)
+					NewConnection->RerouteConnections[j]->BeginReroute = BeginReroute;
+			}
+
+			std::string EndRerouteID = root["connections"][ConnectionsList[i]]["reroute_connections"][std::to_string(j)]["end_reroute_ID"].asCString();
+			if (EndRerouteID != "")
+			{
+				VisualNodeRerouteNode* EndReroute = nullptr;
+				for (size_t k = 0; k < NewConnection->RerouteConnections.size(); k++)
+				{
+					if (EndRerouteID == NewConnection->RerouteConnections[k]->ID)
+						EndReroute = NewConnection->RerouteConnections[k];
+				}
+
+				if (EndReroute != nullptr)
+					NewConnection->RerouteConnections[j]->EndReroute = EndReroute;
+			}
+		}
 	}
 
 	if (root.isMember("renderOffset"))
@@ -355,92 +471,7 @@ VisualNodeArea* VisualNodeArea::FromJson(std::string JsonText)
 void VisualNodeArea::CopyNodesTo(VisualNodeArea* SourceNodeArea, VisualNodeArea* TargetNodeArea)
 {
 	const size_t NodeShift = TargetNodeArea->Nodes.size();
-
-	// Copy all nodes to new node area.
-	std::unordered_map<VisualNode*, VisualNode*> OldToNewNode;
-	std::unordered_map<NodeSocket*, NodeSocket*> OldToNewSocket;
-	for (size_t i = 0; i < SourceNodeArea->Nodes.size(); i++)
-	{
-		VisualNode* CopyOfNode = NODE_FACTORY.CopyNode(SourceNodeArea->Nodes[i]->GetType(), *SourceNodeArea->Nodes[i]);
-		if (CopyOfNode == nullptr)
-			CopyOfNode = new VisualNode(*SourceNodeArea->Nodes[i]);
-		CopyOfNode->ParentArea = SourceNodeArea;
-
-		TargetNodeArea->AddNode(CopyOfNode);
-
-		// Associate old to new IDs
-		OldToNewNode[SourceNodeArea->Nodes[i]] = CopyOfNode;
-
-		for (size_t j = 0; j < SourceNodeArea->Nodes[i]->Input.size(); j++)
-		{
-			OldToNewSocket[SourceNodeArea->Nodes[i]->Input[j]] = CopyOfNode->Input[j];
-		}
-
-		for (size_t j = 0; j < SourceNodeArea->Nodes[i]->Output.size(); j++)
-		{
-			OldToNewSocket[SourceNodeArea->Nodes[i]->Output[j]] = CopyOfNode->Output[j];
-		}
-	}
-
-	// Than we need to recreate all connections.
-	for (size_t i = 0; i < SourceNodeArea->Nodes.size(); i++)
-	{
-		for (size_t j = 0; j < SourceNodeArea->Nodes[i]->Input.size(); j++)
-		{
-			for (size_t k = 0; k < SourceNodeArea->Nodes[i]->Input[j]->SocketConnected.size(); k++)
-			{
-				// if node is connected to node that is not in this list just ignore.
-				if (IsNodeIDInList(SourceNodeArea->Nodes[i]->Input[j]->SocketConnected[k]->GetParent()->GetID(), SourceNodeArea->Nodes))
-				{
-					TargetNodeArea->Nodes[NodeShift + i]->Input[j]->SocketConnected.push_back(OldToNewSocket[SourceNodeArea->Nodes[i]->Input[j]->SocketConnected[k]]);
-
-					// Add connection to node area.
-					// Maybe we already establish this connection.
-					bool bShouldAdd = true;
-					for (size_t l = 0; l < TargetNodeArea->Connections.size(); l++)
-					{
-						if (TargetNodeArea->Connections[l]->In == OldToNewSocket[SourceNodeArea->Nodes[i]->Input[j]] &&
-							TargetNodeArea->Connections[l]->Out == OldToNewSocket[SourceNodeArea->Nodes[i]->Input[j]->SocketConnected[k]])
-						{
-							bShouldAdd = false;
-							break;
-						}
-					}
-
-					if (bShouldAdd)
-						TargetNodeArea->Connections.push_back(new VisualNodeConnection(OldToNewSocket[SourceNodeArea->Nodes[i]->Input[j]->SocketConnected[k]], OldToNewSocket[SourceNodeArea->Nodes[i]->Input[j]]));
-				}
-			}
-		}
-
-		for (size_t j = 0; j < SourceNodeArea->Nodes[i]->Output.size(); j++)
-		{
-			for (size_t k = 0; k < SourceNodeArea->Nodes[i]->Output[j]->SocketConnected.size(); k++)
-			{
-				// if node is connected to node that is not in this list just ignore.
-				if (IsNodeIDInList(SourceNodeArea->Nodes[i]->Output[j]->SocketConnected[k]->GetParent()->GetID(), SourceNodeArea->Nodes))
-				{
-					TargetNodeArea->Nodes[NodeShift + i]->Output[j]->SocketConnected.push_back(OldToNewSocket[SourceNodeArea->Nodes[i]->Output[j]->SocketConnected[k]]);
-
-					// Add connection to node area.
-					// Maybe we already establish this connection.
-					bool bShouldAdd = true;
-					for (size_t l = 0; l < TargetNodeArea->Connections.size(); l++)
-					{
-						if (TargetNodeArea->Connections[l]->In == OldToNewSocket[SourceNodeArea->Nodes[i]->Output[j]->SocketConnected[k]] &&
-							TargetNodeArea->Connections[l]->Out == OldToNewSocket[SourceNodeArea->Nodes[i]->Output[j]])
-						{
-							bShouldAdd = false;
-							break;
-						}
-					}
-
-					if (bShouldAdd)
-						TargetNodeArea->Connections.push_back(new VisualNodeConnection(OldToNewSocket[SourceNodeArea->Nodes[i]->Output[j]], OldToNewSocket[SourceNodeArea->Nodes[i]->Output[j]->SocketConnected[k]]));
-				}
-			}
-		}
-	}
+	CopyNodesInternal(SourceNodeArea->Nodes, TargetNodeArea, NodeShift);
 }
 
 void VisualNodeArea::LoadFromFile(const char* FileName)

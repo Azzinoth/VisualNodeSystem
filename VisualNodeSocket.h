@@ -29,7 +29,7 @@ class NodeSocket
 	bool bOutput = false;
 	std::string Type;
 	std::string Name;
-	std::vector<NodeSocket*> SocketConnected;
+	std::vector<NodeSocket*> ConnectedSockets;
 
 	static std::unordered_map<std::string, ImColor> SocketTypeToColorAssosiations;
 
