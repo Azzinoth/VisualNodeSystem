@@ -175,11 +175,12 @@ void VisualNodeArea::ProcessConnections(const std::vector<NodeSocket*>& Sockets,
 				{
 					std::unordered_map<VisualNodeRerouteNode*, VisualNodeRerouteNode*> OldToNewRerouteNode;
 					// Get connection info from old node area.
-					VisualNodeConnection* OldConnection = SourceArea->GetAllConnections(CurrentSocket, ConnectedSocket);
+					VisualNodeConnection* OldConnection = SourceArea->GetConnection(CurrentSocket, ConnectedSocket);
 
-					TargetArea->Connections.push_back(new VisualNodeConnection(OldToNewSocket[CurrentSocket], OldToNewSocket[ConnectedSocket]));
+					if (!TargetArea->TryToConnect(OldToNewSocket[CurrentSocket]->GetParent(), OldToNewSocket[CurrentSocket]->GetID(), OldToNewSocket[ConnectedSocket]->GetParent(), OldToNewSocket[ConnectedSocket]->GetID()))
+						continue;
+
 					VisualNodeConnection* NewConnection = TargetArea->Connections.back();
-
 					// First pass to fill OldToNewRerouteNode map and other information that does not depend on OldToNewRerouteNode map.
 					for (size_t j = 0; j < OldConnection->RerouteConnections.size(); j++)
 					{
@@ -611,4 +612,24 @@ ImVec2 VisualNodeArea::LocalToScreen(ImVec2 LocalPosition) const
 ImVec2 VisualNodeArea::ScreenToLocal(ImVec2 ScreenPosition) const
 {
 	return (ScreenPosition - ImGui::GetCurrentWindow()->Pos - RenderOffset) / Zoom;
+}
+
+std::vector<ImVec2> VisualNodeArea::GetTangentsForLine(const ImVec2 Begin, const ImVec2 End) const
+{
+	std::vector<ImVec2> Result;
+	Result.resize(2);
+
+	float ScaledXTangentMagnitude = LineXTangentMagnitude * Zoom;
+	float ScaledYTangentMagnitude = LineYTangentMagnitude * Zoom;
+
+	Result[0] = ImVec2(ScaledXTangentMagnitude, ScaledYTangentMagnitude);
+	Result[1] = ImVec2(ScaledXTangentMagnitude, ScaledYTangentMagnitude);
+
+	if (Begin.x >= End.x && Begin.y >= End.y)
+	{
+		Result[0] = ImVec2(-ScaledXTangentMagnitude, ScaledYTangentMagnitude);
+		Result[1] = ImVec2(-ScaledXTangentMagnitude, ScaledYTangentMagnitude);
+	}
+
+	return Result;
 }

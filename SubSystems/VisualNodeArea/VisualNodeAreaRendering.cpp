@@ -153,7 +153,7 @@ void VisualNodeArea::RenderNodeSocket(NodeSocket* Socket) const
 			ConnectionColor = NodeSocket::SocketTypeToColorAssosiations[SocketLookingForConnection->GetType()];
 		
 		CurrentDrawList->ChannelsSetCurrent(3);
-		DrawHermiteLine(SocketPosition, ImGui::GetIO().MousePos, 12, ConnectionColor, &DefaultConnectionStyle);
+		DrawHermiteLine(SocketPosition, ImGui::GetIO().MousePos, LineSegments, ConnectionColor, &DefaultConnectionStyle);
 	}
 
 	// Draw socket icon.
@@ -264,33 +264,6 @@ void VisualNodeArea::Render()
 	for (size_t i = 0; i < Connections.size(); i++)
 	{
 		RenderConnection(Connections[i]);
-
-		/*if (Connections[i]->bHovered)
-		{
-			Connections[i]->Style.ForceColor = DEFAULT_NODE_SOCKET_MOUSE_HOVERED_CONNECTION_COLOR;
-		}
-		else
-		{
-			Connections[i]->Style.ForceColor = DEFAULT_NODE_SOCKET_CONNECTION_COLOR;
-		}*/
-
-		/*if (MouseSelectRegionMin.x != FLT_MAX && MouseSelectRegionMin.y != FLT_MAX &&
-			MouseSelectRegionMax.x != FLT_MAX && MouseSelectRegionMax.y != FLT_MAX)
-		{
-			if (IsConnectionInRegion(Connections[i], 12))
-			{
-				ImColor* DefaultColor = new ImColor(200, 0, 0);
-				Connections[i]->Out->SetForcedConnectionColor(DefaultColor);
-			}
-			else
-			{
-				if (Connections[i]->Out->ConnectionStyle.ForceColor != nullptr)
-				{
-					delete Connections[i]->Out->ConnectionStyle.ForceColor;
-					Connections[i]->Out->ConnectionStyle.ForceColor = nullptr;
-				}
-			}
-		}*/
 	}
 
 	// ************************* RENDER CONTEXT MENU *************************
@@ -331,10 +304,9 @@ void VisualNodeArea::Render()
 	CurrentStyle = OriginalStyle;
 }
 
-void VisualNodeArea::DrawHermiteLine(const ImVec2 P1, const ImVec2 P2, const int Steps, const ImColor Color, const VisualNodeConnectionStyle* Style) const
+void VisualNodeArea::DrawHermiteLine(const ImVec2 Begin, const ImVec2 End, const int Steps, const ImColor Color, const VisualNodeConnectionStyle* Style) const
 {
-	const ImVec2 t1 = ImVec2(80.0f, 0.0f);
-	const ImVec2 t2 = ImVec2(80.0f, 0.0f);
+	std::vector<ImVec2> LineTangents = GetTangentsForLine(Begin, End);
 
 	if (Style->bMarchingAntsEffect)
 	{
@@ -350,7 +322,7 @@ void VisualNodeArea::DrawHermiteLine(const ImVec2 P1, const ImVec2 P2, const int
 			const float h3 = t * t * t - 2 * t * t + t;
 			const float h4 = t * t * t - t * t;
 
-			ImVec2 CurrentPoint = ImVec2(h1 * P1.x + h2 * P2.x + h3 * t1.x + h4 * t2.x, h1 * P1.y + h2 * P2.y + h3 * t1.y + h4 * t2.y);
+			ImVec2 CurrentPoint = ImVec2(h1 * Begin.x + h2 * End.x + h3 * LineTangents[0].x + h4 * LineTangents[1].x, h1 * Begin.y + h2 * End.y + h3 * LineTangents[0].y + h4 * LineTangents[1].y);
 
 			if (Step != 0) // Avoid drawing on the first step because lastPoint is not valid.
 			{
@@ -386,7 +358,7 @@ void VisualNodeArea::DrawHermiteLine(const ImVec2 P1, const ImVec2 P2, const int
 			const float h3 = t * t * t - 2 * t * t + t;
 			const float h4 = t * t * t - t * t;
 
-			CurrentDrawList->PathLineTo(ImVec2(h1 * P1.x + h2 * P2.x + h3 * t1.x + h4 * t2.x, h1 * P1.y + h2 * P2.y + h3 * t1.y + h4 * t2.y));
+			CurrentDrawList->PathLineTo(ImVec2(h1 * Begin.x + h2 * End.x + h3 * LineTangents[0].x + h4 * LineTangents[1].x, h1 * Begin.y + h2 * End.y + h3 * LineTangents[0].y + h4 * LineTangents[1].y));
 		}
 
 		double Time = glfwGetTime();
@@ -407,7 +379,7 @@ void VisualNodeArea::DrawHermiteLine(const ImVec2 P1, const ImVec2 P2, const int
 			const float h3 = t * t * t - 2 * t * t + t;
 			const float h4 = t * t * t - t * t;
 
-			ImVec2 CurrentPoint = ImVec2(h1 * P1.x + h2 * P2.x + h3 * t1.x + h4 * t2.x, h1 * P1.y + h2 * P2.y + h3 * t1.y + h4 * t2.y);
+			ImVec2 CurrentPoint = ImVec2(h1 * Begin.x + h2 * End.x + h3 * LineTangents[0].x + h4 * LineTangents[1].x, h1 * Begin.y + h2 * End.y + h3 * LineTangents[0].y + h4 * LineTangents[1].y);
 			CurrentDrawList->PathLineTo(CurrentPoint);
 
 			LastPoint = CurrentPoint;
@@ -417,10 +389,9 @@ void VisualNodeArea::DrawHermiteLine(const ImVec2 P1, const ImVec2 P2, const int
 	}
 }
 
-void VisualNodeArea::DrawHermiteLine(const ImVec2 P1, const ImVec2 P2, const int Steps, const ImColor Color, const float Thickness) const
+void VisualNodeArea::DrawHermiteLine(const ImVec2 Begin, const ImVec2 End, const int Steps, const ImColor Color, const float Thickness) const
 {
-	const ImVec2 t1 = ImVec2(80.0f, 0.0f);
-	const ImVec2 t2 = ImVec2(80.0f, 0.0f);
+	std::vector<ImVec2> LineTangents = GetTangentsForLine(Begin, End);
 
 	ImVec2 LastPoint = ImVec2(0, 0);
 	for (int Step = 0; Step <= Steps; Step++)
@@ -431,7 +402,7 @@ void VisualNodeArea::DrawHermiteLine(const ImVec2 P1, const ImVec2 P2, const int
 		const float h3 = t * t * t - 2 * t * t + t;
 		const float h4 = t * t * t - t * t;
 
-		ImVec2 CurrentPoint = ImVec2(h1 * P1.x + h2 * P2.x + h3 * t1.x + h4 * t2.x, h1 * P1.y + h2 * P2.y + h3 * t1.y + h4 * t2.y);
+		ImVec2 CurrentPoint = ImVec2(h1 * Begin.x + h2 * End.x + h3 * LineTangents[0].x + h4 * LineTangents[1].x, h1 * Begin.y + h2 * End.y + h3 * LineTangents[0].y + h4 * LineTangents[1].y);
 		CurrentDrawList->PathLineTo(CurrentPoint);
 
 		LastPoint = CurrentPoint;
@@ -457,14 +428,14 @@ void VisualNodeArea::RenderConnection(const VisualNodeConnection* Connection) co
 
 		if (Connection->bSelected)
 		{
-			DrawHermiteLine(BeginPosition, EndPosition, 12, ImColor(55, 255, 55), GetConnectionThickness() + GetConnectionThickness() * 1.2f);
+			DrawHermiteLine(BeginPosition, EndPosition, LineSegments, ImColor(55, 255, 55), GetConnectionThickness() + GetConnectionThickness() * 1.2f);
 		}
 		else if (Connection->bHovered)
 		{
-			DrawHermiteLine(BeginPosition, EndPosition, 12, ImColor(55, 55, 250), GetConnectionThickness() + GetConnectionThickness() * 1.2f);
+			DrawHermiteLine(BeginPosition, EndPosition, LineSegments, ImColor(55, 55, 250), GetConnectionThickness() + GetConnectionThickness() * 1.2f);
 		}
 
-		DrawHermiteLine(BeginPosition, EndPosition, 12, CurrentConnectionColor, &Connection->Style);
+		DrawHermiteLine(BeginPosition, EndPosition, LineSegments, CurrentConnectionColor, &Connection->Style);
 
 		// If it is reroute than we should render circle.
 		if (i > 0)

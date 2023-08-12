@@ -144,6 +144,9 @@ private:
 	ImVec4 GridLinesColor = ImVec4(53.0f / 255.0f, 53.0f / 255.0f, 53.0f / 255.0f, 0.5f);
 	ImVec4 GridBoldLinesColor = ImVec4(27.0f / 255.0f, 27.0f / 255.0f, 27.0f / 255.0f, 1.0f);
 	ImVec2 RenderOffset = ImVec2(0.0, 0.0);
+	int LineSegments = 16;
+	float LineXTangentMagnitude = 80.0f * 2.0f;
+	float LineYTangentMagnitude = 0.0f;
 	void(*MainContextMenuFunc)() = nullptr;
 	std::vector<void(*)(VisualNode*, VISUAL_NODE_EVENT)> NodeEventsCallbacks;
 	std::queue<SocketEvent> SocketEventQueue;
@@ -152,7 +155,7 @@ private:
 	void ProcessSocketEventQueue();
 	ImVec2 SocketToPosition(const NodeSocket* Socket) const;
 	std::vector<VisualNodeConnection*> GetAllConnections(const NodeSocket* Socket) const;
-	VisualNodeConnection* GetAllConnections(const NodeSocket* FirstSocket, const NodeSocket* SecondSocket) const;
+	VisualNodeConnection* GetConnection(const NodeSocket* FirstSocket, const NodeSocket* SecondSocket) const;
 
 	void Delete(VisualNodeConnection* Connection);
 	void Delete(VisualNodeRerouteNode* RerouteNode);
@@ -206,6 +209,7 @@ private:
 	void RenderNode(VisualNode* Node) const;
 	void RenderNodeSockets(const VisualNode* Node) const;
 	void RenderNodeSocket(NodeSocket* Socket) const;
+	std::vector<ImVec2> GetTangentsForLine(const ImVec2 P1, const ImVec2 P2) const;
 	void DrawHermiteLine(ImVec2 P1, ImVec2 P2, int Steps, ImColor Color, const VisualNodeConnectionStyle* Style) const;
 	void DrawHermiteLine(const ImVec2 P1, const ImVec2 P2, const int Steps, const ImColor Color, const float Thickness) const;
 	void RenderConnection(const VisualNodeConnection* Connection) const;

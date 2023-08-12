@@ -22,7 +22,7 @@ std::vector<VisualNodeConnection*> VisualNodeArea::GetAllConnections(const NodeS
 	return Result;
 }
 
-VisualNodeConnection* VisualNodeArea::GetAllConnections(const NodeSocket* FirstSocket, const NodeSocket* SecondSocket) const
+VisualNodeConnection* VisualNodeArea::GetConnection(const NodeSocket* FirstSocket, const NodeSocket* SecondSocket) const
 {
 	for (size_t i = 0; i < Connections.size(); i++)
 	{

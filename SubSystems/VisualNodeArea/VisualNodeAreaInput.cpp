@@ -689,12 +689,12 @@ void VisualNodeArea::InputUpdateReroute(VisualNodeRerouteNode* Reroute)
 bool VisualNodeArea::IsMouseOverConnection(VisualNodeConnection* Connection, const int Steps, const float MaxDistance, ImVec2& CollisionPoint)
 {
 	if (Connection->RerouteConnections.empty())
-		return IsMouseOverSegment(SocketToPosition(Connection->Out), SocketToPosition(Connection->In), 12, 10.0f);
+		return IsMouseOverSegment(SocketToPosition(Connection->Out), SocketToPosition(Connection->In), LineSegments, 10.0f);
 
 	std::vector<VisualNodeConnectionSegment> Segments = GetConnectionSegments(Connection);
 	for (size_t i = 0; i < Segments.size(); i++)
 	{
-		if (IsMouseOverSegment(Segments[i].Begin, Segments[i].End, 12, 10.0f))
+		if (IsMouseOverSegment(Segments[i].Begin, Segments[i].End, LineSegments, 10.0f))
 			return true;
 	}
 
@@ -703,8 +703,7 @@ bool VisualNodeArea::IsMouseOverConnection(VisualNodeConnection* Connection, con
 
 bool VisualNodeArea::IsMouseOverSegment(ImVec2 Begin, ImVec2 End, const int Steps, const float maxDistance, ImVec2& CollisionPoint)
 {
-	const ImVec2 t1 = ImVec2(80.0f, 0.0f);
-	const ImVec2 t2 = ImVec2(80.0f, 0.0f);
+	std::vector<ImVec2> LineTangents = GetTangentsForLine(Begin, End);
 
 	for (int Step = 0; Step <= Steps; Step++)
 	{
@@ -714,7 +713,7 @@ bool VisualNodeArea::IsMouseOverSegment(ImVec2 Begin, ImVec2 End, const int Step
 		float h3 = t * t * t - 2 * t * t + t;
 		float h4 = t * t * t - t * t;
 
-		ImVec2 SegmentStart = ImVec2(h1 * Begin.x + h2 * End.x + h3 * t1.x + h4 * t2.x, h1 * Begin.y + h2 * End.y + h3 * t1.y + h4 * t2.y);
+		ImVec2 SegmentStart = ImVec2(h1 * Begin.x + h2 * End.x + h3 * LineTangents[0].x + h4 * LineTangents[1].x, h1 * Begin.y + h2 * End.y + h3 * LineTangents[0].y + h4 * LineTangents[1].y);
 
 		t = static_cast<float>(Step + 1) / static_cast<float>(Steps); // Update t for the end segment.
 		h1 = +2 * t * t * t - 3 * t * t + 1.0f;
@@ -722,7 +721,7 @@ bool VisualNodeArea::IsMouseOverSegment(ImVec2 Begin, ImVec2 End, const int Step
 		h3 = t * t * t - 2 * t * t + t;
 		h4 = t * t * t - t * t;
 
-		ImVec2 SegmentEnd = ImVec2(h1 * Begin.x + h2 * End.x + h3 * t1.x + h4 * t2.x, h1 * Begin.y + h2 * End.y + h3 * t1.y + h4 * t2.y);
+		ImVec2 SegmentEnd = ImVec2(h1 * Begin.x + h2 * End.x + h3 * LineTangents[0].x + h4 * LineTangents[1].x, h1 * Begin.y + h2 * End.y + h3 * LineTangents[0].y + h4 * LineTangents[1].y);
 
 		// Compute the shortest distance from mousePos to the line defined by the segment.
 		ImVec2 SegmentDirection = SegmentEnd - SegmentStart;
@@ -790,12 +789,12 @@ bool IsLineSegmentIntersecting(const ImVec2& p1, const ImVec2& q1, const ImVec2&
 bool VisualNodeArea::IsConnectionInRegion(VisualNodeConnection* Connection, const int Steps)
 {
 	if (Connection->RerouteConnections.empty())
-		return IsSegmentInRegion(SocketToPosition(Connection->Out), SocketToPosition(Connection->In), 12);
+		return IsSegmentInRegion(SocketToPosition(Connection->Out), SocketToPosition(Connection->In), LineSegments);
 
 	std::vector<VisualNodeConnectionSegment> Segments = GetConnectionSegments(Connection);
 	for (size_t i = 0; i < Segments.size(); i++)
 	{
-		if (IsSegmentInRegion(Segments[i].Begin, Segments[i].End, 12))
+		if (IsSegmentInRegion(Segments[i].Begin, Segments[i].End, LineSegments))
 			return true;
 	}
 
@@ -887,7 +886,7 @@ void VisualNodeArea::MouseInputUpdateConnections()
 	{
 		for (size_t i = 0; i < Connections.size(); i++)
 		{
-			if (HoveredConnection == nullptr && IsMouseOverConnection(Connections[i], 12, 10.0f))
+			if (HoveredConnection == nullptr && IsMouseOverConnection(Connections[i], LineSegments, 10.0f))
 			{
 				Connections[i]->bHovered = true;
 				HoveredConnection = Connections[i];
@@ -895,7 +894,7 @@ void VisualNodeArea::MouseInputUpdateConnections()
 
 			if (IsMouseRegionSelectionActive() && SelectedNodes.empty())
 			{
-				if (IsConnectionInRegion(Connections[i], 12))
+				if (IsConnectionInRegion(Connections[i], LineSegments))
 				{
 					Connections[i]->bSelected = true;
 					AddSelected(Connections[i]);
@@ -945,7 +944,7 @@ void VisualNodeArea::ConnectionsDoubleMouseClick()
 			std::vector<VisualNodeConnectionSegment> Segments = GetConnectionSegments(HoveredConnection);
 			for (size_t i = 0; i < Segments.size(); i++)
 			{
-				if (IsMouseOverSegment(Segments[i].Begin, Segments[i].End, 12, 10.0f))
+				if (IsMouseOverSegment(Segments[i].Begin, Segments[i].End, LineSegments, 10.0f))
 				{
 					if (i == 0)
 					{

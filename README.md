@@ -14,7 +14,10 @@ This library provides a powerful framework for creating and managing visual node
 
 - **Smooth Zoom**: A precise and dynamic zoom functionality, allowing for detailed viewing and efficient navigation.
 
-- **Versatile Node Styles**: This library supports various visual node styles, currently including Default and Circle. You can easily expand this with new styles.
+- **Reroute Nodes**: Reroute nodes offer enhanced organization for clearer, more readable visual graphs, enabling flexible customization of connection paths. Also they simplify debugging by making connections traceable. To add reroute node just double click on connection.
+<div align="center">
+    <img src="https://github.com/Azzinoth/VisualNodeSystem/blob/media/Reroute%20Node%20example.png" width="60%">
+</div>
 
 - **Flexible Socket Management**: The library offers functionalities for managing node sockets (input/output). These sockets serve as points of data connection between different nodes.
 
@@ -29,8 +32,6 @@ This library provides a powerful framework for creating and managing visual node
 - **File System Integration**: The system allows you to save/load node data to/from files.
 
 - **Node Event Callbacks**: The library provides functionalities to set callbacks for node events.
-
-- **Area Properties**: You can get and set various area properties like area position, size, and render offset.
 
 ## Usage
 
