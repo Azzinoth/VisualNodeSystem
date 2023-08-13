@@ -2,21 +2,22 @@
 
 #include "VisualNode.h"
 
-class VisualNode;
-
-class VisualNodeFactory
+namespace VisNodeSys
 {
-    SINGLETON_PRIVATE_PART(VisualNodeFactory)
+    class NodeFactory
+    {
+        SINGLETON_PRIVATE_PART(NodeFactory)
 
-    std::unordered_map<std::string, std::function<VisualNode* ()>> Constructors;
-    std::unordered_map<std::string, std::function<VisualNode* (const VisualNode&)>> CopyConstructors;
+        std::unordered_map<std::string, std::function<Node* ()>> Constructors;
+        std::unordered_map<std::string, std::function<Node* (const Node&)>> CopyConstructors;
 
-public:
-    SINGLETON_PUBLIC_PART(VisualNodeFactory)
+    public:
+        SINGLETON_PUBLIC_PART(NodeFactory)
 
-    void RegisterNodeType(const std::string& Type, std::function<VisualNode* ()> Constructor, std::function<VisualNode* (const VisualNode&)> CopyConstructor);
-    VisualNode* CreateNode(const std::string& Type) const;
-    VisualNode* CopyNode(const std::string& Type, const VisualNode& Node) const;
-};
+        void RegisterNodeType(const std::string& Type, std::function<Node* ()> Constructor, std::function<Node* (const Node&)> CopyConstructor);
+        Node* CreateNode(const std::string& Type) const;
+        Node* CopyNode(const std::string& Type, const Node& Node) const;
+    };
 
-#define NODE_FACTORY VisualNodeFactory::getInstance()
+#define NODE_FACTORY VisNodeSys::NodeFactory::getInstance()
+}

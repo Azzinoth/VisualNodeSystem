@@ -1,6 +1,7 @@
 #include "VisualNodeArea.h"
+using namespace VisNodeSys;
 
-void VisualNodeArea::RenderNode(VisualNode* Node) const
+void NodeArea::RenderNode(Node* Node) const
 {
 	if (CurrentDrawList == nullptr || Node == nullptr)
 		return;
@@ -8,24 +9,24 @@ void VisualNodeArea::RenderNode(VisualNode* Node) const
 	ImGui::PushID(Node->GetID().c_str());
 
 	Node->LeftTop = LocalToScreen(Node->GetPosition());
-	if (Node->GetStyle() == VISUAL_NODE_STYLE_DEFAULT)
+	if (Node->GetStyle() == DEFAULT)
 	{
 		Node->RightBottom = Node->LeftTop + Node->GetSize() * Zoom;
 	}
-	else if (Node->GetStyle() == VISUAL_NODE_STYLE_CIRCLE)
+	else if (Node->GetStyle() == CIRCLE)
 	{
 		Node->RightBottom = Node->LeftTop + ImVec2(NODE_DIAMETER, NODE_DIAMETER) * Zoom;
 	}
 
 	if (IsSelected(Node))
 	{
-		if (Node->GetStyle() == VISUAL_NODE_STYLE_DEFAULT)
+		if (Node->GetStyle() == DEFAULT)
 		{
 			const ImVec2 LeftTop = Node->LeftTop - ImVec2(4.0f, 4.0f);
 			const ImVec2 RightBottom = Node->RightBottom + ImVec2(4.0f, 4.0f);
 			ImGui::GetWindowDrawList()->AddRect(LeftTop, RightBottom, IM_COL32(175, 255, 175, 255), 16.0f * Zoom);
 		}
-		else if (Node->GetStyle() == VISUAL_NODE_STYLE_CIRCLE)
+		else if (Node->GetStyle() == CIRCLE)
 		{
 			ImGui::GetWindowDrawList()->AddCircle(Node->LeftTop + ImVec2(NODE_DIAMETER / 2.0f, NODE_DIAMETER / 2.0f) * Zoom, NODE_DIAMETER * Zoom + 4.0f, IM_COL32(175, 255, 175, 255), 32, 4.0f);
 		}
@@ -33,11 +34,11 @@ void VisualNodeArea::RenderNode(VisualNode* Node) const
 
 	CurrentDrawList->ChannelsSetCurrent(2);
 	
-	if (Node->GetStyle() == VISUAL_NODE_STYLE_DEFAULT)
+	if (Node->GetStyle() == DEFAULT)
 	{
 		ImGui::SetCursorScreenPos(Node->LeftTop);
 	}
-	else if (Node->GetStyle() == VISUAL_NODE_STYLE_CIRCLE)
+	else if (Node->GetStyle() == CIRCLE)
 	{
 		ImGui::SetCursorScreenPos(Node->LeftTop - ImVec2(NODE_DIAMETER / 2.0f - NODE_DIAMETER / 4.0f, NODE_DIAMETER / 2.0f - NODE_DIAMETER / 4.0f) * Zoom);
 	}
@@ -48,18 +49,18 @@ void VisualNodeArea::RenderNode(VisualNode* Node) const
 
 	// Drawing node background layer.
 	const ImU32 NodeBackgroundColor = (HoveredNode == Node || IsSelected(Node)) ? IM_COL32(75, 75, 75, 125) : IM_COL32(60, 60, 60, 125);
-	if (Node->GetStyle() == VISUAL_NODE_STYLE_DEFAULT)
+	if (Node->GetStyle() == DEFAULT)
 	{
 		CurrentDrawList->AddRectFilled(Node->LeftTop, Node->RightBottom, NodeBackgroundColor, 8.0f * Zoom);
 	}
-	else if (Node->GetStyle() == VISUAL_NODE_STYLE_CIRCLE)
+	else if (Node->GetStyle() == CIRCLE)
 	{
 		ImGui::GetWindowDrawList()->AddCircleFilled(Node->LeftTop + (Node->RightBottom - Node->LeftTop) / 2.0f,
 													NODE_DIAMETER * Zoom,
 													NodeBackgroundColor, 32);
 	}
 
-	if (Node->GetStyle() == VISUAL_NODE_STYLE_DEFAULT)
+	if (Node->GetStyle() == DEFAULT)
 	{
 		// Drawing caption area.
 		ImVec2 TitleArea = Node->RightBottom;
@@ -77,7 +78,7 @@ void VisualNodeArea::RenderNode(VisualNode* Node) const
 		ImGui::SetCursorScreenPos(TextPosition);
 		ImGui::Text(Node->GetName().c_str());
 	}
-	else if (Node->GetStyle() == VISUAL_NODE_STYLE_CIRCLE)
+	else if (Node->GetStyle() == CIRCLE)
 	{
 		CurrentDrawList->AddCircle(Node->LeftTop + ImVec2(NODE_DIAMETER / 2.0f, NODE_DIAMETER / 2.0f) * Zoom, NODE_DIAMETER * Zoom + 2.0f, ImColor(100, 100, 100), 32, 2.0f);
 	}
@@ -87,7 +88,7 @@ void VisualNodeArea::RenderNode(VisualNode* Node) const
 	ImGui::PopID();
 }
 
-void VisualNodeArea::RenderNodeSockets(const VisualNode* Node) const
+void NodeArea::RenderNodeSockets(const Node* Node) const
 {
 	for (size_t i = 0; i < Node->Input.size(); i++)
 	{
@@ -100,10 +101,10 @@ void VisualNodeArea::RenderNodeSockets(const VisualNode* Node) const
 	}
 }
 
-void VisualNodeArea::RenderNodeSocket(NodeSocket* Socket) const
+void NodeArea::RenderNodeSocket(NodeSocket* Socket) const
 {
 	const ImVec2 SocketPosition = SocketToPosition(Socket);
-	if (Socket->GetParent()->GetStyle() == VISUAL_NODE_STYLE_DEFAULT)
+	if (Socket->GetParent()->GetStyle() == DEFAULT)
 	{
 		const bool Input = !Socket->bOutput;
 		// Socket description.
@@ -146,7 +147,7 @@ void VisualNodeArea::RenderNodeSocket(NodeSocket* Socket) const
 
 	if (SocketLookingForConnection == Socket)
 	{
-		static VisualNodeConnectionStyle DefaultConnectionStyle;
+		static ConnectionStyle DefaultConnectionStyle;
 
 		ImColor ConnectionColor = ImColor(200, 200, 200);
 		if (NodeSocket::SocketTypeToColorAssosiations.find(SocketLookingForConnection->GetType()) != NodeSocket::SocketTypeToColorAssosiations.end())
@@ -166,7 +167,7 @@ void VisualNodeArea::RenderNodeSocket(NodeSocket* Socket) const
 	}
 }
 
-void VisualNodeArea::RenderGrid(ImVec2 CurrentPosition) const
+void NodeArea::RenderGrid(ImVec2 CurrentPosition) const
 {
 	CurrentDrawList->ChannelsSplit(2);
 
@@ -174,7 +175,7 @@ void VisualNodeArea::RenderGrid(ImVec2 CurrentPosition) const
 	CurrentPosition.y += RenderOffset.y;
 
 	// Adjust grid step size based on zoom level.
-	float ZoomedGridStep = VISUAL_NODE_GRID_STEP * Zoom;
+	float ZoomedGridStep = NODE_GRID_STEP * Zoom;
 	
 	// Horizontal lines
 	const int StartingStep = static_cast<int>(ceil(-GRID_SIZE));
@@ -217,7 +218,7 @@ void VisualNodeArea::RenderGrid(ImVec2 CurrentPosition) const
 	CurrentDrawList->ChannelsMerge();
 }
 
-void VisualNodeArea::Render()
+void NodeArea::Render()
 {
 	ImGuiStyle OriginalStyle = ImGui::GetStyle();
 	ImGuiStyle& ZoomStyle = ImGui::GetStyle();
@@ -237,7 +238,7 @@ void VisualNodeArea::Render()
 		SetAreaSize(NodeAreaParentWindow->Size - ImVec2(2, 2));
 	}
 
-	ImGui::BeginChild("Nodes area", GetAreaSize(), true, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoMove);
+	ImGui::BeginChild("Nodes area", GetSize(), true, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoMove);
 
 	ImGui::SetWindowFontScale(Zoom);
 
@@ -304,7 +305,7 @@ void VisualNodeArea::Render()
 	CurrentStyle = OriginalStyle;
 }
 
-void VisualNodeArea::DrawHermiteLine(const ImVec2 Begin, const ImVec2 End, const int Steps, const ImColor Color, const VisualNodeConnectionStyle* Style) const
+void NodeArea::DrawHermiteLine(const ImVec2 Begin, const ImVec2 End, const int Steps, const ImColor Color, const ConnectionStyle* Style) const
 {
 	std::vector<ImVec2> LineTangents = GetTangentsForLine(Begin, End);
 
@@ -389,7 +390,7 @@ void VisualNodeArea::DrawHermiteLine(const ImVec2 Begin, const ImVec2 End, const
 	}
 }
 
-void VisualNodeArea::DrawHermiteLine(const ImVec2 Begin, const ImVec2 End, const int Steps, const ImColor Color, const float Thickness) const
+void NodeArea::DrawHermiteLine(const ImVec2 Begin, const ImVec2 End, const int Steps, const ImColor Color, const float Thickness) const
 {
 	std::vector<ImVec2> LineTangents = GetTangentsForLine(Begin, End);
 
@@ -411,7 +412,7 @@ void VisualNodeArea::DrawHermiteLine(const ImVec2 Begin, const ImVec2 End, const
 	CurrentDrawList->PathStroke(Color, false, Thickness);
 }
 
-void VisualNodeArea::RenderConnection(const VisualNodeConnection* Connection) const
+void NodeArea::RenderConnection(const Connection* Connection) const
 {
 	if (Connection->Out == nullptr || Connection->In == nullptr)
 		return;
@@ -420,7 +421,7 @@ void VisualNodeArea::RenderConnection(const VisualNodeConnection* Connection) co
 	if (NodeSocket::SocketTypeToColorAssosiations.find(Connection->Out->GetType()) != NodeSocket::SocketTypeToColorAssosiations.end())
 		CurrentConnectionColor = NodeSocket::SocketTypeToColorAssosiations[Connection->Out->GetType()];
 
-	std::vector<VisualNodeConnectionSegment> Segments = GetConnectionSegments(Connection);
+	std::vector<ConnectionSegment> Segments = GetConnectionSegments(Connection);
 	for (size_t i = 0; i < Segments.size(); i++)
 	{
 		ImVec2 BeginPosition = Segments[i].Begin;
@@ -439,11 +440,11 @@ void VisualNodeArea::RenderConnection(const VisualNodeConnection* Connection) co
 
 		// If it is reroute than we should render circle.
 		if (i > 0)
-			RenderReroute(Connection->RerouteConnections[i - 1]);
+			RenderReroute(Connection->RerouteNodes[i - 1]);
 	}
 }
 
-void VisualNodeArea::RenderReroute(const VisualNodeRerouteNode* RerouteNode) const
+void NodeArea::RenderReroute(const RerouteNode* RerouteNode) const
 {
 	if (RerouteNode->bSelected)
 	{
@@ -457,7 +458,7 @@ void VisualNodeArea::RenderReroute(const VisualNodeRerouteNode* RerouteNode) con
 	CurrentDrawList->AddCircleFilled(LocalToScreen(RerouteNode->Position), GetRerouteNodeSize(), ImColor(DEFAULT_NODE_SOCKET_COLOR.Value + ImColor(15, 25, 15).Value));
 }
 
-ImVec2 VisualNodeArea::SocketToPosition(const NodeSocket* Socket) const
+ImVec2 NodeArea::SocketToPosition(const NodeSocket* Socket) const
 {
 	const bool Input = !Socket->bOutput;
 	float SocketX = 0.0f;
@@ -487,7 +488,7 @@ ImVec2 VisualNodeArea::SocketToPosition(const NodeSocket* Socket) const
 		}
 	}
 
-	if (Socket->GetParent()->GetStyle() == VISUAL_NODE_STYLE_DEFAULT)
+	if (Socket->GetParent()->GetStyle() == DEFAULT)
 	{
 		SocketX = Input ? Socket->Parent->LeftTop.x + GetNodeSocketSize() * 3 : Socket->Parent->RightBottom.x - GetNodeSocketSize() * 3;
 
@@ -496,7 +497,7 @@ ImVec2 VisualNodeArea::SocketToPosition(const NodeSocket* Socket) const
 
 		SocketY = (Socket->Parent->LeftTop.y + GetNodeTitleHeight() + SocketSpacing * (SocketIndex + 1) - SocketSpacing / 2.0f);
 	}
-	else if (Socket->GetParent()->GetStyle() == VISUAL_NODE_STYLE_CIRCLE)
+	else if (Socket->GetParent()->GetStyle() == CIRCLE)
 	{
 		const size_t SocketCount = Input ? Socket->Parent->Input.size() : Socket->Parent->Output.size();
 		float BeginAngle = (180.0f / static_cast<float>(SocketCount) / 2.0f);
@@ -519,12 +520,12 @@ ImVec2 VisualNodeArea::SocketToPosition(const NodeSocket* Socket) const
 	return {SocketX, SocketY};
 }
 
-ImVec2 VisualNodeArea::GetAreaRenderOffset() const
+ImVec2 NodeArea::GetRenderOffset() const
 {
 	return RenderOffset;
 }
 
-void VisualNodeArea::SetAreaRenderOffset(const ImVec2 Offset)
+void NodeArea::SetRenderOffset(const ImVec2 Offset)
 {
 	if (Offset.x <= -GRID_SIZE || Offset.x >= GRID_SIZE ||
 		Offset.y <= -GRID_SIZE || Offset.y >= GRID_SIZE)
@@ -533,7 +534,7 @@ void VisualNodeArea::SetAreaRenderOffset(const ImVec2 Offset)
 	RenderOffset = Offset;
 }
 
-void VisualNodeArea::GetAllNodesAABB(ImVec2& Min, ImVec2& Max) const
+void NodeArea::GetAllNodesAABB(ImVec2& Min, ImVec2& Max) const
 {
 	Min.x = FLT_MAX;
 	Min.y = FLT_MAX;
@@ -557,7 +558,7 @@ void VisualNodeArea::GetAllNodesAABB(ImVec2& Min, ImVec2& Max) const
 	}
 }
 
-ImVec2 VisualNodeArea::GetAllNodesAABBCenter() const
+ImVec2 NodeArea::GetAllNodesAABBCenter() const
 {
 	ImVec2 min, max;
 	GetAllNodesAABB(min, max);
@@ -565,7 +566,7 @@ ImVec2 VisualNodeArea::GetAllNodesAABBCenter() const
 	return {min.x + (max.x - min.x) / 2.0f, min.y + (max.y - min.y) / 2.0f};
 }
 
-ImVec2 VisualNodeArea::GetRenderedViewCenter() const
+ImVec2 NodeArea::GetRenderedViewCenter() const
 {
 	if (NodeAreaWindow != nullptr)
 	{
@@ -577,17 +578,17 @@ ImVec2 VisualNodeArea::GetRenderedViewCenter() const
 	}
 }
 
-bool VisualNodeArea::IsAreaFillingWindow()
+bool NodeArea::IsAreaFillingWindow()
 {
 	return bFillWindow;
 }
 
-void VisualNodeArea::SetIsAreaFillingWindow(bool NewValue)
+void NodeArea::SetIsAreaFillingWindow(bool NewValue)
 {
 	bFillWindow = NewValue;
 }
 
-void VisualNodeArea::ApplyZoom(float Delta)
+void NodeArea::ApplyZoom(float Delta)
 {
 	ImVec2 MousePosBeforeZoom = ScreenToLocal(ImGui::GetMousePos());
 
@@ -601,12 +602,12 @@ void VisualNodeArea::ApplyZoom(float Delta)
 	RenderOffset -= (MousePosBeforeZoom - MousePosAfterZoom) * Zoom;
 }
 
-float VisualNodeArea::GetZoomFactor() const
+float NodeArea::GetZoomFactor() const
 {
 	return Zoom;
 }
 
-void VisualNodeArea::SetZoomFactor(float NewValue)
+void NodeArea::SetZoomFactor(float NewValue)
 {
 	if (NewValue < MIN_ZOOM_LEVEL || NewValue > MAX_ZOOM_LEVEL)
 		return;
@@ -614,7 +615,7 @@ void VisualNodeArea::SetZoomFactor(float NewValue)
 	Zoom = NewValue;
 }
 
-bool VisualNodeArea::GetConnectionStyle(VisualNode* Node, bool bOutputSocket, size_t SocketIndex, VisualNodeConnectionStyle& Style) const
+bool NodeArea::GetConnectionStyle(Node* Node, bool bOutputSocket, size_t SocketIndex, ConnectionStyle& Style) const
 {
 	if (Node == nullptr || SocketIndex < 0)
 		return false;
@@ -624,7 +625,7 @@ bool VisualNodeArea::GetConnectionStyle(VisualNode* Node, bool bOutputSocket, si
 		if (SocketIndex >= Node->Output.size())
 			return false;
 
-		VisualNodeConnectionStyle* TempVariable = GetConnectionStyle(Node->Output[SocketIndex]);
+		ConnectionStyle* TempVariable = GetConnectionStyle(Node->Output[SocketIndex]);
 		if (TempVariable != nullptr)
 		{
 			Style = *TempVariable;
@@ -638,7 +639,7 @@ bool VisualNodeArea::GetConnectionStyle(VisualNode* Node, bool bOutputSocket, si
 		if (SocketIndex >= Node->Input.size())
 			return false;
 
-		VisualNodeConnectionStyle* TempVariable = GetConnectionStyle(Node->Input[SocketIndex]);
+		ConnectionStyle* TempVariable = GetConnectionStyle(Node->Input[SocketIndex]);
 		if (TempVariable != nullptr)
 		{
 			Style = *TempVariable;
@@ -649,7 +650,7 @@ bool VisualNodeArea::GetConnectionStyle(VisualNode* Node, bool bOutputSocket, si
 	}
 }
 
-void VisualNodeArea::SetConnectionStyle(VisualNode* Node, bool bOutputSocket, size_t SocketIndex, VisualNodeConnectionStyle NewStyle)
+void NodeArea::SetConnectionStyle(Node* Node, bool bOutputSocket, size_t SocketIndex, ConnectionStyle NewStyle)
 {
 	if (Node == nullptr || SocketIndex < 0)
 		return;
@@ -659,7 +660,7 @@ void VisualNodeArea::SetConnectionStyle(VisualNode* Node, bool bOutputSocket, si
 		if (SocketIndex >= Node->Output.size())
 			return;
 
-		VisualNodeConnectionStyle* TempVariable = GetConnectionStyle(Node->Output[SocketIndex]);
+		ConnectionStyle* TempVariable = GetConnectionStyle(Node->Output[SocketIndex]);
 		if (TempVariable != nullptr)
 			*TempVariable = NewStyle;
 	}
@@ -668,7 +669,7 @@ void VisualNodeArea::SetConnectionStyle(VisualNode* Node, bool bOutputSocket, si
 		if (SocketIndex >= Node->Input.size())
 			return;
 
-		VisualNodeConnectionStyle* TempVariable = GetConnectionStyle(Node->Input[SocketIndex]);
+		ConnectionStyle* TempVariable = GetConnectionStyle(Node->Input[SocketIndex]);
 		if (TempVariable != nullptr)
 			*TempVariable = NewStyle;
 	}

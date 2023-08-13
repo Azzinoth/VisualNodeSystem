@@ -1,17 +1,18 @@
 #include "VisualNodeSystem.h"
+using namespace VisNodeSys;
 
-VisualNodeSystem* VisualNodeSystem::Instance = nullptr;
+NodeSystem* NodeSystem::Instance = nullptr;
 
-VisualNodeSystem::VisualNodeSystem() {}
-VisualNodeSystem::~VisualNodeSystem() {}
+NodeSystem::NodeSystem() {}
+NodeSystem::~NodeSystem() {}
 
-VisualNodeArea* VisualNodeSystem::CreateNodeArea()
+NodeArea* NodeSystem::CreateNodeArea()
 {
-	CreatedAreas.push_back(new VisualNodeArea());
+	CreatedAreas.push_back(new NodeArea());
 	return CreatedAreas.back();
 }
 
-void VisualNodeSystem::DeleteNodeArea(const VisualNodeArea* NodeArea)
+void NodeSystem::DeleteNodeArea(const NodeArea* NodeArea)
 {
 	for (size_t i = 0; i < CreatedAreas.size(); i++)
 	{
@@ -24,7 +25,7 @@ void VisualNodeSystem::DeleteNodeArea(const VisualNodeArea* NodeArea)
 	}
 }
 
-void VisualNodeSystem::MoveNodesTo(VisualNodeArea* SourceNodeArea, VisualNodeArea* TargetNodeArea, const bool SelectMovedNodes)
+void NodeSystem::MoveNodesTo(NodeArea* SourceNodeArea, NodeArea* TargetNodeArea, const bool SelectMovedNodes)
 {
 	if (SourceNodeArea == nullptr || TargetNodeArea == nullptr)
 		return;
@@ -54,7 +55,7 @@ void VisualNodeSystem::MoveNodesTo(VisualNodeArea* SourceNodeArea, VisualNodeAre
 	}
 }
 
-std::vector<std::pair<std::string, ImColor>> VisualNodeSystem::GetAssociationsOfSocketTypeToColor(std::string SocketType, ImColor Color)
+std::vector<std::pair<std::string, ImColor>> NodeSystem::GetAssociationsOfSocketTypeToColor(std::string SocketType, ImColor Color)
 {
 	std::vector<std::pair<std::string, ImColor>> Result;
 	auto iterator = NodeSocket::SocketTypeToColorAssosiations.begin();
@@ -67,7 +68,7 @@ std::vector<std::pair<std::string, ImColor>> VisualNodeSystem::GetAssociationsOf
 	return Result;
 }
 
-void VisualNodeSystem::AssociateSocketTypeToColor(std::string SocketType, ImColor Color)
+void NodeSystem::AssociateSocketTypeToColor(std::string SocketType, ImColor Color)
 {
 	NodeSocket::SocketTypeToColorAssosiations[SocketType] = Color;
 }

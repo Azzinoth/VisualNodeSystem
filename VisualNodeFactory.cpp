@@ -1,19 +1,20 @@
 #include "VisualNodeFactory.h"
+using namespace VisNodeSys;
 
-VisualNodeFactory* VisualNodeFactory::Instance = nullptr;
+NodeFactory* NodeFactory::Instance = nullptr;
 
-VisualNodeFactory::VisualNodeFactory() {}
-VisualNodeFactory::~VisualNodeFactory() {}
+NodeFactory::NodeFactory() {}
+NodeFactory::~NodeFactory() {}
 
-void VisualNodeFactory::RegisterNodeType(const std::string& Type,
-                                         std::function<VisualNode* ()> Constructor,
-                                         std::function<VisualNode* (const VisualNode&)> CopyConstructor)
+void NodeFactory::RegisterNodeType(const std::string& Type,
+                                         std::function<Node* ()> Constructor,
+                                         std::function<Node* (const Node&)> CopyConstructor)
 {
     Constructors[Type] = Constructor;
     CopyConstructors[Type] = CopyConstructor;
 }
 
-VisualNode* VisualNodeFactory::CreateNode(const std::string& Type) const
+Node* NodeFactory::CreateNode(const std::string& Type) const
 {
     auto it = Constructors.find(Type);
     if (it == Constructors.end())
@@ -22,7 +23,7 @@ VisualNode* VisualNodeFactory::CreateNode(const std::string& Type) const
     return it->second();
 }
 
-VisualNode* VisualNodeFactory::CopyNode(const std::string& Type, const VisualNode& Node) const
+Node* NodeFactory::CopyNode(const std::string& Type, const Node& Node) const
 {
     auto it = CopyConstructors.find(Type);
     if (it == CopyConstructors.end())

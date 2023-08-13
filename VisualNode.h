@@ -2,109 +2,108 @@
 
 #include "VisualNodeSocket.h"
 
-enum VISUAL_NODE_STYLE
+namespace VisNodeSys
 {
-	VISUAL_NODE_STYLE_DEFAULT = 0,
-	VISUAL_NODE_STYLE_CIRCLE = 1
-};
+	enum NODE_STYLE
+	{
+		DEFAULT = 0,
+		CIRCLE = 1
+	};
 
-#define VISUAL_NODE_NAME_MAX_LENGHT 1024
+#define NODE_NAME_MAX_LENGHT 1024
 #define NODE_TITLE_HEIGHT 30.0f
 #define NODE_DIAMETER 72.0f
 
-enum VISUAL_NODE_SOCKET_EVENT
-{
-	VISUAL_NODE_SOCKET_CONNECTED = 0,
-	VISUAL_NODE_SOCKET_DISCONNECTED = 1,
-	VISUAL_NODE_SOCKET_DESTRUCTION = 2,
-	VISUAL_NODE_SOCKET_UPDATE = 3,
-	VISUAL_NODE_SOCKET_EXECUTE = 4
-};
+	enum NODE_SOCKET_EVENT
+	{
+		CONNECTED = 0,
+		DISCONNECTED = 1,
+		DESTRUCTION = 2,
+		UPDATE = 3,
+		EXECUTE = 4
+	};
 
-class VisualNodeSystem;
-class VisualNodeArea;
-class NodeSocket;
+	class Node
+	{
+	protected:
+		friend class NodeSystem;
+		friend class NodeArea;
 
-class VisualNode
-{
-protected:
-	friend VisualNodeSystem;
-	friend VisualNodeArea;
+		virtual ~Node();
 
-	virtual ~VisualNode();
+		NodeArea* ParentArea = nullptr;
+		std::string ID;
+		ImVec2 Position;
+		ImVec2 Size;
 
-	VisualNodeArea* ParentArea = nullptr;
-	std::string ID;
-	ImVec2 Position;
-	ImVec2 Size;
+		ImVec2 ClientRegionMin;
+		ImVec2 ClientRegionMax;
 
-	ImVec2 ClientRegionMin;
-	ImVec2 ClientRegionMax;
+		std::string Name;
+		std::string Type;
+		bool bShouldBeDestroyed = false;
+		bool bCouldBeDestroyed = true;
+		bool bCouldBeMoved = true;
 
-	std::string Name;
-	std::string Type;
-	bool bShouldBeDestroyed = false;
-	bool bCouldBeDestroyed = true;
-	bool bCouldBeMoved = true;
+		std::vector<NodeSocket*> Input;
+		std::vector<NodeSocket*> Output;
 
-	std::vector<NodeSocket*> Input;
-	std::vector<NodeSocket*> Output;
+		ImVec2 LeftTop;
+		ImVec2 RightBottom;
 
-	ImVec2 LeftTop;
-	ImVec2 RightBottom;
+		ImColor TitleBackgroundColor = ImColor(120, 150, 25);
+		ImColor TitleBackgroundColorHovered = ImColor(140, 190, 35);
 
-	ImColor TitleBackgroundColor = ImColor(120, 150, 25);
-	ImColor TitleBackgroundColorHovered = ImColor(140, 190, 35);
+		bool bHovered = false;
+		void SetIsHovered(bool NewValue);
 
-	bool bHovered = false;
-	void SetIsHovered(bool NewValue);
+		NODE_STYLE Style = DEFAULT;
 
-	VISUAL_NODE_STYLE Style = VISUAL_NODE_STYLE_DEFAULT;
+		virtual void Draw();
+		virtual bool CanConnect(NodeSocket* OwnSocket, NodeSocket* CandidateSocket, char** MsgToUser = nullptr);
+		virtual void SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSocket, NODE_SOCKET_EVENT EventType);
+		virtual bool OpenContextMenu();
 
-	virtual void Draw();
-	virtual bool CanConnect(NodeSocket* OwnSocket, NodeSocket* CandidateSocket, char** MsgToUser = nullptr);
-	virtual void SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSocket, VISUAL_NODE_SOCKET_EVENT EventType);
-	virtual bool OpenContextMenu();
+		void UpdateClientRegion();
+	public:
+		Node(std::string ID = "");
+		Node(const Node& Src);
 
-	void UpdateClientRegion();
-public:
-	VisualNode(std::string ID = "");
-	VisualNode(const VisualNode& Src);
+		std::string GetID();
 
-	std::string GetID();
+		ImVec2 GetPosition() const;
+		void SetPosition(ImVec2 NewValue);
 
-	ImVec2 GetPosition() const;
-	void SetPosition(ImVec2 NewValue);
+		ImVec2 GetSize() const;
+		void SetSize(ImVec2 NewValue);
 
-	ImVec2 GetSize() const;
-	void SetSize(ImVec2 NewValue);
+		ImVec2 GetClientRegionSize();
+		ImVec2 GetClientRegionPosition();
 
-	ImVec2 GetClientRegionSize();
-	ImVec2 GetClientRegionPosition();
+		std::string GetName();
+		void SetName(std::string NewValue);
 
-	std::string GetName();
-	void SetName(std::string NewValue);
+		std::string GetType() const;
 
-	std::string GetType() const;
+		void AddSocket(NodeSocket* Socket);
 
-	void AddSocket(NodeSocket* Socket);
+		virtual Json::Value ToJson();
+		virtual void FromJson(Json::Value Json);
 
-	virtual Json::Value ToJson();
-	virtual void FromJson(Json::Value Json);
+		size_t InputSocketCount() const;
+		size_t OutSocketCount() const;
 
-	size_t InputSocketCount() const;
-	size_t OutSocketCount() const;
+		std::vector<Node*> GetNodesConnectedToInput() const;
+		std::vector<Node*> GetNodesConnectedToOutput() const;
 
-	std::vector<VisualNode*> GetNodesConnectedToInput() const;
-	std::vector<VisualNode*> GetNodesConnectedToOutput() const;
+		NODE_STYLE GetStyle() const;
+		void SetStyle(NODE_STYLE NewValue);
 
-	VISUAL_NODE_STYLE GetStyle() const;
-	void SetStyle(VISUAL_NODE_STYLE NewValue);
+		bool IsHovered() const;
 
-	bool IsHovered() const;
+		bool CouldBeMoved() const;
+		void SetCouldBeMoved(bool NewValue);
 
-	bool CouldBeMoved() const;
-	void SetCouldBeMoved(bool NewValue);
-
-	VisualNodeArea* GetParentArea() const;
-};
+		NodeArea* GetParentArea() const;
+	};
+}

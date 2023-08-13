@@ -1,13 +1,14 @@
 #include "VisualNodeSocket.h"
+using namespace VisNodeSys;
 
 std::unordered_map<std::string, ImColor> NodeSocket::SocketTypeToColorAssosiations;
 
-NodeSocket::NodeSocket(VisualNode* Parent, const std::string Type, const std::string Name, bool bOutput, std::function<void* ()> OutputDataFunction)
+NodeSocket::NodeSocket(Node* Parent, const std::string Type, const std::string Name, bool bOutput, std::function<void* ()> OutputDataFunction)
 {
 	this->Parent = Parent;
 	this->Type = Type;
 	this->Name = Name;
-	this->ID = APPLICATION.GetUniqueHexID();
+	this->ID = FocalEngine::APPLICATION.GetUniqueHexID();
 	this->bOutput = bOutput;
 	this->OutputData = OutputDataFunction;
 }
@@ -17,7 +18,7 @@ std::string NodeSocket::GetID() const
 	return ID;
 }
 
-VisualNode* NodeSocket::GetParent() const
+Node* NodeSocket::GetParent() const
 {
 	return Parent;
 }
@@ -42,14 +43,14 @@ void NodeSocket::SetFunctionToOutputData(std::function<void* ()> NewFunction)
 	OutputData = NewFunction;
 }
 
-VisualNodeConnection::VisualNodeConnection(NodeSocket* Out, NodeSocket* In)
+Connection::Connection(NodeSocket* Out, NodeSocket* In)
 {
 	this->Out = Out;
 	this->In = In;
 }
 
-VisualNodeConnection::~VisualNodeConnection()
+Connection::~Connection()
 {
-	for (size_t i = 0; i < RerouteConnections.size(); i++)
-		delete RerouteConnections[i];
+	for (size_t i = 0; i < RerouteNodes.size(); i++)
+		delete RerouteNodes[i];
 }

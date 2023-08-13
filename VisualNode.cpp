@@ -1,20 +1,21 @@
 #include "VisualNode.h"
+using namespace VisNodeSys;
 
-VisualNode::VisualNode(const std::string ID)
+Node::Node(const std::string ID)
 {
 	this->ID = ID;
 	if (ID.empty())
-		this->ID = APPLICATION.GetUniqueHexID();
+		this->ID = FocalEngine::APPLICATION.GetUniqueHexID();
 
 	SetSize(ImVec2(200, 80));
 	SetName("VisualNode");
 	Type = "VisualNode";
 }
 
-VisualNode::VisualNode(const VisualNode& Src)
+Node::Node(const Node& Src)
 {
 	ParentArea = Src.ParentArea;
-	ID = APPLICATION.GetUniqueHexID();
+	ID = FocalEngine::APPLICATION.GetUniqueHexID();
 	Position = Src.Position;
 	Size = Src.Size;
 
@@ -43,7 +44,7 @@ VisualNode::VisualNode(const VisualNode& Src)
 	}
 }
 
-VisualNode::~VisualNode()
+Node::~Node()
 {
 	for (int i = 0; i < static_cast<int>(Input.size()); i++)
 	{
@@ -60,48 +61,48 @@ VisualNode::~VisualNode()
 	}
 }
 
-std::string VisualNode::GetID()
+std::string Node::GetID()
 {
 	return ID;
 }
 
-ImVec2 VisualNode::GetPosition() const
+ImVec2 Node::GetPosition() const
 {
 	return Position;
 }
 
-void VisualNode::SetPosition(const ImVec2 NewValue)
+void Node::SetPosition(const ImVec2 NewValue)
 {
 	Position = NewValue;
 }
 
-ImVec2 VisualNode::GetSize() const
+ImVec2 Node::GetSize() const
 {
-	if (GetStyle() == VISUAL_NODE_STYLE_CIRCLE)
+	if (GetStyle() == CIRCLE)
 		return ImVec2(NODE_DIAMETER, NODE_DIAMETER);
 	
 	return Size;
 }
 
-void VisualNode::SetSize(const ImVec2 NewValue)
+void Node::SetSize(const ImVec2 NewValue)
 {
 	Size = NewValue;
 }
 
-std::string VisualNode::GetName()
+std::string Node::GetName()
 {
 	return Name;
 }
 
-void VisualNode::SetName(const std::string NewValue)
+void Node::SetName(const std::string NewValue)
 {
-	if (NewValue.size() > VISUAL_NODE_NAME_MAX_LENGHT)
+	if (NewValue.size() > NODE_NAME_MAX_LENGHT)
 		return;
 
 	Name = NewValue;
 }
 
-void VisualNode::AddSocket(NodeSocket* Socket)
+void Node::AddSocket(NodeSocket* Socket)
 {
 	if (Socket == nullptr)
 		return;
@@ -112,16 +113,16 @@ void VisualNode::AddSocket(NodeSocket* Socket)
 		Input.push_back(Socket);
 }
 
-void VisualNode::Draw()
+void Node::Draw()
 {
 }
 
-void VisualNode::SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSocket, VISUAL_NODE_SOCKET_EVENT EventType)
+void Node::SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSocket, NODE_SOCKET_EVENT EventType)
 {
 
 }
 
-bool VisualNode::CanConnect(NodeSocket* OwnSocket, NodeSocket* CandidateSocket, char** MsgToUser)
+bool Node::CanConnect(NodeSocket* OwnSocket, NodeSocket* CandidateSocket, char** MsgToUser)
 {
 	// Socket can't connect to itself.
 	if (OwnSocket == CandidateSocket)
@@ -142,12 +143,12 @@ bool VisualNode::CanConnect(NodeSocket* OwnSocket, NodeSocket* CandidateSocket, 
 	return true;
 }
 
-std::string VisualNode::GetType() const
+std::string Node::GetType() const
 {
 	return Type;
 }
 
-Json::Value VisualNode::ToJson()
+Json::Value Node::ToJson()
 {
 	Json::Value result;
 
@@ -177,12 +178,12 @@ Json::Value VisualNode::ToJson()
 	return result;
 }
 
-void VisualNode::FromJson(Json::Value Json)
+void Node::FromJson(Json::Value Json)
 {
 	ID = Json["ID"].asCString();
 	Type = Json["nodeType"].asCString();
 	if (Json.isMember("nodeStyle"))
-		Style = VISUAL_NODE_STYLE(Json["nodeStyle"].asInt());
+		Style = NODE_STYLE(Json["nodeStyle"].asInt());
 	Position.x = Json["position"]["x"].asFloat();
 	Position.y = Json["position"]["y"].asFloat();
 	Size.x = Json["size"]["x"].asFloat();
@@ -232,7 +233,7 @@ void VisualNode::FromJson(Json::Value Json)
 	}
 }
 
-void VisualNode::UpdateClientRegion()
+void Node::UpdateClientRegion()
 {
 	float LongestInputSocketTextW = 0.0f;
 	for (size_t i = 0; i < Input.size(); i++)
@@ -257,31 +258,31 @@ void VisualNode::UpdateClientRegion()
 	ClientRegionMax.y = RightBottom.y - 2.0f;
 }
 
-ImVec2 VisualNode::GetClientRegionSize()
+ImVec2 Node::GetClientRegionSize()
 {
 	UpdateClientRegion();
 	return ClientRegionMax - ClientRegionMin;
 }
 
-ImVec2 VisualNode::GetClientRegionPosition()
+ImVec2 Node::GetClientRegionPosition()
 {
 	UpdateClientRegion();
 	return ClientRegionMin;
 }
 
-size_t VisualNode::InputSocketCount() const
+size_t Node::InputSocketCount() const
 {
 	return Input.size();
 }
 
-size_t VisualNode::OutSocketCount() const
+size_t Node::OutSocketCount() const
 {
 	return Output.size();
 }
 
-std::vector<VisualNode*> VisualNode::GetNodesConnectedToInput() const
+std::vector<Node*> Node::GetNodesConnectedToInput() const
 {
-	std::vector<VisualNode*> result;
+	std::vector<Node*> result;
 	for (size_t i = 0; i < Input.size(); i++)
 	{
 		for (size_t j = 0; j < Input[i]->ConnectedSockets.size(); j++)
@@ -293,9 +294,9 @@ std::vector<VisualNode*> VisualNode::GetNodesConnectedToInput() const
 	return result;
 }
 
-std::vector<VisualNode*> VisualNode::GetNodesConnectedToOutput() const
+std::vector<Node*> Node::GetNodesConnectedToOutput() const
 {
-	std::vector<VisualNode*> result;
+	std::vector<Node*> result;
 	for (size_t i = 0; i < Output.size(); i++)
 	{
 		for (size_t j = 0; j < Output[i]->ConnectedSockets.size(); j++)
@@ -307,17 +308,17 @@ std::vector<VisualNode*> VisualNode::GetNodesConnectedToOutput() const
 	return result;
 }
 
-bool VisualNode::OpenContextMenu()
+bool Node::OpenContextMenu()
 {
 	return false;
 }
 
-VISUAL_NODE_STYLE VisualNode::GetStyle() const
+NODE_STYLE Node::GetStyle() const
 {
 	return Style;
 }
 
-void VisualNode::SetStyle(const VISUAL_NODE_STYLE NewValue)
+void Node::SetStyle(const NODE_STYLE NewValue)
 {
 	if (static_cast<int>(NewValue) < 0 || static_cast<int>(NewValue) >= 2)
 		return;
@@ -325,27 +326,27 @@ void VisualNode::SetStyle(const VISUAL_NODE_STYLE NewValue)
 	Style = NewValue;
 }
 
-bool VisualNode::IsHovered() const
+bool Node::IsHovered() const
 {
 	return bHovered;
 }
 
-void VisualNode::SetIsHovered(const bool NewValue)
+void Node::SetIsHovered(const bool NewValue)
 {
 	bHovered = NewValue;
 }
 
-bool VisualNode::CouldBeMoved() const
+bool Node::CouldBeMoved() const
 {
 	return bCouldBeMoved;
 }
 
-void VisualNode::SetCouldBeMoved(bool NewValue)
+void Node::SetCouldBeMoved(bool NewValue)
 {
 	bCouldBeMoved = NewValue;
 }
 
-VisualNodeArea* VisualNode::GetParentArea() const
+NodeArea* Node::GetParentArea() const
 {
 	return ParentArea;
 }

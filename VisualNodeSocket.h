@@ -1,7 +1,6 @@
 #pragma once
 
 #include "FEBasicApplication.h"
-using namespace FocalEngine;
 
 #include <fstream>
 #include <functional>
@@ -14,108 +13,115 @@ using namespace FocalEngine;
 
 #include "jsoncpp/json/json.h"
 
+namespace VisNodeSys
+{
+	class Node;
+
 #define NODE_SOCKET_SIZE 5.0f
 #define DEFAULT_NODE_SOCKET_COLOR ImColor(150, 150, 150)
-#define DEFAULT_NODE_SOCKET_CONNECTION_COLOR ImColor(200, 200, 200)
+#define DEFAULT_CONNECTION_COLOR ImColor(200, 200, 200)
 #define DEFAULT_NODE_SOCKET_MOUSE_HOVERED_CONNECTION_COLOR ImColor(220, 220, 220)
 
-class NodeSocket
-{
-	friend class VisualNodeSystem;
-	friend class VisualNodeArea;
-	friend class VisualNode;
+	class NodeSocket
+	{
+		friend class NodeSystem;
+		friend class NodeArea;
+		friend Node;
 
-	std::string ID;
-	bool bOutput = false;
-	std::string Type;
-	std::string Name;
-	std::vector<NodeSocket*> ConnectedSockets;
+		std::string ID;
+		bool bOutput = false;
+		std::string Type;
+		std::string Name;
+		std::vector<NodeSocket*> ConnectedSockets;
 
-	static std::unordered_map<std::string, ImColor> SocketTypeToColorAssosiations;
+		static std::unordered_map<std::string, ImColor> SocketTypeToColorAssosiations;
 
-	std::function<void* ()> OutputData = []() { return nullptr; };
-protected:
-	VisualNode* Parent = nullptr;
-public:
-	NodeSocket(VisualNode* Parent, std::string Type, std::string Name, bool bOutput = false, std::function<void* ()> OutputDataFunction = []() { return nullptr; });
+		std::function<void* ()> OutputData = []() { return nullptr; };
+	protected:
+		Node* Parent = nullptr;
+	public:
+		NodeSocket(Node* Parent, std::string Type, std::string Name, bool bOutput = false, std::function<void* ()> OutputDataFunction = []() { return nullptr; });
 
-	VisualNode* GetParent() const;
-	std::vector<NodeSocket*> GetConnectedSockets();
+		Node* GetParent() const;
+		std::vector<NodeSocket*> GetConnectedSockets();
 
-	std::string GetID() const;
-	std::string GetName() const;
+		std::string GetID() const;
+		std::string GetName() const;
 
-	std::string GetType() const;
+		std::string GetType() const;
 
-	bool isOutput() const { return bOutput; }
-	bool isInput() const { return !bOutput; }
-	
-	void SetFunctionToOutputData(std::function<void* ()> NewFunction);
-	void* GetData() { return OutputData(); }
-};
+		bool isOutput() const { return bOutput; }
+		bool isInput() const { return !bOutput; }
 
-struct VisualNodeConnectionStyle
-{
-	ImColor ForceColor = DEFAULT_NODE_SOCKET_CONNECTION_COLOR;
+		void SetFunctionToOutputData(std::function<void* ()> NewFunction);
+		void* GetData() { return OutputData(); }
+	};
 
-	bool bMarchingAntsEffect = false;
-	float MarchingAntsSpeed = 1.0f;
-	bool bMarchingAntsReverseDirection = false;
+	struct ConnectionStyle
+	{
+		ImColor ForceColor = DEFAULT_CONNECTION_COLOR;
 
-	bool bPulseEffect = false;
-	float PulseSpeed = 1.0f;
-	float PulseMin = 0.1f;
-	float PulseMax = 1.0f;
-};
+		bool bMarchingAntsEffect = false;
+		float MarchingAntsSpeed = 1.0f;
+		bool bMarchingAntsReverseDirection = false;
 
-class VisualNodeRerouteNode
-{
-	friend class VisualNodeSystem;
-	friend class VisualNodeArea;
-	friend class VisualNodeConnection;
-	friend class VisualNode;
+		bool bPulseEffect = false;
+		float PulseSpeed = 1.0f;
+		float PulseMin = 0.1f;
+		float PulseMax = 1.0f;
+	};
 
-	std::string ID;
-	VisualNodeConnection* Parent = nullptr;
-	ImVec2 Position;
+	class RerouteNode
+	{
+		friend class NodeSystem;
+		friend class NodeArea;
+		friend class Connection;
+		friend Node;
 
-	NodeSocket* BeginSocket = nullptr;
-	VisualNodeRerouteNode* BeginReroute = nullptr;
+		std::string ID;
+		Connection* Parent = nullptr;
+		ImVec2 Position;
 
-	NodeSocket* EndSocket = nullptr;
-	VisualNodeRerouteNode* EndReroute = nullptr;
+		NodeSocket* BeginSocket = nullptr;
+		RerouteNode* BeginReroute = nullptr;
 
-	bool bHovered = false;
-	bool bSelected = false;
-};
+		NodeSocket* EndSocket = nullptr;
+		RerouteNode* EndReroute = nullptr;
 
-struct VisualNodeConnectionSegment
-{
-	ImVec2 Begin;
-	ImVec2 End;
+		bool bHovered = false;
+		bool bSelected = false;
 
-	NodeSocket* BeginSocket = nullptr;
-	VisualNodeRerouteNode* BeginReroute = nullptr;
+		RerouteNode() {};
+	};
 
-	NodeSocket* EndSocket = nullptr;
-	VisualNodeRerouteNode* EndReroute = nullptr;
-};
+	struct ConnectionSegment
+	{
+		ImVec2 Begin;
+		ImVec2 End;
 
-class VisualNodeConnection
-{
-	friend class VisualNodeSystem;
-	friend class VisualNodeArea;
-	friend class VisualNode;
+		NodeSocket* BeginSocket = nullptr;
+		RerouteNode* BeginReroute = nullptr;
 
-	NodeSocket* Out = nullptr;
-	NodeSocket* In = nullptr;
+		NodeSocket* EndSocket = nullptr;
+		RerouteNode* EndReroute = nullptr;
+	};
 
-	bool bHovered = false;
-	bool bSelected = false;
-	VisualNodeConnectionStyle Style;
+	class Connection
+	{
+		friend class NodeSystem;
+		friend class NodeArea;
+		friend Node;
 
-	std::vector<VisualNodeRerouteNode*> RerouteConnections;
+		NodeSocket* Out = nullptr;
+		NodeSocket* In = nullptr;
 
-	VisualNodeConnection(NodeSocket* Out, NodeSocket* In);
-	~VisualNodeConnection();
-};
+		bool bHovered = false;
+		bool bSelected = false;
+		ConnectionStyle Style;
+
+		std::vector<RerouteNode*> RerouteNodes;
+
+		Connection(NodeSocket* Out, NodeSocket* In);
+		~Connection();
+	};
+}

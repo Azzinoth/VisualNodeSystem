@@ -2,6 +2,8 @@
 
 ![build](https://github.com/Azzinoth/VisualNodeSystem/actions/workflows/Build.yml/badge.svg?branch=master)
 
+_**In the near future, I plan to make this repo more lightweight and much easier to integrate into your projects. It will no longer include the submodule 'FEBasicApplication'. This submodule has been used to consolidate useful functionalities for all my graphics-related projects in one place. 'FEBasicApplication' includes a partial but unmodified version of the Dear ImGui docking branch.**_
+
 This library provides a powerful framework for creating and managing visual node systems. These are typically used in graphical programming environments, game logic builders, and AI behavior tree editors. I have personally used it in two of my projects:
 
 [Focal Engine Editor](https://github.com/Azzinoth/FocalEngineEditor)
@@ -11,6 +13,8 @@ This library provides a powerful framework for creating and managing visual node
 ![Focal Engine test platform](https://github.com/Azzinoth/VisualNodeSystem/blob/media/Test%20Platform%20example.png)
 
 ## Key Features
+
+- (_Soon_) **Unchanged Dear Imgui**: This project does not depend on modifications to Dear Imgui.
 
 - **Smooth Zoom**: A precise and dynamic zoom functionality, allowing for detailed viewing and efficient navigation.
 

@@ -1,23 +1,24 @@
 #include "VisualNodeArea.h"
+using namespace VisNodeSys;
 
-ImVec2 VisualNodeArea::NeededShift = ImVec2();
+ImVec2 NodeArea::NeededShift = ImVec2();
 
-VisualNodeArea::VisualNodeArea()
+NodeArea::NodeArea()
 {
 	SetAreaSize(ImVec2(256, 256));
 };
 
-VisualNodeArea::~VisualNodeArea() 
+NodeArea::~NodeArea() 
 {
 	Clear();
 }
 
-ImVec2 VisualNodeArea::GetAreaSize() const
+ImVec2 NodeArea::GetSize() const
 {
 	return AreaSize;
 }
 
-void VisualNodeArea::SetAreaSize(const ImVec2 NewValue)
+void NodeArea::SetAreaSize(const ImVec2 NewValue)
 {
 	if (NewValue.x < 1 || NewValue.y < 1)
 		return;
@@ -25,12 +26,12 @@ void VisualNodeArea::SetAreaSize(const ImVec2 NewValue)
 	AreaSize = NewValue;
 }
 
-ImVec2 VisualNodeArea::GetAreaPosition() const
+ImVec2 NodeArea::GetPosition() const
 {
 	return AreaPosition;
 }
 
-void VisualNodeArea::SetAreaPosition(const ImVec2 NewValue)
+void NodeArea::SetPosition(const ImVec2 NewValue)
 {
 	if (NewValue.x < 0 || NewValue.y < 0)
 		return;
@@ -38,7 +39,7 @@ void VisualNodeArea::SetAreaPosition(const ImVec2 NewValue)
 	AreaPosition = NewValue;
 }
 
-void VisualNodeArea::Update()
+void NodeArea::Update()
 {
 	InputUpdate();
 
@@ -56,18 +57,18 @@ void VisualNodeArea::Update()
 	Render();
 }
 
-void VisualNodeArea::SetMainContextMenuFunc(void(*Func)())
+void NodeArea::SetMainContextMenuFunc(void(*Func)())
 {
 	MainContextMenuFunc = Func;
 }
 
-void VisualNodeArea::Clear()
+void NodeArea::Clear()
 {
 	bClearing = true;
 
 	for (int i = 0; i < static_cast<int>(Nodes.size()); i++)
 	{
-		PropagateNodeEventsCallbacks(Nodes[i], VISUAL_NODE_DESTROYED);
+		PropagateNodeEventsCallbacks(Nodes[i], DESTROYED);
 		Nodes[i]->bCouldBeDestroyed = true;
 		DeleteNode(Nodes[i]);
 		i--;
@@ -85,7 +86,7 @@ void VisualNodeArea::Clear()
 	bClearing = false;
 }
 
-void VisualNodeArea::Reset()
+void NodeArea::Reset()
 {
 	Clear();
 
@@ -93,13 +94,13 @@ void VisualNodeArea::Reset()
 	NodeEventsCallbacks.clear();
 }
 
-void VisualNodeArea::SetNodeEventCallback(void(*Func)(VisualNode*, VISUAL_NODE_EVENT))
+void NodeArea::SetNodeEventCallback(void(*Func)(Node*, NODE_EVENT))
 {
 	if (Func != nullptr)
 		NodeEventsCallbacks.push_back(Func);
 }
 
-void VisualNodeArea::PropagateNodeEventsCallbacks(VisualNode* Node, const VISUAL_NODE_EVENT EventToPropagate) const
+void NodeArea::PropagateNodeEventsCallbacks(Node* Node, const NODE_EVENT EventToPropagate) const
 {
 	for (size_t i = 0; i < NodeEventsCallbacks.size(); i++)
 	{
@@ -108,7 +109,7 @@ void VisualNodeArea::PropagateNodeEventsCallbacks(VisualNode* Node, const VISUAL
 	}
 }
 
-void VisualNodeArea::SaveToFile(const char* FileName) const
+void NodeArea::SaveToFile(const char* FileName) const
 {
 	const std::string json_file = ToJson();
 	std::ofstream SaveFile;
@@ -117,7 +118,7 @@ void VisualNodeArea::SaveToFile(const char* FileName) const
 	SaveFile.close();
 }
 
-bool VisualNodeArea::IsNodeIDInList(const std::string ID, const std::vector<VisualNode*> List)
+bool NodeArea::IsNodeIDInList(const std::string ID, const std::vector<Node*> List)
 {
 	for (size_t i = 0; i < List.size(); i++)
 	{
@@ -128,12 +129,12 @@ bool VisualNodeArea::IsNodeIDInList(const std::string ID, const std::vector<Visu
 	return false;
 }
 
-void VisualNodeArea::SaveNodesToFile(const char* FileName, std::vector<VisualNode*> Nodes)
+void NodeArea::SaveNodesToFile(const char* FileName, std::vector<Node*> Nodes)
 {
 	if (Nodes.empty())
 		return;
 
-	const VisualNodeArea* NewNodeArea = VisualNodeArea::CreateNodeArea(Nodes);
+	const NodeArea* NewNodeArea = NodeArea::CreateNodeArea(Nodes);
 	const std::string json_file = NewNodeArea->ToJson();
 	std::ofstream SaveFile;
 	SaveFile.open(FileName);
@@ -142,7 +143,7 @@ void VisualNodeArea::SaveNodesToFile(const char* FileName, std::vector<VisualNod
 	delete NewNodeArea;
 }
 
-bool VisualNodeArea::IsAlreadyConnected(NodeSocket* FirstSocket, NodeSocket* SecondSocket, const std::vector<VisualNodeConnection*>& Connections)
+bool NodeArea::IsAlreadyConnected(NodeSocket* FirstSocket, NodeSocket* SecondSocket, const std::vector<Connection*>& Connections)
 {
 	for (size_t i = 0; i < Connections.size(); i++)
 	{
@@ -154,11 +155,11 @@ bool VisualNodeArea::IsAlreadyConnected(NodeSocket* FirstSocket, NodeSocket* Sec
 	return false;
 }
 
-void VisualNodeArea::ProcessConnections(const std::vector<NodeSocket*>& Sockets,
+void NodeArea::ProcessConnections(const std::vector<NodeSocket*>& Sockets,
 										std::unordered_map<NodeSocket*, NodeSocket*>& OldToNewSocket,
-										VisualNodeArea* TargetArea, size_t NodeShift, const std::vector<VisualNode*>& SourceNodes)
+										NodeArea* TargetArea, size_t NodeShift, const std::vector<Node*>& SourceNodes)
 {
-	VisualNodeArea* SourceArea = SourceNodes[0]->GetParentArea();
+	NodeArea* SourceArea = SourceNodes[0]->GetParentArea();
 
 	for (size_t i = 0; i < Sockets.size(); i++)
 	{
@@ -173,20 +174,20 @@ void VisualNodeArea::ProcessConnections(const std::vector<NodeSocket*>& Sockets,
 				// Check maybe we already establish this connection.
 				if (!IsAlreadyConnected(OldToNewSocket[CurrentSocket], OldToNewSocket[ConnectedSocket], TargetArea->Connections))
 				{
-					std::unordered_map<VisualNodeRerouteNode*, VisualNodeRerouteNode*> OldToNewRerouteNode;
+					std::unordered_map<RerouteNode*, RerouteNode*> OldToNewRerouteNode;
 					// Get connection info from old node area.
-					VisualNodeConnection* OldConnection = SourceArea->GetConnection(CurrentSocket, ConnectedSocket);
+					Connection* OldConnection = SourceArea->GetConnection(CurrentSocket, ConnectedSocket);
 
 					if (!TargetArea->TryToConnect(OldToNewSocket[CurrentSocket]->GetParent(), OldToNewSocket[CurrentSocket]->GetID(), OldToNewSocket[ConnectedSocket]->GetParent(), OldToNewSocket[ConnectedSocket]->GetID()))
 						continue;
 
-					VisualNodeConnection* NewConnection = TargetArea->Connections.back();
+					Connection* NewConnection = TargetArea->Connections.back();
 					// First pass to fill OldToNewRerouteNode map and other information that does not depend on OldToNewRerouteNode map.
-					for (size_t j = 0; j < OldConnection->RerouteConnections.size(); j++)
+					for (size_t j = 0; j < OldConnection->RerouteNodes.size(); j++)
 					{
-						VisualNodeRerouteNode* OldReroute = OldConnection->RerouteConnections[j];
-						VisualNodeRerouteNode* NewReroute = new VisualNodeRerouteNode();
-						NewReroute->ID = APPLICATION.GetUniqueHexID();
+						RerouteNode* OldReroute = OldConnection->RerouteNodes[j];
+						RerouteNode* NewReroute = new RerouteNode();
+						NewReroute->ID = FocalEngine::APPLICATION.GetUniqueHexID();
 						NewReroute->Parent = NewConnection;
 						NewReroute->Position = OldReroute->Position;
 
@@ -196,15 +197,15 @@ void VisualNodeArea::ProcessConnections(const std::vector<NodeSocket*>& Sockets,
 							NewReroute->EndSocket = OldToNewSocket[OldReroute->EndSocket];
 
 						// Associate old to new
-						OldToNewRerouteNode[OldConnection->RerouteConnections[j]] = NewReroute;
+						OldToNewRerouteNode[OldConnection->RerouteNodes[j]] = NewReroute;
 
-						NewConnection->RerouteConnections.push_back(NewReroute);
+						NewConnection->RerouteNodes.push_back(NewReroute);
 					}
 
 					// Second pass to fill all other info.
-					for (size_t j = 0; j < OldConnection->RerouteConnections.size(); j++)
+					for (size_t j = 0; j < OldConnection->RerouteNodes.size(); j++)
 					{
-						VisualNodeRerouteNode* OldReroute = OldConnection->RerouteConnections[j];
+						RerouteNode* OldReroute = OldConnection->RerouteNodes[j];
 
 						if (OldReroute->BeginReroute != nullptr)
 							OldToNewRerouteNode[OldReroute]->BeginReroute = OldToNewRerouteNode[OldReroute->BeginReroute];
@@ -217,17 +218,17 @@ void VisualNodeArea::ProcessConnections(const std::vector<NodeSocket*>& Sockets,
 	}
 }
 
-void VisualNodeArea::CopyNodesInternal(const std::vector<VisualNode*>& SourceNodes, VisualNodeArea* TargetArea, const size_t NodeShift)
+void NodeArea::CopyNodesInternal(const std::vector<Node*>& SourceNodes, NodeArea* TargetArea, const size_t NodeShift)
 {
 	// Copy all nodes to new node area.
-	std::unordered_map<VisualNode*, VisualNode*> OldToNewNode;
+	std::unordered_map<Node*, Node*> OldToNewNode;
 	std::unordered_map<NodeSocket*, NodeSocket*> OldToNewSocket;
 	for (size_t i = 0; i < SourceNodes.size(); i++)
 	{
-		VisualNode* CopyOfNode = NODE_FACTORY.CopyNode(SourceNodes[i]->GetType(), *SourceNodes[i]);
+		Node* CopyOfNode = NODE_FACTORY.CopyNode(SourceNodes[i]->GetType(), *SourceNodes[i]);
 
 		if (CopyOfNode == nullptr)
-			CopyOfNode = new VisualNode(*SourceNodes[i]);
+			CopyOfNode = new Node(*SourceNodes[i]);
 		CopyOfNode->ParentArea = TargetArea;
 
 		TargetArea->AddNode(CopyOfNode);
@@ -254,15 +255,15 @@ void VisualNodeArea::CopyNodesInternal(const std::vector<VisualNode*>& SourceNod
 }
 
 
-VisualNodeArea* VisualNodeArea::CreateNodeArea(const std::vector<VisualNode*> Nodes)
+NodeArea* NodeArea::CreateNodeArea(const std::vector<Node*> Nodes)
 {
-	VisualNodeArea* NewArea = new VisualNodeArea();
+	NodeArea* NewArea = new NodeArea();
 	CopyNodesInternal(Nodes, NewArea);
 
 	return NewArea;
 }
 
-std::string VisualNodeArea::ToJson() const
+std::string NodeArea::ToJson() const
 {
 	Json::Value root;
 	std::ofstream SaveFile;
@@ -297,30 +298,30 @@ std::string VisualNodeArea::ToJson() const
 		ConnectionsData[std::to_string(i)]["out"]["socket_index"] = socket_index;
 		ConnectionsData[std::to_string(i)]["out"]["node_ID"] = Connections[i]->Out->GetParent()->GetID();
 
-		for (size_t j = 0; j < Connections[i]->RerouteConnections.size(); j++)
+		for (size_t j = 0; j < Connections[i]->RerouteNodes.size(); j++)
 		{
-			ConnectionsData[std::to_string(i)]["reroute_connections"][std::to_string(j)]["reroute_ID"] = Connections[i]->RerouteConnections[j]->ID;
-			ConnectionsData[std::to_string(i)]["reroute_connections"][std::to_string(j)]["position_x"] = Connections[i]->RerouteConnections[j]->Position.x;
-			ConnectionsData[std::to_string(i)]["reroute_connections"][std::to_string(j)]["position_y"] = Connections[i]->RerouteConnections[j]->Position.y;
+			ConnectionsData[std::to_string(i)]["reroute_connections"][std::to_string(j)]["reroute_ID"] = Connections[i]->RerouteNodes[j]->ID;
+			ConnectionsData[std::to_string(i)]["reroute_connections"][std::to_string(j)]["position_x"] = Connections[i]->RerouteNodes[j]->Position.x;
+			ConnectionsData[std::to_string(i)]["reroute_connections"][std::to_string(j)]["position_y"] = Connections[i]->RerouteNodes[j]->Position.y;
 
 			std::string BeginSocketID = "";
-			if (Connections[i]->RerouteConnections[j]->BeginSocket)
-				BeginSocketID = Connections[i]->RerouteConnections[j]->BeginSocket->GetID();
+			if (Connections[i]->RerouteNodes[j]->BeginSocket)
+				BeginSocketID = Connections[i]->RerouteNodes[j]->BeginSocket->GetID();
 			ConnectionsData[std::to_string(i)]["reroute_connections"][std::to_string(j)]["begin_socket_ID"] = BeginSocketID;
 
 			std::string EndSocketID = "";
-			if (Connections[i]->RerouteConnections[j]->EndSocket)
-				EndSocketID = Connections[i]->RerouteConnections[j]->EndSocket->GetID();
+			if (Connections[i]->RerouteNodes[j]->EndSocket)
+				EndSocketID = Connections[i]->RerouteNodes[j]->EndSocket->GetID();
 			ConnectionsData[std::to_string(i)]["reroute_connections"][std::to_string(j)]["end_socket_ID"] = EndSocketID;
 
 			std::string BeginRerouteID = "";
-			if (Connections[i]->RerouteConnections[j]->BeginReroute)
-				BeginRerouteID = Connections[i]->RerouteConnections[j]->BeginReroute->ID;
+			if (Connections[i]->RerouteNodes[j]->BeginReroute)
+				BeginRerouteID = Connections[i]->RerouteNodes[j]->BeginReroute->ID;
 			ConnectionsData[std::to_string(i)]["reroute_connections"][std::to_string(j)]["begin_reroute_ID"] = BeginRerouteID;
 
 			std::string EndRerouteID = "";
-			if (Connections[i]->RerouteConnections[j]->EndReroute)
-				EndRerouteID = Connections[i]->RerouteConnections[j]->EndReroute->ID;
+			if (Connections[i]->RerouteNodes[j]->EndReroute)
+				EndRerouteID = Connections[i]->RerouteNodes[j]->EndReroute->ID;
 			ConnectionsData[std::to_string(i)]["reroute_connections"][std::to_string(j)]["end_reroute_ID"] = EndRerouteID;
 		}
 	}
@@ -335,9 +336,9 @@ std::string VisualNodeArea::ToJson() const
 	return JsonText;
 }
 
-VisualNodeArea* VisualNodeArea::FromJson(std::string JsonText)
+NodeArea* NodeArea::FromJson(std::string JsonText)
 {
-	VisualNodeArea* NewArea = new VisualNodeArea();
+	NodeArea* NewArea = new NodeArea();
 
 	if (JsonText.find("{") == std::string::npos || JsonText.find("}") == std::string::npos || JsonText.find(":") == std::string::npos)
 		return NewArea;
@@ -353,17 +354,17 @@ VisualNodeArea* VisualNodeArea::FromJson(std::string JsonText)
 	if (!root.isMember("nodes"))
 		return NewArea;
 
-	std::unordered_map<std::string, VisualNode*> LoadedNodes;
+	std::unordered_map<std::string, Node*> LoadedNodes;
 	std::vector<Json::String> NodesList = root["nodes"].getMemberNames();
 	for (size_t i = 0; i < NodesList.size(); i++)
 	{
 		std::string NodeType = root["nodes"][std::to_string(i)]["nodeType"].asCString();
-		VisualNode* NewNode = NODE_FACTORY.CreateNode(NodeType);
+		Node* NewNode = NODE_FACTORY.CreateNode(NodeType);
 		if (NewNode == nullptr)
 		{
 			if (NodeType == "VisualNode")
 			{
-				NewNode = new VisualNode();
+				NewNode = new Node();
 			}
 			else
 			{
@@ -393,13 +394,13 @@ VisualNodeArea* VisualNodeArea::FromJson(std::string JsonText)
 			if (!NewArea->TryToConnect(LoadedNodes[OutNodeID], OutSocketID, LoadedNodes[InNodeID], InSocketID))
 				continue;
 
-		VisualNodeConnection* NewConnection = NewArea->Connections.back();
+		Connection* NewConnection = NewArea->Connections.back();
 
 		// First pass to fill information that does not depend other reroutes.
 		std::vector<Json::String> RerouteList = root["connections"][ConnectionsList[i]]["reroute_connections"].getMemberNames();
 		for (size_t j = 0; j < RerouteList.size(); j++)
 		{
-			VisualNodeRerouteNode* NewReroute = new VisualNodeRerouteNode();
+			RerouteNode* NewReroute = new RerouteNode();
 			std::string ID = root["connections"][ConnectionsList[i]]["reroute_connections"][std::to_string(j)]["reroute_ID"].asCString();
 			NewReroute->ID = ID;
 			NewReroute->Parent = NewConnection;
@@ -407,7 +408,7 @@ VisualNodeArea* VisualNodeArea::FromJson(std::string JsonText)
 			NewReroute->Position.x = root["connections"][ConnectionsList[i]]["reroute_connections"][std::to_string(j)]["position_x"].asFloat();
 			NewReroute->Position.y = root["connections"][ConnectionsList[i]]["reroute_connections"][std::to_string(j)]["position_y"].asFloat();
 
-			NewConnection->RerouteConnections.push_back(NewReroute);
+			NewConnection->RerouteNodes.push_back(NewReroute);
 		}
 
 		// Second pass to fill pointers.
@@ -418,7 +419,7 @@ VisualNodeArea* VisualNodeArea::FromJson(std::string JsonText)
 			{
 				NodeSocket* BeginSocket = NewConnection->Out;
 				if (BeginSocketID == BeginSocket->GetID())
-					NewConnection->RerouteConnections[j]->BeginSocket = BeginSocket;
+					NewConnection->RerouteNodes[j]->BeginSocket = BeginSocket;
 			}
 
 			std::string EndSocketID = root["connections"][ConnectionsList[i]]["reroute_connections"][std::to_string(j)]["end_socket_ID"].asCString();
@@ -426,35 +427,35 @@ VisualNodeArea* VisualNodeArea::FromJson(std::string JsonText)
 			{
 				NodeSocket* EndSocket = NewConnection->In;
 				if (EndSocketID == EndSocket->GetID())
-					NewConnection->RerouteConnections[j]->EndSocket = EndSocket;
+					NewConnection->RerouteNodes[j]->EndSocket = EndSocket;
 			}
 
 			std::string BeginRerouteID = root["connections"][ConnectionsList[i]]["reroute_connections"][std::to_string(j)]["begin_reroute_ID"].asCString();
 			if (BeginRerouteID != "")
 			{
-				VisualNodeRerouteNode* BeginReroute = nullptr;
-				for (size_t k = 0; k < NewConnection->RerouteConnections.size(); k++)
+				RerouteNode* BeginReroute = nullptr;
+				for (size_t k = 0; k < NewConnection->RerouteNodes.size(); k++)
 				{
-					if (BeginRerouteID == NewConnection->RerouteConnections[k]->ID)
-						BeginReroute = NewConnection->RerouteConnections[k];
+					if (BeginRerouteID == NewConnection->RerouteNodes[k]->ID)
+						BeginReroute = NewConnection->RerouteNodes[k];
 				}
 				
 				if (BeginReroute != nullptr)
-					NewConnection->RerouteConnections[j]->BeginReroute = BeginReroute;
+					NewConnection->RerouteNodes[j]->BeginReroute = BeginReroute;
 			}
 
 			std::string EndRerouteID = root["connections"][ConnectionsList[i]]["reroute_connections"][std::to_string(j)]["end_reroute_ID"].asCString();
 			if (EndRerouteID != "")
 			{
-				VisualNodeRerouteNode* EndReroute = nullptr;
-				for (size_t k = 0; k < NewConnection->RerouteConnections.size(); k++)
+				RerouteNode* EndReroute = nullptr;
+				for (size_t k = 0; k < NewConnection->RerouteNodes.size(); k++)
 				{
-					if (EndRerouteID == NewConnection->RerouteConnections[k]->ID)
-						EndReroute = NewConnection->RerouteConnections[k];
+					if (EndRerouteID == NewConnection->RerouteNodes[k]->ID)
+						EndReroute = NewConnection->RerouteNodes[k];
 				}
 
 				if (EndReroute != nullptr)
-					NewConnection->RerouteConnections[j]->EndReroute = EndReroute;
+					NewConnection->RerouteNodes[j]->EndReroute = EndReroute;
 			}
 		}
 	}
@@ -463,19 +464,19 @@ VisualNodeArea* VisualNodeArea::FromJson(std::string JsonText)
 	{
 		float OffsetX = root["renderOffset"]["x"].asFloat();
 		float OffsetY = root["renderOffset"]["y"].asFloat();
-		NewArea->SetAreaRenderOffset(ImVec2(OffsetX, OffsetY));
+		NewArea->SetRenderOffset(ImVec2(OffsetX, OffsetY));
 	}
 
 	return NewArea;
 }
 
-void VisualNodeArea::CopyNodesTo(VisualNodeArea* SourceNodeArea, VisualNodeArea* TargetNodeArea)
+void NodeArea::CopyNodesTo(NodeArea* SourceNodeArea, NodeArea* TargetNodeArea)
 {
 	const size_t NodeShift = TargetNodeArea->Nodes.size();
 	CopyNodesInternal(SourceNodeArea->Nodes, TargetNodeArea, NodeShift);
 }
 
-void VisualNodeArea::LoadFromFile(const char* FileName)
+void NodeArea::LoadFromFile(const char* FileName)
 {
 	std::ifstream NodesFile;
 	NodesFile.open(FileName);
@@ -483,14 +484,14 @@ void VisualNodeArea::LoadFromFile(const char* FileName)
 	const std::string FileData((std::istreambuf_iterator<char>(NodesFile)), std::istreambuf_iterator<char>());
 	NodesFile.close();
 
-	VisualNodeArea* NewNodeArea = VisualNodeArea::FromJson(FileData);
-	VisualNodeArea::CopyNodesTo(NewNodeArea, this);
+	NodeArea* NewNodeArea = NodeArea::FromJson(FileData);
+	NodeArea::CopyNodesTo(NewNodeArea, this);
 	delete NewNodeArea;
 }
 
-std::vector<VisualNode*> VisualNodeArea::GetNodesByName(const std::string NodeName) const
+std::vector<Node*> NodeArea::GetNodesByName(const std::string NodeName) const
 {
-	std::vector<VisualNode*> result;
+	std::vector<Node*> result;
 	for (size_t i = 0; i < Nodes.size(); i++)
 	{
 		if (Nodes[i]->GetName() == NodeName)
@@ -500,9 +501,9 @@ std::vector<VisualNode*> VisualNodeArea::GetNodesByName(const std::string NodeNa
 	return result;
 }
 
-std::vector<VisualNode*> VisualNodeArea::GetNodesByType(const std::string NodeType) const
+std::vector<Node*> NodeArea::GetNodesByType(const std::string NodeType) const
 {
-	std::vector<VisualNode*> result;
+	std::vector<Node*> result;
 	for (size_t i = 0; i < Nodes.size(); i++)
 	{
 		if (Nodes[i]->GetType() == NodeType)
@@ -512,12 +513,12 @@ std::vector<VisualNode*> VisualNodeArea::GetNodesByType(const std::string NodeTy
 	return result;
 }
 
-int VisualNodeArea::GetNodeCount() const
+int NodeArea::GetNodeCount() const
 {
 	return static_cast<int>(Nodes.size());
 }
 
-bool VisualNodeArea::EmptyOrFilledByNulls(const std::vector<VisualNode*> Vector)
+bool NodeArea::EmptyOrFilledByNulls(const std::vector<Node*> Vector)
 {
 	for (size_t i = 0; i < Vector.size(); i++)
 	{
@@ -528,7 +529,7 @@ bool VisualNodeArea::EmptyOrFilledByNulls(const std::vector<VisualNode*> Vector)
 	return true;
 }
 
-VisualNodeConnectionStyle* VisualNodeArea::GetConnectionStyle(const NodeSocket* ParticipantOfConnection) const
+ConnectionStyle* NodeArea::GetConnectionStyle(const NodeSocket* ParticipantOfConnection) const
 {
 	if (ParticipantOfConnection == nullptr)
 		return nullptr;
@@ -542,15 +543,15 @@ VisualNodeConnectionStyle* VisualNodeArea::GetConnectionStyle(const NodeSocket* 
 	return nullptr;
 }
 
-std::vector<VisualNodeConnectionSegment> VisualNodeArea::GetConnectionSegments(const VisualNodeConnection* Connection) const
+std::vector<ConnectionSegment> NodeArea::GetConnectionSegments(const Connection* Connection) const
 {
-	std::vector<VisualNodeConnectionSegment> Result;
-	VisualNodeConnectionSegment CurrentSegment;
+	std::vector<ConnectionSegment> Result;
+	ConnectionSegment CurrentSegment;
 	
 	ImVec2 BeginPosition;
 	ImVec2 EndPosition;
 
-	if (Connection->RerouteConnections.empty())
+	if (Connection->RerouteNodes.empty())
 	{
 		BeginPosition = SocketToPosition(Connection->Out);
 		EndPosition = SocketToPosition(Connection->In);
@@ -563,36 +564,36 @@ std::vector<VisualNodeConnectionSegment> VisualNodeArea::GetConnectionSegments(c
 	}
 	else
 	{
-		for (size_t i = 0; i < Connection->RerouteConnections.size(); i++)
+		for (size_t i = 0; i < Connection->RerouteNodes.size(); i++)
 		{	
 			// First we will add segment from start to current reroute
-			if (Connection->RerouteConnections[i]->BeginSocket != nullptr)
+			if (Connection->RerouteNodes[i]->BeginSocket != nullptr)
 			{
-				BeginPosition = SocketToPosition(Connection->RerouteConnections[i]->BeginSocket);
-				CurrentSegment.BeginSocket = Connection->RerouteConnections[i]->BeginSocket;
+				BeginPosition = SocketToPosition(Connection->RerouteNodes[i]->BeginSocket);
+				CurrentSegment.BeginSocket = Connection->RerouteNodes[i]->BeginSocket;
 			}
 			else
 			{
-				BeginPosition = LocalToScreen(Connection->RerouteConnections[i]->BeginReroute->Position);
-				CurrentSegment.BeginReroute = Connection->RerouteConnections[i]->BeginReroute;
+				BeginPosition = LocalToScreen(Connection->RerouteNodes[i]->BeginReroute->Position);
+				CurrentSegment.BeginReroute = Connection->RerouteNodes[i]->BeginReroute;
 			}
 			
-			EndPosition = LocalToScreen(Connection->RerouteConnections[i]->Position);
-			CurrentSegment.EndReroute = Connection->RerouteConnections[i];
+			EndPosition = LocalToScreen(Connection->RerouteNodes[i]->Position);
+			CurrentSegment.EndReroute = Connection->RerouteNodes[i];
 
 			CurrentSegment.Begin = BeginPosition;
 			CurrentSegment.End = EndPosition;
 			Result.push_back(CurrentSegment);
 
 			// Than we will add segment from current reroute to end, only if it is last reroute
-			if (i == Connection->RerouteConnections.size() - 1)
+			if (i == Connection->RerouteNodes.size() - 1)
 			{
-				CurrentSegment = VisualNodeConnectionSegment();
-				BeginPosition = LocalToScreen(Connection->RerouteConnections[i]->Position);
-				CurrentSegment.BeginReroute = Connection->RerouteConnections[i]/*->BeginReroute*/;
+				CurrentSegment = ConnectionSegment();
+				BeginPosition = LocalToScreen(Connection->RerouteNodes[i]->Position);
+				CurrentSegment.BeginReroute = Connection->RerouteNodes[i];
 
-				EndPosition = SocketToPosition(Connection->RerouteConnections[i]->EndSocket);
-				CurrentSegment.EndSocket = Connection->RerouteConnections[i]->EndSocket;
+				EndPosition = SocketToPosition(Connection->RerouteNodes[i]->EndSocket);
+				CurrentSegment.EndSocket = Connection->RerouteNodes[i]->EndSocket;
 
 				CurrentSegment.Begin = BeginPosition;
 				CurrentSegment.End = EndPosition;
@@ -604,17 +605,25 @@ std::vector<VisualNodeConnectionSegment> VisualNodeArea::GetConnectionSegments(c
 	return Result;
 }
 
-ImVec2 VisualNodeArea::LocalToScreen(ImVec2 LocalPosition) const
+ImVec2 NodeArea::LocalToScreen(ImVec2 LocalPosition) const
 {
-	return ImGui::GetCurrentWindow()->Pos + LocalPosition * Zoom + RenderOffset;
+	ImVec2 WindowPosition = ImVec2(0.0f, 0.0f);
+	if (ImGui::GetCurrentContext()->CurrentWindow != nullptr)
+		WindowPosition = ImGui::GetCurrentWindow()->Pos;
+
+	return WindowPosition + LocalPosition * Zoom + RenderOffset;
 }
 
-ImVec2 VisualNodeArea::ScreenToLocal(ImVec2 ScreenPosition) const
+ImVec2 NodeArea::ScreenToLocal(ImVec2 ScreenPosition) const
 {
-	return (ScreenPosition - ImGui::GetCurrentWindow()->Pos - RenderOffset) / Zoom;
+	ImVec2 WindowPosition = ImVec2(0.0f, 0.0f);
+	if (ImGui::GetCurrentContext()->CurrentWindow != nullptr)
+		WindowPosition = ImGui::GetCurrentWindow()->Pos;
+
+	return (ScreenPosition - WindowPosition - RenderOffset) / Zoom;
 }
 
-std::vector<ImVec2> VisualNodeArea::GetTangentsForLine(const ImVec2 Begin, const ImVec2 End) const
+std::vector<ImVec2> NodeArea::GetTangentsForLine(const ImVec2 Begin, const ImVec2 End) const
 {
 	std::vector<ImVec2> Result;
 	Result.resize(2);

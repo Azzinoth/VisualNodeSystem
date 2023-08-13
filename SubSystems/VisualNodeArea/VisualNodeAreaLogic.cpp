@@ -1,6 +1,7 @@
 #include "VisualNodeArea.h"
+using namespace VisNodeSys;
 
-void VisualNodeArea::AddNode(VisualNode* NewNode)
+void NodeArea::AddNode(Node* NewNode)
 {
 	if (NewNode == nullptr)
 		return;
@@ -9,9 +10,9 @@ void VisualNodeArea::AddNode(VisualNode* NewNode)
 	Nodes.push_back(NewNode);
 }
 
-std::vector<VisualNodeConnection*> VisualNodeArea::GetAllConnections(const NodeSocket* Socket) const
+std::vector<Connection*> NodeArea::GetAllConnections(const NodeSocket* Socket) const
 {
-	std::vector<VisualNodeConnection*> Result;
+	std::vector<Connection*> Result;
 
 	for (size_t i = 0; i < Connections.size(); i++)
 	{
@@ -22,7 +23,7 @@ std::vector<VisualNodeConnection*> VisualNodeArea::GetAllConnections(const NodeS
 	return Result;
 }
 
-VisualNodeConnection* VisualNodeArea::GetConnection(const NodeSocket* FirstSocket, const NodeSocket* SecondSocket) const
+Connection* NodeArea::GetConnection(const NodeSocket* FirstSocket, const NodeSocket* SecondSocket) const
 {
 	for (size_t i = 0; i < Connections.size(); i++)
 	{
@@ -33,16 +34,16 @@ VisualNodeConnection* VisualNodeArea::GetConnection(const NodeSocket* FirstSocke
 	return nullptr;
 }
 
-void VisualNodeArea::Delete(VisualNodeConnection* Connection)
+void NodeArea::Delete(Connection* Connection)
 {
 	if (HoveredConnection == Connection)
 		HoveredConnection = nullptr;
 
 	UnSelect(Connection);
 
-	for (size_t i = 0; i < Connection->RerouteConnections.size(); i++)
+	for (size_t i = 0; i < Connection->RerouteNodes.size(); i++)
 	{
-		Delete(Connection->RerouteConnections[i]);
+		Delete(Connection->RerouteNodes[i]);
 		i--;
 	}
 
@@ -50,16 +51,16 @@ void VisualNodeArea::Delete(VisualNodeConnection* Connection)
 	{
 		if (Connection->In->ConnectedSockets[i] == Connection->Out)
 		{
-			VisualNode* parent = Connection->In->ConnectedSockets[i]->Parent;
+			Node* parent = Connection->In->ConnectedSockets[i]->Parent;
 			if (!bClearing)
-				PropagateNodeEventsCallbacks(parent, VISUAL_NODE_BEFORE_DISCONNECTED);
+				PropagateNodeEventsCallbacks(parent, BEFORE_DISCONNECTED);
 
 			Connection->In->ConnectedSockets.erase(Connection->In->ConnectedSockets.begin() + i, Connection->In->ConnectedSockets.begin() + i + 1);
-			Connection->In->Parent->SocketEvent(Connection->In, Connection->Out, bClearing ? VISUAL_NODE_SOCKET_DESTRUCTION : VISUAL_NODE_SOCKET_DISCONNECTED);
+			Connection->In->Parent->SocketEvent(Connection->In, Connection->Out, bClearing ? DESTRUCTION : DISCONNECTED);
 			i--;
 
 			if (!bClearing)
-				PropagateNodeEventsCallbacks(parent, VISUAL_NODE_AFTER_DISCONNECTED);
+				PropagateNodeEventsCallbacks(parent, AFTER_DISCONNECTED);
 		}
 	}
 
@@ -67,15 +68,15 @@ void VisualNodeArea::Delete(VisualNodeConnection* Connection)
 	{
 		if (Connection->Out->ConnectedSockets[i] == Connection->In)
 		{
-			VisualNode* parent = Connection->Out->ConnectedSockets[i]->Parent;
+			Node* parent = Connection->Out->ConnectedSockets[i]->Parent;
 			if (!bClearing)
-				PropagateNodeEventsCallbacks(parent, VISUAL_NODE_BEFORE_DISCONNECTED);
+				PropagateNodeEventsCallbacks(parent, BEFORE_DISCONNECTED);
 
 			Connection->Out->ConnectedSockets.erase(Connection->Out->ConnectedSockets.begin() + i, Connection->Out->ConnectedSockets.begin() + i + 1);
 			i--;
 
 			if (!bClearing)
-				PropagateNodeEventsCallbacks(parent, VISUAL_NODE_AFTER_DISCONNECTED);
+				PropagateNodeEventsCallbacks(parent, AFTER_DISCONNECTED);
 		}
 	}
 
@@ -90,57 +91,57 @@ void VisualNodeArea::Delete(VisualNodeConnection* Connection)
 	}
 }
 
-void VisualNodeArea::Delete(VisualNodeRerouteNode* RerouteNode)
+void NodeArea::Delete(RerouteNode* RerouteNode)
 {
 	if (RerouteNodeHovered == RerouteNode)
 		RerouteNodeHovered = nullptr;
 
 	UnSelect(RerouteNode);
 
-	VisualNodeConnection* Connection = RerouteNode->Parent;
+	Connection* Connection = RerouteNode->Parent;
 	size_t IndexOfRerouteNode = 0;
-	for (size_t i = 0; i < Connection->RerouteConnections.size(); i++)
+	for (size_t i = 0; i < Connection->RerouteNodes.size(); i++)
 	{
-		if (Connection->RerouteConnections[i] == RerouteNode)
+		if (Connection->RerouteNodes[i] == RerouteNode)
 		{
 			IndexOfRerouteNode = i;
 			break;
 		}
 	}
 
-	if (Connection->RerouteConnections.size() > 1)
+	if (Connection->RerouteNodes.size() > 1)
 	{
 		// If the reroute node is the first one, we need to update the begin socket of the next one
-		if (Connection->RerouteConnections[0] == RerouteNode)
+		if (Connection->RerouteNodes[0] == RerouteNode)
 		{
-			Connection->RerouteConnections[1]->BeginSocket = Connection->RerouteConnections[0]->BeginSocket;
-			Connection->RerouteConnections[1]->BeginReroute = nullptr;
+			Connection->RerouteNodes[1]->BeginSocket = Connection->RerouteNodes[0]->BeginSocket;
+			Connection->RerouteNodes[1]->BeginReroute = nullptr;
 		}
 		// If the reroute node is the last one, we need to update the end socket of the previous one
-		else if (Connection->RerouteConnections.back() == RerouteNode)
+		else if (Connection->RerouteNodes.back() == RerouteNode)
 		{
-			Connection->RerouteConnections[IndexOfRerouteNode - 1]->EndSocket = Connection->RerouteConnections[IndexOfRerouteNode]->EndSocket;
-			Connection->RerouteConnections[IndexOfRerouteNode - 1]->EndReroute = nullptr;
+			Connection->RerouteNodes[IndexOfRerouteNode - 1]->EndSocket = Connection->RerouteNodes[IndexOfRerouteNode]->EndSocket;
+			Connection->RerouteNodes[IndexOfRerouteNode - 1]->EndReroute = nullptr;
 		}
 		// If the reroute node is in the middle, we need to update the previous and next one
 		else
 		{
-			Connection->RerouteConnections[IndexOfRerouteNode - 1]->EndReroute = Connection->RerouteConnections[IndexOfRerouteNode + 1];
-			Connection->RerouteConnections[IndexOfRerouteNode - 1]->EndSocket = nullptr;
+			Connection->RerouteNodes[IndexOfRerouteNode - 1]->EndReroute = Connection->RerouteNodes[IndexOfRerouteNode + 1];
+			Connection->RerouteNodes[IndexOfRerouteNode - 1]->EndSocket = nullptr;
 
-			Connection->RerouteConnections[IndexOfRerouteNode + 1]->BeginReroute = Connection->RerouteConnections[IndexOfRerouteNode - 1];
-			Connection->RerouteConnections[IndexOfRerouteNode + 1]->BeginSocket = nullptr;
+			Connection->RerouteNodes[IndexOfRerouteNode + 1]->BeginReroute = Connection->RerouteNodes[IndexOfRerouteNode - 1];
+			Connection->RerouteNodes[IndexOfRerouteNode + 1]->BeginSocket = nullptr;
 		}
 	}
 
-	if (!Connection->RerouteConnections.empty())
+	if (!Connection->RerouteNodes.empty())
 	{
 		delete RerouteNode;
-		Connection->RerouteConnections.erase(Connection->RerouteConnections.begin() + IndexOfRerouteNode, Connection->RerouteConnections.begin() + IndexOfRerouteNode + 1);
+		Connection->RerouteNodes.erase(Connection->RerouteNodes.begin() + IndexOfRerouteNode, Connection->RerouteNodes.begin() + IndexOfRerouteNode + 1);
 	}
 }
 
-void VisualNodeArea::DeleteNode(const VisualNode* Node)
+void NodeArea::DeleteNode(const Node* Node)
 {
 	if (!Node->bCouldBeDestroyed)
 		return;
@@ -149,7 +150,7 @@ void VisualNodeArea::DeleteNode(const VisualNode* Node)
 	{
 		if (Nodes[i] == Node)
 		{
-			PropagateNodeEventsCallbacks(Nodes[i], VISUAL_NODE_REMOVED);
+			PropagateNodeEventsCallbacks(Nodes[i], REMOVED);
 
 			for (size_t j = 0; j < Nodes[i]->Input.size(); j++)
 			{
@@ -177,7 +178,7 @@ void VisualNodeArea::DeleteNode(const VisualNode* Node)
 	}
 }
 
-void VisualNodeArea::PropagateUpdateToConnectedNodes(const VisualNode* CallerNode) const
+void NodeArea::PropagateUpdateToConnectedNodes(const Node* CallerNode) const
 {
 	if (CallerNode == nullptr)
 		return;
@@ -187,7 +188,7 @@ void VisualNodeArea::PropagateUpdateToConnectedNodes(const VisualNode* CallerNod
 		auto connections = GetAllConnections(CallerNode->Input[i]);
 		for (size_t j = 0; j < connections.size(); j++)
 		{
-			connections[j]->In->GetParent()->SocketEvent(connections[j]->In, connections[j]->Out, VISUAL_NODE_SOCKET_UPDATE);
+			connections[j]->In->GetParent()->SocketEvent(connections[j]->In, connections[j]->Out, UPDATE);
 		}
 	}
 
@@ -196,13 +197,16 @@ void VisualNodeArea::PropagateUpdateToConnectedNodes(const VisualNode* CallerNod
 		auto connections = GetAllConnections(CallerNode->Output[i]);
 		for (size_t j = 0; j < connections.size(); j++)
 		{
-			connections[j]->In->GetParent()->SocketEvent(connections[j]->In, connections[j]->Out, VISUAL_NODE_SOCKET_UPDATE);
+			connections[j]->In->GetParent()->SocketEvent(connections[j]->In, connections[j]->Out, UPDATE);
 		}
 	}
 }
 
-bool VisualNodeArea::TryToConnect(const VisualNode* OutNode, const size_t OutNodeSocketIndex, const VisualNode* InNode, const size_t InNodeSocketIndex)
+bool NodeArea::TryToConnect(const Node* OutNode, const size_t OutNodeSocketIndex, const Node* InNode, const size_t InNodeSocketIndex)
 {
+	if (OutNode == nullptr || InNode == nullptr)
+		return false;
+
 	if (OutNode->Output.size() <= OutNodeSocketIndex)
 		return false;
 
@@ -217,38 +221,38 @@ bool VisualNodeArea::TryToConnect(const VisualNode* OutNode, const size_t OutNod
 
 	if (result)
 	{
-		PropagateNodeEventsCallbacks(OutSocket->GetParent(), VISUAL_NODE_BEFORE_CONNECTED);
-		PropagateNodeEventsCallbacks(InSocket->GetParent(), VISUAL_NODE_BEFORE_CONNECTED);
+		PropagateNodeEventsCallbacks(OutSocket->GetParent(), BEFORE_CONNECTED);
+		PropagateNodeEventsCallbacks(InSocket->GetParent(), BEFORE_CONNECTED);
 
 		OutSocket->ConnectedSockets.push_back(InSocket);
 		InSocket->ConnectedSockets.push_back(OutSocket);
 
-		Connections.push_back(new VisualNodeConnection(OutSocket, InSocket));
+		Connections.push_back(new Connection(OutSocket, InSocket));
 
-		OutSocket->GetParent()->SocketEvent(OutSocket, InSocket, VISUAL_NODE_SOCKET_CONNECTED);
-		InSocket->GetParent()->SocketEvent(InSocket, OutSocket, VISUAL_NODE_SOCKET_CONNECTED);
+		OutSocket->GetParent()->SocketEvent(OutSocket, InSocket, CONNECTED);
+		InSocket->GetParent()->SocketEvent(InSocket, OutSocket, CONNECTED);
 
-		PropagateNodeEventsCallbacks(OutSocket->GetParent(), VISUAL_NODE_AFTER_CONNECTED);
-		PropagateNodeEventsCallbacks(InSocket->GetParent(), VISUAL_NODE_AFTER_CONNECTED);
+		PropagateNodeEventsCallbacks(OutSocket->GetParent(), AFTER_CONNECTED);
+		PropagateNodeEventsCallbacks(InSocket->GetParent(), AFTER_CONNECTED);
 	}
 
 	return result;
 }
 
-void VisualNodeArea::RunOnEachNode(void(*Func)(VisualNode*))
+void NodeArea::RunOnEachNode(void(*Func)(Node*))
 {
 	if (Func != nullptr)
 		std::for_each(Nodes.begin(), Nodes.end(), Func);
 }
 
-void VisualNodeArea::RunOnEachConnectedNode(VisualNode* StartNode, void(*Func)(VisualNode*))
+void NodeArea::RunOnEachConnectedNode(Node* StartNode, void(*Func)(Node*))
 {
 	if (Func == nullptr)
 		return;
 
-	static std::unordered_map<VisualNode*, bool> SeenNodes;
+	static std::unordered_map<Node*, bool> SeenNodes;
 	SeenNodes.clear();
-	auto bWasNodeSeen = [](VisualNode* Node) {
+	auto bWasNodeSeen = [](Node* Node) {
 		if (SeenNodes.find(Node) == SeenNodes.end())
 		{
 			SeenNodes[Node] = true;
@@ -258,7 +262,7 @@ void VisualNodeArea::RunOnEachConnectedNode(VisualNode* StartNode, void(*Func)(V
 		return true;
 	};
 	
-	std::vector<VisualNode*> CurrentNodes;
+	std::vector<Node*> CurrentNodes;
 	CurrentNodes.push_back(StartNode);
 	if (bWasNodeSeen(StartNode))
 		return;
@@ -275,7 +279,7 @@ void VisualNodeArea::RunOnEachConnectedNode(VisualNode* StartNode, void(*Func)(V
 
 			Func(CurrentNodes[i]);
 
-			std::vector<VisualNode*> NewNodes = CurrentNodes[i]->GetNodesConnectedToOutput();
+			std::vector<Node*> NewNodes = CurrentNodes[i]->GetNodesConnectedToOutput();
 			for (size_t j = 0; j < NewNodes.size(); j++)
 			{
 				CurrentNodes.push_back(NewNodes[j]);
@@ -289,8 +293,11 @@ void VisualNodeArea::RunOnEachConnectedNode(VisualNode* StartNode, void(*Func)(V
 	}
 }
 
-bool VisualNodeArea::TryToConnect(const VisualNode* OutNode, const std::string OutSocketID, const VisualNode* InNode, const std::string InSocketID)
+bool NodeArea::TryToConnect(const Node* OutNode, const std::string OutSocketID, const Node* InNode, const std::string InSocketID)
 {
+	if (OutNode == nullptr || InNode == nullptr)
+		return false;
+
 	size_t OutSocketIndex = 0;
 	for (size_t i = 0; i < OutNode->Output.size(); i++)
 	{
@@ -314,12 +321,12 @@ bool VisualNodeArea::TryToConnect(const VisualNode* OutNode, const std::string O
 	return TryToConnect(OutNode, OutSocketIndex, InNode, InSocketIndex);
 }
 
-bool VisualNodeArea::TriggerSocketEvent(NodeSocket* CallerNodeSocket, NodeSocket* TriggeredNodeSocket, VISUAL_NODE_SOCKET_EVENT EventType)
+bool NodeArea::TriggerSocketEvent(NodeSocket* CallerNodeSocket, NodeSocket* TriggeredNodeSocket, NODE_SOCKET_EVENT EventType)
 {
 	if (CallerNodeSocket == nullptr || TriggeredNodeSocket == nullptr)
 		return false;
 
-	if (EventType != VISUAL_NODE_SOCKET_EXECUTE && EventType != VISUAL_NODE_SOCKET_UPDATE)
+	if (EventType != EXECUTE && EventType != UPDATE)
 		return false;
 
 	if (TriggeredNodeSocket->GetParent() == nullptr)
@@ -330,12 +337,12 @@ bool VisualNodeArea::TriggerSocketEvent(NodeSocket* CallerNodeSocket, NodeSocket
 	return true;
 }
 
-bool VisualNodeArea::TriggerOrphanSocketEvent(VisualNode* Node, VISUAL_NODE_SOCKET_EVENT EventType)
+bool NodeArea::TriggerOrphanSocketEvent(Node* Node, NODE_SOCKET_EVENT EventType)
 {
 	if (Node == nullptr)
 		return false;
 
-	if (EventType != VISUAL_NODE_SOCKET_EXECUTE)
+	if (EventType != EXECUTE)
 		return false;
 
 	Node->SocketEvent(nullptr, nullptr, EventType);
@@ -343,7 +350,7 @@ bool VisualNodeArea::TriggerOrphanSocketEvent(VisualNode* Node, VISUAL_NODE_SOCK
 	return true;
 }
 
-void VisualNodeArea::ProcessSocketEventQueue()
+void NodeArea::ProcessSocketEventQueue()
 {
 	while (!SocketEventQueue.empty())
 	{
@@ -352,4 +359,164 @@ void VisualNodeArea::ProcessSocketEventQueue()
 
 		Event.TriggeredNodeSocket->GetParent()->SocketEvent(Event.TriggeredNodeSocket, Event.CallerNodeSocket, Event.EventType);
 	}
+}
+
+bool NodeArea::AddRerouteNode(Connection* Connection, size_t SegmentToDivide, ImVec2 Position)
+{
+	if (Connection == nullptr)
+		return false;
+
+	RerouteNode* NewReroute = new RerouteNode();
+	NewReroute->ID = FocalEngine::APPLICATION.GetUniqueHexID();
+	NewReroute->Parent = Connection;
+	NewReroute->Position = Position;
+
+	if (Connection->RerouteNodes.empty())
+	{
+		NewReroute->BeginSocket = Connection->Out;
+		NewReroute->EndSocket = Connection->In;
+
+		Connection->RerouteNodes.push_back(NewReroute);
+		return true;
+	}
+	else
+	{
+		std::vector<ConnectionSegment> ConnectionSegments = GetConnectionSegments(Connection);
+		if (SegmentToDivide < 0 || SegmentToDivide >= ConnectionSegments.size())
+			return false;
+
+		for (size_t i = 0; i < ConnectionSegments.size(); i++)
+		{
+			if (i == SegmentToDivide)
+			{
+				if (i == 0)
+				{
+					NewReroute->BeginSocket = ConnectionSegments[i].BeginSocket;
+				}
+				else
+				{
+					NewReroute->BeginReroute = Connection->RerouteNodes[i - 1];
+					Connection->RerouteNodes[i - 1]->EndSocket = nullptr;
+					Connection->RerouteNodes[i - 1]->EndReroute = NewReroute;
+				}
+
+				if (i < Connection->RerouteNodes.size())
+				{
+					Connection->RerouteNodes[i]->BeginSocket = nullptr;
+					Connection->RerouteNodes[i]->BeginReroute = NewReroute;
+				}
+
+				NewReroute->EndSocket = ConnectionSegments[i].EndSocket;
+				NewReroute->EndReroute = ConnectionSegments[i].EndReroute;
+
+				Connection->RerouteNodes.insert(Connection->RerouteNodes.begin() + i, NewReroute);
+				return true;
+			}
+		}
+	}
+
+	delete NewReroute;
+	return false;
+}
+
+
+std::vector<std::pair<ImVec2, ImVec2>> NodeArea::GetConnectionSegments(const Node* OutNode, size_t OutNodeSocketIndex, const Node* InNode, size_t InNodeSocketIndex) const
+{
+	std::vector<std::pair<ImVec2, ImVec2>> Result;
+	if (OutNode == nullptr || InNode == nullptr)
+		return Result;
+
+	if (OutNode->Output.size() <= OutNodeSocketIndex)
+		return Result;
+
+	if (InNode->Input.size() <= InNodeSocketIndex)
+		return Result;
+
+	Connection* Connection = GetConnection(OutNode->Output[OutNodeSocketIndex], InNode->Input[InNodeSocketIndex]);
+	if (Connection == nullptr)
+		return Result;
+
+	std::vector<ConnectionSegment> ConnectionSegments = GetConnectionSegments(Connection);
+	for (size_t i = 0; i < ConnectionSegments.size(); i++)
+	{
+		Result.push_back(std::make_pair(ConnectionSegments[i].Begin, ConnectionSegments[i].End));
+	}
+
+	return Result;
+}
+
+std::vector<std::pair<ImVec2, ImVec2>> NodeArea::GetConnectionSegments(const Node* OutNode, std::string OutSocketID, const Node* InNode, std::string InSocketID) const
+{
+	std::vector<std::pair<ImVec2, ImVec2>> Result;
+	if (OutNode == nullptr || InNode == nullptr)
+		return Result;
+
+	size_t OutSocketIndex = 0;
+	for (size_t i = 0; i < OutNode->Output.size(); i++)
+	{
+		if (OutNode->Output[i]->GetID() == OutSocketID)
+		{
+			OutSocketIndex = i;
+			break;
+		}
+	}
+
+	size_t InSocketIndex = 0;
+	for (size_t i = 0; i < InNode->Input.size(); i++)
+	{
+		if (InNode->Input[i]->GetID() == InSocketID)
+		{
+			InSocketIndex = i;
+			break;
+		}
+	}
+
+	return GetConnectionSegments(OutNode, OutSocketIndex, InNode, InSocketIndex);
+}
+
+bool NodeArea::AddRerouteNodeToConnection(const Node* OutNode, size_t OutNodeSocketIndex, const Node* InNode, size_t InNodeSocketIndex, size_t SegmentToDivide, ImVec2 Position)
+{
+	if (OutNode == nullptr || InNode == nullptr)
+		return false;
+
+	if (OutNode->Output.size() <= OutNodeSocketIndex)
+		return false;
+
+	if (InNode->Input.size() <= InNodeSocketIndex)
+		return false;
+
+	Connection* Connection = GetConnection(OutNode->Output[OutNodeSocketIndex], InNode->Input[InNodeSocketIndex]);
+	if (Connection == nullptr)
+		return false;
+
+	return AddRerouteNode(Connection, SegmentToDivide, Position);
+}
+
+bool NodeArea::AddRerouteNodeToConnection(const Node* OutNode, std::string OutSocketID, const Node* InNode, std::string InSocketID, size_t SegmentToDivide, ImVec2 Position)
+{
+	std::vector<int> Result;
+	if (OutNode == nullptr || InNode == nullptr)
+		return false;
+
+	size_t OutSocketIndex = 0;
+	for (size_t i = 0; i < OutNode->Output.size(); i++)
+	{
+		if (OutNode->Output[i]->GetID() == OutSocketID)
+		{
+			OutSocketIndex = i;
+			break;
+		}
+	}
+
+	size_t InSocketIndex = 0;
+	for (size_t i = 0; i < InNode->Input.size(); i++)
+	{
+		if (InNode->Input[i]->GetID() == InSocketID)
+		{
+			InSocketIndex = i;
+			break;
+		}
+	}
+
+	return AddRerouteNodeToConnection(OutNode, OutSocketIndex, InNode, InSocketIndex, SegmentToDivide, Position);
 }
