@@ -5,7 +5,7 @@ ImVec2 NodeArea::NeededShift = ImVec2();
 
 NodeArea::NodeArea()
 {
-	SetAreaSize(ImVec2(256, 256));
+	SetSize(ImVec2(256, 256));
 };
 
 NodeArea::~NodeArea() 
@@ -15,20 +15,20 @@ NodeArea::~NodeArea()
 
 ImVec2 NodeArea::GetSize() const
 {
-	return AreaSize;
+	return Size;
 }
 
-void NodeArea::SetAreaSize(const ImVec2 NewValue)
+void NodeArea::SetSize(const ImVec2 NewValue)
 {
 	if (NewValue.x < 1 || NewValue.y < 1)
 		return;
 
-	AreaSize = NewValue;
+	Size = NewValue;
 }
 
 ImVec2 NodeArea::GetPosition() const
 {
-	return AreaPosition;
+	return Position;
 }
 
 void NodeArea::SetPosition(const ImVec2 NewValue)
@@ -36,7 +36,7 @@ void NodeArea::SetPosition(const ImVec2 NewValue)
 	if (NewValue.x < 0 || NewValue.y < 0)
 		return;
 
-	AreaPosition = NewValue;
+	Position = NewValue;
 }
 
 void NodeArea::Update()

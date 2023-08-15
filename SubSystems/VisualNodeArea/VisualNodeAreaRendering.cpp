@@ -229,13 +229,13 @@ void NodeArea::Render()
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
 	ImGui::PushStyleColor(ImGuiCol_ChildBg, GridBackgroundColor);
 
-	const ImVec2 CurrentPosition = ImGui::GetCurrentWindow()->Pos + AreaPosition;
+	const ImVec2 CurrentPosition = ImGui::GetCurrentWindow()->Pos + Position;
 	ImGui::SetNextWindowPos(CurrentPosition);
 
 	if (bFillWindow)
 	{
 		auto NodeAreaParentWindow = ImGui::GetCurrentWindow();
-		SetAreaSize(NodeAreaParentWindow->Size - ImVec2(2, 2));
+		SetSize(NodeAreaParentWindow->Size - ImVec2(2, 2));
 	}
 
 	ImGui::BeginChild("Nodes area", GetSize(), true, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoMove);
@@ -578,12 +578,12 @@ ImVec2 NodeArea::GetRenderedViewCenter() const
 	}
 }
 
-bool NodeArea::IsAreaFillingWindow()
+bool NodeArea::IsFillingWindow()
 {
 	return bFillWindow;
 }
 
-void NodeArea::SetIsAreaFillingWindow(bool NewValue)
+void NodeArea::SetIsFillingWindow(bool NewValue)
 {
 	bFillWindow = NewValue;
 }

@@ -40,7 +40,7 @@ void NodeArea::MouseInputUpdate()
 			break;
 	}
 
-	if (ImGui::IsMouseDragging(0) && MouseDownIn == NodeAreaWindow)
+	if (ImGui::IsMouseDragging(0) && MouseDownIn == NodeAreaWindow && ImGui::GetHoveredID() == 0)
 		MouseDragging();
 
 	if (ImGui::IsMouseClicked(0))

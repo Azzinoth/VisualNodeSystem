@@ -30,7 +30,7 @@ namespace VisNodeSys
 		void SetPosition(ImVec2 NewValue);
 
 		ImVec2 GetSize() const;
-		void SetAreaSize(ImVec2 NewValue);
+		void SetSize(ImVec2 NewValue);
 
 		ImVec2 GetRenderOffset() const;
 		void SetRenderOffset(ImVec2 Offset);
@@ -45,8 +45,8 @@ namespace VisNodeSys
 		std::vector<Node*> GetNodesByType(std::string NodeType) const;
 
 		bool IsMouseHovered() const;
-		bool IsAreaFillingWindow();
-		void SetIsAreaFillingWindow(bool NewValue);
+		bool IsFillingWindow();
+		void SetIsFillingWindow(bool NewValue);
 		int GetNodeCount() const;
 
 		void Update();
@@ -143,8 +143,8 @@ namespace VisNodeSys
 		bool bOpenMainContextMenu = false;
 		std::vector<Connection*> Connections;
 
-		ImVec2 AreaPosition;
-		ImVec2 AreaSize;
+		ImVec2 Position;
+		ImVec2 Size;
 		ImU32 GridBackgroundColor = IM_COL32(32, 32, 32, 255);
 		ImVec4 GridLinesColor = ImVec4(53.0f / 255.0f, 53.0f / 255.0f, 53.0f / 255.0f, 0.5f);
 		ImVec4 GridBoldLinesColor = ImVec4(27.0f / 255.0f, 27.0f / 255.0f, 27.0f / 255.0f, 1.0f);
