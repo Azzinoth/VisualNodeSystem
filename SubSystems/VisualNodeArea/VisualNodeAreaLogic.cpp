@@ -367,7 +367,7 @@ bool NodeArea::AddRerouteNode(Connection* Connection, size_t SegmentToDivide, Im
 		return false;
 
 	RerouteNode* NewReroute = new RerouteNode();
-	NewReroute->ID = FocalEngine::APPLICATION.GetUniqueHexID();
+	NewReroute->ID = GetUniqueHexID();
 	NewReroute->Parent = Connection;
 	NewReroute->Position = Position;
 

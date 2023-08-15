@@ -311,7 +311,7 @@ void NodeArea::DrawHermiteLine(const ImVec2 Begin, const ImVec2 End, const int S
 
 	if (Style->bMarchingAntsEffect)
 	{
-		double Time = glfwGetTime();
+		double Time = std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
 		int Offset = static_cast<int>(Time * 20.0f * Style->MarchingAntsSpeed) % Steps;
 		ImVec2 LastPoint = ImVec2(0, 0);
 
@@ -362,7 +362,7 @@ void NodeArea::DrawHermiteLine(const ImVec2 Begin, const ImVec2 End, const int S
 			CurrentDrawList->PathLineTo(ImVec2(h1 * Begin.x + h2 * End.x + h3 * LineTangents[0].x + h4 * LineTangents[1].x, h1 * Begin.y + h2 * End.y + h3 * LineTangents[0].y + h4 * LineTangents[1].y));
 		}
 
-		double Time = glfwGetTime();
+		double Time = std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
 		float Pulse = static_cast<float>((sin(Time * 5 * Style->PulseSpeed) + 1.0f) / 2.0f);
 		Pulse = glm::max(Style->PulseMin, Pulse);
 		ImColor PulseColor = ImColor(Color.Value.x, Color.Value.y, Color.Value.z, Pulse);

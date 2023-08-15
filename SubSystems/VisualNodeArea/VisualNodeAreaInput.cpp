@@ -105,7 +105,7 @@ void NodeArea::LeftMouseClickNodesUpdate()
 {
 	if (HoveredNode != nullptr)
 	{
-		if (!IsSelected(HoveredNode) && !ImGui::IsKeyDown(static_cast<ImGuiKey>(GLFW_KEY_LEFT_CONTROL)) && !ImGui::IsKeyDown(static_cast<ImGuiKey>(GLFW_KEY_RIGHT_CONTROL)))
+		if (!IsSelected(HoveredNode) && !ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && !ImGui::IsKeyDown(ImGuiKey_RightCtrl))
 			SelectedNodes.clear();
 
 		// If it is new selection
@@ -124,7 +124,7 @@ void NodeArea::LeftMouseClickConnectionsUpdate()
 {
 	if (HoveredConnection != nullptr)
 	{
-		if (!IsSelected(HoveredConnection) && !ImGui::IsKeyDown(static_cast<ImGuiKey>(GLFW_KEY_LEFT_CONTROL)) && !ImGui::IsKeyDown(static_cast<ImGuiKey>(GLFW_KEY_RIGHT_CONTROL)))
+		if (!IsSelected(HoveredConnection) && !ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && !ImGui::IsKeyDown(ImGuiKey_RightCtrl))
 			UnSelectAllConnections();
 
 		// If it is new selection
@@ -143,7 +143,7 @@ void NodeArea::LeftMouseClickRerouteUpdate()
 {
 	if (RerouteNodeHovered != nullptr || (HoveredNode != nullptr && IsSelected(HoveredNode)))
 	{
-		if (!IsSelected(RerouteNodeHovered) && !ImGui::IsKeyDown(static_cast<ImGuiKey>(GLFW_KEY_LEFT_CONTROL)) && !ImGui::IsKeyDown(static_cast<ImGuiKey>(GLFW_KEY_RIGHT_CONTROL)))
+		if (!IsSelected(RerouteNodeHovered) && !ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && !ImGui::IsKeyDown(ImGuiKey_RightCtrl))
 		{
 			if (!(HoveredNode != nullptr && IsSelected(HoveredNode)))
 				UnSelectAllRerouteNodes();
@@ -225,7 +225,7 @@ void NodeArea::RightMouseClickRerouteUpdate()
 
 void NodeArea::MouseDragging()
 {
-	if (ImGui::IsKeyDown(static_cast<ImGuiKey>(GLFW_KEY_LEFT_SHIFT)) || ImGui::IsKeyDown(static_cast<ImGuiKey>(GLFW_KEY_RIGHT_SHIFT)))
+	if (ImGui::IsKeyDown(ImGuiKey_LeftShift) || ImGui::IsKeyDown(ImGuiKey_RightShift))
 	{
 		SocketLookingForConnection = nullptr;
 
@@ -362,7 +362,7 @@ void NodeArea::MouseDraggingRerouteUpdate()
 
 void NodeArea::KeyboardInputUpdate()
 {
-	if (ImGui::IsKeyDown(static_cast<ImGuiKey>(GLFW_KEY_DELETE)))
+	if (ImGui::IsKeyDown(ImGuiKey_Delete))
 	{
 		for (size_t i = 0; i < SelectedNodes.size(); i++)
 		{
@@ -384,24 +384,24 @@ void NodeArea::KeyboardInputUpdate()
 	}
 
 	static bool WasCopiedToClipboard = false;
-	if (ImGui::IsKeyDown(static_cast<ImGuiKey>(GLFW_KEY_LEFT_CONTROL)) || ImGui::IsKeyDown(static_cast<ImGuiKey>(GLFW_KEY_RIGHT_CONTROL)))
+	if (ImGui::IsKeyDown(ImGuiKey_LeftCtrl) || ImGui::IsKeyDown(ImGuiKey_RightCtrl))
 	{
-		if (ImGui::IsKeyDown(static_cast<ImGuiKey>(GLFW_KEY_C)))
+		if (ImGui::IsKeyDown(ImGuiKey_C))
 		{
 			if (!SelectedNodes.empty())
 			{
 				const NodeArea* NewNodeArea = NodeArea::CreateNodeArea(SelectedNodes);
-				FocalEngine::APPLICATION.SetClipboardText(NewNodeArea->ToJson());
+				SetClipboardText(NewNodeArea->ToJson());
 				delete NewNodeArea;
 			}
 		}
-		else if (ImGui::IsKeyDown(static_cast<ImGuiKey>(GLFW_KEY_V)))
+		else if (ImGui::IsKeyDown(ImGuiKey_V))
 		{
 			if (!WasCopiedToClipboard)
 			{
 				WasCopiedToClipboard = true;
 
-				const std::string NodesToImport = FocalEngine::APPLICATION.GetClipboardText();
+				const std::string NodesToImport = GetClipboardText();
 				Json::Value data;
 
 				JSONCPP_STRING err;
@@ -460,7 +460,7 @@ void NodeArea::KeyboardInputUpdate()
 		}
 	}
 
-	if (!ImGui::IsKeyDown(static_cast<ImGuiKey>(GLFW_KEY_V)))
+	if (!ImGui::IsKeyDown(ImGuiKey_V))
 		WasCopiedToClipboard = false;
 }
 

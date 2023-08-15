@@ -33,6 +33,7 @@ file(GLOB VisualNodeSystem_SRC
 	"VisualNode.h"
 	"VisualNodeSocket.cpp"
 	"VisualNodeSocket.h"
+	"VisualNodeCore.h"
 )
 
 # *************** THIRD_PARTY ***************

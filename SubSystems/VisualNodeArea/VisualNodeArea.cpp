@@ -187,7 +187,7 @@ void NodeArea::ProcessConnections(const std::vector<NodeSocket*>& Sockets,
 					{
 						RerouteNode* OldReroute = OldConnection->RerouteNodes[j];
 						RerouteNode* NewReroute = new RerouteNode();
-						NewReroute->ID = FocalEngine::APPLICATION.GetUniqueHexID();
+						NewReroute->ID = GetUniqueHexID();
 						NewReroute->Parent = NewConnection;
 						NewReroute->Position = OldReroute->Position;
 

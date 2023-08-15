@@ -8,7 +8,7 @@ NodeSocket::NodeSocket(Node* Parent, const std::string Type, const std::string N
 	this->Parent = Parent;
 	this->Type = Type;
 	this->Name = Name;
-	this->ID = FocalEngine::APPLICATION.GetUniqueHexID();
+	this->ID = GetUniqueHexID();
 	this->bOutput = bOutput;
 	this->OutputData = OutputDataFunction;
 }

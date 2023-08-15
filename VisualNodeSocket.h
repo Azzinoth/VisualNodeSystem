@@ -1,26 +1,15 @@
 #pragma once
 
-#include "FEBasicApplication.h"
-
-#include <fstream>
-#include <functional>
-#include <unordered_map>
-
-#include "glm/vec2.hpp"
-#include "glm/vec3.hpp"
-#include "glm/trigonometric.hpp"
-#include "glm/geometric.hpp"
-
-#include "jsoncpp/json/json.h"
+#include "VisualNodeCore.h"
 
 namespace VisNodeSys
 {
-	class Node;
-
 #define NODE_SOCKET_SIZE 5.0f
 #define DEFAULT_NODE_SOCKET_COLOR ImColor(150, 150, 150)
 #define DEFAULT_CONNECTION_COLOR ImColor(200, 200, 200)
 #define DEFAULT_NODE_SOCKET_MOUSE_HOVERED_CONNECTION_COLOR ImColor(220, 220, 220)
+
+	class Node;
 
 	class NodeSocket
 	{

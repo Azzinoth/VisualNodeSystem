@@ -5,7 +5,7 @@ Node::Node(const std::string ID)
 {
 	this->ID = ID;
 	if (ID.empty())
-		this->ID = FocalEngine::APPLICATION.GetUniqueHexID();
+		this->ID = GetUniqueHexID();
 
 	SetSize(ImVec2(200, 80));
 	SetName("VisualNode");
@@ -15,7 +15,7 @@ Node::Node(const std::string ID)
 Node::Node(const Node& Src)
 {
 	ParentArea = Src.ParentArea;
-	ID = FocalEngine::APPLICATION.GetUniqueHexID();
+	ID = GetUniqueHexID();
 	Position = Src.Position;
 	Size = Src.Size;
 
