@@ -1,6 +1,6 @@
-# VisualNode System
+# Visual Node System
 
-![build](https://github.com/Azzinoth/VisualNodeSystem/actions/workflows/Build.yml/badge.svg?branch=master)
+![build](https://github.com/Azzinoth/VisualNodeSystem-Example/actions/workflows/Build.yml/badge.svg?branch=master)
 
 _**In the near future, I plan to make this repo more lightweight and much easier to integrate into your projects. It will no longer include the submodule 'FEBasicApplication'. This submodule has been used to consolidate useful functionalities for all my graphics-related projects in one place. 'FEBasicApplication' includes a partial but unmodified version of the Dear ImGui docking branch.**_
 

@@ -4,10 +4,8 @@
 #include "windows.h"
 #define IMGUI_DEFINE_MATH_OPERATORS
 
-#include "FEBasicApplication.h"
-
-//#include "../FEBasicApplication/ThirdParty/imgui/imgui.h"
-//#include "../FEBasicApplication/ThirdParty/imgui/imgui_internal.h"
+#include "imgui.h"
+#include "imgui_internal.h"
 #include <random>
 #include <queue>
 #include <chrono>

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.10)
 
 set(BUILD_TYPE "Debug and Release" CACHE STRING "Choose Build type")
 set(CMAKE_BUILD_TYPE Debug)
@@ -11,10 +11,6 @@ project(VisualNodeSystem LANGUAGES CXX)
 # It creates "CMakePredefinedTargets" folder by default and adds CMake
 # defined projects like INSTALL.vcproj and ZERO_CHECK.vcproj
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
-
-if(NOT TARGET FEBasicApplication)
-  add_subdirectory(SubSystems/FEBasicApplication)
-endif()
 
 file(GLOB VisualNodeArea_SRC
 	"SubSystems/VisualNodeArea/VisualNodeArea.cpp"
@@ -55,8 +51,6 @@ add_library(VisualNodeSystem
 			${jsoncpp_SRC}
 )
 
-target_link_libraries(VisualNodeSystem FEBasicApplication)
-
 source_group("Source Files" FILES ${VisualNodeSystem_SRC})
 source_group("Source Files/SubSystems/VisualNodeArea/" FILES ${VisualNodeArea_SRC})
 # *************** THIRD_PARTY ***************
@@ -68,19 +62,8 @@ set(VISUAL_NODE_SYSTEM_THIRDPARTY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty)
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT VisualNodeSystem)
 
 include_directories(
-	${GLEW_INCLUDE_DIR}
-	${BASICAPP_THIRDPARTY_DIR}
-	${BASICAPP_DIR}
 	${VISUAL_NODE_SYSTEM_THIRDPARTY_DIR}
 )
 
 set(VISUAL_NODE_SYSTEM_THIRDPARTY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty PARENT_SCOPE)
 set(VISUAL_NODE_SYSTEM_DIR ${CMAKE_CURRENT_SOURCE_DIR} PARENT_SCOPE)
-
-# Re-export of the variables from child projects
-set(GLEW_LIB_DIR ${GLEW_LIB_DIR} PARENT_SCOPE)
-set(GLFW_LIB_DIR ${GLFW_LIB_DIR} PARENT_SCOPE)
-
-set(GLEW_INCLUDE_DIR ${GLEW_INCLUDE_DIR} PARENT_SCOPE)
-set(BASICAPP_THIRDPARTY_DIR ${BASICAPP_THIRDPARTY_DIR} PARENT_SCOPE)
-set(BASICAPP_DIR ${BASICAPP_DIR} PARENT_SCOPE)
