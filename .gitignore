@@ -22,4 +22,5 @@ cmake_install.cmake
 Debug/
 Release/
 .vs/
+.idea/
 CMakeFiles/

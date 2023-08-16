@@ -1,11 +1,17 @@
 #pragma once
 
+#ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include "windows.h"
-#define IMGUI_DEFINE_MATH_OPERATORS
+#elif __linux__
+#include <X11/Xlib.h>
+#include <X11/Xatom.h>
+#endif
 
+#define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui.h"
 #include "imgui_internal.h"
+
 #include <random>
 #include <queue>
 #include <chrono>
@@ -113,6 +119,7 @@ return result;
 
 	static bool SetClipboardText(std::string Text)
 	{
+#ifdef _WIN32
 		if (OpenClipboard(nullptr))
 		{
 			EmptyClipboard();
@@ -126,7 +133,27 @@ return result;
 			CloseClipboard();
 			return true;
 		}
+#elif __linux__
+		Display* display = XOpenDisplay(nullptr);
+		Window root = DefaultRootWindow(display);
 
+		Atom clipboard = XInternAtom(display, "CLIPBOARD", False);
+		Atom utf8 = XInternAtom(display, "UTF8_STRING", False);
+
+		XSetSelectionOwner(display, clipboard, None, CurrentTime);
+
+		if (XGetSelectionOwner(display, clipboard) != None)
+		{
+			XSetSelectionOwner(display, clipboard, None, CurrentTime);
+			XCloseDisplay(display);
+			return false;
+		}
+
+		XChangeProperty(display, root, clipboard, utf8, 8, PropModeReplace, (unsigned char*)Text.c_str(), Text.size());
+
+		XCloseDisplay(display);
+		return true;
+#endif
 		return false;
 	}
 
@@ -134,6 +161,7 @@ return result;
 	{
 		std::string text;
 
+#ifdef _WIN32
 		if (OpenClipboard(nullptr))
 		{
 			HANDLE data = nullptr;
@@ -147,7 +175,38 @@ return result;
 
 			CloseClipboard();
 		}
+#elif __linux__
+		Display* display = XOpenDisplay(nullptr);
+		Window root = DefaultRootWindow(display);
 
+		Atom clipboard = XInternAtom(display, "CLIPBOARD", False);
+
+		Atom actualType;
+		int actualFormat;
+		unsigned long itemCount, bytesAfter;
+		unsigned char* data = nullptr;
+
+		XGetWindowProperty(display, root, clipboard, 0, 0, False, AnyPropertyType,
+		                   &actualType, &actualFormat, &itemCount, &bytesAfter, &data);
+
+		if(data != nullptr)
+		{
+			XFree(data);
+			data = nullptr;
+
+			XGetWindowProperty(display, root, clipboard, 0, bytesAfter, False, AnyPropertyType,
+			                   &actualType, &actualFormat, &itemCount, &bytesAfter, &data);
+
+			if(data != nullptr)
+			{
+				text = reinterpret_cast<char*>(data);
+				XFree(data);
+				return text;
+			}
+		}
+
+		XCloseDisplay(display);
+#endif
 		return text;
 	}
 }
