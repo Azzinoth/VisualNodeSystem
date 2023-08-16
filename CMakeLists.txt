@@ -61,7 +61,11 @@ set(VISUAL_NODE_SYSTEM_THIRDPARTY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty)
 # set the startup project
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT VisualNodeSystem)
 
+# Promt to give Dear ImGui path
+set(DEAR_IMGUI_INCLUDE_DIR "" CACHE PATH "Path to Dear ImGui directory.")
+
 include_directories(
+	${DEAR_IMGUI_INCLUDE_DIR}
 	${VISUAL_NODE_SYSTEM_THIRDPARTY_DIR}
 )
 
