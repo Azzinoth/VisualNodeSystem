@@ -14,11 +14,14 @@ This library provides a powerful framework for creating and managing visual node
 
 - **Unchanged Dear Imgui**: This project does not depend on modifications to Dear Imgui.
 
-- **Smooth Zoom**: A precise and dynamic zoom functionality, allowing for detailed viewing and efficient navigation.
+- **Zoom**: Zoom functionality enables detailed viewing and efficient navigation. The font system ensures precise text rendering at various zoom levels.
+<div align="center">
+    <img src="https://github.com/Azzinoth/VisualNodeSystem/blob/media/Zoom.gif" width="60%">
+</div>
 
 - **Reroute Nodes**: Reroute nodes offer enhanced organization for clearer, more readable visual graphs, enabling flexible customization of connection paths. Also they simplify debugging by making connections traceable. To add reroute node just double click on connection.
 <div align="center">
-    <img src="https://github.com/Azzinoth/VisualNodeSystem/blob/media/Reroute%20Node%20example.png" width="60%">
+    <img src="https://github.com/Azzinoth/VisualNodeSystem/blob/media/RerouteNodes.gif" width="60%">
 </div>
 
 - **Flexible Socket Management**: The library offers functionalities for managing node sockets (input/output). These sockets serve as points of data connection between different nodes.
