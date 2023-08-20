@@ -24,11 +24,11 @@ void NodeArea::RenderNode(Node* Node) const
 		{
 			const ImVec2 LeftTop = Node->LeftTop - ImVec2(4.0f, 4.0f);
 			const ImVec2 RightBottom = Node->RightBottom + ImVec2(4.0f, 4.0f);
-			ImGui::GetWindowDrawList()->AddRect(LeftTop, RightBottom, IM_COL32(175, 255, 175, 255), 16.0f * Zoom);
+			ImGui::GetWindowDrawList()->AddRect(LeftTop, RightBottom, ImGui::GetColorU32(Settings.Style.NodeSelectionColor), 16.0f * Zoom);
 		}
 		else if (Node->GetStyle() == CIRCLE)
 		{
-			ImGui::GetWindowDrawList()->AddCircle(Node->LeftTop + ImVec2(NODE_DIAMETER / 2.0f, NODE_DIAMETER / 2.0f) * Zoom, NODE_DIAMETER * Zoom + 4.0f, IM_COL32(175, 255, 175, 255), 32, 4.0f);
+			ImGui::GetWindowDrawList()->AddCircle(Node->LeftTop + ImVec2(NODE_DIAMETER / 2.0f, NODE_DIAMETER / 2.0f) * Zoom, NODE_DIAMETER * Zoom + 4.0f, ImGui::GetColorU32(Settings.Style.NodeSelectionColor), 32, 4.0f);
 		}
 	}
 
@@ -48,7 +48,7 @@ void NodeArea::RenderNode(Node* Node) const
 	ImGui::SetCursorScreenPos(Node->LeftTop);
 
 	// Drawing node background layer.
-	const ImU32 NodeBackgroundColor = (HoveredNode == Node || IsSelected(Node)) ? IM_COL32(75, 75, 75, 125) : IM_COL32(60, 60, 60, 125);
+	const ImU32 NodeBackgroundColor = (HoveredNode == Node || IsSelected(Node)) ? ImGui::GetColorU32(Settings.Style.NodeBackgroundColor) : ImGui::GetColorU32(Settings.Style.HoveredNodeBackgroundColor);
 	if (Node->GetStyle() == DEFAULT)
 	{
 		CurrentDrawList->AddRectFilled(Node->LeftTop, Node->RightBottom, NodeBackgroundColor, 8.0f * Zoom);
@@ -154,7 +154,7 @@ void NodeArea::RenderNodeSocket(NodeSocket* Socket) const
 			ConnectionColor = NodeSocket::SocketTypeToColorAssosiations[SocketLookingForConnection->GetType()];
 		
 		CurrentDrawList->ChannelsSetCurrent(3);
-		DrawHermiteLine(SocketPosition, ImGui::GetIO().MousePos, LineSegments, ConnectionColor, &DefaultConnectionStyle);
+		DrawHermiteLine(SocketPosition, ImGui::GetIO().MousePos, Settings.Style.GeneralConnection.LineSegments, ConnectionColor, &DefaultConnectionStyle);
 	}
 
 	// Draw socket icon.
@@ -178,44 +178,78 @@ void NodeArea::RenderGrid(ImVec2 CurrentPosition) const
 	float ZoomedGridStep = NODE_GRID_STEP * Zoom;
 	
 	// Horizontal lines
-	const int StartingStep = static_cast<int>(ceil(-GRID_SIZE));
-	const int StepCount = static_cast<int>(ceil(GRID_SIZE));
+	const int StartingStep = static_cast<int>(ceil(-Settings.Style.Grid.GRID_SIZE));
+	const int StepCount = static_cast<int>(ceil(Settings.Style.Grid.GRID_SIZE));
 	for (int i = StartingStep; i < StepCount; i++)
 	{
-		ImVec2 from = ImVec2(CurrentPosition.x - GRID_SIZE * Zoom, CurrentPosition.y + i * ZoomedGridStep);
-		ImVec2 to = ImVec2(CurrentPosition.x + GRID_SIZE * Zoom * 4, CurrentPosition.y + i * ZoomedGridStep);
+		ImVec2 from = ImVec2(CurrentPosition.x - Settings.Style.Grid.GRID_SIZE * Zoom, CurrentPosition.y + i * ZoomedGridStep);
+		ImVec2 to = ImVec2(CurrentPosition.x + Settings.Style.Grid.GRID_SIZE * Zoom * 4, CurrentPosition.y + i * ZoomedGridStep);
 
-		if (i % BOLD_LINE_FREQUENCY != 0)
+		if (i % Settings.Style.Grid.BOLD_LINE_FREQUENCY != 0)
 		{
 			CurrentDrawList->ChannelsSetCurrent(1);
-			CurrentDrawList->AddLine(from, to, ImGui::GetColorU32(GridLinesColor), DEFAULT_LINE_WIDTH);
+			CurrentDrawList->AddLine(from, to, ImGui::GetColorU32(Settings.Style.Grid.GridLinesColor), Settings.Style.Grid.DEFAULT_LINE_WIDTH);
 		}
 		else
 		{
 			CurrentDrawList->ChannelsSetCurrent(0);
-			CurrentDrawList->AddLine(from, to, ImGui::GetColorU32(GridBoldLinesColor), BOLD_LINE_WIDTH);
+			CurrentDrawList->AddLine(from, to, ImGui::GetColorU32(Settings.Style.Grid.GridBoldLinesColor), Settings.Style.Grid.BOLD_LINE_WIDTH);
 		}
 	}
 
 	// Vertical lines
 	for (int i = StartingStep; i < StepCount; i++)
 	{
-		ImVec2 from = ImVec2(CurrentPosition.x + i * ZoomedGridStep, CurrentPosition.y - GRID_SIZE * Zoom);
-		ImVec2 to = ImVec2(CurrentPosition.x + i * ZoomedGridStep, CurrentPosition.y + GRID_SIZE * Zoom * 4);
+		ImVec2 from = ImVec2(CurrentPosition.x + i * ZoomedGridStep, CurrentPosition.y - Settings.Style.Grid.GRID_SIZE * Zoom);
+		ImVec2 to = ImVec2(CurrentPosition.x + i * ZoomedGridStep, CurrentPosition.y + Settings.Style.Grid.GRID_SIZE * Zoom * 4);
 
-		if (i % BOLD_LINE_FREQUENCY != 0)
+		if (i % Settings.Style.Grid.BOLD_LINE_FREQUENCY != 0)
 		{
 			CurrentDrawList->ChannelsSetCurrent(1);
-			CurrentDrawList->AddLine(from, to, ImGui::GetColorU32(GridLinesColor), DEFAULT_LINE_WIDTH);
+			CurrentDrawList->AddLine(from, to, ImGui::GetColorU32(Settings.Style.Grid.GridLinesColor), Settings.Style.Grid.DEFAULT_LINE_WIDTH);
 		}
 		else
 		{
 			CurrentDrawList->ChannelsSetCurrent(0);
-			CurrentDrawList->AddLine(from, to, ImGui::GetColorU32(GridBoldLinesColor), BOLD_LINE_WIDTH);
+			CurrentDrawList->AddLine(from, to, ImGui::GetColorU32(Settings.Style.Grid.GridBoldLinesColor), Settings.Style.Grid.BOLD_LINE_WIDTH);
 		}
 	}
 
 	CurrentDrawList->ChannelsMerge();
+}
+
+void NodeArea::SelectFontSettings() const
+{
+	if (Zoom < 0.25f)
+	{
+		ImGui::PushFont(NODE_CORE.Fonts[0]);
+		ImGui::SetWindowFontScale(Zoom * 4);
+	}
+	else if (Zoom >= 0.25f && Zoom < 0.5f)
+	{
+		ImGui::PushFont(NODE_CORE.Fonts[1]);
+		ImGui::SetWindowFontScale(Zoom * 2);
+	}
+	else if (Zoom >= 1.0f && Zoom < 1.5f)
+	{
+		ImGui::PushFont(NODE_CORE.Fonts[2]);
+		ImGui::SetWindowFontScale(Zoom);
+	}
+	else if (Zoom >= 1.5f && Zoom < 3.0f)
+	{
+		ImGui::PushFont(NODE_CORE.Fonts[3]);
+		ImGui::SetWindowFontScale(Zoom / 2.0f);
+	}
+	else if (Zoom >= 3.0f)
+	{
+		ImGui::PushFont(NODE_CORE.Fonts[4]);
+		ImGui::SetWindowFontScale(Zoom / 3.0f);
+	}
+	else
+	{
+		ImGui::PushFont(NODE_CORE.Fonts[2]);
+		ImGui::SetWindowFontScale(Zoom);
+	}
 }
 
 void NodeArea::Render()
@@ -227,7 +261,7 @@ void NodeArea::Render()
 	
 	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(1, 1));
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-	ImGui::PushStyleColor(ImGuiCol_ChildBg, GridBackgroundColor);
+	ImGui::PushStyleColor(ImGuiCol_ChildBg, Settings.Style.Grid.GridBackgroundColor);
 
 	const ImVec2 CurrentPosition = ImGui::GetCurrentWindow()->Pos + Position;
 	ImGui::SetNextWindowPos(CurrentPosition);
@@ -240,7 +274,7 @@ void NodeArea::Render()
 
 	ImGui::BeginChild("Nodes area", GetSize(), true, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoMove);
 
-	ImGui::SetWindowFontScale(Zoom);
+	SelectFontSettings();
 
 	NodeAreaWindow = ImGui::GetCurrentWindow();
 	CurrentDrawList = ImGui::GetWindowDrawList();
@@ -293,9 +327,10 @@ void NodeArea::Render()
 	if (MouseSelectRegionMin.x != FLT_MAX && MouseSelectRegionMin.y != FLT_MAX &&
 		MouseSelectRegionMax.x != FLT_MAX && MouseSelectRegionMax.y != FLT_MAX)
 	{
-		ImGui::GetWindowDrawList()->AddRectFilled(MouseSelectRegionMin, MouseSelectRegionMax, IM_COL32(175, 175, 255, 125), 1.0f);
+		ImGui::GetWindowDrawList()->AddRectFilled(MouseSelectRegionMin, MouseSelectRegionMax, ImGui::GetColorU32(Settings.Style.MouseSelectRegionColor), 1.0f);
 	}
 
+	ImGui::PopFont();
 	ImGui::EndChild();
 	ImGui::PopStyleColor();
 	ImGui::PopStyleVar(2);
@@ -305,7 +340,7 @@ void NodeArea::Render()
 	CurrentStyle = OriginalStyle;
 }
 
-void NodeArea::DrawHermiteLine(const ImVec2 Begin, const ImVec2 End, const int Steps, const ImColor Color, const ConnectionStyle* Style) const
+void NodeArea::DrawHermiteLine(const ImVec2 Begin, const ImVec2 End, const int Steps, const ImVec4 Color, const ConnectionStyle* Style) const
 {
 	std::vector<ImVec2> LineTangents = GetTangentsForLine(Begin, End);
 
@@ -340,14 +375,14 @@ void NodeArea::DrawHermiteLine(const ImVec2 Begin, const ImVec2 End, const int S
 					Intensity = ((Step - Offset + Steps) % Steps < Steps / 10) ? 1.2f : 1.0f;
 				}
 
-				ImColor ModifiedColor = ImColor(Color.Value.x * Intensity, Color.Value.y * Intensity, Color.Value.z * Intensity, Color.Value.w);
+				ImColor ModifiedColor = ImColor(Color.x * Intensity, Color.y * Intensity, Color.z * Intensity, Color.w);
 				CurrentDrawList->AddLine(LastPoint, CurrentPoint, ModifiedColor, Thickness * Zoom);
 			}
 
 			LastPoint = CurrentPoint;
 		}
 
-		CurrentDrawList->PathStroke(Color, false, GetConnectionThickness());
+		CurrentDrawList->PathStroke(ImGui::GetColorU32(Color), false, GetConnectionThickness());
 	}
 	else if (Style->bPulseEffect)
 	{
@@ -365,7 +400,7 @@ void NodeArea::DrawHermiteLine(const ImVec2 Begin, const ImVec2 End, const int S
 		double Time = std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
 		float Pulse = static_cast<float>((sin(Time * 5 * Style->PulseSpeed) + 1.0f) / 2.0f);
 		Pulse = glm::max(Style->PulseMin, Pulse);
-		ImColor PulseColor = ImColor(Color.Value.x, Color.Value.y, Color.Value.z, Pulse);
+		ImColor PulseColor = ImColor(Color.x, Color.y, Color.z, Pulse);
 
 		CurrentDrawList->PathStroke(PulseColor, false, GetConnectionThickness());
 	}
@@ -386,11 +421,11 @@ void NodeArea::DrawHermiteLine(const ImVec2 Begin, const ImVec2 End, const int S
 			LastPoint = CurrentPoint;
 		}
 
-		CurrentDrawList->PathStroke(Color, false, GetConnectionThickness());
+		CurrentDrawList->PathStroke(ImGui::GetColorU32(Color), false, GetConnectionThickness());
 	}
 }
 
-void NodeArea::DrawHermiteLine(const ImVec2 Begin, const ImVec2 End, const int Steps, const ImColor Color, const float Thickness) const
+void NodeArea::DrawHermiteLine(const ImVec2 Begin, const ImVec2 End, const int Steps, const ImVec4 Color, const float Thickness) const
 {
 	std::vector<ImVec2> LineTangents = GetTangentsForLine(Begin, End);
 
@@ -409,7 +444,7 @@ void NodeArea::DrawHermiteLine(const ImVec2 Begin, const ImVec2 End, const int S
 		LastPoint = CurrentPoint;
 	}
 
-	CurrentDrawList->PathStroke(Color, false, Thickness);
+	CurrentDrawList->PathStroke(ImGui::GetColorU32(Color), false, Thickness);
 }
 
 void NodeArea::RenderConnection(const Connection* Connection) const
@@ -429,14 +464,14 @@ void NodeArea::RenderConnection(const Connection* Connection) const
 
 		if (Connection->bSelected)
 		{
-			DrawHermiteLine(BeginPosition, EndPosition, LineSegments, ImColor(55, 255, 55), GetConnectionThickness() + GetConnectionThickness() * 1.2f);
+			DrawHermiteLine(BeginPosition, EndPosition, Settings.Style.GeneralConnection.LineSegments, Settings.Style.GeneralConnection.SelectionOutlineColor, GetConnectionThickness() + GetConnectionThickness() * 1.2f);
 		}
 		else if (Connection->bHovered)
 		{
-			DrawHermiteLine(BeginPosition, EndPosition, LineSegments, ImColor(55, 55, 250), GetConnectionThickness() + GetConnectionThickness() * 1.2f);
+			DrawHermiteLine(BeginPosition, EndPosition, Settings.Style.GeneralConnection.LineSegments, Settings.Style.GeneralConnection.HoveredOutlineColor, GetConnectionThickness() + GetConnectionThickness() * 1.2f);
 		}
 
-		DrawHermiteLine(BeginPosition, EndPosition, LineSegments, CurrentConnectionColor, &Connection->Style);
+		DrawHermiteLine(BeginPosition, EndPosition, Settings.Style.GeneralConnection.LineSegments, CurrentConnectionColor, &Connection->Style);
 
 		// If it is reroute than we should render circle.
 		if (i > 0)
@@ -448,11 +483,11 @@ void NodeArea::RenderReroute(const RerouteNode* RerouteNode) const
 {
 	if (RerouteNode->bSelected)
 	{
-		CurrentDrawList->AddCircleFilled(LocalToScreen(RerouteNode->Position), GetRerouteNodeSize() * 1.2f, ImColor(55, 255, 55));
+		CurrentDrawList->AddCircleFilled(LocalToScreen(RerouteNode->Position), GetRerouteNodeSize() * 1.2f, ImGui::GetColorU32(Settings.Style.GeneralConnection.SelectionOutlineColor));
 	}
 	else if (RerouteNode->bHovered)
 	{
-		CurrentDrawList->AddCircleFilled(LocalToScreen(RerouteNode->Position), GetRerouteNodeSize() * 1.2f, ImColor(55, 55, 250));
+		CurrentDrawList->AddCircleFilled(LocalToScreen(RerouteNode->Position), GetRerouteNodeSize() * 1.2f, ImGui::GetColorU32(Settings.Style.GeneralConnection.HoveredOutlineColor));
 	}
 
 	CurrentDrawList->AddCircleFilled(LocalToScreen(RerouteNode->Position), GetRerouteNodeSize(), ImColor(DEFAULT_NODE_SOCKET_COLOR.Value + ImColor(15, 25, 15).Value));
@@ -527,8 +562,8 @@ ImVec2 NodeArea::GetRenderOffset() const
 
 void NodeArea::SetRenderOffset(const ImVec2 Offset)
 {
-	if (Offset.x <= -GRID_SIZE || Offset.x >= GRID_SIZE ||
-		Offset.y <= -GRID_SIZE || Offset.y >= GRID_SIZE)
+	if (Offset.x <= -Settings.Style.Grid.GRID_SIZE || Offset.x >= Settings.Style.Grid.GRID_SIZE ||
+		Offset.y <= -Settings.Style.Grid.GRID_SIZE || Offset.y >= Settings.Style.Grid.GRID_SIZE)
 		return;
 
 	RenderOffset = Offset;
@@ -592,7 +627,7 @@ void NodeArea::ApplyZoom(float Delta)
 {
 	ImVec2 MousePosBeforeZoom = ScreenToLocal(ImGui::GetMousePos());
 
-	Zoom += Delta * 0.1f;
+	Zoom += Delta * Settings.ZoomSpeed;
 	Zoom = std::max(Zoom, MIN_ZOOM_LEVEL);
 	Zoom = std::min(Zoom, MAX_ZOOM_LEVEL);
 
@@ -600,6 +635,8 @@ void NodeArea::ApplyZoom(float Delta)
 
 	// Adjust render offset to keep the mouse over the same point after zooming
 	RenderOffset -= (MousePosBeforeZoom - MousePosAfterZoom) * Zoom;
+
+	Settings.Style.GeneralConnection.LineSegments = 16 * Zoom;
 }
 
 float NodeArea::GetZoomFactor() const

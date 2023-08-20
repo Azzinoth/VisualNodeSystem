@@ -5,7 +5,7 @@ Node::Node(const std::string ID)
 {
 	this->ID = ID;
 	if (ID.empty())
-		this->ID = GetUniqueHexID();
+		this->ID = NODE_CORE.GetUniqueHexID();
 
 	SetSize(ImVec2(200, 80));
 	SetName("VisualNode");
@@ -15,7 +15,7 @@ Node::Node(const std::string ID)
 Node::Node(const Node& Src)
 {
 	ParentArea = Src.ParentArea;
-	ID = GetUniqueHexID();
+	ID = NODE_CORE.GetUniqueHexID();
 	Position = Src.Position;
 	Size = Src.Size;
 

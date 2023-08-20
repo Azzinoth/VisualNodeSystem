@@ -12,6 +12,8 @@ namespace VisNodeSys
 	public:
 		SINGLETON_PUBLIC_PART(NodeSystem)
 
+		void Initialize();
+
 		NodeArea* CreateNodeArea();
 		void DeleteNodeArea(const NodeArea* NodeArea);
 

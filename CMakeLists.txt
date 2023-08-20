@@ -29,6 +29,7 @@ file(GLOB VisualNodeSystem_SRC
 	"VisualNode.h"
 	"VisualNodeSocket.cpp"
 	"VisualNodeSocket.h"
+	"VisualNodeCore.cpp"
 	"VisualNodeCore.h"
 )
 

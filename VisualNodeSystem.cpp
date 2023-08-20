@@ -6,6 +6,11 @@ NodeSystem* NodeSystem::Instance = nullptr;
 NodeSystem::NodeSystem() {}
 NodeSystem::~NodeSystem() {}
 
+void NodeSystem::Initialize()
+{
+	NODE_CORE.InitializeFonts();
+}
+
 NodeArea* NodeSystem::CreateNodeArea()
 {
 	CreatedAreas.push_back(new NodeArea());

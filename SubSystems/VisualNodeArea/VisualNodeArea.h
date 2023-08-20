@@ -19,6 +19,46 @@ namespace VisNodeSys
 		AFTER_DISCONNECTED = 5
 	};
 
+	struct NodeAreaGeneralConnectionStyle
+	{
+		int LineSegments = 16;
+		float LineXTangentMagnitude = 80.0f * 2.0f;
+		float LineYTangentMagnitude = 0.0f;
+
+		ImVec4 SelectionOutlineColor = ImVec4(55.0f / 255.0f, 1.0f, 55.0f / 255.0f, 1.0f);
+		ImVec4 HoveredOutlineColor = ImVec4(55.0f / 255.0f, 55.0f / 255.0f, 250.0f / 255.0f, 1.0f);
+	};
+
+	struct NodeAreaGridStyle
+	{
+		float GRID_SIZE = 10000.0f;
+		int BOLD_LINE_FREQUENCY = 10;
+		float DEFAULT_LINE_WIDTH = 1;
+		float BOLD_LINE_WIDTH = 3;
+
+		ImVec4 GridBackgroundColor = ImVec4(32.0f / 255.0f, 32.0f / 255.0f, 32.0f / 255.0f, 1.0f);
+		ImVec4 GridLinesColor = ImVec4(53.0f / 255.0f, 53.0f / 255.0f, 53.0f / 255.0f, 0.5f);
+		ImVec4 GridBoldLinesColor = ImVec4(27.0f / 255.0f, 27.0f / 255.0f, 27.0f / 255.0f, 1.0f);
+	};
+
+	struct NodeAreaStyle
+	{
+		NodeAreaGridStyle Grid;
+		NodeAreaGeneralConnectionStyle GeneralConnection;
+
+		ImVec4 NodeBackgroundColor = ImVec4(75.0f / 255.0f, 75.0f / 255.0f, 75.0f / 255.0f, 125.0f / 255.0f);
+		ImVec4 HoveredNodeBackgroundColor = ImVec4(60.0f / 255.0f, 60.0f / 255.0f, 60.0f / 255.0f, 125.0f / 255.0f);
+		ImVec4 NodeSelectionColor = ImVec4(175.0f / 255.0f, 255.0f / 255.0f, 175.0f / 255.0f, 1.0f);
+
+		ImVec4 MouseSelectRegionColor = ImVec4(175.0f / 255.0f, 175.0f / 255.0f, 1.0f, 125.0f / 255.0f);
+	};
+
+	struct NodeAreaSettings
+	{
+		NodeAreaStyle Style;
+		float ZoomSpeed = 0.15f;
+	};
+
 	class NodeArea
 	{
 		friend NodeSystem;
@@ -99,11 +139,7 @@ namespace VisNodeSys
 			NODE_SOCKET_EVENT EventType;
 		};
 
-		// Background grid variables.
-		float GRID_SIZE = 10000.0f;
-		int BOLD_LINE_FREQUENCY = 10;
-		float DEFAULT_LINE_WIDTH = 1;
-		float BOLD_LINE_WIDTH = 3;
+		NodeAreaSettings Settings;
 
 		float Zoom = 1.0f;
 		void ApplyZoom(float Delta);
@@ -145,13 +181,7 @@ namespace VisNodeSys
 
 		ImVec2 Position;
 		ImVec2 Size;
-		ImU32 GridBackgroundColor = IM_COL32(32, 32, 32, 255);
-		ImVec4 GridLinesColor = ImVec4(53.0f / 255.0f, 53.0f / 255.0f, 53.0f / 255.0f, 0.5f);
-		ImVec4 GridBoldLinesColor = ImVec4(27.0f / 255.0f, 27.0f / 255.0f, 27.0f / 255.0f, 1.0f);
 		ImVec2 RenderOffset = ImVec2(0.0, 0.0);
-		int LineSegments = 16;
-		float LineXTangentMagnitude = 80.0f * 2.0f;
-		float LineYTangentMagnitude = 0.0f;
 		void(*MainContextMenuFunc)() = nullptr;
 		std::vector<void(*)(Node*, NODE_EVENT)> NodeEventsCallbacks;
 		std::queue<SocketEvent> SocketEventQueue;
@@ -210,14 +240,16 @@ namespace VisNodeSys
 		bool IsSegmentInRegion(ImVec2 Begin, ImVec2 End, const int Steps);
 		bool IsConnectionInRegion(Connection* Connection, const int Steps);
 
+		void SelectFontSettings() const;
+
 		void Render();
 		void RenderGrid(ImVec2 CurrentPosition) const;
 		void RenderNode(Node* Node) const;
 		void RenderNodeSockets(const Node* Node) const;
 		void RenderNodeSocket(NodeSocket* Socket) const;
 		std::vector<ImVec2> GetTangentsForLine(const ImVec2 P1, const ImVec2 P2) const;
-		void DrawHermiteLine(ImVec2 P1, ImVec2 P2, int Steps, ImColor Color, const ConnectionStyle* Style) const;
-		void DrawHermiteLine(const ImVec2 P1, const ImVec2 P2, const int Steps, const ImColor Color, const float Thickness) const;
+		void DrawHermiteLine(ImVec2 P1, ImVec2 P2, int Steps, ImVec4 Color, const ConnectionStyle* Style) const;
+		void DrawHermiteLine(const ImVec2 P1, const ImVec2 P2, const int Steps, const ImVec4 Color, const float Thickness) const;
 		void RenderConnection(const Connection* Connection) const;
 		void RenderReroute(const RerouteNode* RerouteNode) const;
 		ConnectionStyle* GetConnectionStyle(const NodeSocket* ParticipantOfConnection) const;

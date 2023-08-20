@@ -251,17 +251,17 @@ void NodeArea::MouseDragging()
 				RenderOffset.x += GetMouseDelta().x * Zoom;
 				RenderOffset.y += GetMouseDelta().y * Zoom;
 
-				if (RenderOffset.x > GRID_SIZE * Zoom)
-					RenderOffset.x = GRID_SIZE * Zoom;
+				if (RenderOffset.x > Settings.Style.Grid.GRID_SIZE * Zoom)
+					RenderOffset.x = Settings.Style.Grid.GRID_SIZE * Zoom;
 
-				if (RenderOffset.x < -GRID_SIZE * Zoom)
-					RenderOffset.x = -GRID_SIZE * Zoom;
+				if (RenderOffset.x < -Settings.Style.Grid.GRID_SIZE * Zoom)
+					RenderOffset.x = -Settings.Style.Grid.GRID_SIZE * Zoom;
 
-				if (RenderOffset.y > GRID_SIZE * Zoom)
-					RenderOffset.y = GRID_SIZE * Zoom;
+				if (RenderOffset.y > Settings.Style.Grid.GRID_SIZE * Zoom)
+					RenderOffset.y = Settings.Style.Grid.GRID_SIZE * Zoom;
 
-				if (RenderOffset.y < -GRID_SIZE * Zoom)
-					RenderOffset.y = -GRID_SIZE * Zoom;
+				if (RenderOffset.y < -Settings.Style.Grid.GRID_SIZE * Zoom)
+					RenderOffset.y = -Settings.Style.Grid.GRID_SIZE * Zoom;
 			}
 		}
 	}
@@ -391,7 +391,7 @@ void NodeArea::KeyboardInputUpdate()
 			if (!SelectedNodes.empty())
 			{
 				const NodeArea* NewNodeArea = NodeArea::CreateNodeArea(SelectedNodes);
-				SetClipboardText(NewNodeArea->ToJson());
+				NODE_CORE.SetClipboardText(NewNodeArea->ToJson());
 				delete NewNodeArea;
 			}
 		}
@@ -401,7 +401,7 @@ void NodeArea::KeyboardInputUpdate()
 			{
 				WasCopiedToClipboard = true;
 
-				const std::string NodesToImport = GetClipboardText();
+				const std::string NodesToImport = NODE_CORE.GetClipboardText();
 				Json::Value data;
 
 				JSONCPP_STRING err;
@@ -690,12 +690,12 @@ void NodeArea::InputUpdateReroute(RerouteNode* Reroute)
 bool NodeArea::IsMouseOverConnection(Connection* Connection, const int Steps, const float MaxDistance, ImVec2& CollisionPoint)
 {
 	if (Connection->RerouteNodes.empty())
-		return IsMouseOverSegment(SocketToPosition(Connection->Out), SocketToPosition(Connection->In), LineSegments, 10.0f);
+		return IsMouseOverSegment(SocketToPosition(Connection->Out), SocketToPosition(Connection->In), Settings.Style.GeneralConnection.LineSegments, 10.0f);
 
 	std::vector<ConnectionSegment> Segments = GetConnectionSegments(Connection);
 	for (size_t i = 0; i < Segments.size(); i++)
 	{
-		if (IsMouseOverSegment(Segments[i].Begin, Segments[i].End, LineSegments, 10.0f))
+		if (IsMouseOverSegment(Segments[i].Begin, Segments[i].End, Settings.Style.GeneralConnection.LineSegments, 10.0f))
 			return true;
 	}
 
@@ -790,12 +790,12 @@ bool IsLineSegmentIntersecting(const ImVec2& p1, const ImVec2& q1, const ImVec2&
 bool NodeArea::IsConnectionInRegion(Connection* Connection, const int Steps)
 {
 	if (Connection->RerouteNodes.empty())
-		return IsSegmentInRegion(SocketToPosition(Connection->Out), SocketToPosition(Connection->In), LineSegments);
+		return IsSegmentInRegion(SocketToPosition(Connection->Out), SocketToPosition(Connection->In), Settings.Style.GeneralConnection.LineSegments);
 
 	std::vector<ConnectionSegment> Segments = GetConnectionSegments(Connection);
 	for (size_t i = 0; i < Segments.size(); i++)
 	{
-		if (IsSegmentInRegion(Segments[i].Begin, Segments[i].End, LineSegments))
+		if (IsSegmentInRegion(Segments[i].Begin, Segments[i].End, Settings.Style.GeneralConnection.LineSegments))
 			return true;
 	}
 
@@ -887,7 +887,7 @@ void NodeArea::MouseInputUpdateConnections()
 	{
 		for (size_t i = 0; i < Connections.size(); i++)
 		{
-			if (HoveredConnection == nullptr && IsMouseOverConnection(Connections[i], LineSegments, 10.0f))
+			if (HoveredConnection == nullptr && IsMouseOverConnection(Connections[i], Settings.Style.GeneralConnection.LineSegments, 10.0f))
 			{
 				Connections[i]->bHovered = true;
 				HoveredConnection = Connections[i];
@@ -895,7 +895,7 @@ void NodeArea::MouseInputUpdateConnections()
 
 			if (IsMouseRegionSelectionActive() && SelectedNodes.empty())
 			{
-				if (IsConnectionInRegion(Connections[i], LineSegments))
+				if (IsConnectionInRegion(Connections[i], Settings.Style.GeneralConnection.LineSegments))
 				{
 					Connections[i]->bSelected = true;
 					AddSelected(Connections[i]);
@@ -936,7 +936,7 @@ void NodeArea::ConnectionsDoubleMouseClick()
 			std::vector<ConnectionSegment> Segments = GetConnectionSegments(HoveredConnection);
 			for (size_t i = 0; i < Segments.size(); i++)
 			{
-				if (IsMouseOverSegment(Segments[i].Begin, Segments[i].End, LineSegments, 10.0f))
+				if (IsMouseOverSegment(Segments[i].Begin, Segments[i].End, Settings.Style.GeneralConnection.LineSegments, 10.0f))
 				{
 					AddRerouteNode(HoveredConnection, i, ScreenToLocal(MouseCursorPosition));
 					break;

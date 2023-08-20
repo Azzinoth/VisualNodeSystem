@@ -187,7 +187,7 @@ void NodeArea::ProcessConnections(const std::vector<NodeSocket*>& Sockets,
 					{
 						RerouteNode* OldReroute = OldConnection->RerouteNodes[j];
 						RerouteNode* NewReroute = new RerouteNode();
-						NewReroute->ID = GetUniqueHexID();
+						NewReroute->ID = NODE_CORE.GetUniqueHexID();
 						NewReroute->Parent = NewConnection;
 						NewReroute->Position = OldReroute->Position;
 
@@ -628,8 +628,8 @@ std::vector<ImVec2> NodeArea::GetTangentsForLine(const ImVec2 Begin, const ImVec
 	std::vector<ImVec2> Result;
 	Result.resize(2);
 
-	float ScaledXTangentMagnitude = LineXTangentMagnitude * Zoom;
-	float ScaledYTangentMagnitude = LineYTangentMagnitude * Zoom;
+	float ScaledXTangentMagnitude = Settings.Style.GeneralConnection.LineXTangentMagnitude * Zoom;
+	float ScaledYTangentMagnitude = Settings.Style.GeneralConnection.LineYTangentMagnitude * Zoom;
 
 	Result[0] = ImVec2(ScaledXTangentMagnitude, ScaledYTangentMagnitude);
 	Result[1] = ImVec2(ScaledXTangentMagnitude, ScaledYTangentMagnitude);

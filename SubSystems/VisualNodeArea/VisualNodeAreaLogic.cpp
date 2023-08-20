@@ -367,7 +367,7 @@ bool NodeArea::AddRerouteNode(Connection* Connection, size_t SegmentToDivide, Im
 		return false;
 
 	RerouteNode* NewReroute = new RerouteNode();
-	NewReroute->ID = GetUniqueHexID();
+	NewReroute->ID = NODE_CORE.GetUniqueHexID();
 	NewReroute->Parent = Connection;
 	NewReroute->Position = Position;
 
