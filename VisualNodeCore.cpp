@@ -15,6 +15,10 @@ const char* FontBase64Part_5 = R"(PgJ2OIY4AnkqiSoCZgN2A4YDA2QzdDOEMwNrL3sviy8DBS
 
 void NodeCore::InitializeFonts()
 {
+	// If no font has been loaded up to this point, load the default ImGui font.
+	if (ImGui::GetIO().Fonts->Fonts.Size == 0)
+		ImGui::GetIO().Fonts->AddFontDefault();
+	
 	std::string CompleteFontBase64 = FontBase64Part_0;
 	CompleteFontBase64 += FontBase64Part_1;
 	CompleteFontBase64 += FontBase64Part_2;
