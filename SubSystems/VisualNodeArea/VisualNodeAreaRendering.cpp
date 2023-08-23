@@ -24,7 +24,7 @@ void NodeArea::RenderNode(Node* Node) const
 		{
 			const ImVec2 LeftTop = Node->LeftTop - ImVec2(4.0f, 4.0f);
 			const ImVec2 RightBottom = Node->RightBottom + ImVec2(4.0f, 4.0f);
-			ImGui::GetWindowDrawList()->AddRect(LeftTop, RightBottom, ImGui::GetColorU32(Settings.Style.NodeSelectionColor), 16.0f * Zoom);
+			ImGui::GetWindowDrawList()->AddRect(LeftTop, RightBottom, ImGui::GetColorU32(Settings.Style.NodeSelectionColor), 8.0f * Zoom);
 		}
 		else if (Node->GetStyle() == CIRCLE)
 		{
@@ -636,7 +636,7 @@ void NodeArea::ApplyZoom(float Delta)
 	// Adjust render offset to keep the mouse over the same point after zooming
 	RenderOffset -= (MousePosBeforeZoom - MousePosAfterZoom) * Zoom;
 
-	Settings.Style.GeneralConnection.LineSegments = 16 * Zoom;
+	Settings.Style.GeneralConnection.LineSegments = static_cast<int>(16 * Zoom);
 }
 
 float NodeArea::GetZoomFactor() const

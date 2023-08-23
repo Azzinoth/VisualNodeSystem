@@ -57,6 +57,7 @@ namespace VisNodeSys
 	{
 		NodeAreaStyle Style;
 		float ZoomSpeed = 0.15f;
+		bool bRequireFullOverlapToSelect = false;
 	};
 
 	class NodeArea
@@ -239,6 +240,7 @@ namespace VisNodeSys
 		bool IsPointInRegion(const ImVec2& Point, const ImVec2& RegionMin, const ImVec2& RegionMax);
 		bool IsSegmentInRegion(ImVec2 Begin, ImVec2 End, const int Steps);
 		bool IsConnectionInRegion(Connection* Connection, const int Steps);
+		bool IsRectInMouseSelectionRegion(ImVec2 RectMin, ImVec2 RectSize);
 
 		void SelectFontSettings() const;
 

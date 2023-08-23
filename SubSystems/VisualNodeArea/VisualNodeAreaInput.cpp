@@ -271,6 +271,37 @@ void NodeArea::MouseDragging()
 	MouseDraggingRerouteUpdate();
 }
 
+bool NodeArea::IsRectInMouseSelectionRegion(ImVec2 RectMin, ImVec2 RectSize)
+{
+	// Define the max corner of the rectangle using RectMin and RectSize.
+	ImVec2 RectMax = RectMin + RectSize;
+
+	if (Settings.bRequireFullOverlapToSelect)
+	{
+		// Check if the entire Rect is inside MouseSelectRegion.
+		if (RectMin.x >= MouseSelectRegionMin.x &&
+			RectMax.x <= MouseSelectRegionMax.x &&
+			RectMin.y >= MouseSelectRegionMin.y &&
+			RectMax.y <= MouseSelectRegionMax.y)
+		{
+			return true;
+		}
+	}
+	else
+	{
+		// Check if a part of the Rect is inside MouseSelectRegion.
+		if (RectMin.x < MouseSelectRegionMax.x &&
+			RectMax.x > MouseSelectRegionMin.x &&
+			RectMin.y < MouseSelectRegionMax.y &&
+			RectMax.y > MouseSelectRegionMin.y)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
 void NodeArea::MouseDraggingNodesUpdate()
 {
 	if (IsMouseRegionSelectionActive())
@@ -282,23 +313,13 @@ void NodeArea::MouseDraggingNodesUpdate()
 		{
 			if (Nodes[i]->GetStyle() == DEFAULT)
 			{
-				if (Nodes[i]->LeftTop.x < MouseSelectRegionMin.x + RegionSize.x &&
-					Nodes[i]->LeftTop.x + Nodes[i]->GetSize().x * Zoom > MouseSelectRegionMin.x &&
-					Nodes[i]->LeftTop.y < MouseSelectRegionMin.y + RegionSize.y &&
-					Nodes[i]->GetSize().y * Zoom + Nodes[i]->LeftTop.y > MouseSelectRegionMin.y)
-				{
+				if (IsRectInMouseSelectionRegion(Nodes[i]->LeftTop, Nodes[i]->GetSize() * Zoom))
 					AddSelected(Nodes[i]);
-				}
 			}
 			else if (Nodes[i]->GetStyle() == CIRCLE)
 			{
-				if (Nodes[i]->LeftTop.x < MouseSelectRegionMin.x + RegionSize.x &&
-					Nodes[i]->LeftTop.x + NODE_DIAMETER * Zoom > MouseSelectRegionMin.x &&
-					Nodes[i]->LeftTop.y < MouseSelectRegionMin.y + RegionSize.y &&
-					NODE_DIAMETER * Zoom + Nodes[i]->LeftTop.y > MouseSelectRegionMin.y)
-				{
+				if (IsRectInMouseSelectionRegion(Nodes[i]->LeftTop, ImVec2(NODE_DIAMETER, NODE_DIAMETER) * Zoom))
 					AddSelected(Nodes[i]);
-				}
 			}
 		}
 	}
@@ -322,7 +343,6 @@ void NodeArea::MouseDraggingConnectionsUpdate()
 void NodeArea::MouseDraggingRerouteUpdate()
 {
 	// Reroute nodes could be selected with nodes
-	const ImVec2 RegionSize = MouseSelectRegionMax - MouseSelectRegionMin;
 	if (IsMouseRegionSelectionActive())
 	{
 		UnSelectAllRerouteNodes();
@@ -330,12 +350,8 @@ void NodeArea::MouseDraggingRerouteUpdate()
 		{
 			for (size_t j = 0; j < Connections[i]->RerouteNodes.size(); j++)
 			{
-
 				const ImVec2 ReroutePosition = LocalToScreen(Connections[i]->RerouteNodes[j]->Position);
-				if (ReroutePosition.x < MouseSelectRegionMin.x + RegionSize.x &&
-					ReroutePosition.x + GetRerouteNodeSize() > MouseSelectRegionMin.x &&
-					ReroutePosition.y < MouseSelectRegionMin.y + RegionSize.y &&
-					GetRerouteNodeSize() + ReroutePosition.y > MouseSelectRegionMin.y)
+				if (IsRectInMouseSelectionRegion(ReroutePosition, ImVec2(GetRerouteNodeSize(), GetRerouteNodeSize())))
 				{
 					Connections[i]->RerouteNodes[j]->bSelected = true;
 					AddSelected(Connections[i]->RerouteNodes[j]);
