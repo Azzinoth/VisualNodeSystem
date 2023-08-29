@@ -2,13 +2,7 @@
 
 ![build](https://github.com/Azzinoth/VisualNodeSystem-Example/actions/workflows/Build.yml/badge.svg?branch=master)
 
-This library provides a powerful framework for creating and managing visual node systems. These are typically used in graphical programming environments, game logic builders, and AI behavior tree editors. I have personally used it in two of my projects:
-
-[Focal Engine Editor](https://github.com/Azzinoth/FocalEngineEditor)
-![Focal Engine editor material window](https://github.com/Azzinoth/VisualNodeSystem/blob/media/Focal%20Engine%20Editor%20example.png)
-
-[Focal Engine Test Platform](https://github.com/Azzinoth/FocalEngineTestPlatform)
-![Focal Engine test platform](https://github.com/Azzinoth/VisualNodeSystem/blob/media/Test%20Platform%20example.png)
+This library provides a powerful framework for creating and managing visual node systems. These are typically used in graphical programming environments, game logic builders, and AI behavior tree editors.
 
 ## Key Features
 
@@ -40,6 +34,14 @@ This library provides a powerful framework for creating and managing visual node
 - **File System Integration**: The system allows you to save/load node data to/from files.
 
 - **Node Event Callbacks**: The library provides functionalities to set callbacks for node events.
+
+I have personally used it in two of my projects:
+
+[Focal Engine Editor](https://github.com/Azzinoth/FocalEngineEditor)
+![Focal Engine editor material window](https://github.com/Azzinoth/VisualNodeSystem/blob/media/Focal%20Engine%20Editor%20example.png)
+
+[Focal Engine Test Platform](https://github.com/Azzinoth/FocalEngineTestPlatform)
+![Focal Engine test platform](https://github.com/Azzinoth/VisualNodeSystem/blob/media/Test%20Platform%20example.png)
 
 ## Usage
 
