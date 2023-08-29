@@ -25,6 +25,9 @@ This library provides a powerful framework for creating and managing visual node
 </div>
 
 - **Group Comments**: Improve clarity and organization within the visual node-based interface by allowing users to encircle and highlight node collections, signifying their combined functionality.
+<div align="center">
+    <img src="https://github.com/Azzinoth/VisualNodeSystem/blob/media/Group Comments.png" width="100%">
+</div>
 
 - **Flexible Socket Management**: The library offers functionalities for managing node sockets (input/output). These sockets serve as points of data connection between different nodes.
 
