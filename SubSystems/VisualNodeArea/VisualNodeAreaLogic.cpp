@@ -141,6 +141,25 @@ void NodeArea::Delete(RerouteNode* RerouteNode)
 	}
 }
 
+void NodeArea::Delete(GroupComment* GroupComment)
+{
+	if (GroupCommentHovered == GroupComment)
+		GroupCommentHovered = nullptr;
+
+	UnSelect(GroupComment);
+
+	for (size_t i = 0; i < GroupComments.size(); i++)
+	{
+		if (GroupComments[i] == GroupComment)
+		{
+			delete GroupComments[i];
+			GroupComments.erase(GroupComments.begin() + i, GroupComments.begin() + i + 1);
+
+			break;
+		}
+	}
+}
+
 void NodeArea::DeleteNode(const Node* Node)
 {
 	if (!Node->bCouldBeDestroyed)
@@ -519,4 +538,59 @@ bool NodeArea::AddRerouteNodeToConnection(const Node* OutNode, std::string OutSo
 	}
 
 	return AddRerouteNodeToConnection(OutNode, OutSocketIndex, InNode, InSocketIndex, SegmentToDivide, Position);
+}
+
+void NodeArea::AddGroupComment(GroupComment* NewGroupComment)
+{
+	if (NewGroupComment == nullptr)
+		return;
+
+	NewGroupComment->ParentArea = this;
+	GroupComments.push_back(NewGroupComment);
+}
+
+void NodeArea::AttachElemetnsToGroupComment(GroupComment* GroupComment)
+{
+	GroupComment->AttachedNodes.clear();
+	GroupComment->AttachedRerouteNodes.clear();
+	GroupComment->AttachedGroupComments.clear();
+
+	if (!GroupComment->bMoveElementsWithComment)
+		return;
+
+	const ImVec2 Position = GroupComment->GetPosition();
+	const ImVec2 Size = GroupComment->GetSize();
+
+	for (size_t i = 0; i < Nodes.size(); i++)
+	{
+		if (Nodes[i]->GetStyle() == DEFAULT)
+		{
+			if (IsSecondRectInsideFirstOne(Position, Size, Nodes[i]->GetPosition(), Nodes[i]->GetSize()))
+				GroupComment->AttachedNodes.push_back(Nodes[i]);
+		}
+		else if (Nodes[i]->GetStyle() == CIRCLE)
+		{
+			if (IsSecondRectInsideFirstOne(Position, Size, Nodes[i]->GetPosition(), ImVec2(NODE_DIAMETER, NODE_DIAMETER)))
+				GroupComment->AttachedNodes.push_back(Nodes[i]);
+		}
+	}
+
+	for (size_t i = 0; i < Connections.size(); i++)
+	{
+		for (size_t j = 0; j < Connections[i]->RerouteNodes.size(); j++)
+		{
+			const ImVec2 ReroutePosition = Connections[i]->RerouteNodes[j]->Position;
+			if (IsSecondRectInsideFirstOne(Position, Size, ReroutePosition, ImVec2(GetRerouteNodeSize() / Zoom, GetRerouteNodeSize() / Zoom)))
+				GroupComment->AttachedRerouteNodes.push_back(Connections[i]->RerouteNodes[j]);
+		}
+	}
+
+	for (size_t i = 0; i < GroupComments.size(); i++)
+	{
+		if (GroupComments[i] == GroupComment)
+			continue;
+
+		if (IsSecondRectInsideFirstOne(Position, Size, GroupComments[i]->GetPosition(), GroupComments[i]->GetSize()))
+			GroupComment->AttachedGroupComments.push_back(GroupComments[i]);
+	}
 }

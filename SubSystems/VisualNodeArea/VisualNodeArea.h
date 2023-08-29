@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../VisualNodeFactory.h"
+#include "../../GroupComment.h"
 
 namespace VisNodeSys
 {
@@ -51,6 +51,8 @@ namespace VisNodeSys
 		ImVec4 NodeSelectionColor = ImVec4(175.0f / 255.0f, 255.0f / 255.0f, 175.0f / 255.0f, 1.0f);
 
 		ImVec4 MouseSelectRegionColor = ImVec4(175.0f / 255.0f, 175.0f / 255.0f, 1.0f, 125.0f / 255.0f);
+
+		ImVec4 GroupCommentDefaultBackgroundColor = ImVec4(75.0f / 255.0f, 75.0f / 255.0f, 135.0f / 255.0f, 185.0f / 255.0f);
 	};
 
 	struct NodeAreaSettings
@@ -58,6 +60,7 @@ namespace VisNodeSys
 		NodeAreaStyle Style;
 		float ZoomSpeed = 0.15f;
 		bool bRequireFullOverlapToSelect = false;
+		bool bShowDefaultMainContextMenu = true;
 	};
 
 	class NodeArea
@@ -104,9 +107,9 @@ namespace VisNodeSys
 		void SaveNodesToFile(const char* FileName, std::vector<Node*> Nodes);
 		void RunOnEachNode(void(*Func)(Node*));
 		void RunOnEachConnectedNode(Node* StartNode, void(*Func)(Node*));
-		void ClearSelection();
-		void GetAllNodesAABB(ImVec2& Min, ImVec2& Max) const;
-		ImVec2 GetAllNodesAABBCenter() const;
+		void UnSelectAll();
+		void GetAllElementsAABB(ImVec2& Min, ImVec2& Max) const;
+		ImVec2 GetAllElementsAABBCenter() const;
 		ImVec2 GetRenderedViewCenter() const;
 		bool TryToConnect(const Node* OutNode, size_t OutNodeSocketIndex, const Node* InNode, size_t InNodeSocketIndex);
 		bool TryToConnect(const Node* OutNode, std::string OutSocketID, const Node* InNode, std::string InSocketID);
@@ -124,7 +127,7 @@ namespace VisNodeSys
 												 NodeArea* TargetArea, size_t NodeShift, const std::vector<Node*>& SourceNodes);
 		static void CopyNodesInternal(const std::vector<Node*>& SourceNodes, NodeArea* TargetArea, const size_t NodeShift = 0);
 
-		static NodeArea* CreateNodeArea(std::vector<Node*> Nodes);
+		static NodeArea* CreateNodeArea(std::vector<Node*> Nodes, const std::vector<GroupComment*> GroupComments);
 		static NodeArea* FromJson(std::string JsonText);
 		static void CopyNodesTo(NodeArea* SourceNodeArea, NodeArea* TargetNodeArea);
 		static bool IsNodeIDInList(std::string ID, std::vector<Node*> List);
@@ -167,10 +170,19 @@ namespace VisNodeSys
 		Connection* HoveredConnection = nullptr;
 		NodeSocket* SocketHovered = nullptr;
 		RerouteNode* RerouteNodeHovered = nullptr;
+		GroupComment* GroupCommentHovered = nullptr;
+
+		// Info for context menu
+		GroupComment* GroupCommentHoveredWhenContextMenuWasOpened = nullptr;
+		ImVec4 ColorPickerStartValue = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
+		bool bShowGroupCommentColorPicker = false;
+
+		std::vector<GroupComment*> GroupComments;
 
 		std::vector<Node*> SelectedNodes;
 		std::vector<Connection*> SelectedConnections;
 		std::vector<RerouteNode*> SelectedRerouteNodes;
+		std::vector<GroupComment*> SelectedGroupComments;
 
 		ImVec2 MouseCursorPosition;
 		ImVec2 MouseCursorSize = ImVec2(1, 1);
@@ -184,6 +196,7 @@ namespace VisNodeSys
 		ImVec2 Size;
 		ImVec2 RenderOffset = ImVec2(0.0, 0.0);
 		void(*MainContextMenuFunc)() = nullptr;
+		void RenderDefaultMainContextMenu(ImVec2 LocalMousePosition);
 		std::vector<void(*)(Node*, NODE_EVENT)> NodeEventsCallbacks;
 		std::queue<SocketEvent> SocketEventQueue;
 
@@ -195,24 +208,38 @@ namespace VisNodeSys
 
 		void Delete(Connection* Connection);
 		void Delete(RerouteNode* RerouteNode);
+		void Delete(GroupComment* GroupComment);
 
 		void InputUpdate();
+
 		void MouseInputUpdate();
+		void MouseInputUpdateNodes();
+		void MouseInputUpdateGroupComments();
 
 		void LeftMouseClick();
 		void LeftMouseClickNodesUpdate();
 		void LeftMouseClickConnectionsUpdate();
 		void LeftMouseClickRerouteUpdate();
+		void LeftMouseClickGroupCommentsUpdate();
 
 		void RightMouseClick();
 		void RightMouseClickNodesUpdate();
 		void RightMouseClickConnectionsUpdate();
 		void RightMouseClickRerouteUpdate();
 
+		void DoubleMouseClick();
+
+		bool ShouldDragGrid();
+
 		void MouseDragging();
 		void MouseDraggingNodesUpdate();
 		void MouseDraggingConnectionsUpdate();
 		void MouseDraggingRerouteUpdate();
+		void MouseDraggingGroupCommentUpdate();
+
+		void LeftMouseDown();
+		void LeftMouseReleased();
+		void LeftMouseReleasedGroupCommentUpdate();
 
 		void KeyboardInputUpdate();
 		void InputUpdateNode(Node* Node);
@@ -232,6 +259,13 @@ namespace VisNodeSys
 		bool UnSelect(const RerouteNode* RerouteNode);
 		void UnSelectAllRerouteNodes();
 
+		bool AddSelected(GroupComment* GroupComment);
+		bool IsSelected(const GroupComment* GroupComment) const;
+		bool UnSelect(GroupComment* GroupComment);
+		void UnSelectAllGroupComments();
+
+		bool IsMouseAboveSomethingSelected() const;
+
 		void ConnectionsDoubleMouseClick();
 		std::vector<ConnectionSegment> GetConnectionSegments(const Connection* Connection) const;
 		bool AddRerouteNode(Connection* Connection, size_t SegmentToDivide, ImVec2 Position);
@@ -240,9 +274,23 @@ namespace VisNodeSys
 		bool IsPointInRegion(const ImVec2& Point, const ImVec2& RegionMin, const ImVec2& RegionMax);
 		bool IsSegmentInRegion(ImVec2 Begin, ImVec2 End, const int Steps);
 		bool IsConnectionInRegion(Connection* Connection, const int Steps);
+
+		bool IsRectsOverlaping(ImVec2 FirstRectMin, ImVec2 FirstRectSize, ImVec2 SecondRectMin, ImVec2 SecondRectSize);
+		bool IsSecondRectInsideFirstOne(ImVec2 FirstRectMin, ImVec2 FirstRectSize, ImVec2 SecondRectMin, ImVec2 SecondRectSize);
 		bool IsRectInMouseSelectionRegion(ImVec2 RectMin, ImVec2 RectSize);
+		bool IsRectUnderMouse(ImVec2 RectMin, ImVec2 RectSize);
+
+		void AddGroupComment(GroupComment* NewGroupComment);
+		bool IsGroupCommentCaptionUnderMouse(GroupComment* GroupComment);
+		bool IsGroupCommentRightPartUnderMouse(GroupComment* GroupComment);
+		bool IsGroupCommentBottomPartUnderMouse(GroupComment* GroupComment);
+		bool IsAnyGroupCommentInResizeMode();
 
 		void SelectFontSettings() const;
+
+		void GroupCommentDoubleMouseClick();
+		void AttachElemetnsToGroupComment(GroupComment* GroupComment);
+		void MoveGroupComment(GroupComment* GroupComment, ImVec2 Delta);
 
 		void Render();
 		void RenderGrid(ImVec2 CurrentPosition) const;
@@ -255,6 +303,8 @@ namespace VisNodeSys
 		void RenderConnection(const Connection* Connection) const;
 		void RenderReroute(const RerouteNode* RerouteNode) const;
 		ConnectionStyle* GetConnectionStyle(const NodeSocket* ParticipantOfConnection) const;
+
+		void RenderGroupComment(GroupComment* GroupComment);
 
 		bool IsMouseRegionSelectionActive() const;
 

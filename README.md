@@ -24,9 +24,9 @@ This library provides a powerful framework for creating and managing visual node
     <img src="https://github.com/Azzinoth/VisualNodeSystem/blob/media/RerouteNodes.gif" width="60%">
 </div>
 
-- **Flexible Socket Management**: The library offers functionalities for managing node sockets (input/output). These sockets serve as points of data connection between different nodes.
+- **Group Comments**: Improve clarity and organization within the visual node-based interface by allowing users to encircle and highlight node collections, signifying their combined functionality.
 
-- **Visual Node Area Management**: This feature allows you to manage a visual node area, offering several operations like getting selected nodes, connecting nodes, rendering, and event propagation.
+- **Flexible Socket Management**: The library offers functionalities for managing node sockets (input/output). These sockets serve as points of data connection between different nodes.
 
 - **JSON Serialization**: The library provides functionalities to serialize/deserialize the node data to/from JSON format.
 

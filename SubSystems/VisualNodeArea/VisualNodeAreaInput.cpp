@@ -10,8 +10,7 @@ void NodeArea::InputUpdate()
 void NodeArea::MouseInputUpdate()
 {
 	MouseCursorPosition = ImVec2(ImGui::GetIO().MousePos.x, ImGui::GetIO().MousePos.y);
-	HoveredNode = nullptr;
-	SocketHovered = nullptr;
+	
 	bOpenMainContextMenu = false;
 
 	MouseSelectRegionMin = ImVec2(FLT_MAX, FLT_MAX);
@@ -30,18 +29,17 @@ void NodeArea::MouseInputUpdate()
 	if (ImGui::GetIO().MouseReleased[0])
 		MouseDownIn = nullptr;
 
-	for (size_t i = 0; i < Nodes.size(); i++)
-		Nodes[i]->SetIsHovered(false);
-
-	for (size_t i = 0; i < Nodes.size(); i++)
-	{
-		InputUpdateNode(Nodes[i]);
-		if (HoveredNode != nullptr)
-			break;
-	}
+	MouseInputUpdateNodes();
+	MouseInputUpdateGroupComments();
 
 	if (ImGui::IsMouseDragging(0) && MouseDownIn == NodeAreaWindow && ImGui::GetHoveredID() == 0)
 		MouseDragging();
+
+	if (ImGui::IsMouseDown(0))
+		LeftMouseDown();
+
+	if (ImGui::IsMouseReleased(0))
+		LeftMouseReleased();
 
 	if (ImGui::IsMouseClicked(0))
 		LeftMouseClick();
@@ -92,6 +90,71 @@ void NodeArea::MouseInputUpdate()
 	{
 		ApplyZoom(-1.0f);
 	}
+
+	if (!SelectedNodes.empty() || !SelectedRerouteNodes.empty() || !SelectedGroupComments.empty())
+		UnSelectAllConnections();
+}
+
+void NodeArea::LeftMouseDown()
+{
+}
+
+void NodeArea::LeftMouseReleased()
+{
+	LeftMouseReleasedGroupCommentUpdate();
+}
+
+void NodeArea::LeftMouseReleasedGroupCommentUpdate()
+{
+	for (size_t i = 0; i < GroupComments.size(); i++)
+	{
+		GroupComments[i]->bHorizontalResizeActive = false;
+		GroupComments[i]->bVerticalResizeActive = false;
+	}
+}
+
+void NodeArea::MouseInputUpdateNodes()
+{
+	HoveredNode = nullptr;
+	SocketHovered = nullptr;
+
+	for (size_t i = 0; i < Nodes.size(); i++)
+		Nodes[i]->SetIsHovered(false);
+
+	for (size_t i = 0; i < Nodes.size(); i++)
+	{
+		InputUpdateNode(Nodes[i]);
+		if (HoveredNode != nullptr)
+			break;
+	}
+}
+
+void NodeArea::MouseInputUpdateGroupComments()
+{
+	GroupCommentHovered = nullptr;
+	for (size_t i = 0; i < GroupComments.size(); i++)
+	{
+		GroupComments[i]->bHovered = false;
+		GroupComments[i]->bCaptionHovered = false;
+	}
+
+	if (HoveredNode)
+		return;
+
+	// Going backwards because of the render order.
+	for (int i = GroupComments.size() - 1; i >= 0; i--)
+	{
+		if (IsRectUnderMouse(LocalToScreen(GroupComments[i]->GetPosition()), GroupComments[i]->GetSize() * Zoom))
+		{
+			GroupCommentHovered = GroupComments[i];
+			GroupCommentHovered->bHovered = true;
+
+			if (IsGroupCommentCaptionUnderMouse(GroupComments[i]))
+				GroupCommentHovered->bCaptionHovered = true;
+
+			break;
+		}
+	}
 }
 
 void NodeArea::LeftMouseClick()
@@ -99,24 +162,39 @@ void NodeArea::LeftMouseClick()
 	LeftMouseClickNodesUpdate();
 	LeftMouseClickConnectionsUpdate();
 	LeftMouseClickRerouteUpdate();
+	LeftMouseClickGroupCommentsUpdate();
 }
 
 void NodeArea::LeftMouseClickNodesUpdate()
 {
-	if (HoveredNode != nullptr)
+	bool bNothingElseIsSelected = SelectedNodes.size() == 0 && SelectedRerouteNodes.size() == 0 && SelectedGroupComments.size() == 0;
+	bool bCtrlPressed = ImGui::IsKeyDown(ImGuiKey_LeftCtrl) || ImGui::IsKeyDown(ImGuiKey_RightCtrl);
+	bool bHoveredCorrectly = HoveredNode != nullptr;
+
+	if (bNothingElseIsSelected && bHoveredCorrectly)
 	{
-		if (!IsSelected(HoveredNode) && !ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && !ImGui::IsKeyDown(ImGuiKey_RightCtrl))
-			SelectedNodes.clear();
-
-		// If it is new selection
-		if (!IsSelected(HoveredNode))
-			UnSelectAllRerouteNodes();
-
 		AddSelected(HoveredNode);
+		return;
 	}
-	else
+
+	if (!IsMouseAboveSomethingSelected())
 	{
-		SelectedNodes.clear();
+		if ((bCtrlPressed && bHoveredCorrectly))
+		{
+			AddSelected(HoveredNode);
+			return;
+		}
+		else if (!bCtrlPressed && bHoveredCorrectly)
+		{
+			UnSelectAll();
+			AddSelected(HoveredNode);
+			return;
+		}
+		else if (!bCtrlPressed)
+		{
+			SelectedNodes.clear();
+			return;
+		}
 	}
 }
 
@@ -141,24 +219,96 @@ void NodeArea::LeftMouseClickConnectionsUpdate()
 
 void NodeArea::LeftMouseClickRerouteUpdate()
 {
-	if (RerouteNodeHovered != nullptr || (HoveredNode != nullptr && IsSelected(HoveredNode)))
-	{
-		if (!IsSelected(RerouteNodeHovered) && !ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && !ImGui::IsKeyDown(ImGuiKey_RightCtrl))
-		{
-			if (!(HoveredNode != nullptr && IsSelected(HoveredNode)))
-				UnSelectAllRerouteNodes();
-		}
+	bool bNothingElseIsSelected = SelectedNodes.size() == 0 && SelectedRerouteNodes.size() == 0 && SelectedGroupComments.size() == 0;
+	bool bCtrlPressed = ImGui::IsKeyDown(ImGuiKey_LeftCtrl) || ImGui::IsKeyDown(ImGuiKey_RightCtrl);
+	bool bHoveredCorrectly = RerouteNodeHovered != nullptr;
 
-		AddSelected(RerouteNodeHovered);
-	}
-	else
+	if (bNothingElseIsSelected && bHoveredCorrectly)
 	{
-		UnSelectAllRerouteNodes();
+		AddSelected(RerouteNodeHovered);
+		return;
+	}
+
+	if (!IsMouseAboveSomethingSelected())
+	{
+		if (bCtrlPressed && bHoveredCorrectly)
+		{
+			AddSelected(RerouteNodeHovered);
+			return;
+		}
+		else if (!bCtrlPressed && bHoveredCorrectly)
+		{
+			UnSelectAll();
+			AddSelected(RerouteNodeHovered);
+			return;
+		}
+		else if (!bCtrlPressed)
+		{
+			UnSelectAllRerouteNodes();
+			return;
+		}
+	}
+}
+
+void NodeArea::LeftMouseClickGroupCommentsUpdate()
+{
+	if (HoveredNode == nullptr && RerouteNodeHovered == nullptr)
+	{
+		if (!IsAnyGroupCommentInResizeMode())
+		{
+			for (size_t i = 0; i < GroupComments.size(); i++)
+			{
+				if (IsGroupCommentRightPartUnderMouse(GroupComments[i]))
+					GroupComments[i]->bHorizontalResizeActive = true;
+
+				if (IsGroupCommentBottomPartUnderMouse(GroupComments[i]))
+					GroupComments[i]->bVerticalResizeActive = true;
+
+				if (GroupComments[i]->bHorizontalResizeActive || GroupComments[i]->bVerticalResizeActive)
+					break;
+			}
+		}
+	}
+
+	bool bNothingElseIsSelected = SelectedNodes.size() == 0 && SelectedRerouteNodes.size() == 0 && SelectedGroupComments.size() == 0;
+	bool bCtrlPressed = ImGui::IsKeyDown(ImGuiKey_LeftCtrl) || ImGui::IsKeyDown(ImGuiKey_RightCtrl);
+	bool bHoveredCorrectly = GroupCommentHovered != nullptr && GroupCommentHovered->bCaptionHovered;
+
+	if (bNothingElseIsSelected && bHoveredCorrectly)
+	{
+		AddSelected(GroupCommentHovered);
+		return;
+	}
+
+	if (!IsMouseAboveSomethingSelected())
+	{
+		if (bCtrlPressed && bHoveredCorrectly)
+		{
+			AddSelected(GroupCommentHovered);
+			return;
+		}
+		else if (!bCtrlPressed && bHoveredCorrectly)
+		{
+			UnSelectAll();
+			AddSelected(GroupCommentHovered);
+			return;
+		}
+		else if (!bCtrlPressed)
+		{
+			UnSelectAllGroupComments();
+			return;
+		}
 	}
 }
 
 void NodeArea::RightMouseClick()
 {
+	if (HoveredNode == nullptr)
+	{
+		SelectedNodes.clear();
+		bOpenMainContextMenu = true;
+	}
+
 	RightMouseClickNodesUpdate();
 	RightMouseClickConnectionsUpdate();
 	RightMouseClickRerouteUpdate();
@@ -206,11 +356,6 @@ void NodeArea::RightMouseClickNodesUpdate()
 			}
 		}
 	}
-	else
-	{
-		SelectedNodes.clear();
-		bOpenMainContextMenu = true;
-	}
 }
 
 void NodeArea::RightMouseClickConnectionsUpdate()
@@ -223,8 +368,52 @@ void NodeArea::RightMouseClickRerouteUpdate()
 
 }
 
+bool NodeArea::ShouldDragGrid()
+{
+	for (size_t i = 0; i < GroupComments.size(); i++)
+	{
+		if (GroupComments[i]->bIsRenamingActive)
+			return false;
+
+		if (GroupComments[i]->bHorizontalResizeActive || GroupComments[i]->bVerticalResizeActive)
+			return false;
+	}
+
+	if (IsMouseRegionSelectionActive())
+		return false;
+
+	if (SocketLookingForConnection != nullptr)
+		return false;
+
+	if (!SelectedNodes.empty())
+		return false;
+
+	if (SocketHovered != nullptr)
+		return false;
+
+	if (!SelectedRerouteNodes.empty())
+		return false;
+
+	if (RerouteNodeHovered != nullptr)
+		return false;
+
+	if (!SelectedGroupComments.empty())
+		return false;
+
+	if (GroupCommentHovered != nullptr)
+		return false;
+
+	return true;
+}
+
 void NodeArea::MouseDragging()
 {
+	for (size_t i = 0; i < GroupComments.size(); i++)
+	{
+		if (GroupComments[i]->bIsRenamingActive)
+			return;
+	}
+
 	if (ImGui::IsKeyDown(ImGuiKey_LeftShift) || ImGui::IsKeyDown(ImGuiKey_RightShift))
 	{
 		SocketLookingForConnection = nullptr;
@@ -242,33 +431,32 @@ void NodeArea::MouseDragging()
 		}
 	}
 
-	if (!IsMouseRegionSelectionActive())
+	if (ShouldDragGrid())
 	{
-		if (SocketLookingForConnection == nullptr)
-		{
-			if (SelectedNodes.empty() && SocketHovered == nullptr && SelectedRerouteNodes.empty() && RerouteNodeHovered == nullptr)
-			{
-				RenderOffset.x += GetMouseDelta().x * Zoom;
-				RenderOffset.y += GetMouseDelta().y * Zoom;
+		RenderOffset.x += GetMouseDelta().x * Zoom;
+		RenderOffset.y += GetMouseDelta().y * Zoom;
 
-				if (RenderOffset.x > Settings.Style.Grid.GRID_SIZE * Zoom)
-					RenderOffset.x = Settings.Style.Grid.GRID_SIZE * Zoom;
+		if (RenderOffset.x > Settings.Style.Grid.GRID_SIZE * Zoom)
+			RenderOffset.x = Settings.Style.Grid.GRID_SIZE * Zoom;
 
-				if (RenderOffset.x < -Settings.Style.Grid.GRID_SIZE * Zoom)
-					RenderOffset.x = -Settings.Style.Grid.GRID_SIZE * Zoom;
+		if (RenderOffset.x < -Settings.Style.Grid.GRID_SIZE * Zoom)
+			RenderOffset.x = -Settings.Style.Grid.GRID_SIZE * Zoom;
 
-				if (RenderOffset.y > Settings.Style.Grid.GRID_SIZE * Zoom)
-					RenderOffset.y = Settings.Style.Grid.GRID_SIZE * Zoom;
+		if (RenderOffset.y > Settings.Style.Grid.GRID_SIZE * Zoom)
+			RenderOffset.y = Settings.Style.Grid.GRID_SIZE * Zoom;
 
-				if (RenderOffset.y < -Settings.Style.Grid.GRID_SIZE * Zoom)
-					RenderOffset.y = -Settings.Style.Grid.GRID_SIZE * Zoom;
-			}
-		}
+		if (RenderOffset.y < -Settings.Style.Grid.GRID_SIZE * Zoom)
+			RenderOffset.y = -Settings.Style.Grid.GRID_SIZE * Zoom;
 	}
 
-	MouseDraggingNodesUpdate();
-	MouseDraggingConnectionsUpdate();
-	MouseDraggingRerouteUpdate();
+	if (!IsAnyGroupCommentInResizeMode())
+	{
+		MouseDraggingNodesUpdate();
+		MouseDraggingConnectionsUpdate();
+		MouseDraggingRerouteUpdate();
+	}
+
+	MouseDraggingGroupCommentUpdate();
 }
 
 bool NodeArea::IsRectInMouseSelectionRegion(ImVec2 RectMin, ImVec2 RectSize)
@@ -279,27 +467,21 @@ bool NodeArea::IsRectInMouseSelectionRegion(ImVec2 RectMin, ImVec2 RectSize)
 	if (Settings.bRequireFullOverlapToSelect)
 	{
 		// Check if the entire Rect is inside MouseSelectRegion.
-		if (RectMin.x >= MouseSelectRegionMin.x &&
-			RectMax.x <= MouseSelectRegionMax.x &&
-			RectMin.y >= MouseSelectRegionMin.y &&
-			RectMax.y <= MouseSelectRegionMax.y)
-		{
-			return true;
-		}
+		return IsSecondRectInsideFirstOne(MouseSelectRegionMin, MouseSelectRegionMax - MouseSelectRegionMin, RectMin, RectSize);
 	}
 	else
 	{
 		// Check if a part of the Rect is inside MouseSelectRegion.
-		if (RectMin.x < MouseSelectRegionMax.x &&
-			RectMax.x > MouseSelectRegionMin.x &&
-			RectMin.y < MouseSelectRegionMax.y &&
-			RectMax.y > MouseSelectRegionMin.y)
-		{
-			return true;
-		}
+		return IsRectsOverlaping(RectMin, RectSize, MouseSelectRegionMin, MouseSelectRegionMax - MouseSelectRegionMin);
 	}
 
 	return false;
+}
+
+bool NodeArea::IsRectUnderMouse(ImVec2 RectMin, ImVec2 RectSize)
+{
+	static ImVec2 MouseCursorSize = ImVec2(5, 5);
+	return IsRectsOverlaping(RectMin, RectSize, MouseCursorPosition, MouseCursorSize);
 }
 
 void NodeArea::MouseDraggingNodesUpdate()
@@ -376,6 +558,91 @@ void NodeArea::MouseDraggingRerouteUpdate()
 	}
 }
 
+void NodeArea::MouseDraggingGroupCommentUpdate()
+{
+	if (IsMouseRegionSelectionActive())
+	{
+		SelectedGroupComments.clear();
+		const ImVec2 RegionSize = MouseSelectRegionMax - MouseSelectRegionMin;
+
+		for (size_t i = 0; i < GroupComments.size(); i++)
+		{
+			// Check if the entire Rect is inside MouseSelectRegion.
+			if (IsSecondRectInsideFirstOne(MouseSelectRegionMin, MouseSelectRegionMax - MouseSelectRegionMin, LocalToScreen(GroupComments[i]->GetPosition()), GroupComments[i]->GetSize() * Zoom))
+				AddSelected(GroupComments[i]);
+		}
+	}
+	else
+	{
+		bool bNothingElseIsSelected = SelectedNodes.size() == 0 && SelectedRerouteNodes.size() == 0 && SelectedGroupComments.size() == 0;
+		int SelectedElementsCount = SelectedNodes.size() + SelectedRerouteNodes.size() + SelectedGroupComments.size();
+
+		GroupComment* GroupCommentThatShouldBeResized = nullptr;
+		if (SelectedElementsCount <= 1)
+		{
+			for (size_t i = 0; i < GroupComments.size(); i++)
+			{
+				if (GroupComments[i]->bHorizontalResizeActive || GroupComments[i]->bVerticalResizeActive)
+				{
+					if (bNothingElseIsSelected || GroupComments[i]->bSelected)
+					{
+						GroupCommentThatShouldBeResized = GroupComments[i];
+						break;
+					}
+				}
+			}
+		}
+
+		if (GroupCommentThatShouldBeResized != nullptr)
+		{
+			if (GroupCommentThatShouldBeResized->bHorizontalResizeActive)
+				GroupCommentThatShouldBeResized->SetSize(ImVec2(GroupCommentThatShouldBeResized->GetSize().x + GetMouseDelta().x, GroupCommentThatShouldBeResized->GetSize().y));
+
+			if (GroupCommentThatShouldBeResized->bVerticalResizeActive)
+				GroupCommentThatShouldBeResized->SetSize(ImVec2(GroupCommentThatShouldBeResized->GetSize().x, GroupCommentThatShouldBeResized->GetSize().y + GetMouseDelta().y));
+
+			if (GroupCommentThatShouldBeResized->GetSize().x < 100)
+				GroupCommentThatShouldBeResized->SetSize(ImVec2(100, GroupCommentThatShouldBeResized->GetSize().y));
+
+			if (GroupCommentThatShouldBeResized->GetSize().y < 100)
+				GroupCommentThatShouldBeResized->SetSize(ImVec2(GroupCommentThatShouldBeResized->GetSize().x, 100));
+		}
+		else
+		{
+			for (size_t i = 0; i < SelectedGroupComments.size(); i++)
+			{
+				MoveGroupComment(SelectedGroupComments[i], GetMouseDelta());
+			}
+		}
+	}
+}
+
+void NodeArea::MoveGroupComment(GroupComment* GroupComment, ImVec2 Delta)
+{
+	GroupComment->SetPosition(GroupComment->GetPosition() + Delta);
+
+	if (!GroupComment->bMoveElementsWithComment)
+		return;
+
+	for (size_t i = 0; i < GroupComment->AttachedNodes.size(); i++)
+	{
+		if (!IsSelected(GroupComment->AttachedNodes[i]))
+			GroupComment->AttachedNodes[i]->SetPosition(GroupComment->AttachedNodes[i]->GetPosition() + Delta);
+	}
+
+	for (size_t i = 0; i < GroupComment->AttachedRerouteNodes.size(); i++)
+	{
+		if (!IsSelected(GroupComment->AttachedRerouteNodes[i]))
+			GroupComment->AttachedRerouteNodes[i]->Position += Delta;
+	}
+
+	for (size_t i = 0; i < GroupComment->AttachedGroupComments.size(); i++)
+	{
+		if (!IsSelected(GroupComment->AttachedGroupComments[i]))
+			GroupComment->AttachedGroupComments[i]->SetPosition(GroupComment->AttachedGroupComments[i]->GetPosition() + Delta);
+	}
+}
+
 void NodeArea::KeyboardInputUpdate()
 {
 	if (ImGui::IsKeyDown(ImGuiKey_Delete))
@@ -397,6 +664,12 @@ void NodeArea::KeyboardInputUpdate()
 			Delete(SelectedRerouteNodes[i]);
 			i--;
 		}
+
+		for (size_t i = 0; i < SelectedGroupComments.size(); i++)
+		{
+			Delete(SelectedGroupComments[i]);
+			i--;
+		}
 	}
 
 	static bool WasCopiedToClipboard = false;
@@ -404,9 +677,9 @@ void NodeArea::KeyboardInputUpdate()
 	{
 		if (ImGui::IsKeyDown(ImGuiKey_C))
 		{
-			if (!SelectedNodes.empty())
+			if (!SelectedNodes.empty() || !SelectedGroupComments.empty())
 			{
-				const NodeArea* NewNodeArea = NodeArea::CreateNodeArea(SelectedNodes);
+				const NodeArea* NewNodeArea = NodeArea::CreateNodeArea(SelectedNodes, SelectedGroupComments);
 				NODE_CORE.SetClipboardText(NewNodeArea->ToJson());
 				delete NewNodeArea;
 			}
@@ -431,7 +704,7 @@ void NodeArea::KeyboardInputUpdate()
 
 				// ***************** Place new nodes in center of a view space *****************
 				const ImVec2 ViewCenter = GetRenderedViewCenter();
-				ImVec2 NodesAABBCenter = NewNodeArea->GetAllNodesAABBCenter();
+				ImVec2 NodesAABBCenter = NewNodeArea->GetAllElementsAABBCenter();
 				NodesAABBCenter -= NewNodeArea->GetRenderOffset();
 
 				NeededShift = ViewCenter - NodesAABBCenter;
@@ -447,14 +720,17 @@ void NodeArea::KeyboardInputUpdate()
 						NewNodeArea->Connections[i]->RerouteNodes[j]->Position += NeededShift;
 					}
 				}
+
+				for (size_t i = 0; i < NewNodeArea->GroupComments.size(); i++)
+				{
+					NewNodeArea->GroupComments[i]->SetPosition(NewNodeArea->GroupComments[i]->GetPosition() + NeededShift);
+				}
 				// ***************** Place new nodes in center of a view space END *****************
 
 				NodeArea::CopyNodesTo(NewNodeArea, this);
 
 				// Unselect all elements.
-				SelectedNodes.clear();
-				UnSelectAllConnections();
-				UnSelectAllRerouteNodes();
+				UnSelectAll();
 
 				// Select all pasted nodes.
 				for (size_t i = Nodes.size() - NewNodeArea->Nodes.size(); i < Nodes.size(); i++)
@@ -469,6 +745,12 @@ void NodeArea::KeyboardInputUpdate()
 					{
 						AddSelected(Connections[i]->RerouteNodes[j]);
 					}
+				}
+
+				// Select all pasted group comments.
+				for (size_t i = GroupComments.size() - NewNodeArea->GroupComments.size(); i < GroupComments.size(); i++)
+				{
+					AddSelected(GroupComments[i]);
 				}
 
 				delete NewNodeArea;
@@ -571,6 +853,68 @@ void NodeArea::UnSelectAllConnections()
 	SelectedConnections.clear();
 }
 
+bool NodeArea::AddSelected(GroupComment* GroupComment)
+{
+	if (GroupComment == nullptr)
+		return false;
+
+	if (IsSelected(GroupComment))
+		return false;
+
+	GroupComment->bSelected = true;
+	SelectedGroupComments.push_back(GroupComment);
+	AttachElemetnsToGroupComment(GroupComment);
+
+	return true;
+}
+
+bool NodeArea::IsSelected(const GroupComment* GroupComment) const
+{
+	if (GroupComment == nullptr)
+		return false;
+
+	for (size_t i = 0; i < SelectedGroupComments.size(); i++)
+	{
+		if (SelectedGroupComments[i] == GroupComment)
+			return true;
+	}
+
+	return false;
+}
+
+bool NodeArea::UnSelect(GroupComment* GroupComment)
+{
+	if (GroupComment == nullptr)
+		return false;
+
+	for (size_t i = 0; i < SelectedGroupComments.size(); i++)
+	{
+		if (SelectedGroupComments[i] == GroupComment)
+		{
+			SelectedGroupComments[i]->bSelected = false;
+			SelectedGroupComments.erase(SelectedGroupComments.begin() + i);
+
+			GroupComment->AttachedNodes.clear();
+			GroupComment->AttachedRerouteNodes.clear();
+			GroupComment->AttachedGroupComments.clear();
+
+			return true;
+		}
+	}
+
+	return false;
+}
+
+void NodeArea::UnSelectAllGroupComments()
+{
+	for (size_t i = 0; i < SelectedGroupComments.size(); i++)
+	{
+		SelectedGroupComments[i]->bSelected = false;
+	}
+
+	SelectedGroupComments.clear();
+}
+
 bool NodeArea::AddSelected(RerouteNode* RerouteNode)
 {
 	if (RerouteNode == nullptr)
@@ -626,21 +970,19 @@ void NodeArea::UnSelectAllRerouteNodes()
 	SelectedRerouteNodes.clear();
 }
 
-void NodeArea::ClearSelection()
+void NodeArea::UnSelectAll()
 {
 	SelectedNodes.clear();
 	SelectedConnections.clear();
 	UnSelectAllRerouteNodes();
+	UnSelectAllGroupComments();
 }
 
 void NodeArea::InputUpdateNode(Node* Node)
 {
 	if (Node->GetStyle() == DEFAULT)
 	{
-		if (Node->LeftTop.x < MouseCursorPosition.x + MouseCursorSize.x &&
-			Node->LeftTop.x + Node->GetSize().x * Zoom > MouseCursorPosition.x &&
-			Node->LeftTop.y < MouseCursorPosition.y + MouseCursorSize.y &&
-			Node->GetSize().y * Zoom + Node->LeftTop.y > MouseCursorPosition.y)
+		if (IsRectUnderMouse(Node->LeftTop, Node->GetSize() * Zoom))
 		{
 			HoveredNode = Node;
 			Node->SetIsHovered(true);
@@ -934,9 +1276,13 @@ void NodeArea::MouseInputUpdateConnections()
 	}
 
 	if (ImGui::IsMouseDoubleClicked(0))
-	{
-		ConnectionsDoubleMouseClick();
-	}
+		DoubleMouseClick();
+}
+
+void NodeArea::DoubleMouseClick()
+{
+	ConnectionsDoubleMouseClick();
+	GroupCommentDoubleMouseClick();
 }
 
 void NodeArea::ConnectionsDoubleMouseClick()
@@ -960,4 +1306,98 @@ void NodeArea::ConnectionsDoubleMouseClick()
 			}
 		}
 	}
+}
+
+bool NodeArea::IsGroupCommentCaptionUnderMouse(GroupComment* GroupComment)
+{
+	ImVec2 LocalPosition = LocalToScreen(GroupComment->GetPosition());
+	ImVec2 CommentSize = GroupComment->GetSize() * Zoom;
+
+	ImVec2 CaptionSize = GroupComment->GetCaptionSize(Zoom);
+	ImVec2 CaptionPosition = LocalPosition + ImVec2(4.0f, 4.0f) * Zoom;
+
+	if (IsRectUnderMouse(CaptionPosition, CaptionSize))
+		return true;
+
+	return false;
+}
+
+bool NodeArea::IsGroupCommentRightPartUnderMouse(GroupComment* GroupComment)
+{
+	if (IsGroupCommentCaptionUnderMouse(GroupComment))
+		return false;
+
+	ImVec2 LocalPosition = LocalToScreen(GroupComment->GetPosition());
+	ImVec2 CommentSize = GroupComment->GetSize() * Zoom;
+
+	ImVec2 CaptionSize = GroupComment->GetCaptionSize(Zoom);
+	ImVec2 CaptionPosition = LocalPosition + ImVec2(4.0f, 4.0f) * Zoom;
+
+	const float LineLength = 7.0f * Zoom;
+	ImVec2 Begining = CaptionPosition + ImVec2(CaptionSize.x - LineLength, CaptionSize.y);
+	
+	if (IsRectUnderMouse(Begining, ImVec2(LineLength, CommentSize.y - CaptionSize.y)))
+		return true;
+
+	return false;
+}
+
+bool NodeArea::IsGroupCommentBottomPartUnderMouse(GroupComment* GroupComment)
+{
+	if (IsGroupCommentCaptionUnderMouse(GroupComment))
+		return false;
+
+	ImVec2 LocalPosition = LocalToScreen(GroupComment->GetPosition());
+	ImVec2 CommentSize = GroupComment->GetSize() * Zoom;
+
+	ImVec2 CaptionSize = GroupComment->GetCaptionSize(Zoom);
+	ImVec2 CaptionPosition = LocalPosition + ImVec2(4.0f, 4.0f) * Zoom;
+
+	const float LineLength = 7.0f * Zoom;
+	ImVec2 Begining = CaptionPosition + ImVec2(0.0f, CommentSize.y - LineLength * 2);
+
+	if (IsRectUnderMouse(Begining, ImVec2(CommentSize.x, LineLength)))
+		return true;
+
+	return false;
+}
+
+void NodeArea::GroupCommentDoubleMouseClick()
+{
+	if (GroupCommentHovered != nullptr)
+	{
+		if (GroupCommentHovered->bHovered)
+		{
+			for (size_t i = 0; i < GroupComments.size(); i++)
+				GroupComments[i]->bIsRenamingActive = false;
+
+			if (GroupCommentHovered->bCaptionHovered)
+				GroupCommentHovered->bIsRenamingActive = true;
+		}
+	}
+}
+
+bool NodeArea::IsMouseAboveSomethingSelected() const
+{
+	if (HoveredNode != nullptr && IsSelected(HoveredNode))
+		return true;
+
+	if (RerouteNodeHovered != nullptr && IsSelected(RerouteNodeHovered))
+		return true;
+
+	if (GroupCommentHovered != nullptr && IsSelected(GroupCommentHovered))
+		return true;
+
+	return false;
+}
+
+bool NodeArea::IsAnyGroupCommentInResizeMode()
+{
+	for (size_t i = 0; i < GroupComments.size(); i++)
+	{
+		if (GroupComments[i]->bHorizontalResizeActive || GroupComments[i]->bVerticalResizeActive)
+			return true;
+	}
+	
+	return false;
 }

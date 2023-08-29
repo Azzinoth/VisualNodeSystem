@@ -30,16 +30,4 @@ Node* NodeFactory::CopyNode(const std::string& Type, const Node& Node) const
         return nullptr;
 
     return it->second(Node);
-
-    //auto it = CopyConstructors.find(Node.GetType());
-    //if (it != CopyConstructors.end())
-    //{
-    //    return it->second(Node);
-    //}
-    ///*else
-    //{
-    //    throw std::runtime_error("Unknown node type: " + Node.GetType());
-    //}*/
-
-    //return nullptr;
 }

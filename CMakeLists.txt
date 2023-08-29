@@ -23,6 +23,8 @@ file(GLOB VisualNodeArea_SRC
 file(GLOB VisualNodeSystem_SRC
 	"VisualNodeSystem.cpp"
 	"VisualNodeSystem.h"
+	"GroupComment.cpp"
+	"GroupComment.h"
 	"VisualNodeFactory.cpp"
 	"VisualNodeFactory.h"
 	"VisualNode.cpp"

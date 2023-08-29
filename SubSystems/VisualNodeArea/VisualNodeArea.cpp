@@ -134,7 +134,7 @@ void NodeArea::SaveNodesToFile(const char* FileName, std::vector<Node*> Nodes)
 	if (Nodes.empty())
 		return;
 
-	const NodeArea* NewNodeArea = NodeArea::CreateNodeArea(Nodes);
+	const NodeArea* NewNodeArea = NodeArea::CreateNodeArea(Nodes, std::vector<GroupComment*>());
 	const std::string json_file = NewNodeArea->ToJson();
 	std::ofstream SaveFile;
 	SaveFile.open(FileName);
@@ -168,9 +168,6 @@ void NodeArea::ProcessConnections(const std::vector<NodeSocket*>& Sockets,
 		{
 			if (IsNodeIDInList(ConnectedSocket->GetParent()->GetID(), SourceNodes))
 			{
-				// Record the connection from the perspective of the output node
-				TargetArea->Nodes[NodeShift]->Output[i]->ConnectedSockets.push_back(OldToNewSocket[ConnectedSocket]);
-
 				// Check maybe we already establish this connection.
 				if (!IsAlreadyConnected(OldToNewSocket[CurrentSocket], OldToNewSocket[ConnectedSocket], TargetArea->Connections))
 				{
@@ -254,11 +251,16 @@ void NodeArea::CopyNodesInternal(const std::vector<Node*>& SourceNodes, NodeArea
 	}
 }
 
-
-NodeArea* NodeArea::CreateNodeArea(const std::vector<Node*> Nodes)
+NodeArea* NodeArea::CreateNodeArea(const std::vector<Node*> Nodes, const std::vector<GroupComment*> GroupComments)
 {
 	NodeArea* NewArea = new NodeArea();
 	CopyNodesInternal(Nodes, NewArea);
+
+	for (size_t i = 0; i < GroupComments.size(); i++)
+	{
+		GroupComment* CopyOfGroupComment = new GroupComment(*GroupComments[i]);
+		NewArea->AddGroupComment(CopyOfGroupComment);
+	}
 
 	return NewArea;
 }
@@ -326,6 +328,13 @@ std::string NodeArea::ToJson() const
 		}
 	}
 	root["connections"] = ConnectionsData;
+
+	Json::Value GroupCommentsData;
+	for (size_t i = 0; i < GroupComments.size(); i++)
+	{
+		GroupCommentsData[std::to_string(i)] = GroupComments[i]->ToJson();
+	}
+	root["GroupComments"] = GroupCommentsData;
 
 	root["renderOffset"]["x"] = RenderOffset.x;
 	root["renderOffset"]["y"] = RenderOffset.y;
@@ -460,6 +469,17 @@ NodeArea* NodeArea::FromJson(std::string JsonText)
 		}
 	}
 
+	if (root.isMember("GroupComments"))
+	{
+		std::vector<Json::String> GroupCommentsList = root["GroupComments"].getMemberNames();
+		for (size_t i = 0; i < GroupCommentsList.size(); i++)
+		{
+			GroupComment* NewGroupComment = new GroupComment();
+			NewGroupComment->FromJson(root["GroupComments"][std::to_string(i)]);
+			NewArea->AddGroupComment(NewGroupComment);
+		}
+	}
+
 	if (root.isMember("renderOffset"))
 	{
 		float OffsetX = root["renderOffset"]["x"].asFloat();
@@ -474,6 +494,12 @@ void NodeArea::CopyNodesTo(NodeArea* SourceNodeArea, NodeArea* TargetNodeArea)
 {
 	const size_t NodeShift = TargetNodeArea->Nodes.size();
 	CopyNodesInternal(SourceNodeArea->Nodes, TargetNodeArea, NodeShift);
+
+	for (size_t i = 0; i < SourceNodeArea->GroupComments.size(); i++)
+	{
+		GroupComment* CopyOfGroupComment = new GroupComment(*SourceNodeArea->GroupComments[i]);
+		TargetNodeArea->AddGroupComment(CopyOfGroupComment);
+	}
 }
 
 void NodeArea::LoadFromFile(const char* FileName)
@@ -486,6 +512,7 @@ void NodeArea::LoadFromFile(const char* FileName)
 
 	NodeArea* NewNodeArea = NodeArea::FromJson(FileData);
 	NodeArea::CopyNodesTo(NewNodeArea, this);
+	
 	delete NewNodeArea;
 }
 
@@ -641,4 +668,38 @@ std::vector<ImVec2> NodeArea::GetTangentsForLine(const ImVec2 Begin, const ImVec
 	}
 
 	return Result;
+}
+
+bool NodeArea::IsRectsOverlaping(ImVec2 FirstRectMin, ImVec2 FirstRectSize, ImVec2 SecondRectMin, ImVec2 SecondRectSize)
+{
+	if (FirstRectMin.x < (SecondRectMin.x + SecondRectSize.x) &&
+		(FirstRectMin.x + FirstRectSize.x) > SecondRectMin.x &&
+		FirstRectMin.y < (SecondRectMin.y + SecondRectSize.y) &&
+		(FirstRectMin.y + FirstRectSize.y) > SecondRectMin.y)
+	{
+		return true;
+	}
+
+	return false;
+}
+
+bool NodeArea::IsSecondRectInsideFirstOne(ImVec2 FirstRectMin, ImVec2 FirstRectSize, ImVec2 SecondRectMin, ImVec2 SecondRectSize)
+{
+	if (SecondRectMin.x >= FirstRectMin.x &&
+	   (SecondRectMin.x + SecondRectSize.x) <= (FirstRectMin.x + FirstRectSize.x) &&
+	   SecondRectMin.y >= FirstRectMin.y &&
+	   (SecondRectMin.y + SecondRectSize.y) <= (FirstRectMin.y + FirstRectSize.y))
+	{
+		return true;
+	}
+
+	/*if (FirstRectMin.x < (SecondRectMin.x + SecondRectSize.x) &&
+		(FirstRectMin.x + FirstRectSize.x) > SecondRectMin.x &&
+		FirstRectMin.y < (SecondRectMin.y + SecondRectSize.y) &&
+		(FirstRectMin.y + FirstRectSize.y) > SecondRectMin.y)
+	{
+		return true;
+	}*/
+
+	return false;
 }

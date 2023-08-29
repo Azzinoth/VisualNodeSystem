@@ -70,13 +70,28 @@ void NodeArea::RenderNode(Node* Node) const
 		CurrentDrawList->AddRectFilled(Node->LeftTop + ImVec2(1, 1), TitleArea, NodeTitleBackgroundColor, 8.0f * Zoom);
 		CurrentDrawList->AddRect(Node->LeftTop, Node->RightBottom, ImColor(100, 100, 100), 8.0f * Zoom);
 
-		const ImVec2 TextSize = ImGui::CalcTextSize(Node->GetName().c_str());
+		std::string NodeName = Node->GetName();
+		ImVec2 TextSize = ImGui::CalcTextSize(NodeName.c_str());
+		float AvailableWidth = Node->GetSize().x * Zoom;
+
+		// Check if text width is greater than available space.
+		if (TextSize.x > AvailableWidth)
+		{
+			// Truncate text and add "...".
+			while (!NodeName.empty() && ImGui::CalcTextSize((NodeName + "...").c_str()).x > AvailableWidth)
+			{
+				NodeName.pop_back();
+			}
+			NodeName += "...";
+			TextSize = ImGui::CalcTextSize(NodeName.c_str());
+		}
+
 		ImVec2 TextPosition;
 		TextPosition.x = Node->LeftTop.x + (Node->GetSize().x * Zoom / 2) - TextSize.x / 2;
 		TextPosition.y = Node->LeftTop.y + (GetNodeTitleHeight() / 2) - TextSize.y / 2;
 
 		ImGui::SetCursorScreenPos(TextPosition);
-		ImGui::Text(Node->GetName().c_str());
+		ImGui::Text(NodeName.c_str());
 	}
 	else if (Node->GetStyle() == CIRCLE)
 	{
@@ -254,6 +269,7 @@ void NodeArea::SelectFontSettings() const
 
 void NodeArea::Render()
 {
+	ImVec2 LocalMousePosition = ScreenToLocal(ImGui::GetMousePos());
 	ImGuiStyle OriginalStyle = ImGui::GetStyle();
 	ImGuiStyle& ZoomStyle = ImGui::GetStyle();
 	ZoomStyle = OriginalStyle;
@@ -274,8 +290,6 @@ void NodeArea::Render()
 
 	ImGui::BeginChild("Nodes area", GetSize(), true, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoMove);
 
-	SelectFontSettings();
-
 	NodeAreaWindow = ImGui::GetCurrentWindow();
 	CurrentDrawList = ImGui::GetWindowDrawList();
 
@@ -286,6 +300,18 @@ void NodeArea::Render()
 	// 2 - for custom node draw.
 	// 3 - for line that represent new connection.
 	CurrentDrawList->ChannelsSplit(4);
+
+	// We need to render comments first, because they should be on top layer.
+	// Also font of comments should be bigger than font of nodes.
+	Zoom *= 2.0f;
+	SelectFontSettings();
+	Zoom /= 2.0f;
+	for (size_t i = 0; i < GroupComments.size(); i++)
+		RenderGroupComment(GroupComments[i]);
+	ImGui::PopFont();
+
+	// Then we apply usual font settings.
+	SelectFontSettings();
 
 	CurrentDrawList->ChannelsSetCurrent(1);
 	for (int i = 0; i < static_cast<int>(Nodes.size()); i++)
@@ -300,25 +326,6 @@ void NodeArea::Render()
 	{
 		RenderConnection(Connections[i]);
 	}
-
-	// ************************* RENDER CONTEXT MENU *************************
-	if (bOpenMainContextMenu && MainContextMenuFunc != nullptr)
-	{
-		bOpenMainContextMenu = false;
-		ImGui::OpenPopup("##main_context_menu");
-	}
-
-	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 15));
-	if (ImGui::BeginPopup("##main_context_menu"))
-	{
-		if (MainContextMenuFunc != nullptr)
-			MainContextMenuFunc();
-
-		ImGui::EndPopup();
-	}
-
-	ImGui::PopStyleVar();
-	// ************************* RENDER CONTEXT MENU END *************************
 
 	CurrentDrawList->ChannelsMerge();
 	CurrentDrawList = nullptr;
@@ -338,6 +345,67 @@ void NodeArea::Render()
 	// Reset to the original style before zooming.
 	ImGuiStyle& CurrentStyle = ImGui::GetStyle();
 	CurrentStyle = OriginalStyle;
+
+	// ************************* RENDER CONTEXT MENU *************************
+	if (bOpenMainContextMenu && (MainContextMenuFunc != nullptr || Settings.bShowDefaultMainContextMenu))
+	{
+		bOpenMainContextMenu = false;
+		ImGui::OpenPopup("##main_context_menu");
+	}
+
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 15));
+	if (ImGui::BeginPopup("##main_context_menu"))
+	{
+		if (Settings.bShowDefaultMainContextMenu)
+			RenderDefaultMainContextMenu(LocalMousePosition);
+
+		if (MainContextMenuFunc != nullptr)
+			MainContextMenuFunc();
+
+		ImGui::EndPopup();
+	}
+
+	ImGui::PopStyleVar();
+	// ************************* RENDER CONTEXT MENU END *************************
+
+	if (bShowGroupCommentColorPicker)
+	{
+		bShowGroupCommentColorPicker = false;
+		if (GroupCommentHoveredWhenContextMenuWasOpened != nullptr)
+		{
+			ColorPickerStartValue = Settings.Style.GroupCommentDefaultBackgroundColor;
+			if (GroupCommentHoveredWhenContextMenuWasOpened->BackgroundColor.x != 0.0f ||
+				GroupCommentHoveredWhenContextMenuWasOpened->BackgroundColor.y != 0.0f ||
+				GroupCommentHoveredWhenContextMenuWasOpened->BackgroundColor.z != 0.0f ||
+				GroupCommentHoveredWhenContextMenuWasOpened->BackgroundColor.w != 0.0f)
+				ColorPickerStartValue = GroupCommentHoveredWhenContextMenuWasOpened->BackgroundColor;
+			
+			ImGui::OpenPopup("ColorPickerPopup");
+		}
+	}
+
+	if (ImGui::BeginPopupModal("ColorPickerPopup", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+	{
+		ImGui::Text("Pick a color:");
+		ImGui::ColorPicker4("##picker", (float*)&ColorPickerStartValue, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_AlphaPreview);
+
+		if (ImGui::Button("Close"))
+		{
+			GroupCommentHoveredWhenContextMenuWasOpened = nullptr;
+			ImGui::CloseCurrentPopup();
+		}
+		ImGui::SameLine();
+
+		if (ImGui::Button("Apply"))
+		{
+			if (GroupCommentHoveredWhenContextMenuWasOpened != nullptr)
+				GroupCommentHoveredWhenContextMenuWasOpened->BackgroundColor = ColorPickerStartValue;
+			GroupCommentHoveredWhenContextMenuWasOpened = nullptr;
+			ImGui::CloseCurrentPopup();
+		}
+
+		ImGui::EndPopup();
+	}
 }
 
 void NodeArea::DrawHermiteLine(const ImVec2 Begin, const ImVec2 End, const int Steps, const ImVec4 Color, const ConnectionStyle* Style) const
@@ -569,7 +637,7 @@ void NodeArea::SetRenderOffset(const ImVec2 Offset)
 	RenderOffset = Offset;
 }
 
-void NodeArea::GetAllNodesAABB(ImVec2& Min, ImVec2& Max) const
+void NodeArea::GetAllElementsAABB(ImVec2& Min, ImVec2& Max) const
 {
 	Min.x = FLT_MAX;
 	Min.y = FLT_MAX;
@@ -591,12 +659,27 @@ void NodeArea::GetAllNodesAABB(ImVec2& Min, ImVec2& Max) const
 		if (Nodes[i]->GetPosition().y + RenderOffset.y + Nodes[i]->GetSize().y > Max.y)
 			Max.y = Nodes[i]->GetPosition().y + RenderOffset.y + Nodes[i]->GetSize().y;
 	}
+
+	for (size_t i = 0; i < GroupComments.size(); i++)
+	{
+		if (GroupComments[i]->GetPosition().x + RenderOffset.x < Min.x)
+			Min.x = GroupComments[i]->GetPosition().x + RenderOffset.x;
+
+		if (GroupComments[i]->GetPosition().x + RenderOffset.x + GroupComments[i]->GetSize().x > Max.x)
+			Max.x = GroupComments[i]->GetPosition().x + RenderOffset.x + GroupComments[i]->GetSize().x;
+
+		if (GroupComments[i]->GetPosition().y + RenderOffset.y < Min.y)
+			Min.y = GroupComments[i]->GetPosition().y + RenderOffset.y;
+
+		if (GroupComments[i]->GetPosition().y + RenderOffset.y + GroupComments[i]->GetSize().y > Max.y)
+			Max.y = GroupComments[i]->GetPosition().y + RenderOffset.y + GroupComments[i]->GetSize().y;
+	}
 }
 
-ImVec2 NodeArea::GetAllNodesAABBCenter() const
+ImVec2 NodeArea::GetAllElementsAABBCenter() const
 {
 	ImVec2 min, max;
-	GetAllNodesAABB(min, max);
+	GetAllElementsAABB(min, max);
 
 	return {min.x + (max.x - min.x) / 2.0f, min.y + (max.y - min.y) / 2.0f};
 }
@@ -709,5 +792,193 @@ void NodeArea::SetConnectionStyle(Node* Node, bool bOutputSocket, size_t SocketI
 		ConnectionStyle* TempVariable = GetConnectionStyle(Node->Input[SocketIndex]);
 		if (TempVariable != nullptr)
 			*TempVariable = NewStyle;
+	}
+}
+
+void NodeArea::RenderGroupComment(GroupComment* GroupComment)
+{
+	if (CurrentDrawList == nullptr || GroupComment == nullptr)
+		return;
+
+	ImGui::PushID(GroupComment->ID.c_str());
+
+	ImVec2 LocalPosition = LocalToScreen(GroupComment->GetPosition());
+	ImVec2 CommentSize = GroupComment->GetSize() * Zoom;
+
+	// *****************************************************************************************************************************
+	// Render the background.
+	// *****************************************************************************************************************************
+
+	ImVec4 BackgroundColor = Settings.Style.GroupCommentDefaultBackgroundColor;
+	if (GroupComment->BackgroundColor.x != 0.0f ||
+		GroupComment->BackgroundColor.y != 0.0f ||
+		GroupComment->BackgroundColor.z != 0.0f ||
+		GroupComment->BackgroundColor.w != 0.0f)
+		BackgroundColor = GroupComment->BackgroundColor;
+
+	CurrentDrawList->AddRectFilled(LocalPosition, LocalPosition + CommentSize, ImGui::GetColorU32(BackgroundColor), 2.0f * Zoom);
+
+	// Compute the size of the caption background.
+	ImVec2 CaptionSize = GroupComment->GetCaptionSize(Zoom);
+	ImVec2 CaptionPosition = LocalPosition + ImVec2(4.0f, 4.0f) * Zoom;
+
+	if (IsSelected(GroupComment))
+	{
+		const ImVec2 LeftTop = LocalPosition - ImVec2(4.0f, 4.0f);
+		const ImVec2 RightBottom = LocalPosition + CommentSize + ImVec2(4.0f, 4.0f);
+		ImGui::GetWindowDrawList()->AddRect(LeftTop, RightBottom, ImGui::GetColorU32(Settings.Style.NodeSelectionColor), 8.0f * Zoom);
+	}
+
+	// *****************************************************************************************************************************
+	// Render the caption.
+	// *****************************************************************************************************************************
+
+	const ImU32 CaptionBackgroundColor = ImGui::GetColorU32(ImVec4(BackgroundColor.x, BackgroundColor.y, BackgroundColor.z, 1.0f));
+	const ImU32 CaptionTextColor = ImGui::GetColorU32(ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+
+	// Render the caption background.
+	CurrentDrawList->AddRectFilled(CaptionPosition, CaptionPosition + CaptionSize, CaptionBackgroundColor, 2.0f * Zoom);
+
+	if (!GroupComment->bLastFrameRenameEditWasVisiable)
+	{
+		ImGui::SetKeyboardFocusHere(0);
+		ImGui::SetFocusID(ImGui::GetID("##newCommentEditor"), ImGui::GetCurrentWindow());
+		ImGui::SetItemDefaultFocus();
+		GroupComment->bLastFrameRenameEditWasVisiable = true;
+
+		strcpy_s(GroupComment->GroupCommentRename, GroupComment->GetCaption().size() + 1, GroupComment->GetCaption().c_str());
+	}
+
+	ImVec2 TextOffset = ImVec2(4.0f, 10.0f) * Zoom;
+	if (GroupComment->bIsRenamingActive)
+	{
+		ImGui::SetCursorScreenPos(CaptionPosition + TextOffset);
+		ImGui::SetNextItemWidth(GroupComment->GetSize().x * Zoom - TextOffset.x * 4.0f);
+		if (ImGui::InputText("##newCommentEditor", GroupComment->GroupCommentRename, IM_ARRAYSIZE(GroupComment->GroupCommentRename), ImGuiInputTextFlags_EnterReturnsTrue) ||
+			ImGui::IsMouseClicked(0) && !ImGui::IsItemHovered() || ImGui::GetFocusID() != ImGui::GetID("##newCommentEditor"))
+		{
+			GroupComment->bIsRenamingActive = false;
+			GroupComment->SetCaption(GroupComment->GroupCommentRename);
+		}
+	}
+	else
+	{
+		// Render the caption text.
+		std::string Caption = GroupComment->GetCaption();
+		ImVec2 TextSize = ImGui::CalcTextSize(Caption.c_str());
+
+		// Check if text width is greater than available space.
+		if (TextSize.x > CaptionSize.x - 2.0f * Zoom + TextOffset.x)
+		{
+			// Subtracting twice the TextOffset to account for both left and right margins.
+			// Truncate text and add "...".
+			while (!Caption.empty() && ImGui::CalcTextSize((Caption + "...").c_str()).x > CaptionSize.x - 2.0f * Zoom + TextOffset.x)
+			{
+				Caption.pop_back();
+			}
+			Caption += "...";
+		}
+
+		// Render the caption text.
+		CurrentDrawList->AddText(CaptionPosition + TextOffset, CaptionTextColor, Caption.c_str());
+	}
+	
+	// *****************************************************************************************************************************
+	// Render resize indicator.
+	// *****************************************************************************************************************************
+
+	const ImU32 ResizeIndicatorColor = ImGui::GetColorU32(ImVec4(0.8f, 0.8f, 0.8f, 1.0f));
+	const float LineLength = 7.0f * Zoom;
+	const float LineSpacing = 5.0f * Zoom;
+
+	ImVec2 EndOfComment = LocalPosition + CommentSize - ImVec2(2.0f, 2.0f) * Zoom;
+
+	for (int i = 0; i < 3; i++)
+	{
+		ImVec2 LineStart = ImVec2(EndOfComment.x - LineLength - i * LineSpacing, EndOfComment.y);
+		ImVec2 LineEnd = ImVec2(EndOfComment.x, EndOfComment.y - LineLength - i * LineSpacing);
+
+		CurrentDrawList->AddLine(LineStart, LineEnd, ResizeIndicatorColor, 2.0f * Zoom);
+	}
+
+	// *****************************************************************************************************************************
+	// Render shadow.
+	// *****************************************************************************************************************************
+
+	//EndOfComment += ImVec2(2.0f, 2.0f) * Zoom;
+
+	//const ImU32 ShadowColor = IM_COL32(0, 0, 0, 20);
+	//const float ShadowSize = 4.0f * Zoom;
+
+	//// Right shadow rectangle.
+	//ImVec2 RightShadowTopLeft = ImVec2(EndOfComment.x, LocalPosition.y);
+	//ImVec2 RightShadowBottomRight = ImVec2(EndOfComment.x + ShadowSize, EndOfComment.y + ShadowSize);
+	//CurrentDrawList->AddRectFilled(RightShadowTopLeft, RightShadowBottomRight, ShadowColor);
+
+	//// Bottom shadow rectangle (without overlapping the right shadow).
+	//ImVec2 BottomShadowTopLeft = ImVec2(LocalPosition.x, EndOfComment.y);
+	//ImVec2 BottomShadowBottomRight = ImVec2(EndOfComment.x, EndOfComment.y + ShadowSize);
+	//CurrentDrawList->AddRectFilled(BottomShadowTopLeft, BottomShadowBottomRight, ShadowColor);
+
+	ImGui::PopID();
+}
+
+void NodeArea::RenderDefaultMainContextMenu(ImVec2 LocalMousePosition)
+{
+	// Standard context menu items.
+	if (GroupCommentHovered != nullptr)
+	{
+		if (ImGui::MenuItem("Change background color..."))
+		{
+			GroupCommentHoveredWhenContextMenuWasOpened = GroupCommentHovered;
+			bShowGroupCommentColorPicker = true;
+		}
+
+		bool bTemp = GroupCommentHovered->MoveElementsWithComment();
+		if (ImGui::MenuItem("Group movement", NULL, &bTemp))
+		{
+			GroupCommentHovered->SetMoveElementsWithComment(bTemp);
+		}
+
+		if (ImGui::MenuItem("Bring Forward"))
+		{
+			for (size_t i = 0; i < GroupComments.size(); i++)
+			{
+				if (GroupComments[i] == GroupCommentHovered)
+				{
+					if (i < GroupComments.size() - 1)
+					{
+						std::swap(GroupComments[i], GroupComments[i + 1]);
+					}
+					break;
+				}
+			}
+		}
+
+		if (ImGui::MenuItem("Send Backward"))
+		{
+			for (size_t i = 0; i < GroupComments.size(); i++)
+			{
+				if (GroupComments[i] == GroupCommentHovered)
+				{
+					if (i > 0)
+					{
+						std::swap(GroupComments[i], GroupComments[i - 1]);
+					}
+					break;
+				}
+			}
+		}
+	}
+	else
+	{
+		if (ImGui::MenuItem("Add group comment"))
+		{
+			GroupComment* NewGroupComment = new GroupComment();
+			NewGroupComment->SetCaption("Group comment");
+			NewGroupComment->SetPosition(LocalMousePosition);
+			NewGroupComment->bIsRenamingActive = true;
+			GroupComments.push_back(NewGroupComment);
+		}
 	}
 }
