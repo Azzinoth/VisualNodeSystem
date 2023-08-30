@@ -1045,7 +1045,7 @@ void NodeArea::InputUpdateReroute(RerouteNode* Reroute)
 	}
 }
 
-bool NodeArea::IsMouseOverConnection(Connection* Connection, const int Steps, const float MaxDistance, ImVec2& CollisionPoint)
+bool NodeArea::IsMouseOverConnection(Connection* Connection, const int Steps, const float MaxDistance, ImVec2* CollisionPoint)
 {
 	if (Connection->RerouteNodes.empty())
 		return IsMouseOverSegment(SocketToPosition(Connection->Out), SocketToPosition(Connection->In), Settings.Style.GeneralConnection.LineSegments, 10.0f);
@@ -1060,7 +1060,7 @@ bool NodeArea::IsMouseOverConnection(Connection* Connection, const int Steps, co
 	return false;
 }
 
-bool NodeArea::IsMouseOverSegment(ImVec2 Begin, ImVec2 End, const int Steps, const float maxDistance, ImVec2& CollisionPoint)
+bool NodeArea::IsMouseOverSegment(ImVec2 Begin, ImVec2 End, const int Steps, const float maxDistance, ImVec2* CollisionPoint)
 {
 	std::vector<ImVec2> LineTangents = GetTangentsForLine(Begin, End);
 
@@ -1094,7 +1094,7 @@ bool NodeArea::IsMouseOverSegment(ImVec2 Begin, ImVec2 End, const int Steps, con
 		// If the distance is less than the threshold, the mouse is over the connection.
 		if (Distance < maxDistance * maxDistance * Zoom)
 		{
-			CollisionPoint = Projection;
+			if(CollisionPoint != nullptr) *CollisionPoint = Projection;
 			//ImGui::GetWindowDrawList()->AddRectFilled(projection, projection + ImVec2(5, 5), IM_COL32(175, 175, 255, 125), 1.0f);
 			return true;
 		}
