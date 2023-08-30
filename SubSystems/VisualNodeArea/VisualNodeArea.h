@@ -98,6 +98,8 @@ namespace VisNodeSys
 		void Reset();
 		void AddNode(Node* NewNode);
 		void DeleteNode(const Node* Node);
+		void AddGroupComment(GroupComment* NewGroupComment);
+		void DeleteGroupComment(GroupComment* GroupComment);
 		void SetMainContextMenuFunc(void(*Func)());
 		void PropagateUpdateToConnectedNodes(const Node* CallerNode) const;
 		void SetNodeEventCallback(void(*Func)(Node*, NODE_EVENT));
@@ -280,7 +282,7 @@ namespace VisNodeSys
 		bool IsRectInMouseSelectionRegion(ImVec2 RectMin, ImVec2 RectSize);
 		bool IsRectUnderMouse(ImVec2 RectMin, ImVec2 RectSize);
 
-		void AddGroupComment(GroupComment* NewGroupComment);
+		
 		bool IsGroupCommentCaptionUnderMouse(GroupComment* GroupComment);
 		bool IsGroupCommentRightPartUnderMouse(GroupComment* GroupComment);
 		bool IsGroupCommentBottomPartUnderMouse(GroupComment* GroupComment);

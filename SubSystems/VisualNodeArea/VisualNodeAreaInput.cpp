@@ -142,7 +142,7 @@ void NodeArea::MouseInputUpdateGroupComments()
 		return;
 
 	// Going backwards because of the render order.
-	for (int i = GroupComments.size() - 1; i >= 0; i--)
+	for (int i = static_cast<int>(GroupComments.size()) - 1; i >= 0; i--)
 	{
 		if (IsRectUnderMouse(LocalToScreen(GroupComments[i]->GetPosition()), GroupComments[i]->GetSize() * Zoom))
 		{
@@ -575,7 +575,7 @@ void NodeArea::MouseDraggingGroupCommentUpdate()
 	else
 	{
 		bool bNothingElseIsSelected = SelectedNodes.size() == 0 && SelectedRerouteNodes.size() == 0 && SelectedGroupComments.size() == 0;
-		int SelectedElementsCount = SelectedNodes.size() + SelectedRerouteNodes.size() + SelectedGroupComments.size();
+		int SelectedElementsCount = static_cast<int>(SelectedNodes.size() + SelectedRerouteNodes.size() + SelectedGroupComments.size());
 
 		GroupComment* GroupCommentThatShouldBeResized = nullptr;
 		if (SelectedElementsCount <= 1)

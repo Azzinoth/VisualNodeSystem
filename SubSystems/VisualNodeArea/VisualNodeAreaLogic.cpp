@@ -549,6 +549,24 @@ void NodeArea::AddGroupComment(GroupComment* NewGroupComment)
 	GroupComments.push_back(NewGroupComment);
 }
 
+void NodeArea::DeleteGroupComment(GroupComment* GroupComment)
+{
+	if (GroupComment == nullptr)
+		return;
+
+	UnSelect(GroupComment);
+
+	for (size_t i = 0; i < GroupComments.size(); i++)
+	{
+		if (GroupComments[i] == GroupComment)
+		{
+			GroupComments.erase(GroupComments.begin() + i);
+			delete GroupComment;
+			return;
+		}
+	}
+}
+
 void NodeArea::AttachElemetnsToGroupComment(GroupComment* GroupComment)
 {
 	GroupComment->AttachedNodes.clear();
