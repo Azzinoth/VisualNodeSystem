@@ -91,7 +91,7 @@ void NodeArea::RenderNode(Node* Node) const
 		TextPosition.y = Node->LeftTop.y + (GetNodeTitleHeight() / 2) - TextSize.y / 2;
 
 		ImGui::SetCursorScreenPos(TextPosition);
-		ImGui::Text(NodeName.c_str());
+		ImGui::Text("%s",NodeName.c_str());
 	}
 	else if (Node->GetStyle() == CIRCLE)
 	{
@@ -129,7 +129,7 @@ void NodeArea::RenderNodeSocket(NodeSocket* Socket) const
 		TextX += Input ? GetNodeSocketSize() * 2.0f : -GetNodeSocketSize() * 2.0f - TextSize.x;
 
 		ImGui::SetCursorScreenPos(ImVec2(TextX, SocketPosition.y - TextSize.y / 2.0f));
-		ImGui::Text(Socket->GetName().c_str());
+		ImGui::Text("%s",Socket->GetName().c_str());
 	}
 
 	ImColor SocketColor = DEFAULT_NODE_SOCKET_COLOR;
@@ -152,7 +152,7 @@ void NodeArea::RenderNodeSocket(NodeSocket* Socket) const
 			if (*msg != nullptr)
 			{
 				ImGui::Begin("socket connection info", nullptr, ImGuiWindowFlags_Tooltip | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar);
-				ImGui::Text(*msg);
+				ImGui::Text("%s",*msg);
 				ImGui::End();
 
 				delete msg;
@@ -846,7 +846,7 @@ void NodeArea::RenderGroupComment(GroupComment* GroupComment)
 		ImGui::SetItemDefaultFocus();
 		GroupComment->bLastFrameRenameEditWasVisiable = true;
 
-		strcpy_s(GroupComment->GroupCommentRename, GroupComment->GetCaption().size() + 1, GroupComment->GetCaption().c_str());
+		snprintf(VisNodeSys::GroupComment::GroupCommentRename,GroupComment->GetCaption().size() + 1, "%s", GroupComment->GetCaption().c_str());
 	}
 
 	ImVec2 TextOffset = ImVec2(4.0f, 10.0f) * Zoom;

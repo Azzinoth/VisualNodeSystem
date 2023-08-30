@@ -124,7 +124,7 @@ namespace VisNodeSys
 		bool AddRerouteNodeToConnection(const Node* OutNode, std::string OutSocketID, const Node* InNode, std::string InSocketID, size_t SegmentToDivide, ImVec2 Position);
 
 		static bool IsAlreadyConnected(NodeSocket* FirstSocket, NodeSocket* SecondSocket, const std::vector<Connection*>& Connections);
-		static void NodeArea::ProcessConnections(const std::vector<NodeSocket*>& Sockets,
+		static void ProcessConnections(const std::vector<NodeSocket*>& Sockets,
 												 std::unordered_map<NodeSocket*, NodeSocket*>& OldToNewSocket,
 												 NodeArea* TargetArea, size_t NodeShift, const std::vector<Node*>& SourceNodes);
 		static void CopyNodesInternal(const std::vector<Node*>& SourceNodes, NodeArea* TargetArea, const size_t NodeShift = 0);
@@ -135,8 +135,8 @@ namespace VisNodeSys
 		static bool IsNodeIDInList(std::string ID, std::vector<Node*> List);
 		static bool EmptyOrFilledByNulls(const std::vector<Node*> Vector);
 
-		bool NodeArea::GetConnectionStyle(Node* Node, bool bOutputSocket, size_t SocketIndex, ConnectionStyle& Style) const;
-		void NodeArea::SetConnectionStyle(Node* Node, bool bOutputSocket, size_t SocketIndex, ConnectionStyle NewStyle);
+		bool GetConnectionStyle(Node* Node, bool bOutputSocket, size_t SocketIndex, ConnectionStyle& Style) const;
+		void SetConnectionStyle(Node* Node, bool bOutputSocket, size_t SocketIndex, ConnectionStyle NewStyle);
 	private:
 		struct SocketEvent
 		{
@@ -271,8 +271,8 @@ namespace VisNodeSys
 		void ConnectionsDoubleMouseClick();
 		std::vector<ConnectionSegment> GetConnectionSegments(const Connection* Connection) const;
 		bool AddRerouteNode(Connection* Connection, size_t SegmentToDivide, ImVec2 Position);
-		bool IsMouseOverConnection(Connection* Connection, const int Steps, const float MaxDistance, ImVec2& CollisionPoint = ImVec2());
-		bool IsMouseOverSegment(ImVec2 Begin, ImVec2 End, const int Steps, const float MaxDistance, ImVec2& CollisionPoint = ImVec2());
+		bool IsMouseOverConnection(Connection* Connection, const int Steps, const float MaxDistance, ImVec2* CollisionPoint = nullptr);
+		bool IsMouseOverSegment(ImVec2 Begin, ImVec2 End, const int Steps, const float MaxDistance, ImVec2* CollisionPoint = nullptr);
 		bool IsPointInRegion(const ImVec2& Point, const ImVec2& RegionMin, const ImVec2& RegionMax);
 		bool IsSegmentInRegion(ImVec2 Begin, ImVec2 End, const int Steps);
 		bool IsConnectionInRegion(Connection* Connection, const int Steps);

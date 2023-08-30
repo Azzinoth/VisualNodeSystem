@@ -60,6 +60,9 @@ namespace VisNodeSys
 		float PulseMax = 1.0f;
 	};
 
+	class NodeArea;
+	class Connection;
+
 	class RerouteNode
 	{
 		friend class NodeSystem;
