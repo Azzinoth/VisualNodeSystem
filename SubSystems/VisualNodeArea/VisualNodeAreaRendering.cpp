@@ -172,6 +172,14 @@ void NodeArea::RenderNodeSocket(NodeSocket* Socket) const
 		DrawHermiteLine(SocketPosition, ImGui::GetIO().MousePos, Settings.Style.GeneralConnection.LineSegments, ConnectionColor, &DefaultConnectionStyle);
 	}
 
+	// Change socket transparency if it can't be connected to.
+	if (Settings.bReduceTransparencyForUnconnectableSockets && SocketLookingForConnection != nullptr)
+	{
+		bool bCanConnect = Socket->GetParent()->CanConnect(Socket, SocketLookingForConnection);
+		SocketColor.Value.w = bCanConnect ? 1.0f : 0.25f;
+		SocketInternalPartColor.Value.w = bCanConnect ? 1.0f : 0.25f;
+	}
+	
 	// Draw socket icon.
 	CurrentDrawList->AddCircleFilled(SocketPosition, GetNodeSocketSize(), SocketColor);
 	if (Socket->ConnectedSockets.empty())
@@ -180,6 +188,7 @@ void NodeArea::RenderNodeSocket(NodeSocket* Socket) const
 		ImVec2 InternalPartShift = ImVec2(GetNodeSocketSize() * InternalSocketSizeFactor / 32.0f, GetNodeSocketSize() * InternalSocketSizeFactor / 32.0f);
 		CurrentDrawList->AddCircleFilled(SocketPosition + InternalPartShift, GetNodeSocketSize() * InternalSocketSizeFactor, SocketInternalPartColor);
 	}
+	
 }
 
 void NodeArea::RenderGrid(ImVec2 CurrentPosition) const

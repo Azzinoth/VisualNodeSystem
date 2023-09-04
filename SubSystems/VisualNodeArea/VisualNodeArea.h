@@ -61,6 +61,7 @@ namespace VisNodeSys
 		float ZoomSpeed = 0.15f;
 		bool bRequireFullOverlapToSelect = false;
 		bool bShowDefaultMainContextMenu = true;
+		bool bReduceTransparencyForUnconnectableSockets = true;
 	};
 
 	class NodeArea
