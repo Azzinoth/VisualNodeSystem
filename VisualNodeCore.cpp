@@ -30,14 +30,14 @@ void NodeCore::InitializeFonts()
 	CompleteFontBase64.erase(std::remove(CompleteFontBase64.begin(), CompleteFontBase64.end(), ' '), CompleteFontBase64.end());
 
 	std::string RawData = Base64Decode(CompleteFontBase64);
-	unsigned char* AllocatedRawData = new unsigned char[RawData.size() + 1];
-	std::memcpy(AllocatedRawData, RawData.c_str(), RawData.size() + 1);
-
-	Fonts.push_back(ImGui::GetIO().Fonts->AddFontFromMemoryTTF((void*)AllocatedRawData, static_cast<int>(RawData.size()), 16 / 4));
-	Fonts.push_back(ImGui::GetIO().Fonts->AddFontFromMemoryTTF((void*)AllocatedRawData, static_cast<int>(RawData.size()), 16 / 2));
-	Fonts.push_back(ImGui::GetIO().Fonts->AddFontFromMemoryTTF((void*)AllocatedRawData, static_cast<int>(RawData.size()), 16));
-	Fonts.push_back(ImGui::GetIO().Fonts->AddFontFromMemoryTTF((void*)AllocatedRawData, static_cast<int>(RawData.size()), 16 * 2));
-	Fonts.push_back(ImGui::GetIO().Fonts->AddFontFromMemoryTTF((void*)AllocatedRawData, static_cast<int>(RawData.size()), 16 * 3));
+	for (auto size : { 4, 8, 16, 32, 48 })
+	{
+		// We are allocating a new array for each font, as ImGui will take care of deleting it.
+		// And if we will try to use same data for multiple fonts, it will work fine but it will result in a crash on ImGUI::DestroyContext().
+		unsigned char* FontData = new unsigned char[RawData.size() + 1];
+		std::memcpy(FontData, RawData.c_str(), RawData.size() + 1);
+		Fonts.push_back(ImGui::GetIO().Fonts->AddFontFromMemoryTTF((void*)FontData, static_cast<int>(RawData.size()), float(size)));
+	}
 }
 
 std::string NodeCore::GetUniqueID()
