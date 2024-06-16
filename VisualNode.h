@@ -65,6 +65,8 @@ namespace VisNodeSys
 		virtual bool OpenContextMenu();
 
 		void UpdateClientRegion();
+
+		static bool IsNodeWithIDInList(std::string ID, std::vector<Node*> List);
 	public:
 		Node(std::string ID = "");
 		Node(const Node& Src);
@@ -90,8 +92,8 @@ namespace VisNodeSys
 		virtual Json::Value ToJson();
 		virtual void FromJson(Json::Value Json);
 
-		size_t InputSocketCount() const;
-		size_t OutSocketCount() const;
+		size_t GetInputSocketCount() const;
+		size_t GetOutputSocketCount() const;
 
 		std::vector<Node*> GetNodesConnectedToInput() const;
 		std::vector<Node*> GetNodesConnectedToOutput() const;
@@ -103,6 +105,8 @@ namespace VisNodeSys
 
 		bool CouldBeMoved() const;
 		void SetCouldBeMoved(bool NewValue);
+
+		bool CouldBeDestroyed() const;
 
 		NodeArea* GetParentArea() const;
 	};

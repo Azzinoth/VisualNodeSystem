@@ -56,6 +56,8 @@ while (iterator != map.end())              \
                                            \
 return result;
 
+#define VISUAL_NODE_SYSTEM_VERSION "0.1.0"
+
 	class NodeCore
 	{
 		SINGLETON_PRIVATE_PART(NodeCore)
@@ -63,8 +65,11 @@ return result;
 		friend class NodeArea;
 		friend class NodeSystem;
 
+		bool bIsInTestMode = false;
+
 		std::string GetUniqueID();
 
+		bool bIsFontsInitialized = false;
 		std::vector<ImFont*> Fonts;
 		void InitializeFonts();
 		

@@ -150,32 +150,32 @@ std::string Node::GetType() const
 
 Json::Value Node::ToJson()
 {
-	Json::Value result;
+	Json::Value Result;
 
-	result["ID"] = ID;
-	result["nodeType"] = Type;
-	result["nodeStyle"] = Style;
-	result["position"]["x"] = Position.x;
-	result["position"]["y"] = Position.y;
-	result["size"]["x"] = Size.x;
-	result["size"]["y"] = Size.y;
-	result["name"] = Name;
+	Result["ID"] = ID;
+	Result["nodeType"] = Type;
+	Result["nodeStyle"] = Style;
+	Result["position"]["x"] = Position.x;
+	Result["position"]["y"] = Position.y;
+	Result["size"]["x"] = Size.x;
+	Result["size"]["y"] = Size.y;
+	Result["name"] = Name;
 
 	for (size_t i = 0; i < Input.size(); i++)
 	{
-		result["input"][std::to_string(i)]["ID"] = Input[i]->GetID();
-		result["input"][std::to_string(i)]["name"] = Input[i]->GetName();
-		result["input"][std::to_string(i)]["type"] = Input[i]->GetType();
+		Result["input"][std::to_string(i)]["ID"] = Input[i]->GetID();
+		Result["input"][std::to_string(i)]["name"] = Input[i]->GetName();
+		Result["input"][std::to_string(i)]["type"] = Input[i]->GetType();
 	}
 
 	for (size_t i = 0; i < Output.size(); i++)
 	{
-		result["output"][std::to_string(i)]["ID"] = Output[i]->GetID();
-		result["output"][std::to_string(i)]["name"] = Output[i]->GetName();
-		result["output"][std::to_string(i)]["type"] = Output[i]->GetType();
+		Result["output"][std::to_string(i)]["ID"] = Output[i]->GetID();
+		Result["output"][std::to_string(i)]["name"] = Output[i]->GetName();
+		Result["output"][std::to_string(i)]["type"] = Output[i]->GetType();
 	}
 
-	return result;
+	return Result;
 }
 
 void Node::FromJson(Json::Value Json)
@@ -270,42 +270,48 @@ ImVec2 Node::GetClientRegionPosition()
 	return ClientRegionMin;
 }
 
-size_t Node::InputSocketCount() const
+size_t Node::GetInputSocketCount() const
 {
 	return Input.size();
 }
 
-size_t Node::OutSocketCount() const
+size_t Node::GetOutputSocketCount() const
 {
 	return Output.size();
 }
 
 std::vector<Node*> Node::GetNodesConnectedToInput() const
 {
-	std::vector<Node*> result;
+	std::vector<Node*> Result;
 	for (size_t i = 0; i < Input.size(); i++)
 	{
 		for (size_t j = 0; j < Input[i]->ConnectedSockets.size(); j++)
 		{
-			result.push_back(Input[i]->ConnectedSockets[j]->GetParent());
+			if (IsNodeWithIDInList(Input[i]->ConnectedSockets[j]->GetParent()->GetID(), Result))
+				continue;
+
+			Result.push_back(Input[i]->ConnectedSockets[j]->GetParent());
 		}
 	}
 
-	return result;
+	return Result;
 }
 
 std::vector<Node*> Node::GetNodesConnectedToOutput() const
 {
-	std::vector<Node*> result;
+	std::vector<Node*> Result;
 	for (size_t i = 0; i < Output.size(); i++)
 	{
 		for (size_t j = 0; j < Output[i]->ConnectedSockets.size(); j++)
 		{
-			result.push_back(Output[i]->ConnectedSockets[j]->GetParent());
+			if (IsNodeWithIDInList(Output[i]->ConnectedSockets[j]->GetParent()->GetID(), Result))
+				continue;
+
+			Result.push_back(Output[i]->ConnectedSockets[j]->GetParent());
 		}
 	}
 
-	return result;
+	return Result;
 }
 
 bool Node::OpenContextMenu()
@@ -349,4 +355,20 @@ void Node::SetCouldBeMoved(bool NewValue)
 NodeArea* Node::GetParentArea() const
 {
 	return ParentArea;
+}
+
+bool Node::CouldBeDestroyed() const
+{
+	return bShouldBeDestroyed;
+}
+
+bool Node::IsNodeWithIDInList(const std::string ID, const std::vector<Node*> List)
+{
+	for (size_t i = 0; i < List.size(); i++)
+	{
+		if (List[i]->GetID() == ID)
+			return true;
+	}
+
+	return false;
 }

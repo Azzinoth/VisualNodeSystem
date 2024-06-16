@@ -1,0 +1,60 @@
+name: Build
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        build_type: [Debug, Release]
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: Checkout master branch
+      run: git checkout master
+
+    # In order to build we need to use tests branch.
+    - name: Copy files from master branch to temporary folder 
+      run: |
+        mkdir "${{github.workspace}}\master_temp"
+
+        robocopy "${{github.workspace}}\" "${{github.workspace}}\master_temp" /NFL /E /XD "${{github.workspace}}\master_temp"
+        # Robocopy will return 1 if successful, so we need to exit with 0 to avoid triggering a failure for this step
+        if ($LastExitCode -eq 1) {
+          echo "All files were copied successfully. Continuing..."
+          exit 0
+        } elseif ($LastExitCode -gt 7) {
+          echo "An error occurred during file copying. Exiting..."
+          exit $LastExitCode
+        }
+
+    - name: Checkout tests branch
+      run: |
+        git checkout tests
+        
+    - name: Copy master branch files from temporary folder to MasterBranchCode folder
+      run: |
+        robocopy "${{github.workspace}}\master_temp" "${{github.workspace}}\MasterBranchCode" /NFL /E
+        # Robocopy will return 1 if successful, so we need to exit with 0 to avoid triggering a failure for this step
+        if ($LastExitCode -eq 1) {
+          echo "All files were copied successfully. Continuing..."
+          exit 0
+        } elseif ($LastExitCode -gt 7) {
+          echo "An error occurred during file copying. Exiting..."
+          exit $LastExitCode
+        }
+      
+    - name: Configure CMake
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+
+    - name: Build
+      run: cmake --build ${{github.workspace}}/build --config ${{ matrix.build_type }}

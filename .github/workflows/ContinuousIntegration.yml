@@ -1,0 +1,85 @@
+name: ContinuousIntegration
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+    types: [opened, reopened, synchronize]
+
+jobs:
+  ContinuousIntegration:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: Checkout master branch
+      run: git checkout master
+      
+    - name: Copy files from master branch to temporary folder
+      run: |
+        mkdir "${{github.workspace}}\master_temp"
+
+        robocopy "${{github.workspace}}\" "${{github.workspace}}\master_temp" /NFL /E /XD "${{github.workspace}}\master_temp"
+        # Robocopy will return 1 if successful, so we need to exit with 0 to avoid triggering a failure for this step
+        if ($LastExitCode -eq 1) {
+          echo "All files were copied successfully. Continuing..."
+          exit 0
+        } elseif ($LastExitCode -gt 7) {
+          echo "An error occurred during file copying. Exiting..."
+          exit $LastExitCode
+        }
+
+    - name: Checkout tests branch
+      run: git checkout tests
+      
+    - name: Copy master branch files from temporary folder to MasterBranchCode folder
+      run: |
+        robocopy "${{github.workspace}}\master_temp" "${{github.workspace}}\MasterBranchCode" /NFL /E
+        # Robocopy will return 1 if successful, so we need to exit with 0 to avoid triggering a failure for this step
+        if ($LastExitCode -eq 1) {
+          echo "All files were copied successfully. Continuing..."
+          exit 0
+        } elseif ($LastExitCode -gt 7) {
+          echo "An error occurred during file copying. Exiting..."
+          exit $LastExitCode
+        }
+      
+    - name: Configure CMake
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release
+
+    - name: Build
+      run: cmake --build ${{github.workspace}}/build --config Release
+
+    - name: Ensure all files are in place
+      run: |
+        Move "${{github.workspace}}\build\Release\Visual_Node_System_Tests.exe" "${{github.workspace}}\Visual_Node_System_Tests.exe"
+        
+    - name: Run test
+      run: |
+        $processStartInfo = New-Object System.Diagnostics.ProcessStartInfo
+        $processStartInfo.FileName = "Visual_Node_System_Tests.exe"
+        
+        Write-Host "Starting the executable..."
+        $process = New-Object System.Diagnostics.Process
+        $process.StartInfo = $processStartInfo
+        $process.Start() | Out-Null
+        Write-Host "Executable started."
+        
+        Write-Host "Waiting for the process to exit..."
+        $process.WaitForExit(10000) # 10 seconds
+        if ($process.ExitCode -ne 0) {
+          Write-Host "Some tests failed. Please check the test results."
+          exit 1
+        }
+        
+    - name: Print additional test results if failed
+      if: failure()
+      run: |
+        Get-Content "Results.xml" | ForEach-Object {
+          Write-Host $_
+        }

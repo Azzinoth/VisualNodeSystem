@@ -47,20 +47,13 @@ void NodeArea::Delete(Connection* Connection)
 		i--;
 	}
 
+	std::vector<Node*> NodesToNotify;
 	for (int i = 0; i < static_cast<int>(Connection->In->ConnectedSockets.size()); i++)
 	{
 		if (Connection->In->ConnectedSockets[i] == Connection->Out)
 		{
-			Node* parent = Connection->In->ConnectedSockets[i]->Parent;
-			if (!bClearing)
-				PropagateNodeEventsCallbacks(parent, BEFORE_DISCONNECTED);
-
-			Connection->In->ConnectedSockets.erase(Connection->In->ConnectedSockets.begin() + i, Connection->In->ConnectedSockets.begin() + i + 1);
-			Connection->In->Parent->SocketEvent(Connection->In, Connection->Out, bClearing ? DESTRUCTION : DISCONNECTED);
-			i--;
-
-			if (!bClearing)
-				PropagateNodeEventsCallbacks(parent, AFTER_DISCONNECTED);
+			Node* Parent = Connection->In->ConnectedSockets[i]->Parent;
+			NodesToNotify.push_back(Parent);
 		}
 	}
 
@@ -68,15 +61,37 @@ void NodeArea::Delete(Connection* Connection)
 	{
 		if (Connection->Out->ConnectedSockets[i] == Connection->In)
 		{
-			Node* parent = Connection->Out->ConnectedSockets[i]->Parent;
-			if (!bClearing)
-				PropagateNodeEventsCallbacks(parent, BEFORE_DISCONNECTED);
+			Node* Parent = Connection->Out->ConnectedSockets[i]->Parent;
+			NodesToNotify.push_back(Parent);
+		}
+	}
 
-			Connection->Out->ConnectedSockets.erase(Connection->Out->ConnectedSockets.begin() + i, Connection->Out->ConnectedSockets.begin() + i + 1);
+	if (!bClearing)
+	{
+		for (size_t i = 0; i < NodesToNotify.size(); i++)
+		{
+			PropagateNodeEventsCallbacks(NodesToNotify[i], BEFORE_DISCONNECTED);
+		}
+	}
+
+	for (int i = 0; i < static_cast<int>(Connection->In->ConnectedSockets.size()); i++)
+	{
+		if (Connection->In->ConnectedSockets[i] == Connection->Out)
+		{
+			Connection->In->ConnectedSockets.erase(Connection->In->ConnectedSockets.begin() + i, Connection->In->ConnectedSockets.begin() + i + 1);
+			// To-Do : Add some variation of disconnected event, like DISCONNECTED_INCOMING
+			Connection->In->Parent->SocketEvent(Connection->In, Connection->Out, bClearing ? DESTRUCTION : DISCONNECTED);
 			i--;
+		}
+	}
 
-			if (!bClearing)
-				PropagateNodeEventsCallbacks(parent, AFTER_DISCONNECTED);
+	for (int i = 0; i < static_cast<int>(Connection->Out->ConnectedSockets.size()); i++)
+	{
+		if (Connection->Out->ConnectedSockets[i] == Connection->In)
+		{
+			Connection->Out->ConnectedSockets.erase(Connection->Out->ConnectedSockets.begin() + i, Connection->Out->ConnectedSockets.begin() + i + 1);
+			// To-Do : Add some variation of disconnected event, like DISCONNECTED_OUTGOING
+			i--;
 		}
 	}
 
@@ -86,7 +101,15 @@ void NodeArea::Delete(Connection* Connection)
 		{
 			delete Connection;
 			Connections.erase(Connections.begin() + i, Connections.begin() + i + 1);
-			return;
+			break;
+		}
+	}
+
+	if (!bClearing)
+	{
+		for (size_t i = 0; i < NodesToNotify.size(); i++)
+		{
+			PropagateNodeEventsCallbacks(NodesToNotify[i], AFTER_DISCONNECTED);
 		}
 	}
 }
@@ -173,19 +196,19 @@ void NodeArea::DeleteNode(const Node* Node)
 
 			for (size_t j = 0; j < Nodes[i]->Input.size(); j++)
 			{
-				auto connections = GetAllConnections(Nodes[i]->Input[j]);
-				for (size_t p = 0; p < connections.size(); p++)
+				auto Connections = GetAllConnections(Nodes[i]->Input[j]);
+				for (size_t p = 0; p < Connections.size(); p++)
 				{
-					Delete(connections[p]);
+					Delete(Connections[p]);
 				}
 			}
 
 			for (size_t j = 0; j < Nodes[i]->Output.size(); j++)
 			{
-				auto connections = GetAllConnections(Nodes[i]->Output[j]);
-				for (size_t p = 0; p < connections.size(); p++)
+				auto Connections = GetAllConnections(Nodes[i]->Output[j]);
+				for (size_t p = 0; p < Connections.size(); p++)
 				{
-					Delete(connections[p]);
+					Delete(Connections[p]);
 				}
 			}
 
@@ -204,19 +227,19 @@ void NodeArea::PropagateUpdateToConnectedNodes(const Node* CallerNode) const
 
 	for (size_t i = 0; i < CallerNode->Input.size(); i++)
 	{
-		auto connections = GetAllConnections(CallerNode->Input[i]);
-		for (size_t j = 0; j < connections.size(); j++)
+		auto Connections = GetAllConnections(CallerNode->Input[i]);
+		for (size_t j = 0; j < Connections.size(); j++)
 		{
-			connections[j]->In->GetParent()->SocketEvent(connections[j]->In, connections[j]->Out, UPDATE);
+			Connections[j]->In->GetParent()->SocketEvent(Connections[j]->In, Connections[j]->Out, UPDATE);
 		}
 	}
 
 	for (size_t i = 0; i < CallerNode->Output.size(); i++)
 	{
-		auto connections = GetAllConnections(CallerNode->Output[i]);
-		for (size_t j = 0; j < connections.size(); j++)
+		auto Connections = GetAllConnections(CallerNode->Output[i]);
+		for (size_t j = 0; j < Connections.size(); j++)
 		{
-			connections[j]->In->GetParent()->SocketEvent(connections[j]->In, connections[j]->Out, UPDATE);
+			Connections[j]->In->GetParent()->SocketEvent(Connections[j]->In, Connections[j]->Out, UPDATE);
 		}
 	}
 }
@@ -235,10 +258,10 @@ bool NodeArea::TryToConnect(const Node* OutNode, const size_t OutNodeSocketIndex
 	NodeSocket* OutSocket = OutNode->Output[OutNodeSocketIndex];
 	NodeSocket* InSocket = InNode->Input[InNodeSocketIndex];
 
-	char* msg = nullptr;
-	const bool result = InSocket->GetParent()->CanConnect(InSocket, OutSocket, &msg);
+	char* Message = nullptr;
+	const bool Result = InSocket->GetParent()->CanConnect(InSocket, OutSocket, &Message);
 
-	if (result)
+	if (Result)
 	{
 		PropagateNodeEventsCallbacks(OutSocket->GetParent(), BEFORE_CONNECTED);
 		PropagateNodeEventsCallbacks(InSocket->GetParent(), BEFORE_CONNECTED);
@@ -255,7 +278,112 @@ bool NodeArea::TryToConnect(const Node* OutNode, const size_t OutNodeSocketIndex
 		PropagateNodeEventsCallbacks(InSocket->GetParent(), AFTER_CONNECTED);
 	}
 
-	return result;
+	return Result;
+}
+
+bool NodeArea::TryToDisconnect(const Node* OutNode, size_t OutNodeSocketIndex, const Node* InNode, size_t InNodeSocketIndex)
+{
+	if (OutNode == nullptr || InNode == nullptr)
+		return false;
+
+	if (OutNode->Output.size() <= OutNodeSocketIndex)
+		return false;
+
+	if (InNode->Input.size() <= InNodeSocketIndex)
+		return false;
+
+	NodeSocket* OutSocket = OutNode->Output[OutNodeSocketIndex];
+	NodeSocket* InSocket = InNode->Input[InNodeSocketIndex];
+
+	Connection* Connection = GetConnection(OutSocket, InSocket);
+	if (Connection == nullptr)
+		return false;
+
+	Delete(Connection);
+	return true;
+}
+
+bool NodeArea::TryToDisconnect(const Node* OutNode, std::string OutSocketID, const Node* InNode, std::string InSocketID)
+{
+	if (OutNode == nullptr || InNode == nullptr)
+		return false;
+
+	size_t OutSocketIndex = 0;
+	for (size_t i = 0; i < OutNode->Output.size(); i++)
+	{
+		if (OutNode->Output[i]->GetID() == OutSocketID)
+		{
+			OutSocketIndex = i;
+			break;
+		}
+	}
+
+	size_t InSocketIndex = 0;
+	for (size_t i = 0; i < InNode->Input.size(); i++)
+	{
+		if (InNode->Input[i]->GetID() == InSocketID)
+		{
+			InSocketIndex = i;
+			break;
+		}
+	}
+
+	return TryToDisconnect(OutNode, OutSocketIndex, InNode, InSocketIndex);
+}
+
+bool NodeArea::IsConnected(const Node* OutNode, size_t OutNodeSocketIndex, const Node* InNode, size_t InNodeSocketIndex)
+{
+	if (OutNode == nullptr || InNode == nullptr)
+		return false;
+
+	if (OutNode->Output.size() <= OutNodeSocketIndex)
+		return false;
+
+	if (InNode->Input.size() <= InNodeSocketIndex)
+		return false;
+
+	NodeSocket* OutSocket = OutNode->Output[OutNodeSocketIndex];
+	NodeSocket* InSocket = InNode->Input[InNodeSocketIndex];
+
+	Connection* Connection = GetConnection(OutSocket, InSocket);
+	if (Connection == nullptr)
+		return false;
+
+	for (size_t i = 0; i < OutSocket->ConnectedSockets.size(); i++)
+	{
+		if (OutSocket->ConnectedSockets[i] == InSocket)
+			return true;
+	}
+
+	return false;
+}
+
+bool NodeArea::IsConnected(const Node* OutNode, std::string OutSocketID, const Node* InNode, std::string InSocketID)
+{
+	if (OutNode == nullptr || InNode == nullptr)
+		return false;
+
+	size_t OutSocketIndex = 0;
+	for (size_t i = 0; i < OutNode->Output.size(); i++)
+	{
+		if (OutNode->Output[i]->GetID() == OutSocketID)
+		{
+			OutSocketIndex = i;
+			break;
+		}
+	}
+
+	size_t InSocketIndex = 0;
+	for (size_t i = 0; i < InNode->Input.size(); i++)
+	{
+		if (InNode->Input[i]->GetID() == InSocketID)
+		{
+			InSocketIndex = i;
+			break;
+		}
+	}
+
+	return IsConnected(OutNode, OutSocketIndex, InNode, InSocketIndex);
 }
 
 void NodeArea::RunOnEachNode(void(*Func)(Node*))
@@ -285,7 +413,8 @@ void NodeArea::RunOnEachConnectedNode(Node* StartNode, void(*Func)(Node*))
 	CurrentNodes.push_back(StartNode);
 	if (bWasNodeSeen(StartNode))
 		return;
-	while (!EmptyOrFilledByNulls(CurrentNodes))
+
+	while (!IsEmptyOrFilledByNulls(CurrentNodes))
 	{
 		for (int i = 0; i < static_cast<int>(CurrentNodes.size()); i++)
 		{
@@ -540,6 +669,29 @@ bool NodeArea::AddRerouteNodeToConnection(const Node* OutNode, std::string OutSo
 	return AddRerouteNodeToConnection(OutNode, OutSocketIndex, InNode, InSocketIndex, SegmentToDivide, Position);
 }
 
+GroupComment* NodeArea::GetGroupCommentByID(std::string GroupCommentID) const
+{
+	for (size_t i = 0; i < GroupComments.size(); i++)
+	{
+		if (GroupComments[i]->GetID() == GroupCommentID)
+			return GroupComments[i];
+	}
+
+	return nullptr;
+}
+
+std::vector<GroupComment*> NodeArea::GetGroupCommentsByName(std::string GroupCommentName) const
+{
+	std::vector<GroupComment*> Result;
+	for (size_t i = 0; i < GroupComments.size(); i++)
+	{
+		if (GroupComments[i]->GetCaption() == GroupCommentName)
+			Result.push_back(GroupComments[i]);
+	}
+
+	return Result;
+}
+
 void NodeArea::AddGroupComment(GroupComment* NewGroupComment)
 {
 	if (NewGroupComment == nullptr)
@@ -567,6 +719,71 @@ void NodeArea::DeleteGroupComment(GroupComment* GroupComment)
 	}
 }
 
+size_t NodeArea::GetGroupCommentCount() const
+{
+	return GroupComments.size();
+}
+
+std::vector<Node*> NodeArea::GetNodesInGroupComment(GroupComment* GroupCommentToCheck) const
+{
+	std::vector<Node*> Result;
+	if (GroupCommentToCheck == nullptr)
+		return Result;
+
+	for (size_t i = 0; i < Nodes.size(); i++)
+	{
+		if (Nodes[i]->GetStyle() == DEFAULT)
+		{
+			if (IsSecondRectInsideFirstOne(GroupCommentToCheck->GetPosition(), GroupCommentToCheck->GetSize(), Nodes[i]->GetPosition(), Nodes[i]->GetSize()))
+				Result.push_back(Nodes[i]);
+		}
+		else if (Nodes[i]->GetStyle() == CIRCLE)
+		{
+			if (IsSecondRectInsideFirstOne(GroupCommentToCheck->GetPosition(), GroupCommentToCheck->GetSize(), Nodes[i]->GetPosition(), ImVec2(NODE_DIAMETER, NODE_DIAMETER)))
+				Result.push_back(Nodes[i]);
+		}
+	}
+
+	return Result;
+}
+
+std::vector<RerouteNode*> NodeArea::GetRerouteNodesInGroupComment(GroupComment* GroupCommentToCheck) const
+{
+	std::vector<RerouteNode*> Result;
+	if (GroupCommentToCheck == nullptr)
+		return Result;
+
+	for (size_t i = 0; i < Connections.size(); i++)
+	{
+		for (size_t j = 0; j < Connections[i]->RerouteNodes.size(); j++)
+		{
+			const ImVec2 ReroutePosition = Connections[i]->RerouteNodes[j]->Position;
+			if (IsSecondRectInsideFirstOne(GroupCommentToCheck->GetPosition(), GroupCommentToCheck->GetSize(), ReroutePosition, ImVec2(GetRerouteNodeSize() / Zoom, GetRerouteNodeSize() / Zoom)))
+				Result.push_back(Connections[i]->RerouteNodes[j]);
+		}
+	}
+
+	return Result;
+}
+
+std::vector<GroupComment*> NodeArea::GetGroupCommentsInGroupComment(GroupComment* GroupCommentToCheck) const
+{
+	std::vector<GroupComment*> Result;
+	if (GroupCommentToCheck == nullptr)
+		return Result;
+
+	for (size_t i = 0; i < GroupComments.size(); i++)
+	{
+		if (GroupComments[i] == GroupCommentToCheck)
+			continue;
+
+		if (IsSecondRectInsideFirstOne(GroupCommentToCheck->GetPosition(), GroupCommentToCheck->GetSize(), GroupComments[i]->GetPosition(), GroupComments[i]->GetSize()))
+			Result.push_back(GroupComments[i]);
+	}
+
+	return Result;
+}
+
 void NodeArea::AttachElemetnsToGroupComment(GroupComment* GroupComment)
 {
 	GroupComment->AttachedNodes.clear();
@@ -576,39 +793,7 @@ void NodeArea::AttachElemetnsToGroupComment(GroupComment* GroupComment)
 	if (!GroupComment->bMoveElementsWithComment)
 		return;
 
-	const ImVec2 Position = GroupComment->GetPosition();
-	const ImVec2 Size = GroupComment->GetSize();
-
-	for (size_t i = 0; i < Nodes.size(); i++)
-	{
-		if (Nodes[i]->GetStyle() == DEFAULT)
-		{
-			if (IsSecondRectInsideFirstOne(Position, Size, Nodes[i]->GetPosition(), Nodes[i]->GetSize()))
-				GroupComment->AttachedNodes.push_back(Nodes[i]);
-		}
-		else if (Nodes[i]->GetStyle() == CIRCLE)
-		{
-			if (IsSecondRectInsideFirstOne(Position, Size, Nodes[i]->GetPosition(), ImVec2(NODE_DIAMETER, NODE_DIAMETER)))
-				GroupComment->AttachedNodes.push_back(Nodes[i]);
-		}
-	}
-
-	for (size_t i = 0; i < Connections.size(); i++)
-	{
-		for (size_t j = 0; j < Connections[i]->RerouteNodes.size(); j++)
-		{
-			const ImVec2 ReroutePosition = Connections[i]->RerouteNodes[j]->Position;
-			if (IsSecondRectInsideFirstOne(Position, Size, ReroutePosition, ImVec2(GetRerouteNodeSize() / Zoom, GetRerouteNodeSize() / Zoom)))
-				GroupComment->AttachedRerouteNodes.push_back(Connections[i]->RerouteNodes[j]);
-		}
-	}
-
-	for (size_t i = 0; i < GroupComments.size(); i++)
-	{
-		if (GroupComments[i] == GroupComment)
-			continue;
-
-		if (IsSecondRectInsideFirstOne(Position, Size, GroupComments[i]->GetPosition(), GroupComments[i]->GetSize()))
-			GroupComment->AttachedGroupComments.push_back(GroupComments[i]);
-	}
+	GroupComment->AttachedNodes = GetNodesInGroupComment(GroupComment);
+	GroupComment->AttachedRerouteNodes = GetRerouteNodesInGroupComment(GroupComment);
+	GroupComment->AttachedGroupComments = GetGroupCommentsInGroupComment(GroupComment);
 }

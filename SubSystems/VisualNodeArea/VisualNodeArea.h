@@ -71,6 +71,15 @@ namespace VisNodeSys
 		NodeArea();
 		~NodeArea();
 
+		static NodeArea* CreateNodeArea(std::vector<Node*> Nodes, const std::vector<GroupComment*> GroupComments);
+		static void CopyNodesTo(NodeArea* SourceNodeArea, NodeArea* TargetNodeArea);
+
+		std::string ToJson() const;
+		void SaveToFile(const char* FileName) const;
+		void LoadFromJson(std::string JsonText);
+		void LoadFromFile(const char* FileName);
+		void SaveNodesToFile(const char* FileName, std::vector<Node*> Nodes);
+
 		ImVec2 GetPosition() const;
 		void SetPosition(ImVec2 NewValue);
 
@@ -85,56 +94,64 @@ namespace VisNodeSys
 
 		Node* GetHovered() const;
 		std::vector<Node*> GetSelected();
-
-		std::vector<Node*> GetNodesByName(std::string NodeName) const;
-		std::vector<Node*> GetNodesByType(std::string NodeType) const;
+		void UnSelectAll();
 
 		bool IsMouseHovered() const;
 		bool IsFillingWindow();
 		void SetIsFillingWindow(bool NewValue);
-		int GetNodeCount() const;
-
+		
 		void Update();
 		void Clear();
 		void Reset();
+
+		// *********************** Nodes ************************
+		Node* GetNodeByID(std::string NodeID) const;
+		std::vector<Node*> GetNodesByName(std::string NodeName) const;
+		std::vector<Node*> GetNodesByType(std::string NodeType) const;
+
 		void AddNode(Node* NewNode);
 		void DeleteNode(const Node* Node);
-		void AddGroupComment(GroupComment* NewGroupComment);
-		void DeleteGroupComment(GroupComment* GroupComment);
-		void SetMainContextMenuFunc(void(*Func)());
-		void PropagateUpdateToConnectedNodes(const Node* CallerNode) const;
-		void SetNodeEventCallback(void(*Func)(Node*, NODE_EVENT));
-		std::string ToJson() const;
-		void SaveToFile(const char* FileName) const;
-		void LoadFromFile(const char* FileName);
-		void SaveNodesToFile(const char* FileName, std::vector<Node*> Nodes);
+		size_t GetNodeCount() const;
+		void AddNodeEventCallback(std::function<void(Node*, NODE_EVENT)> Func);
 		void RunOnEachNode(void(*Func)(Node*));
 		void RunOnEachConnectedNode(Node* StartNode, void(*Func)(Node*));
-		void UnSelectAll();
+		void PropagateUpdateToConnectedNodes(const Node* CallerNode) const;
+
+		bool TriggerSocketEvent(NodeSocket* CallerNodeSocket, NodeSocket* TriggeredNodeSocket, NODE_SOCKET_EVENT EventType);
+		bool TriggerOrphanSocketEvent(Node* Node, NODE_SOCKET_EVENT EventType);
+
+		// *********************** Group Comments ************************
+		GroupComment* GetGroupCommentByID(std::string GroupCommentID) const;
+		std::vector<GroupComment*> GetGroupCommentsByName(std::string GroupCommentName) const;
+
+		void AddGroupComment(GroupComment* NewGroupComment);
+		void DeleteGroupComment(GroupComment* GroupComment);
+		size_t GetGroupCommentCount() const;
+
+		std::vector<Node*> GetNodesInGroupComment(GroupComment* GroupCommentToCheck) const;
+		std::vector<RerouteNode*> GetRerouteNodesInGroupComment(GroupComment* GroupCommentToCheck) const;
+		std::vector<GroupComment*> GetGroupCommentsInGroupComment(GroupComment* GroupCommentToCheck) const;
+
+		void SetMainContextMenuFunc(void(*Func)());
+
 		void GetAllElementsAABB(ImVec2& Min, ImVec2& Max) const;
 		ImVec2 GetAllElementsAABBCenter() const;
 		ImVec2 GetRenderedViewCenter() const;
+
+		// *********************** Connections ************************
 		bool TryToConnect(const Node* OutNode, size_t OutNodeSocketIndex, const Node* InNode, size_t InNodeSocketIndex);
 		bool TryToConnect(const Node* OutNode, std::string OutSocketID, const Node* InNode, std::string InSocketID);
-		bool TriggerSocketEvent(NodeSocket* CallerNodeSocket, NodeSocket* TriggeredNodeSocket, NODE_SOCKET_EVENT EventType);
-		bool TriggerOrphanSocketEvent(Node* Node, NODE_SOCKET_EVENT EventType);
+
+		bool TryToDisconnect(const Node* OutNode, size_t OutNodeSocketIndex, const Node* InNode, size_t InNodeSocketIndex);
+		bool TryToDisconnect(const Node* OutNode, std::string OutSocketID, const Node* InNode, std::string InSocketID);
+
+		bool IsConnected(const Node* OutNode, size_t OutNodeSocketIndex, const Node* InNode, size_t InNodeSocketIndex);
+		bool IsConnected(const Node* OutNode, std::string OutSocketID, const Node* InNode, std::string InSocketID);
 
 		std::vector<std::pair<ImVec2, ImVec2>> GetConnectionSegments(const Node* OutNode, size_t OutNodeSocketIndex, const Node* InNode, size_t InNodeSocketIndex) const;
 		std::vector<std::pair<ImVec2, ImVec2>> GetConnectionSegments(const Node* OutNode, std::string OutSocketID, const Node* InNode, std::string InSocketID) const;
 		bool AddRerouteNodeToConnection(const Node* OutNode, size_t OutNodeSocketIndex, const Node* InNode, size_t InNodeSocketIndex, size_t SegmentToDivide, ImVec2 Position);
 		bool AddRerouteNodeToConnection(const Node* OutNode, std::string OutSocketID, const Node* InNode, std::string InSocketID, size_t SegmentToDivide, ImVec2 Position);
-
-		static bool IsAlreadyConnected(NodeSocket* FirstSocket, NodeSocket* SecondSocket, const std::vector<Connection*>& Connections);
-		static void ProcessConnections(const std::vector<NodeSocket*>& Sockets,
-												 std::unordered_map<NodeSocket*, NodeSocket*>& OldToNewSocket,
-												 NodeArea* TargetArea, size_t NodeShift, const std::vector<Node*>& SourceNodes);
-		static void CopyNodesInternal(const std::vector<Node*>& SourceNodes, NodeArea* TargetArea, const size_t NodeShift = 0);
-
-		static NodeArea* CreateNodeArea(std::vector<Node*> Nodes, const std::vector<GroupComment*> GroupComments);
-		static NodeArea* FromJson(std::string JsonText);
-		static void CopyNodesTo(NodeArea* SourceNodeArea, NodeArea* TargetNodeArea);
-		static bool IsNodeIDInList(std::string ID, std::vector<Node*> List);
-		static bool EmptyOrFilledByNulls(const std::vector<Node*> Vector);
 
 		bool GetConnectionStyle(Node* Node, bool bOutputSocket, size_t SocketIndex, ConnectionStyle& Style) const;
 		void SetConnectionStyle(Node* Node, bool bOutputSocket, size_t SocketIndex, ConnectionStyle NewStyle);
@@ -200,7 +217,7 @@ namespace VisNodeSys
 		ImVec2 RenderOffset = ImVec2(0.0, 0.0);
 		void(*MainContextMenuFunc)() = nullptr;
 		void RenderDefaultMainContextMenu(ImVec2 LocalMousePosition);
-		std::vector<void(*)(Node*, NODE_EVENT)> NodeEventsCallbacks;
+		std::vector<std::function<void(Node*, NODE_EVENT)>> NodeEventsCallbacks;
 		std::queue<SocketEvent> SocketEventQueue;
 
 		void PropagateNodeEventsCallbacks(Node* Node, NODE_EVENT EventToPropagate) const;
@@ -208,6 +225,13 @@ namespace VisNodeSys
 		ImVec2 SocketToPosition(const NodeSocket* Socket) const;
 		std::vector<Connection*> GetAllConnections(const NodeSocket* Socket) const;
 		Connection* GetConnection(const NodeSocket* FirstSocket, const NodeSocket* SecondSocket) const;
+
+		static bool IsAlreadyConnected(NodeSocket* FirstSocket, NodeSocket* SecondSocket, const std::vector<Connection*>& Connections);
+		static void ProcessConnections(const std::vector<NodeSocket*>& Sockets,
+									   std::unordered_map<NodeSocket*, NodeSocket*>& OldToNewSocket,
+									   NodeArea* TargetArea, size_t NodeShift, const std::vector<Node*>& SourceNodes);
+		static void CopyNodesInternal(const std::vector<Node*>& SourceNodes, NodeArea* TargetArea, const size_t NodeShift = 0);
+		static bool IsEmptyOrFilledByNulls(const std::vector<Node*> Vector);
 
 		void Delete(Connection* Connection);
 		void Delete(RerouteNode* RerouteNode);
@@ -279,10 +303,9 @@ namespace VisNodeSys
 		bool IsConnectionInRegion(Connection* Connection, const int Steps);
 
 		bool IsRectsOverlaping(ImVec2 FirstRectMin, ImVec2 FirstRectSize, ImVec2 SecondRectMin, ImVec2 SecondRectSize);
-		bool IsSecondRectInsideFirstOne(ImVec2 FirstRectMin, ImVec2 FirstRectSize, ImVec2 SecondRectMin, ImVec2 SecondRectSize);
+		bool IsSecondRectInsideFirstOne(ImVec2 FirstRectMin, ImVec2 FirstRectSize, ImVec2 SecondRectMin, ImVec2 SecondRectSize) const;
 		bool IsRectInMouseSelectionRegion(ImVec2 RectMin, ImVec2 RectSize);
 		bool IsRectUnderMouse(ImVec2 RectMin, ImVec2 RectSize);
-
 		
 		bool IsGroupCommentCaptionUnderMouse(GroupComment* GroupComment);
 		bool IsGroupCommentRightPartUnderMouse(GroupComment* GroupComment);

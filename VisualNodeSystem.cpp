@@ -6,8 +6,9 @@ NodeSystem* NodeSystem::Instance = nullptr;
 NodeSystem::NodeSystem() {}
 NodeSystem::~NodeSystem() {}
 
-void NodeSystem::Initialize()
+void NodeSystem::Initialize(bool bTestMode)
 {
+	NODE_CORE.bIsInTestMode = bTestMode;
 	NODE_CORE.InitializeFonts();
 }
 

@@ -700,7 +700,8 @@ void NodeArea::KeyboardInputUpdate()
 				if (!reader->parse(NodesToImport.c_str(), NodesToImport.c_str() + NodesToImport.size(), &data, &err))
 					return;
 
-				NodeArea* NewNodeArea = NodeArea::FromJson(NodesToImport);
+				NodeArea* NewNodeArea = new NodeArea();
+				NewNodeArea->LoadFromJson(NodesToImport);
 
 				// ***************** Place new nodes in center of a view space *****************
 				const ImVec2 ViewCenter = GetRenderedViewCenter();

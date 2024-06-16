@@ -52,21 +52,21 @@ void GroupComment::Draw() {}
 
 Json::Value GroupComment::ToJson()
 {
-	Json::Value result;
+	Json::Value Result;
 
-	result["ID"] = ID;
-	result["position"]["x"] = Position.x;
-	result["position"]["y"] = Position.y;
-	result["size"]["x"] = Size.x;
-	result["size"]["y"] = Size.y;
-	result["caption"] = Caption;
-	result["bMoveElementsWithComment"] = bMoveElementsWithComment;
-	result["BackgroundColor"]["x"] = BackgroundColor.x;
-	result["BackgroundColor"]["y"] = BackgroundColor.y;
-	result["BackgroundColor"]["z"] = BackgroundColor.z;
-	result["BackgroundColor"]["w"] = BackgroundColor.w;
+	Result["ID"] = ID;
+	Result["position"]["x"] = Position.x;
+	Result["position"]["y"] = Position.y;
+	Result["size"]["x"] = Size.x;
+	Result["size"]["y"] = Size.y;
+	Result["caption"] = Caption;
+	Result["bMoveElementsWithComment"] = bMoveElementsWithComment;
+	Result["BackgroundColor"]["x"] = BackgroundColor.x;
+	Result["BackgroundColor"]["y"] = BackgroundColor.y;
+	Result["BackgroundColor"]["z"] = BackgroundColor.z;
+	Result["BackgroundColor"]["w"] = BackgroundColor.w;
 
-	return result;
+	return Result;
 }
 
 void GroupComment::FromJson(Json::Value Json)

@@ -41,7 +41,8 @@ void NodeArea::SetPosition(const ImVec2 NewValue)
 
 void NodeArea::Update()
 {
-	InputUpdate();
+	if (!NODE_CORE.bIsInTestMode)
+		InputUpdate();
 
 	for (int i = 0; i < static_cast<int>(Nodes.size()); i++)
 	{
@@ -54,7 +55,8 @@ void NodeArea::Update()
 	}
 
 	ProcessSocketEventQueue();
-	Render();
+	if (!NODE_CORE.bIsInTestMode)
+		Render();
 }
 
 void NodeArea::SetMainContextMenuFunc(void(*Func)())
@@ -66,6 +68,14 @@ void NodeArea::Clear()
 {
 	bClearing = true;
 
+	for (int i = 0; i < static_cast<int>(GroupComments.size()); i++)
+	{
+		DeleteGroupComment(GroupComments[i]);
+		i--;
+	}
+	GroupComments.clear();
+	SelectedGroupComments.clear();
+
 	for (int i = 0; i < static_cast<int>(Nodes.size()); i++)
 	{
 		PropagateNodeEventsCallbacks(Nodes[i], DESTROYED);
@@ -73,10 +83,13 @@ void NodeArea::Clear()
 		DeleteNode(Nodes[i]);
 		i--;
 	}
-
+	Nodes.clear();
+	SelectedNodes.clear();
+	SelectedRerouteNodes.clear();
+	
 	RenderOffset = ImVec2(0, 0);
 	NodeAreaWindow = nullptr;
-	SelectedNodes.clear();
+	
 	SocketLookingForConnection = nullptr;
 	SocketHovered = nullptr;
 
@@ -94,7 +107,7 @@ void NodeArea::Reset()
 	NodeEventsCallbacks.clear();
 }
 
-void NodeArea::SetNodeEventCallback(void(*Func)(Node*, NODE_EVENT))
+void NodeArea::AddNodeEventCallback(std::function<void(Node*, NODE_EVENT)> Func)
 {
 	if (Func != nullptr)
 		NodeEventsCallbacks.push_back(Func);
@@ -116,17 +129,6 @@ void NodeArea::SaveToFile(const char* FileName) const
 	SaveFile.open(FileName);
 	SaveFile << json_file;
 	SaveFile.close();
-}
-
-bool NodeArea::IsNodeIDInList(const std::string ID, const std::vector<Node*> List)
-{
-	for (size_t i = 0; i < List.size(); i++)
-	{
-		if (List[i]->GetID() == ID)
-			return true;
-	}
-
-	return false;
 }
 
 void NodeArea::SaveNodesToFile(const char* FileName, std::vector<Node*> Nodes)
@@ -166,7 +168,7 @@ void NodeArea::ProcessConnections(const std::vector<NodeSocket*>& Sockets,
 		NodeSocket* CurrentSocket = Sockets[i];
 		for (const auto& ConnectedSocket : CurrentSocket->ConnectedSockets)
 		{
-			if (IsNodeIDInList(ConnectedSocket->GetParent()->GetID(), SourceNodes))
+			if (Node::IsNodeWithIDInList(ConnectedSocket->GetParent()->GetID(), SourceNodes))
 			{
 				// Check maybe we already establish this connection.
 				if (!IsAlreadyConnected(OldToNewSocket[CurrentSocket], OldToNewSocket[ConnectedSocket], TargetArea->Connections))
@@ -345,12 +347,22 @@ std::string NodeArea::ToJson() const
 	return JsonText;
 }
 
-NodeArea* NodeArea::FromJson(std::string JsonText)
+void NodeArea::CopyNodesTo(NodeArea* SourceNodeArea, NodeArea* TargetNodeArea)
 {
-	NodeArea* NewArea = new NodeArea();
+	const size_t NodeShift = TargetNodeArea->Nodes.size();
+	CopyNodesInternal(SourceNodeArea->Nodes, TargetNodeArea, NodeShift);
 
+	for (size_t i = 0; i < SourceNodeArea->GroupComments.size(); i++)
+	{
+		GroupComment* CopyOfGroupComment = new GroupComment(*SourceNodeArea->GroupComments[i]);
+		TargetNodeArea->AddGroupComment(CopyOfGroupComment);
+	}
+}
+
+void NodeArea::LoadFromJson(std::string JsonText)
+{
 	if (JsonText.find("{") == std::string::npos || JsonText.find("}") == std::string::npos || JsonText.find(":") == std::string::npos)
-		return NewArea;
+		return;
 
 	Json::Value root;
 	JSONCPP_STRING err;
@@ -358,10 +370,10 @@ NodeArea* NodeArea::FromJson(std::string JsonText)
 
 	const std::unique_ptr<Json::CharReader> reader(builder.newCharReader());
 	if (!reader->parse(JsonText.c_str(), JsonText.c_str() + JsonText.size(), &root, &err))
-		return NewArea;
+		return;
 
 	if (!root.isMember("nodes"))
-		return NewArea;
+		return;
 
 	std::unordered_map<std::string, Node*> LoadedNodes;
 	std::vector<Json::String> NodesList = root["nodes"].getMemberNames();
@@ -380,13 +392,13 @@ NodeArea* NodeArea::FromJson(std::string JsonText)
 				continue;
 			}
 		}
-			
+
 		NewNode->FromJson(root["nodes"][std::to_string(i)]);
 
 		if (NewNode != nullptr)
 		{
 			LoadedNodes[NewNode->GetID()] = NewNode;
-			NewArea->AddNode(NewNode);
+			AddNode(NewNode);
 		}
 	}
 
@@ -400,10 +412,10 @@ NodeArea* NodeArea::FromJson(std::string JsonText)
 		std::string OutNodeID = root["connections"][ConnectionsList[i]]["out"]["node_ID"].asCString();
 
 		if (LoadedNodes.find(OutNodeID) != LoadedNodes.end() && LoadedNodes.find(InNodeID) != LoadedNodes.end())
-			if (!NewArea->TryToConnect(LoadedNodes[OutNodeID], OutSocketID, LoadedNodes[InNodeID], InSocketID))
+			if (!TryToConnect(LoadedNodes[OutNodeID], OutSocketID, LoadedNodes[InNodeID], InSocketID))
 				continue;
 
-		Connection* NewConnection = NewArea->Connections.back();
+		Connection* NewConnection = Connections.back();
 
 		// First pass to fill information that does not depend other reroutes.
 		std::vector<Json::String> RerouteList = root["connections"][ConnectionsList[i]]["reroute_connections"].getMemberNames();
@@ -448,7 +460,7 @@ NodeArea* NodeArea::FromJson(std::string JsonText)
 					if (BeginRerouteID == NewConnection->RerouteNodes[k]->ID)
 						BeginReroute = NewConnection->RerouteNodes[k];
 				}
-				
+
 				if (BeginReroute != nullptr)
 					NewConnection->RerouteNodes[j]->BeginReroute = BeginReroute;
 			}
@@ -476,7 +488,7 @@ NodeArea* NodeArea::FromJson(std::string JsonText)
 		{
 			GroupComment* NewGroupComment = new GroupComment();
 			NewGroupComment->FromJson(root["GroupComments"][std::to_string(i)]);
-			NewArea->AddGroupComment(NewGroupComment);
+			AddGroupComment(NewGroupComment);
 		}
 	}
 
@@ -484,21 +496,7 @@ NodeArea* NodeArea::FromJson(std::string JsonText)
 	{
 		float OffsetX = root["renderOffset"]["x"].asFloat();
 		float OffsetY = root["renderOffset"]["y"].asFloat();
-		NewArea->SetRenderOffset(ImVec2(OffsetX, OffsetY));
-	}
-
-	return NewArea;
-}
-
-void NodeArea::CopyNodesTo(NodeArea* SourceNodeArea, NodeArea* TargetNodeArea)
-{
-	const size_t NodeShift = TargetNodeArea->Nodes.size();
-	CopyNodesInternal(SourceNodeArea->Nodes, TargetNodeArea, NodeShift);
-
-	for (size_t i = 0; i < SourceNodeArea->GroupComments.size(); i++)
-	{
-		GroupComment* CopyOfGroupComment = new GroupComment(*SourceNodeArea->GroupComments[i]);
-		TargetNodeArea->AddGroupComment(CopyOfGroupComment);
+		SetRenderOffset(ImVec2(OffsetX, OffsetY));
 	}
 }
 
@@ -510,42 +508,50 @@ void NodeArea::LoadFromFile(const char* FileName)
 	const std::string FileData((std::istreambuf_iterator<char>(NodesFile)), std::istreambuf_iterator<char>());
 	NodesFile.close();
 
-	NodeArea* NewNodeArea = NodeArea::FromJson(FileData);
-	NodeArea::CopyNodesTo(NewNodeArea, this);
-	
-	delete NewNodeArea;
+	LoadFromJson(FileData);
+}
+
+Node* NodeArea::GetNodeByID(std::string NodeID) const
+{
+	for (size_t i = 0; i < Nodes.size(); i++)
+	{
+		if (Nodes[i]->GetID() == NodeID)
+			return Nodes[i];
+	}
+
+	return nullptr;
 }
 
 std::vector<Node*> NodeArea::GetNodesByName(const std::string NodeName) const
 {
-	std::vector<Node*> result;
+	std::vector<Node*> Result;
 	for (size_t i = 0; i < Nodes.size(); i++)
 	{
 		if (Nodes[i]->GetName() == NodeName)
-			result.push_back(Nodes[i]);
+			Result.push_back(Nodes[i]);
 	}
 
-	return result;
+	return Result;
 }
 
 std::vector<Node*> NodeArea::GetNodesByType(const std::string NodeType) const
 {
-	std::vector<Node*> result;
+	std::vector<Node*> Result;
 	for (size_t i = 0; i < Nodes.size(); i++)
 	{
 		if (Nodes[i]->GetType() == NodeType)
-			result.push_back(Nodes[i]);
+			Result.push_back(Nodes[i]);
 	}
 
-	return result;
+	return Result;
 }
 
-int NodeArea::GetNodeCount() const
+size_t NodeArea::GetNodeCount() const
 {
-	return static_cast<int>(Nodes.size());
+	return Nodes.size();
 }
 
-bool NodeArea::EmptyOrFilledByNulls(const std::vector<Node*> Vector)
+bool NodeArea::IsEmptyOrFilledByNulls(const std::vector<Node*> Vector)
 {
 	for (size_t i = 0; i < Vector.size(); i++)
 	{
@@ -635,7 +641,7 @@ std::vector<ConnectionSegment> NodeArea::GetConnectionSegments(const Connection*
 ImVec2 NodeArea::LocalToScreen(ImVec2 LocalPosition) const
 {
 	ImVec2 WindowPosition = ImVec2(0.0f, 0.0f);
-	if (ImGui::GetCurrentContext()->CurrentWindow != nullptr)
+	if (ImGui::GetCurrentContext() != nullptr && ImGui::GetCurrentContext()->CurrentWindow != nullptr)
 		WindowPosition = ImGui::GetCurrentWindow()->Pos;
 
 	return WindowPosition + LocalPosition * Zoom + RenderOffset;
@@ -644,7 +650,7 @@ ImVec2 NodeArea::LocalToScreen(ImVec2 LocalPosition) const
 ImVec2 NodeArea::ScreenToLocal(ImVec2 ScreenPosition) const
 {
 	ImVec2 WindowPosition = ImVec2(0.0f, 0.0f);
-	if (ImGui::GetCurrentContext()->CurrentWindow != nullptr)
+	if (ImGui::GetCurrentContext() != nullptr && ImGui::GetCurrentContext()->CurrentWindow != nullptr)
 		WindowPosition = ImGui::GetCurrentWindow()->Pos;
 
 	return (ScreenPosition - WindowPosition - RenderOffset) / Zoom;
@@ -683,7 +689,7 @@ bool NodeArea::IsRectsOverlaping(ImVec2 FirstRectMin, ImVec2 FirstRectSize, ImVe
 	return false;
 }
 
-bool NodeArea::IsSecondRectInsideFirstOne(ImVec2 FirstRectMin, ImVec2 FirstRectSize, ImVec2 SecondRectMin, ImVec2 SecondRectSize)
+bool NodeArea::IsSecondRectInsideFirstOne(ImVec2 FirstRectMin, ImVec2 FirstRectSize, ImVec2 SecondRectMin, ImVec2 SecondRectSize) const
 {
 	if (SecondRectMin.x >= FirstRectMin.x &&
 	   (SecondRectMin.x + SecondRectSize.x) <= (FirstRectMin.x + FirstRectSize.x) &&
@@ -692,14 +698,6 @@ bool NodeArea::IsSecondRectInsideFirstOne(ImVec2 FirstRectMin, ImVec2 FirstRectS
 	{
 		return true;
 	}
-
-	/*if (FirstRectMin.x < (SecondRectMin.x + SecondRectSize.x) &&
-		(FirstRectMin.x + FirstRectSize.x) > SecondRectMin.x &&
-		FirstRectMin.y < (SecondRectMin.y + SecondRectSize.y) &&
-		(FirstRectMin.y + FirstRectSize.y) > SecondRectMin.y)
-	{
-		return true;
-	}*/
 
 	return false;
 }

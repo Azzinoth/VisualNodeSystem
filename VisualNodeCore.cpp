@@ -15,6 +15,13 @@ const char* FontBase64Part_5 = R"(PgJ2OIY4AnkqiSoCZgN2A4YDA2QzdDOEMwNrL3sviy8DBS
 
 void NodeCore::InitializeFonts()
 {
+	auto ImGuiContext = ImGui::GetCurrentContext();
+	if (ImGuiContext == nullptr || bIsInTestMode)
+	{
+		bIsFontsInitialized = false;
+		return;
+	}
+
 	// If no font has been loaded up to this point, load the default ImGui font.
 	if (ImGui::GetIO().Fonts->Fonts.Size == 0)
 		ImGui::GetIO().Fonts->AddFontDefault();

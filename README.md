@@ -1,8 +1,12 @@
-# Visual Node System
-
-![build](https://github.com/Azzinoth/VisualNodeSystem-Example/actions/workflows/Build.yml/badge.svg?branch=master)
+<div align="center">
+	<h1> Visual Node System </h1>
+	<img src="https://github.com/Azzinoth/VisualNodeSystem/actions/workflows/Build.yml/badge.svg" alt="Build Status">
+	<img src="https://github.com/Azzinoth/VisualNodeSystem/actions/workflows/ContinuousIntegration.yml/badge.svg" alt="Continuous Integration">
+</div>
 
 This library provides a powerful framework for creating and managing visual node systems. These are typically used in graphical programming environments, game logic builders, and AI behavior tree editors.
+
+Master branch is free of tests to maintain its lightweightness. All test-related stuff (except GitHub Actions) is located in the [Tests Branch](https://github.com/Azzinoth/VisualNodeSystem/tree/tests)
 
 ## Key Features
 
@@ -26,6 +30,11 @@ This library provides a powerful framework for creating and managing visual node
 - **Flexible Socket Management**: The library offers functionalities for managing node sockets (input/output). These sockets serve as points of data connection between different nodes.
 
 - **JSON Serialization**: The library provides functionalities to serialize/deserialize the node data to/from JSON format.
+
+- **Integrated Copy/Paste**: With the help of JSON serialization/deserialization, elements can be copied from one node area to the same or another node area.
+<div align="center">
+    <img src="https://github.com/Azzinoth/VisualNodeSystem/blob/media/Copy and Paste.gif" width="60%">
+</div>
 
 - **Node Factory For Child Node Creation**: The library includes a system for creating child nodes using node factory, which enables JSON serialization of custom nodes.
 
