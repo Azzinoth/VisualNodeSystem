@@ -1,7 +1,12 @@
 #include "VisualNodeFactory.h"
 using namespace VisNodeSys;
 
-NodeFactory* NodeFactory::Instance = nullptr;
+#ifdef VISUAL_NODE_SYSTEM_SHARED
+extern "C" __declspec(dllexport) void* GetNodeFactory()
+{
+    return NodeFactory::GetInstancePointer();
+}
+#endif
 
 NodeFactory::NodeFactory() {}
 NodeFactory::~NodeFactory() {}

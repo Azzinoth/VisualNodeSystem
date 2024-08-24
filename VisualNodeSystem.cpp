@@ -1,7 +1,12 @@
 #include "VisualNodeSystem.h"
 using namespace VisNodeSys;
 
-NodeSystem* NodeSystem::Instance = nullptr;
+#ifdef VISUAL_NODE_SYSTEM_SHARED
+extern "C" __declspec(dllexport) void* GetNodeSystem()
+{
+	return NodeSystem::GetInstancePointer();
+}
+#endif
 
 NodeSystem::NodeSystem() {}
 NodeSystem::~NodeSystem() {}

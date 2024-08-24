@@ -11,7 +11,7 @@ namespace VisNodeSys
 
 	class Node;
 
-	class NodeSocket
+	class VISUAL_NODE_SYSTEM_API NodeSocket
 	{
 		friend class NodeSystem;
 		friend class NodeArea;

@@ -288,18 +288,18 @@ void NodeArea::Render()
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
 	ImGui::PushStyleColor(ImGuiCol_ChildBg, Settings.Style.Grid.GridBackgroundColor);
 
-	const ImVec2 CurrentPosition = ImGui::GetCurrentWindow()->Pos + Position;
+	const ImVec2 CurrentPosition = GetCurrentWindowImpl()->Pos + Position;
 	ImGui::SetNextWindowPos(CurrentPosition);
 
 	if (bFillWindow)
 	{
-		auto NodeAreaParentWindow = ImGui::GetCurrentWindow();
+		auto NodeAreaParentWindow = GetCurrentWindowImpl();
 		SetSize(NodeAreaParentWindow->Size - ImVec2(2, 2));
 	}
 
 	ImGui::BeginChild("Nodes area", GetSize(), true, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoMove);
 
-	NodeAreaWindow = ImGui::GetCurrentWindow();
+	NodeAreaWindow = GetCurrentWindowImpl();
 	CurrentDrawList = ImGui::GetWindowDrawList();
 
 	RenderGrid(CurrentPosition);
@@ -701,7 +701,7 @@ ImVec2 NodeArea::GetRenderedViewCenter() const
 	}
 	else
 	{
-		return (ImGui::GetCurrentWindow()->Size / 2.0f - RenderOffset) / Zoom;
+		return (GetCurrentWindowImpl()->Size / 2.0f - RenderOffset) / Zoom;
 	}
 }
 
@@ -851,7 +851,7 @@ void NodeArea::RenderGroupComment(GroupComment* GroupComment)
 	if (!GroupComment->bLastFrameRenameEditWasVisiable)
 	{
 		ImGui::SetKeyboardFocusHere(0);
-		ImGui::SetFocusID(ImGui::GetID("##newCommentEditor"), ImGui::GetCurrentWindow());
+		ImGui::SetFocusID(ImGui::GetID("##newCommentEditor"), GetCurrentWindowImpl());
 		ImGui::SetItemDefaultFocus();
 		GroupComment->bLastFrameRenameEditWasVisiable = true;
 
@@ -864,7 +864,7 @@ void NodeArea::RenderGroupComment(GroupComment* GroupComment)
 		ImGui::SetCursorScreenPos(CaptionPosition + TextOffset);
 		ImGui::SetNextItemWidth(GroupComment->GetSize().x * Zoom - TextOffset.x * 4.0f);
 		if (ImGui::InputText("##newCommentEditor", GroupComment->GroupCommentRename, IM_ARRAYSIZE(GroupComment->GroupCommentRename), ImGuiInputTextFlags_EnterReturnsTrue) ||
-			ImGui::IsMouseClicked(0) && !ImGui::IsItemHovered() || ImGui::GetFocusID() != ImGui::GetID("##newCommentEditor"))
+			ImGui::IsMouseClicked(0) && !ImGui::IsItemHovered() || !ImGui::IsItemFocused())
 		{
 			GroupComment->bIsRenamingActive = false;
 			GroupComment->SetCaption(GroupComment->GroupCommentRename);

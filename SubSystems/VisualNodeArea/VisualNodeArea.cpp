@@ -641,8 +641,8 @@ std::vector<ConnectionSegment> NodeArea::GetConnectionSegments(const Connection*
 ImVec2 NodeArea::LocalToScreen(ImVec2 LocalPosition) const
 {
 	ImVec2 WindowPosition = ImVec2(0.0f, 0.0f);
-	if (ImGui::GetCurrentContext() != nullptr && ImGui::GetCurrentContext()->CurrentWindow != nullptr)
-		WindowPosition = ImGui::GetCurrentWindow()->Pos;
+	if (GetCurrentWindowImpl() != nullptr)
+		WindowPosition = GetCurrentWindowImpl()->Pos;
 
 	return WindowPosition + LocalPosition * Zoom + RenderOffset;
 }
@@ -650,8 +650,8 @@ ImVec2 NodeArea::LocalToScreen(ImVec2 LocalPosition) const
 ImVec2 NodeArea::ScreenToLocal(ImVec2 ScreenPosition) const
 {
 	ImVec2 WindowPosition = ImVec2(0.0f, 0.0f);
-	if (ImGui::GetCurrentContext() != nullptr && ImGui::GetCurrentContext()->CurrentWindow != nullptr)
-		WindowPosition = ImGui::GetCurrentWindow()->Pos;
+	if (GetCurrentWindowImpl() != nullptr)
+		WindowPosition = GetCurrentWindowImpl()->Pos;
 
 	return (ScreenPosition - WindowPosition - RenderOffset) / Zoom;
 }
@@ -700,4 +700,13 @@ bool NodeArea::IsSecondRectInsideFirstOne(ImVec2 FirstRectMin, ImVec2 FirstRectS
 	}
 
 	return false;
+}
+
+ImGuiWindow* NodeArea::GetCurrentWindowImpl() const
+{
+	ImGuiContext* Context = ImGui::GetCurrentContext();
+	if (Context == nullptr)
+		return nullptr;
+
+	return Context->CurrentWindow;
 }

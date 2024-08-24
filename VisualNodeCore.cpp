@@ -1,7 +1,12 @@
 #include "VisualNodeCore.h"
 using namespace VisNodeSys;
 
-NodeCore* NodeCore::Instance = nullptr;
+#ifdef VISUAL_NODE_SYSTEM_SHARED
+extern "C" __declspec(dllexport) void* GetNodeCore()
+{
+	return NodeCore::GetInstancePointer();
+}
+#endif
 
 NodeCore::NodeCore() {}
 NodeCore::~NodeCore() {}

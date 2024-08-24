@@ -4,7 +4,7 @@
 
 namespace VisNodeSys
 {
-	class NodeSystem
+	class VISUAL_NODE_SYSTEM_API NodeSystem
 	{
 		SINGLETON_PRIVATE_PART(NodeSystem)
 
@@ -23,5 +23,10 @@ namespace VisNodeSys
 		void AssociateSocketTypeToColor(std::string SocketType, ImColor Color);
 	};
 
-#define NODE_SYSTEM VisNodeSys::NodeSystem::getInstance()
+#ifdef VISUAL_NODE_SYSTEM_SHARED
+	extern "C" __declspec(dllexport) void* GetNodeSystem();
+	#define NODE_SYSTEM (*static_cast<VisNodeSys::NodeSystem*>(VisNodeSys::GetNodeSystem()))
+#else
+	#define NODE_SYSTEM VisNodeSys::NodeSystem::GetInstance()
+#endif
 }

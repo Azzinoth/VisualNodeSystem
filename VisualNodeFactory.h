@@ -4,7 +4,7 @@
 
 namespace VisNodeSys
 {
-    class NodeFactory
+    class VISUAL_NODE_SYSTEM_API NodeFactory
     {
         SINGLETON_PRIVATE_PART(NodeFactory)
 
@@ -19,5 +19,10 @@ namespace VisNodeSys
         Node* CopyNode(const std::string& Type, const Node& Node) const;
     };
 
-#define NODE_FACTORY VisNodeSys::NodeFactory::getInstance()
+#ifdef VISUAL_NODE_SYSTEM_SHARED
+    extern "C" __declspec(dllexport) void* GetNodeFactory();
+    #define NODE_FACTORY (*static_cast<VisNodeSys::NodeFactory*>(VisNodeSys::GetNodeFactory()))
+#else
+    #define NODE_FACTORY VisNodeSys::NodeFactory::GetInstance()
+#endif
 }

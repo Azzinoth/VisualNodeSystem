@@ -27,38 +27,46 @@
 
 #include "jsoncpp/json/json.h"
 
+#include "VisualNodeSystemAPI.h"
+
 namespace VisNodeSys
 {
-#define SINGLETON_PUBLIC_PART(CLASS_NAME)  \
-static CLASS_NAME& getInstance()           \
-{										   \
-	if (!Instance)                         \
-		Instance = new CLASS_NAME();       \
-	return *Instance;				       \
-}                                          \
-										   \
-~CLASS_NAME();
 
-#define SINGLETON_PRIVATE_PART(CLASS_NAME) \
-static CLASS_NAME* Instance;               \
-CLASS_NAME();                              \
-CLASS_NAME(const CLASS_NAME &);            \
-void operator= (const CLASS_NAME &);
+#define SINGLETON_PUBLIC_PART(CLASS_NAME)		\
+    static CLASS_NAME& GetInstance()			\
+    {											\
+		static CLASS_NAME* Instance = nullptr;	\
+        if (!Instance)							\
+            Instance = new CLASS_NAME();		\
+        return *Instance;						\
+    }											\
+												\
+	static CLASS_NAME* GetInstancePointer()		\
+	{											\
+		return &GetInstance();					\
+	}
+
+#define SINGLETON_PRIVATE_PART(CLASS_NAME)	\
+    CLASS_NAME();							\
+	~CLASS_NAME();							\
+    CLASS_NAME(const CLASS_NAME &);			\
+    void operator= (const CLASS_NAME &);
+
 
 #define FE_MAP_TO_STR_VECTOR(map)          \
-std::vector<std::string> result;           \
-auto iterator = map.begin();               \
-while (iterator != map.end())              \
-{                                          \
-	result.push_back(iterator->first);     \
-	iterator++;                            \
-}                                          \
-                                           \
-return result;
+	std::vector<std::string> result;       \
+	auto iterator = map.begin();           \
+	while (iterator != map.end())          \
+	{                                      \
+		result.push_back(iterator->first); \
+		iterator++;                        \
+	}                                      \
+										   \
+	return result;
 
 #define VISUAL_NODE_SYSTEM_VERSION "0.1.0"
 
-	class NodeCore
+	class VISUAL_NODE_SYSTEM_API NodeCore
 	{
 		SINGLETON_PRIVATE_PART(NodeCore)
 
@@ -93,5 +101,10 @@ return result;
 		std::string Base64Decode(std::string const& EncodedString);
 	};
 
-#define NODE_CORE VisNodeSys::NodeCore::getInstance()
+#ifdef VISUAL_NODE_SYSTEM_SHARED
+	extern "C" __declspec(dllexport) void* GetNodeCore();
+	#define NODE_CORE (*static_cast<VisNodeSys::NodeCore*>(VisNodeSys::GetNodeCore()))
+#else
+	#define NODE_CORE VisNodeSys::NodeCore::GetInstance()
+#endif
 }

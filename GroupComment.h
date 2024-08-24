@@ -7,7 +7,7 @@ namespace VisNodeSys
 #define GROUP_COMMENT_CAPTION_MAX_LENGHT 1024
 #define GROUP_COMMENT_TITLE_HEIGHT 30.0f
 
-	class GroupComment
+	class VISUAL_NODE_SYSTEM_API GroupComment
 	{
 	protected:
 		friend class NodeSystem;

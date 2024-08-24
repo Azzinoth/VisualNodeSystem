@@ -23,7 +23,7 @@ namespace VisNodeSys
 		EXECUTE = 4
 	};
 
-	class Node
+	class VISUAL_NODE_SYSTEM_API Node
 	{
 	protected:
 		friend class NodeSystem;

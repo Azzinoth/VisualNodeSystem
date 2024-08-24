@@ -64,7 +64,7 @@ namespace VisNodeSys
 		bool bReduceTransparencyForUnconnectableSockets = true;
 	};
 
-	class NodeArea
+	class VISUAL_NODE_SYSTEM_API NodeArea
 	{
 		friend NodeSystem;
 	public:
@@ -336,5 +336,8 @@ namespace VisNodeSys
 
 		ImVec2 ScreenToLocal(ImVec2 ScreenPosition) const;
 		ImVec2 LocalToScreen(ImVec2 LocalPosition) const;
+
+		// TO DO: Here I am using internal ImGui functions. Need to find a way to avoid it.
+		ImGuiWindow* GetCurrentWindowImpl() const;
 	};
 }
