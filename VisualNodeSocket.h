@@ -39,8 +39,8 @@ namespace VisNodeSys
 
 		std::string GetType() const;
 
-		bool isOutput() const { return bOutput; }
-		bool isInput() const { return !bOutput; }
+		bool IsOutput() const { return bOutput; }
+		bool IsInput() const { return !bOutput; }
 
 		void SetFunctionToOutputData(std::function<void* ()> NewFunction);
 		void* GetData() { return OutputData(); }

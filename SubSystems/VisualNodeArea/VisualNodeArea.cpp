@@ -417,7 +417,7 @@ void NodeArea::LoadFromJson(std::string JsonText)
 
 		Connection* NewConnection = Connections.back();
 
-		// First pass to fill information that does not depend other reroutes.
+		// First pass to fill information that does not depend on other reroutes.
 		std::vector<Json::String> RerouteList = root["connections"][ConnectionsList[i]]["reroute_connections"].getMemberNames();
 		for (size_t j = 0; j < RerouteList.size(); j++)
 		{
@@ -436,7 +436,7 @@ void NodeArea::LoadFromJson(std::string JsonText)
 		for (size_t j = 0; j < RerouteList.size(); j++)
 		{
 			std::string BeginSocketID = root["connections"][ConnectionsList[i]]["reroute_connections"][std::to_string(j)]["begin_socket_ID"].asCString();
-			if (BeginSocketID != "")
+			if (!BeginSocketID.empty())
 			{
 				NodeSocket* BeginSocket = NewConnection->Out;
 				if (BeginSocketID == BeginSocket->GetID())
@@ -444,7 +444,7 @@ void NodeArea::LoadFromJson(std::string JsonText)
 			}
 
 			std::string EndSocketID = root["connections"][ConnectionsList[i]]["reroute_connections"][std::to_string(j)]["end_socket_ID"].asCString();
-			if (EndSocketID != "")
+			if (!EndSocketID.empty())
 			{
 				NodeSocket* EndSocket = NewConnection->In;
 				if (EndSocketID == EndSocket->GetID())
@@ -452,7 +452,7 @@ void NodeArea::LoadFromJson(std::string JsonText)
 			}
 
 			std::string BeginRerouteID = root["connections"][ConnectionsList[i]]["reroute_connections"][std::to_string(j)]["begin_reroute_ID"].asCString();
-			if (BeginRerouteID != "")
+			if (!BeginRerouteID.empty())
 			{
 				RerouteNode* BeginReroute = nullptr;
 				for (size_t k = 0; k < NewConnection->RerouteNodes.size(); k++)
@@ -466,7 +466,7 @@ void NodeArea::LoadFromJson(std::string JsonText)
 			}
 
 			std::string EndRerouteID = root["connections"][ConnectionsList[i]]["reroute_connections"][std::to_string(j)]["end_reroute_ID"].asCString();
-			if (EndRerouteID != "")
+			if (!EndRerouteID.empty())
 			{
 				RerouteNode* EndReroute = nullptr;
 				for (size_t k = 0; k < NewConnection->RerouteNodes.size(); k++)
@@ -618,7 +618,7 @@ std::vector<ConnectionSegment> NodeArea::GetConnectionSegments(const Connection*
 			CurrentSegment.End = EndPosition;
 			Result.push_back(CurrentSegment);
 
-			// Than we will add segment from current reroute to end, only if it is last reroute
+			// Then we will add segment from current reroute to end, only if it is last reroute
 			if (i == Connection->RerouteNodes.size() - 1)
 			{
 				CurrentSegment = ConnectionSegment();

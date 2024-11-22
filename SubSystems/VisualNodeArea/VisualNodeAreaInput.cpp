@@ -1109,39 +1109,43 @@ bool NodeArea::IsPointInRegion(const ImVec2& Point, const ImVec2& RegionMin, con
 	return (Point.x >= RegionMin.x && Point.x <= RegionMax.x && Point.y >= RegionMin.y && Point.y <= RegionMax.y);
 }
 
-int Orientation(const ImVec2& p, const ImVec2& q, const ImVec2& r)
+int Orientation(const ImVec2& FirstPoint, const ImVec2& SecondPoint, const ImVec2& ThirdPoint)
 {
-	float val = (q.y - p.y) * (r.x - q.x) - (q.x - p.x) * (r.y - q.y);
+	const float Value = (SecondPoint.y - FirstPoint.y) * (ThirdPoint.x - SecondPoint.x) - (SecondPoint.x - FirstPoint.x) * (ThirdPoint.y - SecondPoint.y);
 
-	if (val == 0) return 0; // Collinear
-	return (val > 0) ? 1 : 2; // Clockwise or Counterclockwise
+	// Collinear
+	if (Value == 0)
+		return 0;
+
+	return (Value > 0) ? 1 : 2; // Clockwise or Counterclockwise
 }
 
-bool OnSegment(const ImVec2& p, const ImVec2& q, const ImVec2& r)
+bool OnSegment(const ImVec2& SegmentStart, const ImVec2& SegmentEnd, const ImVec2& PointToCheck)
 {
-	if (q.x <= std::max(p.x, r.x) && q.x >= std::min(p.x, r.x) &&
-		q.y <= std::max(p.y, r.y) && q.y >= std::min(p.y, r.y))
+	if (PointToCheck.x <= std::max(SegmentStart.x, SegmentEnd.x) && PointToCheck.x >= std::min(SegmentStart.x, SegmentEnd.x) &&
+		PointToCheck.y <= std::max(SegmentStart.y, SegmentEnd.y) && PointToCheck.y >= std::min(SegmentStart.y, SegmentEnd.y))
 		return true;
+
 	return false;
 }
 
-bool IsLineSegmentIntersecting(const ImVec2& p1, const ImVec2& q1, const ImVec2& p2, const ImVec2& q2)
+bool IsLineSegmentIntersecting(const ImVec2& FirstSegmentStart, const ImVec2& FirstSegmentEnd, const ImVec2& SecondSegmentStart, const ImVec2& SecondSegmentEnd)
 {
 	// Find the four orientations
-	int o1 = Orientation(p1, q1, p2);
-	int o2 = Orientation(p1, q1, q2);
-	int o3 = Orientation(p2, q2, p1);
-	int o4 = Orientation(p2, q2, q1);
+	int FirstLineToSecondStart = Orientation(FirstSegmentStart, FirstSegmentEnd, SecondSegmentStart);
+	int FirstLineToSecondEnd = Orientation(FirstSegmentStart, FirstSegmentEnd, SecondSegmentEnd);
+	int SecondLineToFirstStart = Orientation(SecondSegmentStart, SecondSegmentEnd, FirstSegmentStart);
+	int SecondLineToFirstEnd = Orientation(SecondSegmentStart, SecondSegmentEnd, FirstSegmentEnd);
 
 	// General case
-	if (o1 != o2 && o3 != o4)
+	if (FirstLineToSecondStart != FirstLineToSecondEnd && SecondLineToFirstStart != SecondLineToFirstEnd)
 		return true;
 
 	// Special cases: check if the segments are collinear and overlap
-	if (o1 == 0 && OnSegment(p1, p2, q1)) return true;
-	if (o2 == 0 && OnSegment(p1, q2, q1)) return true;
-	if (o3 == 0 && OnSegment(p2, p1, q2)) return true;
-	if (o4 == 0 && OnSegment(p2, q1, q2)) return true;
+	if (FirstLineToSecondStart == 0 && OnSegment(FirstSegmentStart, SecondSegmentStart, FirstSegmentEnd)) return true;
+	if (FirstLineToSecondEnd == 0 && OnSegment(FirstSegmentStart, SecondSegmentEnd, FirstSegmentEnd)) return true;
+	if (SecondLineToFirstStart == 0 && OnSegment(SecondSegmentStart, FirstSegmentStart, SecondSegmentEnd)) return true;
+	if (SecondLineToFirstEnd == 0 && OnSegment(SecondSegmentStart, FirstSegmentEnd, SecondSegmentEnd)) return true;
 
 	return false; // If none of the above cases, return false
 }
@@ -1181,7 +1185,7 @@ bool NodeArea::IsSegmentInRegion(ImVec2 Begin, ImVec2 End, const int Steps)
 		float h3 = t * t * t - 2 * t * t + t;
 		float h4 = t * t * t - t * t;
 
-		ImVec2 segmentStart = ImVec2(h1 * Begin.x + h2 * End.x + h3 * t1.x + h4 * t2.x, h1 * Begin.y + h2 * End.y + h3 * t1.y + h4 * t2.y);
+		ImVec2 SegmentStart = ImVec2(h1 * Begin.x + h2 * End.x + h3 * t1.x + h4 * t2.x, h1 * Begin.y + h2 * End.y + h3 * t1.y + h4 * t2.y);
 
 		t = static_cast<float>(Step + 1) / static_cast<float>(Steps); // Update t for the end segment.
 		h1 = +2 * t * t * t - 3 * t * t + 1.0f;
@@ -1189,11 +1193,11 @@ bool NodeArea::IsSegmentInRegion(ImVec2 Begin, ImVec2 End, const int Steps)
 		h3 = t * t * t - 2 * t * t + t;
 		h4 = t * t * t - t * t;
 
-		ImVec2 segmentEnd = ImVec2(h1 * Begin.x + h2 * End.x + h3 * t1.x + h4 * t2.x, h1 * Begin.y + h2 * End.y + h3 * t1.y + h4 * t2.y);
+		ImVec2 SegmentEnd = ImVec2(h1 * Begin.x + h2 * End.x + h3 * t1.x + h4 * t2.x, h1 * Begin.y + h2 * End.y + h3 * t1.y + h4 * t2.y);
 
 		// If either of the segment's points are in the region, the connection is in the region.
-		if (IsPointInRegion(segmentStart, MouseSelectRegionMin, MouseSelectRegionMax) ||
-			IsPointInRegion(segmentEnd, MouseSelectRegionMin, MouseSelectRegionMax))
+		if (IsPointInRegion(SegmentStart, MouseSelectRegionMin, MouseSelectRegionMax) ||
+			IsPointInRegion(SegmentEnd, MouseSelectRegionMin, MouseSelectRegionMax))
 		{
 			return true;
 		}
@@ -1201,7 +1205,7 @@ bool NodeArea::IsSegmentInRegion(ImVec2 Begin, ImVec2 End, const int Steps)
 		// Check if the segment intersects with any of the region's edges.
 		for (int i = 0; i < 4; i++)
 		{
-			if (IsLineSegmentIntersecting(regionCorners[i], regionCorners[(i + 1) % 4], segmentStart, segmentEnd))
+			if (IsLineSegmentIntersecting(regionCorners[i], regionCorners[(i + 1) % 4], SegmentStart, SegmentEnd))
 			{
 				return true;
 			}
