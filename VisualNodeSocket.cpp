@@ -1,7 +1,7 @@
 #include "VisualNodeSocket.h"
 using namespace VisNodeSys;
 
-std::unordered_map<std::string, ImColor> NodeSocket::SocketTypeToColorAssosiations;
+std::unordered_map<std::string, ImColor> NodeSocket::SocketTypeToColorAssociations;
 
 NodeSocket::NodeSocket(Node* Parent, const std::string Type, const std::string Name, bool bOutput, std::function<void* ()> OutputDataFunction)
 {

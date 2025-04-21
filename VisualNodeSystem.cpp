@@ -69,8 +69,8 @@ void NodeSystem::MoveNodesTo(NodeArea* SourceNodeArea, NodeArea* TargetNodeArea,
 std::vector<std::pair<std::string, ImColor>> NodeSystem::GetAssociationsOfSocketTypeToColor(std::string SocketType, ImColor Color)
 {
 	std::vector<std::pair<std::string, ImColor>> Result;
-	auto iterator = NodeSocket::SocketTypeToColorAssosiations.begin();
-	while (iterator != NodeSocket::SocketTypeToColorAssosiations.end())
+	auto iterator = NodeSocket::SocketTypeToColorAssociations.begin();
+	while (iterator != NodeSocket::SocketTypeToColorAssociations.end())
 	{
 		Result.push_back(std::make_pair(iterator->first, iterator->second));
 		iterator++;
@@ -81,5 +81,5 @@ std::vector<std::pair<std::string, ImColor>> NodeSystem::GetAssociationsOfSocket
 
 void NodeSystem::AssociateSocketTypeToColor(std::string SocketType, ImColor Color)
 {
-	NodeSocket::SocketTypeToColorAssosiations[SocketType] = Color;
+	NodeSocket::SocketTypeToColorAssociations[SocketType] = Color;
 }

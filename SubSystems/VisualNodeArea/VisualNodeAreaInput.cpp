@@ -472,7 +472,7 @@ bool NodeArea::IsRectInMouseSelectionRegion(ImVec2 RectMin, ImVec2 RectSize)
 	else
 	{
 		// Check if a part of the Rect is inside MouseSelectRegion.
-		return IsRectsOverlaping(RectMin, RectSize, MouseSelectRegionMin, MouseSelectRegionMax - MouseSelectRegionMin);
+		return IsRectsOverlapping(RectMin, RectSize, MouseSelectRegionMin, MouseSelectRegionMax - MouseSelectRegionMin);
 	}
 
 	return false;
@@ -481,7 +481,7 @@ bool NodeArea::IsRectInMouseSelectionRegion(ImVec2 RectMin, ImVec2 RectSize)
 bool NodeArea::IsRectUnderMouse(ImVec2 RectMin, ImVec2 RectSize)
 {
 	static ImVec2 MouseCursorSize = ImVec2(5, 5);
-	return IsRectsOverlaping(RectMin, RectSize, MouseCursorPosition, MouseCursorSize);
+	return IsRectsOverlapping(RectMin, RectSize, MouseCursorPosition, MouseCursorSize);
 }
 
 void NodeArea::MouseDraggingNodesUpdate()
@@ -864,7 +864,7 @@ bool NodeArea::AddSelected(GroupComment* GroupComment)
 
 	GroupComment->bSelected = true;
 	SelectedGroupComments.push_back(GroupComment);
-	AttachElemetnsToGroupComment(GroupComment);
+	AttachElementsToGroupComment(GroupComment);
 
 	return true;
 }

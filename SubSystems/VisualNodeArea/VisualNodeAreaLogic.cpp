@@ -79,7 +79,7 @@ void NodeArea::Delete(Connection* Connection)
 		if (Connection->In->ConnectedSockets[i] == Connection->Out)
 		{
 			Connection->In->ConnectedSockets.erase(Connection->In->ConnectedSockets.begin() + i, Connection->In->ConnectedSockets.begin() + i + 1);
-			// To-Do : Add some variation of disconnected event, like DISCONNECTED_INCOMING
+			// TO-DO : Add some variation of disconnected event, like DISCONNECTED_INCOMING
 			Connection->In->Parent->SocketEvent(Connection->In, Connection->Out, bClearing ? DESTRUCTION : DISCONNECTED);
 			i--;
 		}
@@ -90,7 +90,7 @@ void NodeArea::Delete(Connection* Connection)
 		if (Connection->Out->ConnectedSockets[i] == Connection->In)
 		{
 			Connection->Out->ConnectedSockets.erase(Connection->Out->ConnectedSockets.begin() + i, Connection->Out->ConnectedSockets.begin() + i + 1);
-			// To-Do : Add some variation of disconnected event, like DISCONNECTED_OUTGOING
+			// TO-DO : Add some variation of disconnected event, like DISCONNECTED_OUTGOING
 			i--;
 		}
 	}
@@ -784,7 +784,7 @@ std::vector<GroupComment*> NodeArea::GetGroupCommentsInGroupComment(GroupComment
 	return Result;
 }
 
-void NodeArea::AttachElemetnsToGroupComment(GroupComment* GroupComment)
+void NodeArea::AttachElementsToGroupComment(GroupComment* GroupComment)
 {
 	GroupComment->AttachedNodes.clear();
 	GroupComment->AttachedRerouteNodes.clear();

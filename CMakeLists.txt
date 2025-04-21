@@ -66,7 +66,7 @@ if(VISUAL_NODE_SYSTEM_BUILD_SHARED_LIBS)
     target_compile_definitions(VisualNodeSystem PRIVATE VISUAL_NODE_SYSTEM_EXPORTS)
     target_compile_definitions(VisualNodeSystem PUBLIC VISUAL_NODE_SYSTEM_SHARED)
 
-	# Some times /GL conflicts with WINDOWS_EXPORT_ALL_SYMBOLS
+	# Sometimes /GL conflicts with WINDOWS_EXPORT_ALL_SYMBOLS
 	set_target_properties(VisualNodeSystem PROPERTIES COMPILE_OPTIONS "/GL-")
 	set_target_properties(VisualNodeSystem PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
@@ -86,7 +86,7 @@ set(VISUAL_NODE_SYSTEM_THIRDPARTY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty)
 # set the startup project
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT VisualNodeSystem)
 
-# Promt to give Dear ImGui path
+# Prompt to give Dear ImGui path
 set(DEAR_IMGUI_INCLUDE_DIR "" CACHE PATH "Path to Dear ImGui directory.")
 
 if(VISUAL_NODE_SYSTEM_BUILD_SHARED_LIBS)

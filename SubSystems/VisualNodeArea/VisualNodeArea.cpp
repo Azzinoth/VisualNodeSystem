@@ -676,7 +676,7 @@ std::vector<ImVec2> NodeArea::GetTangentsForLine(const ImVec2 Begin, const ImVec
 	return Result;
 }
 
-bool NodeArea::IsRectsOverlaping(ImVec2 FirstRectMin, ImVec2 FirstRectSize, ImVec2 SecondRectMin, ImVec2 SecondRectSize)
+bool NodeArea::IsRectsOverlapping(ImVec2 FirstRectMin, ImVec2 FirstRectSize, ImVec2 SecondRectMin, ImVec2 SecondRectSize)
 {
 	if (FirstRectMin.x < (SecondRectMin.x + SecondRectSize.x) &&
 		(FirstRectMin.x + FirstRectSize.x) > SecondRectMin.x &&

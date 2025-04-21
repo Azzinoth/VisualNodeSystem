@@ -133,8 +133,8 @@ void NodeArea::RenderNodeSocket(NodeSocket* Socket) const
 	}
 
 	ImColor SocketColor = DEFAULT_NODE_SOCKET_COLOR;
-	if (NodeSocket::SocketTypeToColorAssosiations.find(Socket->GetType()) != NodeSocket::SocketTypeToColorAssosiations.end())
-		SocketColor = NodeSocket::SocketTypeToColorAssosiations[Socket->GetType()];
+	if (NodeSocket::SocketTypeToColorAssociations.find(Socket->GetType()) != NodeSocket::SocketTypeToColorAssociations.end())
+		SocketColor = NodeSocket::SocketTypeToColorAssociations[Socket->GetType()];
 
 	ImColor SocketInternalPartColor = ImColor(30, 30, 30);
 	if (SocketHovered == Socket)
@@ -165,8 +165,8 @@ void NodeArea::RenderNodeSocket(NodeSocket* Socket) const
 		static ConnectionStyle DefaultConnectionStyle;
 
 		ImColor ConnectionColor = ImColor(200, 200, 200);
-		if (NodeSocket::SocketTypeToColorAssosiations.find(SocketLookingForConnection->GetType()) != NodeSocket::SocketTypeToColorAssosiations.end())
-			ConnectionColor = NodeSocket::SocketTypeToColorAssosiations[SocketLookingForConnection->GetType()];
+		if (NodeSocket::SocketTypeToColorAssociations.find(SocketLookingForConnection->GetType()) != NodeSocket::SocketTypeToColorAssociations.end())
+			ConnectionColor = NodeSocket::SocketTypeToColorAssociations[SocketLookingForConnection->GetType()];
 		
 		CurrentDrawList->ChannelsSetCurrent(3);
 		DrawHermiteLine(SocketPosition, ImGui::GetIO().MousePos, Settings.Style.GeneralConnection.LineSegments, ConnectionColor, &DefaultConnectionStyle);
@@ -307,7 +307,7 @@ void NodeArea::Render()
 	// 0 - connections.
 	// 1 - main node rect.
 	// 2 - for custom node draw.
-	// 3 - for line that represent new connection.
+	// 3 - for line that represents new connection.
 	CurrentDrawList->ChannelsSplit(4);
 
 	// We need to render comments first, because they should be on top layer.
@@ -329,7 +329,7 @@ void NodeArea::Render()
 	}
 
 	// Connection should be on node's top layer.
-	// But with my current realization it would be better to call it after renderNode.
+	// But with my current implementation it would be better to call it after RenderNode.
 	CurrentDrawList->ChannelsSetCurrent(0);
 	for (size_t i = 0; i < Connections.size(); i++)
 	{
@@ -530,8 +530,8 @@ void NodeArea::RenderConnection(const Connection* Connection) const
 		return;
 
 	ImColor CurrentConnectionColor = Connection->Style.ForceColor;
-	if (NodeSocket::SocketTypeToColorAssosiations.find(Connection->Out->GetType()) != NodeSocket::SocketTypeToColorAssosiations.end())
-		CurrentConnectionColor = NodeSocket::SocketTypeToColorAssosiations[Connection->Out->GetType()];
+	if (NodeSocket::SocketTypeToColorAssociations.find(Connection->Out->GetType()) != NodeSocket::SocketTypeToColorAssociations.end())
+		CurrentConnectionColor = NodeSocket::SocketTypeToColorAssociations[Connection->Out->GetType()];
 
 	std::vector<ConnectionSegment> Segments = GetConnectionSegments(Connection);
 	for (size_t i = 0; i < Segments.size(); i++)
@@ -848,12 +848,12 @@ void NodeArea::RenderGroupComment(GroupComment* GroupComment)
 	// Render the caption background.
 	CurrentDrawList->AddRectFilled(CaptionPosition, CaptionPosition + CaptionSize, CaptionBackgroundColor, 2.0f * Zoom);
 
-	if (!GroupComment->bLastFrameRenameEditWasVisiable)
+	if (!GroupComment->bLastFrameRenameEditWasVisible)
 	{
 		ImGui::SetKeyboardFocusHere(0);
 		ImGui::SetFocusID(ImGui::GetID("##newCommentEditor"), GetCurrentWindowImpl());
 		ImGui::SetItemDefaultFocus();
-		GroupComment->bLastFrameRenameEditWasVisiable = true;
+		GroupComment->bLastFrameRenameEditWasVisible = true;
 
 		snprintf(VisNodeSys::GroupComment::GroupCommentRename,GroupComment->GetCaption().size() + 1, "%s", GroupComment->GetCaption().c_str());
 	}

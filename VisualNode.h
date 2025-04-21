@@ -10,7 +10,7 @@ namespace VisNodeSys
 		CIRCLE = 1
 	};
 
-#define NODE_NAME_MAX_LENGHT 1024
+#define NODE_NAME_MAX_LENGTH 1024
 #define NODE_TITLE_HEIGHT 30.0f
 #define NODE_DIAMETER 72.0f
 

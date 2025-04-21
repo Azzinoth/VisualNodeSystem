@@ -1,7 +1,7 @@
 #include "GroupComment.h"
 using namespace VisNodeSys;
 
-char GroupComment::GroupCommentRename[GROUP_COMMENT_CAPTION_MAX_LENGHT] = "";
+char GroupComment::GroupCommentRename[GROUP_COMMENT_CAPTION_MAX_LENGTH] = "";
 
 GroupComment::GroupComment(const std::string ID)
 {

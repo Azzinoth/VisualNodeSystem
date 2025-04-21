@@ -302,7 +302,7 @@ namespace VisNodeSys
 		bool IsSegmentInRegion(ImVec2 Begin, ImVec2 End, const int Steps);
 		bool IsConnectionInRegion(Connection* Connection, const int Steps);
 
-		bool IsRectsOverlaping(ImVec2 FirstRectMin, ImVec2 FirstRectSize, ImVec2 SecondRectMin, ImVec2 SecondRectSize);
+		bool IsRectsOverlapping(ImVec2 FirstRectMin, ImVec2 FirstRectSize, ImVec2 SecondRectMin, ImVec2 SecondRectSize);
 		bool IsSecondRectInsideFirstOne(ImVec2 FirstRectMin, ImVec2 FirstRectSize, ImVec2 SecondRectMin, ImVec2 SecondRectSize) const;
 		bool IsRectInMouseSelectionRegion(ImVec2 RectMin, ImVec2 RectSize);
 		bool IsRectUnderMouse(ImVec2 RectMin, ImVec2 RectSize);
@@ -315,7 +315,7 @@ namespace VisNodeSys
 		void SelectFontSettings() const;
 
 		void GroupCommentDoubleMouseClick();
-		void AttachElemetnsToGroupComment(GroupComment* GroupComment);
+		void AttachElementsToGroupComment(GroupComment* GroupComment);
 		void MoveGroupComment(GroupComment* GroupComment, ImVec2 Delta);
 
 		void Render();

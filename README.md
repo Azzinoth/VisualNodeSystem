@@ -6,18 +6,18 @@
 
 This library provides a powerful framework for creating and managing visual node systems. These are typically used in graphical programming environments, game logic builders, and AI behavior tree editors.
 
-Master branch is free of tests to maintain its lightweightness. All test-related stuff (except GitHub Actions) is located in the [Tests Branch](https://github.com/Azzinoth/VisualNodeSystem/tree/tests)
+Master branch is free of tests to keep it lightweight. All test-related stuff (except GitHub Actions) is located in the [Tests Branch](https://github.com/Azzinoth/VisualNodeSystem/tree/tests)
 
 ## Key Features
 
-- **Unchanged Dear Imgui**: This project does not depend on modifications to Dear Imgui.
+- **Unchanged Dear ImGui**: This project does not depend on modifications to Dear ImGui.
 
 - **Zoom**: Zoom functionality enables detailed viewing and efficient navigation. The font system ensures precise text rendering at various zoom levels.
 <div align="center">
     <img src="https://github.com/Azzinoth/VisualNodeSystem/blob/media/Zoom.gif" width="60%">
 </div>
 
-- **Reroute Nodes**: Reroute nodes offer enhanced organization for clearer, more readable visual graphs, enabling flexible customization of connection paths. Also they simplify debugging by making connections traceable. To add reroute node just double click on connection.
+- **Reroute Nodes**: Reroute nodes offer enhanced organization for clearer, more readable visual graphs, enabling flexible customization of connection paths. They also simplify debugging by making connections traceable. To add a reroute node, just double-click on a connection.
 <div align="center">
     <img src="https://github.com/Azzinoth/VisualNodeSystem/blob/media/RerouteNodes.gif" width="60%">
 </div>
@@ -36,7 +36,7 @@ Master branch is free of tests to maintain its lightweightness. All test-related
     <img src="https://github.com/Azzinoth/VisualNodeSystem/blob/media/Copy and Paste.gif" width="60%">
 </div>
 
-- **Node Factory For Child Node Creation**: The library includes a system for creating child nodes using node factory, which enables JSON serialization of custom nodes.
+- **Node Factory For Child Node Creation**: The library includes a system for creating child nodes using a node factory, which enables JSON serialization of custom nodes.
 
 - **Custom Context Menus**: The library supports the integration of custom context menus.
 
@@ -47,14 +47,14 @@ Master branch is free of tests to maintain its lightweightness. All test-related
 I have personally used it in two of my projects:
 
 [Focal Engine Editor](https://github.com/Azzinoth/FocalEngineEditor)
-![Focal Engine editor material window](https://github.com/Azzinoth/VisualNodeSystem/blob/media/Focal%20Engine%20Editor%20example.png)
+![Focal Engine Editor material window](https://github.com/Azzinoth/VisualNodeSystem/blob/media/Focal%20Engine%20Editor%20example.png)
 
 [Focal Engine Test Platform](https://github.com/Azzinoth/FocalEngineTestPlatform)
-![Focal Engine test platform](https://github.com/Azzinoth/VisualNodeSystem/blob/media/Test%20Platform%20example.png)
+![Focal Engine Test Platform](https://github.com/Azzinoth/VisualNodeSystem/blob/media/Test%20Platform%20example.png)
 
 ## Usage
 
-**When using this project as a Git submodule, ensure you provide the path to Dear ImGui in your project. For a simple example of how to use library, see the [Visual Node System Example](https://github.com/Azzinoth/VisualNodeSystem-Example).**
+**When using this project as a Git submodule, ensure you provide the path to Dear ImGui in your project. For a simple example of how to use the library, see the [Visual Node System Example](https://github.com/Azzinoth/VisualNodeSystem-Example).**
 
 To add this module to your project, use the following command:
 

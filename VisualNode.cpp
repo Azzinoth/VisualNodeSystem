@@ -96,7 +96,7 @@ std::string Node::GetName()
 
 void Node::SetName(const std::string NewValue)
 {
-	if (NewValue.size() > NODE_NAME_MAX_LENGHT)
+	if (NewValue.size() > NODE_NAME_MAX_LENGTH)
 		return;
 
 	Name = NewValue;

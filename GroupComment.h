@@ -4,7 +4,7 @@
 
 namespace VisNodeSys
 {
-#define GROUP_COMMENT_CAPTION_MAX_LENGHT 1024
+#define GROUP_COMMENT_CAPTION_MAX_LENGTH 1024
 #define GROUP_COMMENT_TITLE_HEIGHT 30.0f
 
 	class VISUAL_NODE_SYSTEM_API GroupComment
@@ -27,12 +27,12 @@ namespace VisNodeSys
 		std::string Caption;
 
 		bool bIsRenamingActive = false;
-		bool bLastFrameRenameEditWasVisiable = false;
+		bool bLastFrameRenameEditWasVisible = false;
 
 		bool bVerticalResizeActive = false;
 		bool bHorizontalResizeActive = false;
 
-		static char GroupCommentRename[GROUP_COMMENT_CAPTION_MAX_LENGHT];
+		static char GroupCommentRename[GROUP_COMMENT_CAPTION_MAX_LENGTH];
 
 		float GetCaptionHeight(float Zoom) const;
 		ImVec2 GetCaptionSize(float Zoom) const;

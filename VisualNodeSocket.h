@@ -23,7 +23,7 @@ namespace VisNodeSys
 		std::string Name;
 		std::vector<NodeSocket*> ConnectedSockets;
 
-		static std::unordered_map<std::string, ImColor> SocketTypeToColorAssosiations;
+		static std::unordered_map<std::string, ImColor> SocketTypeToColorAssociations;
 
 		std::function<void* ()> OutputData = []() { return nullptr; };
 	protected:

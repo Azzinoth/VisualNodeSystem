@@ -42,21 +42,21 @@ void NodeCore::InitializeFonts()
 	CompleteFontBase64.erase(std::remove(CompleteFontBase64.begin(), CompleteFontBase64.end(), ' '), CompleteFontBase64.end());
 
 	std::string RawData = Base64Decode(CompleteFontBase64);
-	for (auto size : { 4, 8, 16, 32, 48 })
+	for (auto Size : { 4, 8, 16, 32, 48 })
 	{
 		// We are allocating a new array for each font, as ImGui will take care of deleting it.
-		// And if we will try to use same data for multiple fonts, it will work fine but it will result in a crash on ImGUI::DestroyContext().
+		// And if we will try to use same data for multiple fonts, it will work fine but it will result in a crash on ImGui::DestroyContext().
 		unsigned char* FontData = new unsigned char[RawData.size() + 1];
 		std::memcpy(FontData, RawData.c_str(), RawData.size() + 1);
-		Fonts.push_back(ImGui::GetIO().Fonts->AddFontFromMemoryTTF((void*)FontData, static_cast<int>(RawData.size()), float(size)));
+		Fonts.push_back(ImGui::GetIO().Fonts->AddFontFromMemoryTTF((void*)FontData, static_cast<int>(RawData.size()), float(Size)));
 	}
 }
 
 std::string NodeCore::GetUniqueID()
 {
 	static std::random_device RandomDevice;
-	static std::mt19937 mt(RandomDevice());
-	static std::uniform_int_distribution<int> distribution(0, 128);
+	static std::mt19937 RandomEngine(RandomDevice());
+	static std::uniform_int_distribution<int> Distribution(0, 128);
 
 	static bool FirstInitialization = true;
 	if (FirstInitialization)
@@ -66,10 +66,10 @@ std::string NodeCore::GetUniqueID()
 	}
 
 	std::string ID;
-	ID += static_cast<char>(distribution(mt));
+	ID += static_cast<char>(Distribution(RandomEngine));
 	for (size_t j = 0; j < 11; j++)
 	{
-		ID.insert(rand() % ID.size(), 1, static_cast<char>(distribution(mt)));
+		ID.insert(rand() % ID.size(), 1, static_cast<char>(Distribution(RandomEngine)));
 	}
 
 	return ID;
@@ -152,18 +152,18 @@ bool NodeCore::SetClipboardText(std::string Text)
 
 std::string NodeCore::GetClipboardText()
 {
-	std::string text;
+	std::string Text;
 
 #ifdef _WIN32
 	if (OpenClipboard(nullptr))
 	{
-		HANDLE data = nullptr;
-		data = GetClipboardData(CF_TEXT);
-		if (data != nullptr)
+		HANDLE Data = nullptr;
+		Data = GetClipboardData(CF_TEXT);
+		if (Data != nullptr)
 		{
-			const char* PszText = static_cast<char*>(GlobalLock(data));
+			const char* PszText = static_cast<char*>(GlobalLock(Data));
 			if (PszText != nullptr)
-				text = PszText;
+				Text = PszText;
 		}
 
 		CloseClipboard();
@@ -200,7 +200,7 @@ std::string NodeCore::GetClipboardText()
 
 	XCloseDisplay(display);
 #endif
-	return text;
+	return Text;
 }
 
 std::string NodeCore::Base64Encode(unsigned char const* BytesToEncode, unsigned int Length)
@@ -279,8 +279,6 @@ std::string NodeCore::Base64Decode(std::string const& EncodedString)
 			i = 0;
 		}
 	}
-
-	auto test = EncodedString[InputStringIndex];
 
 	if (i)
 	{
