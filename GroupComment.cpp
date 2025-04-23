@@ -1,4 +1,5 @@
 #include "GroupComment.h"
+#include "SubSystems/VisualNodeArea/VisualNodeArea.h"
 using namespace VisNodeSys;
 
 char GroupComment::GroupCommentRename[GROUP_COMMENT_CAPTION_MAX_LENGTH] = "";
@@ -35,7 +36,15 @@ ImVec2 GroupComment::GetPosition() const
 
 void GroupComment::SetPosition(const ImVec2 NewValue)
 {
-	Position = NewValue;
+	if (ParentArea == nullptr)
+	{
+		Position = NewValue;
+		return;
+	}
+
+	ImVec2 Delta = NewValue - Position;
+	ParentArea->AttachElementsToGroupComment(this);
+	ParentArea->MoveGroupComment(this, Delta);
 }
 
 ImVec2 GroupComment::GetSize() const

@@ -11,28 +11,37 @@ extern "C" __declspec(dllexport) void* GetNodeFactory()
 NodeFactory::NodeFactory() {}
 NodeFactory::~NodeFactory() {}
 
-void NodeFactory::RegisterNodeType(const std::string& Type,
+bool NodeFactory::RegisterNodeType(const std::string& Type,
                                          std::function<Node* ()> Constructor,
                                          std::function<Node* (const Node&)> CopyConstructor)
 {
+	if (Type.empty() || Constructor == nullptr || CopyConstructor == nullptr)
+		return false;
+
+	auto ConstructorIterator = Constructors.find(Type);
+    if (ConstructorIterator != Constructors.end())
+		return false;
+	
     Constructors[Type] = Constructor;
     CopyConstructors[Type] = CopyConstructor;
+
+	return true;
 }
 
 Node* NodeFactory::CreateNode(const std::string& Type) const
 {
-    auto it = Constructors.find(Type);
-    if (it == Constructors.end())
+    auto ConstructorIterator = Constructors.find(Type);
+    if (ConstructorIterator == Constructors.end())
         return nullptr;
 
-    return it->second();
+    return ConstructorIterator->second();
 }
 
 Node* NodeFactory::CopyNode(const std::string& Type, const Node& Node) const
 {
-    auto it = CopyConstructors.find(Type);
-    if (it == CopyConstructors.end())
+    auto CopyConstructorIterator = CopyConstructors.find(Type);
+    if (CopyConstructorIterator == CopyConstructors.end())
         return nullptr;
 
-    return it->second(Node);
+    return CopyConstructorIterator->second(Node);
 }

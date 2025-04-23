@@ -66,6 +66,7 @@ namespace VisNodeSys
 
 	class VISUAL_NODE_SYSTEM_API NodeArea
 	{
+		friend class GroupComment;
 		friend NodeSystem;
 	public:
 		NodeArea();

@@ -14,7 +14,7 @@ namespace VisNodeSys
     public:
         SINGLETON_PUBLIC_PART(NodeFactory)
 
-        void RegisterNodeType(const std::string& Type, std::function<Node* ()> Constructor, std::function<Node* (const Node&)> CopyConstructor);
+        bool RegisterNodeType(const std::string& Type, std::function<Node* ()> Constructor, std::function<Node* (const Node&)> CopyConstructor);
         Node* CreateNode(const std::string& Type) const;
         Node* CopyNode(const std::string& Type, const Node& Node) const;
     };

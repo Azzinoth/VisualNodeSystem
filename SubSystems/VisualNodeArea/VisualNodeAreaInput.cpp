@@ -619,7 +619,7 @@ void NodeArea::MouseDraggingGroupCommentUpdate()
 
 void NodeArea::MoveGroupComment(GroupComment* GroupComment, ImVec2 Delta)
 {
-	GroupComment->SetPosition(GroupComment->GetPosition() + Delta);
+	GroupComment->Position += Delta;
 
 	if (!GroupComment->bMoveElementsWithComment)
 		return;
