@@ -18,6 +18,21 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # Force your path to Dear ImGui
 set(DEAR_IMGUI_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/imgui CACHE PATH "Path to Dear ImGui directory." FORCE)
+set(USE_STATIC_RUNTIME ON CACHE BOOL "Use static runtime (/MT) instead of dynamic (/MD)")
+
+if(USE_STATIC_RUNTIME)
+	set(VISUAL_NODE_SYSTEM_USE_STATIC_RUNTIME ON CACHE BOOL "Use static runtime (/MT) instead of dynamic (/MD) for VisualNodeSystem" FORCE)
+	set(VISUAL_NODE_SYSTEM_GLFW_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/GLFW/lib/x64/glfw3_mt.lib CACHE PATH "Path to GLFW library." FORCE)
+
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
+else()
+	set(VISUAL_NODE_SYSTEM_USE_STATIC_RUNTIME OFF CACHE BOOL "Use static runtime (/MT) instead of dynamic (/MD) for VisualNodeSystem" FORCE)
+	set(VISUAL_NODE_SYSTEM_GLFW_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/GLFW/lib/x64/glfw3.lib CACHE PATH "Path to GLFW library." FORCE)
+
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MDd")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MD")
+endif()
 
 if(NOT TARGET VisualNodeSystem)
 	add_subdirectory(MasterBranchCode)
@@ -37,22 +52,32 @@ file(GLOB imgui_SRC
 
 # *************** THIRD_PARTY END ***************
 
-file(GLOB TinyScene_SRC
-	"Basic/TinyScene/CustomNode.h"
-	"Basic/TinyScene/CustomNode.cpp"
-	"Basic/TinyScene/CustomNode2.h"
-	"Basic/TinyScene/CustomNode2.cpp"
-	"Basic/TinyScene/CustomNode3.h"
-	"Basic/TinyScene/CustomNode3.cpp"
-	"Basic/TinyScene/CustomNode4.h"
-	"Basic/TinyScene/CustomNode4.cpp"
-	"Basic/TinyScene/CustomNodeStyleDemonstration.h"
-	"Basic/TinyScene/CustomNodeStyleDemonstration.cpp"
+file(GLOB CustomNodes_SRC
+	"CustomNodes/CustomNode.h"
+	"CustomNodes/CustomNode.cpp"
+	"CustomNodes/CustomNode2.h"
+	"CustomNodes/CustomNode2.cpp"
+	"CustomNodes/CustomNode3.h"
+	"CustomNodes/CustomNode3.cpp"
+	"CustomNodes/CustomNode4.h"
+	"CustomNodes/CustomNode4.cpp"
+	"CustomNodes/CustomNodeStyleDemonstration.h"
+	"CustomNodes/CustomNodeStyleDemonstration.cpp"
 )
 
 file(GLOB Basic_SRC
 	"Basic/Basic.cpp"
 	"Basic/Basic.h"
+)
+
+file(GLOB NodeFactory_SRC
+	"NodeFactoryTests.cpp"
+	"NodeFactoryTests.h"
+)
+
+file(GLOB GroupComment_SRC
+	"GroupCommentTests.cpp"
+	"GroupCommentTests.h"
 )
 
 file(GLOB source_SRC
@@ -61,14 +86,19 @@ file(GLOB source_SRC
 )
 
 link_directories(${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/GLFW/lib/$(PlatformTarget))
-link_directories(${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/googletest/lib/$(Configuration))
-
+if(USE_STATIC_RUNTIME)
+	link_directories(${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/googletest/lib/$(Configuration)/Static)
+else()
+	link_directories(${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/googletest/lib/$(Configuration)/Dynamic)
+endif()
 
 # add the executable
 add_executable(Visual_Node_System_Tests
 			   ${source_SRC}
+			   ${CustomNodes_SRC}
 			   ${Basic_SRC}
-			   ${TinyScene_SRC}
+			   ${NodeFactory_SRC}
+			   ${GroupComment_SRC}
 			   # *************** THIRD_PARTY ***************
 			   ${imgui_SRC}
 )
@@ -76,17 +106,16 @@ add_executable(Visual_Node_System_Tests
 target_link_libraries(Visual_Node_System_Tests 
     PRIVATE
         VisualNodeSystem
-
-		glfw3.lib
-		glfw3dll.lib
-
+		${VISUAL_NODE_SYSTEM_GLFW_LIBRARY}
 		gtest
 		gtest_main
 )
 
 source_group("Source Files" FILES ${source_SRC})
+source_group("Source Files/CustomNodes" FILES ${CustomNodes_SRC})
 source_group("Source Files/Basic" FILES ${Basic_SRC})
-source_group("Source Files/Basic/TinyScene" FILES ${TinyScene_SRC})
+source_group("Source Files/NodeFactory" FILES ${NodeFactory_SRC})
+source_group("Source Files/GroupComment" FILES ${GroupComment_SRC})
 # *************** THIRD_PARTY ***************
 source_group("Source Files/ThirdParty/imgui" FILES ${imgui_SRC})
 

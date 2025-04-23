@@ -1,6 +1,6 @@
 #pragma once
-#include "TinyScene/CustomNode.h"
-#include "TinyScene/CustomNode2.h"
-#include "TinyScene/CustomNode3.h"
-#include "TinyScene/CustomNode4.h"
-#include "TinyScene/CustomNodeStyleDemonstration.h"
+#include "../CustomNodes/CustomNode.h"
+#include "../CustomNodes/CustomNode2.h"
+#include "../CustomNodes/CustomNode3.h"
+#include "../CustomNodes/CustomNode4.h"
+#include "../CustomNodes/CustomNodeStyleDemonstration.h"
