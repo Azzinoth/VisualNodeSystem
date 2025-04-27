@@ -8,9 +8,19 @@ namespace VisNodeSys
     {
         SINGLETON_PRIVATE_PART(NodeFactory)
 
+        friend class Node;
+
         std::unordered_map<std::string, std::function<Node* ()>> Constructors;
         std::unordered_map<std::string, std::function<Node* (const Node&)>> CopyConstructors;
 
+        std::unordered_map<std::string, std::pair<int, int>> NodeClassNameToSocketCount;
+        // Retrieves the expected number of input and output sockets for a given node type,
+        // as defined by its current C++ class implementation.
+        // It is used to validate loaded node data (e.g., from a JSON file)
+        // If a node class's socket structure(number of inputs / outputs) has changed since a file was saved,
+        // loading that file could lead to inconsistencies or crashes.
+		// TO-DO: Implement a more robust NodeClass integrity check. With socket type validation and more.
+        std::pair<int, int> GetSocketCount(std::string NodeClassName);
     public:
         SINGLETON_PUBLIC_PART(NodeFactory)
 

@@ -244,6 +244,11 @@ void NodeArea::PropagateUpdateToConnectedNodes(const Node* CallerNode) const
 	}
 }
 
+size_t NodeArea::GetConnectionCount() const
+{
+	return Connections.size();
+}
+
 bool NodeArea::TryToConnect(const Node* OutNode, const size_t OutNodeSocketIndex, const Node* InNode, const size_t InNodeSocketIndex)
 {
 	if (OutNode == nullptr || InNode == nullptr)
@@ -446,7 +451,7 @@ bool NodeArea::TryToConnect(const Node* OutNode, const std::string OutSocketID, 
 	if (OutNode == nullptr || InNode == nullptr)
 		return false;
 
-	size_t OutSocketIndex = 0;
+	size_t OutSocketIndex = -1;
 	for (size_t i = 0; i < OutNode->Output.size(); i++)
 	{
 		if (OutNode->Output[i]->GetID() == OutSocketID)
@@ -456,7 +461,7 @@ bool NodeArea::TryToConnect(const Node* OutNode, const std::string OutSocketID, 
 		}
 	}
 
-	size_t InSocketIndex = 0;
+	size_t InSocketIndex = -1;
 	for (size_t i = 0; i < InNode->Input.size(); i++)
 	{
 		if (InNode->Input[i]->GetID() == InSocketID)
@@ -796,4 +801,39 @@ void NodeArea::AttachElementsToGroupComment(GroupComment* GroupComment)
 	GroupComment->AttachedNodes = GetNodesInGroupComment(GroupComment);
 	GroupComment->AttachedRerouteNodes = GetRerouteNodesInGroupComment(GroupComment);
 	GroupComment->AttachedGroupComments = GetGroupCommentsInGroupComment(GroupComment);
+}
+
+size_t NodeArea::GetRerouteConnectionCount() const
+{
+	size_t Count = 0;
+	for (size_t i = 0; i < Connections.size(); i++)
+		Count += Connections[i]->RerouteNodes.size();
+	
+	return Count;
+}
+
+bool NodeArea::IsRerouteNodeValid(const RerouteNode* RerouteNode)
+{
+	if (RerouteNode == nullptr)
+		return false;
+
+	if (RerouteNode->Parent == nullptr)
+		return false;
+
+	if (RerouteNode->Parent->In == nullptr || RerouteNode->Parent->Out == nullptr)
+		return false;
+
+	if (RerouteNode->BeginSocket == nullptr && RerouteNode->BeginReroute == nullptr)
+		return false;
+
+	if (RerouteNode->BeginSocket != nullptr && RerouteNode->BeginReroute != nullptr)
+		return false;
+
+	if (RerouteNode->EndSocket == nullptr && RerouteNode->EndReroute == nullptr)
+		return false;
+
+	if (RerouteNode->EndSocket != nullptr && RerouteNode->EndReroute != nullptr)
+		return false;
+
+	return true;
 }

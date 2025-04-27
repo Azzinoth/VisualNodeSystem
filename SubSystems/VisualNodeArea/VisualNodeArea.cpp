@@ -359,27 +359,37 @@ void NodeArea::CopyNodesTo(NodeArea* SourceNodeArea, NodeArea* TargetNodeArea)
 	}
 }
 
-void NodeArea::LoadFromJson(std::string JsonText)
+bool NodeArea::LoadFromJson(std::string JsonText)
 {
 	if (JsonText.find("{") == std::string::npos || JsonText.find("}") == std::string::npos || JsonText.find(":") == std::string::npos)
-		return;
+		return false;
 
-	Json::Value root;
-	JSONCPP_STRING err;
-	Json::CharReaderBuilder builder;
+	Json::Value Root;
+	JSONCPP_STRING Error;
+	Json::CharReaderBuilder Builder;
 
-	const std::unique_ptr<Json::CharReader> reader(builder.newCharReader());
-	if (!reader->parse(JsonText.c_str(), JsonText.c_str() + JsonText.size(), &root, &err))
-		return;
+	const std::unique_ptr<Json::CharReader> Reader(Builder.newCharReader());
+	if (!Reader->parse(JsonText.c_str(), JsonText.c_str() + JsonText.size(), &Root, &Error))
+		return false;
 
-	if (!root.isMember("nodes"))
-		return;
+	if (!Root.isMember("nodes"))
+		return false;
+
+	if (!Root["nodes"].isObject())
+		return false;
 
 	std::unordered_map<std::string, Node*> LoadedNodes;
-	std::vector<Json::String> NodesList = root["nodes"].getMemberNames();
+	std::vector<Json::String> NodesList = Root["nodes"].getMemberNames();
 	for (size_t i = 0; i < NodesList.size(); i++)
 	{
-		std::string NodeType = root["nodes"][std::to_string(i)]["nodeType"].asCString();
+		std::string NodeKey = std::to_string(i);
+		if (!Root["nodes"][NodeKey].isMember("nodeType"))
+			continue;
+
+		if (!Root["nodes"][NodeKey]["nodeType"].isString())
+			continue;
+
+		std::string NodeType = Root["nodes"][NodeKey]["nodeType"].asCString();
 		Node* NewNode = NODE_FACTORY.CreateNode(NodeType);
 		if (NewNode == nullptr)
 		{
@@ -393,7 +403,14 @@ void NodeArea::LoadFromJson(std::string JsonText)
 			}
 		}
 
-		NewNode->FromJson(root["nodes"][std::to_string(i)]);
+		bool bResult = NewNode->FromJson(Root["nodes"][NodeKey]);
+		if (!bResult)
+		{
+			// TO-DO: Implement a more robust user notification system (e.g., logging, UI warning).
+			delete NewNode;
+			NewNode = nullptr;
+			continue;
+		}
 
 		if (NewNode != nullptr)
 		{
@@ -402,102 +419,173 @@ void NodeArea::LoadFromJson(std::string JsonText)
 		}
 	}
 
-	std::vector<Json::String> ConnectionsList = root["connections"].getMemberNames();
-	for (size_t i = 0; i < ConnectionsList.size(); i++)
+	if (Root.isMember("connections"))
 	{
-		std::string InSocketID = root["connections"][ConnectionsList[i]]["in"]["socket_ID"].asCString();
-		std::string InNodeID = root["connections"][ConnectionsList[i]]["in"]["node_ID"].asCString();
+		if (!Root["connections"].isObject())
+			return false;
 
-		std::string OutSocketID = root["connections"][ConnectionsList[i]]["out"]["socket_ID"].asCString();
-		std::string OutNodeID = root["connections"][ConnectionsList[i]]["out"]["node_ID"].asCString();
+		std::vector<Json::String> ConnectionsList = Root["connections"].getMemberNames();
+		for (size_t i = 0; i < ConnectionsList.size(); i++)
+		{
+			if (!Root["connections"][ConnectionsList[i]].isObject())
+				return false;
+			const Json::Value& ConnectionData = Root["connections"][ConnectionsList[i]];
 
-		if (LoadedNodes.find(OutNodeID) != LoadedNodes.end() && LoadedNodes.find(InNodeID) != LoadedNodes.end())
-			if (!TryToConnect(LoadedNodes[OutNodeID], OutSocketID, LoadedNodes[InNodeID], InSocketID))
+			// TO-DO: Implement a more robust user notification system (e.g., logging, UI warning).
+			if (!ConnectionData.isMember("in") || !ConnectionData.isMember("out") || !ConnectionData["in"].isObject() || !ConnectionData["out"].isObject())
 				continue;
 
-		Connection* NewConnection = Connections.back();
-
-		// First pass to fill information that does not depend on other reroutes.
-		std::vector<Json::String> RerouteList = root["connections"][ConnectionsList[i]]["reroute_connections"].getMemberNames();
-		for (size_t j = 0; j < RerouteList.size(); j++)
-		{
-			RerouteNode* NewReroute = new RerouteNode();
-			std::string ID = root["connections"][ConnectionsList[i]]["reroute_connections"][std::to_string(j)]["reroute_ID"].asCString();
-			NewReroute->ID = ID;
-			NewReroute->Parent = NewConnection;
-
-			NewReroute->Position.x = root["connections"][ConnectionsList[i]]["reroute_connections"][std::to_string(j)]["position_x"].asFloat();
-			NewReroute->Position.y = root["connections"][ConnectionsList[i]]["reroute_connections"][std::to_string(j)]["position_y"].asFloat();
-
-			NewConnection->RerouteNodes.push_back(NewReroute);
-		}
-
-		// Second pass to fill pointers.
-		for (size_t j = 0; j < RerouteList.size(); j++)
-		{
-			std::string BeginSocketID = root["connections"][ConnectionsList[i]]["reroute_connections"][std::to_string(j)]["begin_socket_ID"].asCString();
-			if (!BeginSocketID.empty())
+			if (!ConnectionData["in"].isMember("socket_ID") || !ConnectionData["in"]["socket_ID"].isString() ||
+				!ConnectionData["in"].isMember("node_ID") || !ConnectionData["in"]["node_ID"].isString() ||
+				!ConnectionData["out"].isMember("socket_ID") || !ConnectionData["out"]["socket_ID"].isString() ||
+				!ConnectionData["out"].isMember("node_ID") || !ConnectionData["out"]["node_ID"].isString())
 			{
-				NodeSocket* BeginSocket = NewConnection->Out;
-				if (BeginSocketID == BeginSocket->GetID())
-					NewConnection->RerouteNodes[j]->BeginSocket = BeginSocket;
+				continue;
 			}
 
-			std::string EndSocketID = root["connections"][ConnectionsList[i]]["reroute_connections"][std::to_string(j)]["end_socket_ID"].asCString();
-			if (!EndSocketID.empty())
+			std::string InSocketID = ConnectionData["in"]["socket_ID"].asCString();
+			std::string InNodeID = ConnectionData["in"]["node_ID"].asCString();
+
+			std::string OutSocketID = ConnectionData["out"]["socket_ID"].asCString();
+			std::string OutNodeID = ConnectionData["out"]["node_ID"].asCString();
+
+			// TO-DO: Implement a more robust user notification system (e.g., logging, UI warning).
+			if (LoadedNodes.find(InNodeID) == LoadedNodes.end() || LoadedNodes.find(OutNodeID) == LoadedNodes.end())
+				continue;
+
+			if (LoadedNodes.find(OutNodeID) != LoadedNodes.end() && LoadedNodes.find(InNodeID) != LoadedNodes.end())
+				if (!TryToConnect(LoadedNodes[OutNodeID], OutSocketID, LoadedNodes[InNodeID], InSocketID))
+					continue;
+
+			Connection* NewConnection = Connections.back();
+
+			if (NewConnection == nullptr)
+				continue;
+
+			if (!ConnectionData.isMember("reroute_connections"))
+				continue;
+
+			// First pass to fill information that does not depend on other reroutes.
+			std::vector<Json::String> RerouteList = ConnectionData["reroute_connections"].getMemberNames();
+			for (size_t j = 0; j < RerouteList.size(); j++)
 			{
-				NodeSocket* EndSocket = NewConnection->In;
-				if (EndSocketID == EndSocket->GetID())
-					NewConnection->RerouteNodes[j]->EndSocket = EndSocket;
+				const Json::Value& CurrentReroute = ConnectionData["reroute_connections"][std::to_string(j)];
+				if (!CurrentReroute.isMember("reroute_ID") || !CurrentReroute.isMember("position_x") || !CurrentReroute.isMember("position_y"))
+					continue;
+
+				if (!CurrentReroute["reroute_ID"].isString() || !CurrentReroute["position_x"].isNumeric() || !CurrentReroute["position_y"].isNumeric())
+					continue;
+
+				RerouteNode* NewReroute = new RerouteNode();
+				NewReroute->ID = CurrentReroute["reroute_ID"].asCString();
+				NewReroute->Parent = NewConnection;
+
+				NewReroute->Position.x = CurrentReroute["position_x"].asFloat();
+				NewReroute->Position.y = CurrentReroute["position_y"].asFloat();
+
+				NewConnection->RerouteNodes.push_back(NewReroute);
 			}
 
-			std::string BeginRerouteID = root["connections"][ConnectionsList[i]]["reroute_connections"][std::to_string(j)]["begin_reroute_ID"].asCString();
-			if (!BeginRerouteID.empty())
+			// Second pass to fill pointers.
+			for (size_t j = 0; j < RerouteList.size(); j++)
 			{
-				RerouteNode* BeginReroute = nullptr;
-				for (size_t k = 0; k < NewConnection->RerouteNodes.size(); k++)
+				const Json::Value& CurrentReroute = ConnectionData["reroute_connections"][std::to_string(j)];
+				if (!CurrentReroute.isMember("begin_socket_ID") || !CurrentReroute.isMember("end_socket_ID") || !CurrentReroute.isMember("begin_reroute_ID") || !CurrentReroute.isMember("end_reroute_ID"))
+					continue;
+
+				if (!CurrentReroute["begin_socket_ID"].isString() || !CurrentReroute["end_socket_ID"].isString() || !CurrentReroute["begin_reroute_ID"].isString() || !CurrentReroute["end_reroute_ID"].isString())
+					continue;
+
+				std::string BeginSocketID = CurrentReroute["begin_socket_ID"].asCString();
+				if (!BeginSocketID.empty())
 				{
-					if (BeginRerouteID == NewConnection->RerouteNodes[k]->ID)
-						BeginReroute = NewConnection->RerouteNodes[k];
+					NodeSocket* BeginSocket = NewConnection->Out;
+					if (BeginSocketID == BeginSocket->GetID())
+						NewConnection->RerouteNodes[j]->BeginSocket = BeginSocket;
 				}
 
-				if (BeginReroute != nullptr)
-					NewConnection->RerouteNodes[j]->BeginReroute = BeginReroute;
-			}
-
-			std::string EndRerouteID = root["connections"][ConnectionsList[i]]["reroute_connections"][std::to_string(j)]["end_reroute_ID"].asCString();
-			if (!EndRerouteID.empty())
-			{
-				RerouteNode* EndReroute = nullptr;
-				for (size_t k = 0; k < NewConnection->RerouteNodes.size(); k++)
+				std::string EndSocketID = CurrentReroute["end_socket_ID"].asCString();
+				if (!EndSocketID.empty())
 				{
-					if (EndRerouteID == NewConnection->RerouteNodes[k]->ID)
-						EndReroute = NewConnection->RerouteNodes[k];
+					NodeSocket* EndSocket = NewConnection->In;
+					if (EndSocketID == EndSocket->GetID())
+						NewConnection->RerouteNodes[j]->EndSocket = EndSocket;
 				}
 
-				if (EndReroute != nullptr)
-					NewConnection->RerouteNodes[j]->EndReroute = EndReroute;
+				std::string BeginRerouteID = CurrentReroute["begin_reroute_ID"].asCString();
+				if (!BeginRerouteID.empty())
+				{
+					RerouteNode* BeginReroute = nullptr;
+					for (size_t k = 0; k < NewConnection->RerouteNodes.size(); k++)
+					{
+						if (BeginRerouteID == NewConnection->RerouteNodes[k]->ID)
+							BeginReroute = NewConnection->RerouteNodes[k];
+					}
+
+					if (BeginReroute != nullptr)
+						NewConnection->RerouteNodes[j]->BeginReroute = BeginReroute;
+				}
+
+				std::string EndRerouteID = CurrentReroute["end_reroute_ID"].asCString();
+				if (!EndRerouteID.empty())
+				{
+					RerouteNode* EndReroute = nullptr;
+					for (size_t k = 0; k < NewConnection->RerouteNodes.size(); k++)
+					{
+						if (EndRerouteID == NewConnection->RerouteNodes[k]->ID)
+							EndReroute = NewConnection->RerouteNodes[k];
+					}
+
+					if (EndReroute != nullptr)
+						NewConnection->RerouteNodes[j]->EndReroute = EndReroute;
+				}
+			}
+
+			for (size_t i = 0; i < NewConnection->RerouteNodes.size(); i++)
+			{
+				// If any of the reroute nodes are invalid, we need to delete all of them.
+				if (!IsRerouteNodeValid(NewConnection->RerouteNodes[i]))
+				{
+					for (size_t j = 0; j < NewConnection->RerouteNodes.size(); j++)
+					{
+						delete NewConnection->RerouteNodes[j];
+						NewConnection->RerouteNodes.erase(NewConnection->RerouteNodes.begin() + j, NewConnection->RerouteNodes.begin() + j + 1);
+						j--;
+					}
+					break;
+				}
 			}
 		}
 	}
 
-	if (root.isMember("GroupComments"))
+	if (Root.isMember("GroupComments"))
 	{
-		std::vector<Json::String> GroupCommentsList = root["GroupComments"].getMemberNames();
+		if (!Root["GroupComments"].isObject())
+			return false;
+
+		std::vector<Json::String> GroupCommentsList = Root["GroupComments"].getMemberNames();
 		for (size_t i = 0; i < GroupCommentsList.size(); i++)
 		{
+			if (!Root["GroupComments"][std::to_string(i)].isObject())
+				return false;
+
 			GroupComment* NewGroupComment = new GroupComment();
-			NewGroupComment->FromJson(root["GroupComments"][std::to_string(i)]);
+			NewGroupComment->FromJson(Root["GroupComments"][std::to_string(i)]);
 			AddGroupComment(NewGroupComment);
 		}
 	}
 
-	if (root.isMember("renderOffset"))
+	if (Root.isMember("renderOffset"))
 	{
-		float OffsetX = root["renderOffset"]["x"].asFloat();
-		float OffsetY = root["renderOffset"]["y"].asFloat();
+		if (!Root["renderOffset"].isMember("x") || !Root["renderOffset"].isMember("y"))
+			return false;
+
+		float OffsetX = Root["renderOffset"]["x"].asFloat();
+		float OffsetY = Root["renderOffset"]["y"].asFloat();
 		SetRenderOffset(ImVec2(OffsetX, OffsetY));
 	}
+
+	return true;
 }
 
 void NodeArea::LoadFromFile(const char* FileName)

@@ -77,7 +77,7 @@ namespace VisNodeSys
 
 		std::string ToJson() const;
 		void SaveToFile(const char* FileName) const;
-		void LoadFromJson(std::string JsonText);
+		bool LoadFromJson(std::string JsonText);
 		void LoadFromFile(const char* FileName);
 		void SaveNodesToFile(const char* FileName, std::vector<Node*> Nodes);
 
@@ -140,6 +140,8 @@ namespace VisNodeSys
 		ImVec2 GetRenderedViewCenter() const;
 
 		// *********************** Connections ************************
+		size_t GetConnectionCount() const;
+
 		bool TryToConnect(const Node* OutNode, size_t OutNodeSocketIndex, const Node* InNode, size_t InNodeSocketIndex);
 		bool TryToConnect(const Node* OutNode, std::string OutSocketID, const Node* InNode, std::string InSocketID);
 
@@ -156,6 +158,8 @@ namespace VisNodeSys
 
 		bool GetConnectionStyle(Node* Node, bool bOutputSocket, size_t SocketIndex, ConnectionStyle& Style) const;
 		void SetConnectionStyle(Node* Node, bool bOutputSocket, size_t SocketIndex, ConnectionStyle NewStyle);
+
+		size_t GetRerouteConnectionCount() const;
 	private:
 		struct SocketEvent
 		{
@@ -297,6 +301,7 @@ namespace VisNodeSys
 		void ConnectionsDoubleMouseClick();
 		std::vector<ConnectionSegment> GetConnectionSegments(const Connection* Connection) const;
 		bool AddRerouteNode(Connection* Connection, size_t SegmentToDivide, ImVec2 Position);
+		bool IsRerouteNodeValid(const RerouteNode* RerouteNode);
 		bool IsMouseOverConnection(Connection* Connection, const int Steps, const float MaxDistance, ImVec2* CollisionPoint = nullptr);
 		bool IsMouseOverSegment(ImVec2 Begin, ImVec2 End, const int Steps, const float MaxDistance, ImVec2* CollisionPoint = nullptr);
 		bool IsPointInRegion(const ImVec2& Point, const ImVec2& RegionMin, const ImVec2& RegionMax);

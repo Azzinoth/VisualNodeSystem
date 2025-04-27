@@ -1,4 +1,5 @@
 #include "VisualNode.h"
+#include "VisualNodeFactory.h"
 using namespace VisNodeSys;
 
 Node::Node(const std::string ID)
@@ -12,35 +13,35 @@ Node::Node(const std::string ID)
 	Type = "VisualNode";
 }
 
-Node::Node(const Node& Src)
+Node::Node(const Node& Other)
 {
-	ParentArea = Src.ParentArea;
+	ParentArea = Other.ParentArea;
 	ID = NODE_CORE.GetUniqueHexID();
-	Position = Src.Position;
-	Size = Src.Size;
+	Position = Other.Position;
+	Size = Other.Size;
 
-	ClientRegionMin = Src.ClientRegionMin;
-	ClientRegionMax = Src.ClientRegionMax;
+	ClientRegionMin = Other.ClientRegionMin;
+	ClientRegionMax = Other.ClientRegionMax;
 
-	Name = Src.Name;
-	Type = Src.Type;
-	Style = Src.Style;
+	Name = Other.Name;
+	Type = Other.Type;
+	Style = Other.Style;
 	bShouldBeDestroyed = false;
 
-	LeftTop = Src.LeftTop;
-	RightBottom = Src.RightBottom;
+	LeftTop = Other.LeftTop;
+	RightBottom = Other.RightBottom;
 
-	TitleBackgroundColor = Src.TitleBackgroundColor;
-	TitleBackgroundColorHovered = Src.TitleBackgroundColorHovered;
+	TitleBackgroundColor = Other.TitleBackgroundColor;
+	TitleBackgroundColorHovered = Other.TitleBackgroundColorHovered;
 
-	for (size_t i = 0; i < Src.Input.size(); i++)
+	for (size_t i = 0; i < Other.Input.size(); i++)
 	{
-		Input.push_back(new NodeSocket(this, Src.Input[i]->GetType(), Src.Input[i]->GetName(), false, Src.Input[i]->OutputData));
+		Input.push_back(new NodeSocket(this, Other.Input[i]->GetType(), Other.Input[i]->GetName(), false, Other.Input[i]->OutputData));
 	}
 
-	for (size_t i = 0; i < Src.Output.size(); i++)
+	for (size_t i = 0; i < Other.Output.size(); i++)
 	{
-		Output.push_back(new NodeSocket(this, Src.Output[i]->GetType(), Src.Output[i]->GetName(), true, Src.Output[i]->OutputData));
+		Output.push_back(new NodeSocket(this, Other.Output[i]->GetType(), Other.Output[i]->GetName(), true, Other.Output[i]->OutputData));
 	}
 }
 
@@ -178,8 +179,34 @@ Json::Value Node::ToJson()
 	return Result;
 }
 
-void Node::FromJson(Json::Value Json)
+void Node::SetToDefaultState()
 {
+	Node* NewNode = new Node();
+	std::string CurrentID = ID;
+	*this = *NewNode;
+	delete NewNode;
+
+	// To preserve the ID of the node, we set it back after copying.
+	ID = CurrentID;
+}
+
+bool Node::FromJson(Json::Value Json)
+{
+	if (!Json.isMember("ID") || !Json["ID"].isString() ||
+		!Json.isMember("nodeType") || !Json["nodeType"].isString() ||
+		!Json.isMember("position") || !Json["position"].isObject() ||
+		!Json["position"].isMember("x") || !Json["position"]["x"].isNumeric() ||
+		!Json["position"].isMember("y") || !Json["position"]["y"].isNumeric() ||
+		!Json.isMember("size") || !Json["size"].isObject() ||
+		!Json["size"].isMember("x") || !Json["size"]["x"].isNumeric() ||
+		!Json["size"].isMember("y") || !Json["size"]["y"].isNumeric() ||
+		!Json.isMember("name") || !Json["name"].isString())
+	{
+		// TO-DO: Implement a more robust user notification system (e.g., logging, UI warning).
+		SetToDefaultState();
+		return false;
+	}
+
 	ID = Json["ID"].asCString();
 	Type = Json["nodeType"].asCString();
 	if (Json.isMember("nodeStyle"))
@@ -196,18 +223,44 @@ void Node::FromJson(Json::Value Json)
 		delete Input[i];
 		Input[i] = nullptr;
 	}
+
+	std::pair<int, int> SocketCountInClassDefinition = NODE_FACTORY.GetSocketCount(Type);
 	Input.resize(InputsList.size());
-	for (size_t i = 0; i < InputsList.size(); i++)
+
+	// Validate if the number of input sockets in the JSON data matches the current class definition.
+	// This prevents errors if the node class was modified (e.g., sockets added/removed)
+	// after the JSON file was saved.
+	if (Type != "VisualNode" && SocketCountInClassDefinition.first != Input.size()) // For now VisualNode would be exempt from this check.
 	{
-		const std::string ID = Json["input"][std::to_string(i)]["ID"].asCString();
-		const std::string name = Json["input"][std::to_string(i)]["name"].asCString();
+		// TO-DO: Implement a more robust user notification system (e.g., logging, UI warning).
 
-		// This is a temporary solution for compatibility with old files.
-		std::string type = "FLOAT";
-		if (Json["input"][std::to_string(i)]["type"].type() == Json::stringValue)
-			type = Json["input"][std::to_string(i)]["type"].asCString();
+		// Safest recovery strategy: Reset the node to a default state.
+		// This avoids potential crashes or undefined behavior from mismatched data.
+		SetToDefaultState();
+		return false;
+	}
 
-		Input[i] = new NodeSocket(this, type, name, false);
+	for (size_t i = 0; i < Input.size(); i++)
+	{
+		const std::string Key = std::to_string(i);
+		if (!Json["input"].isMember(Key) || !Json["input"][Key].isObject() ||
+			!Json["input"][Key].isMember("ID") || !Json["input"][Key]["ID"].isString() ||
+			!Json["input"][Key].isMember("name") || !Json["input"][Key]["name"].isString() ||
+			!Json["input"][Key].isMember("type") || !Json["input"][Key]["type"].isString())
+		{
+			// TO-DO: Implement a more robust user notification system (e.g., logging, UI warning).
+
+			// Safest recovery strategy: Reset the node to a default state.
+			// This avoids potential crashes or undefined behavior from mismatched data.
+			SetToDefaultState();
+			return false;
+		}
+
+		const std::string ID = Json["input"][Key]["ID"].asCString();
+		const std::string Name = Json["input"][Key]["name"].asCString();
+		const std::string Type = Json["input"][Key]["type"].asString();
+
+		Input[i] = new NodeSocket(this, Type, Name, false);
 		Input[i]->ID = ID;
 	}
 
@@ -217,18 +270,40 @@ void Node::FromJson(Json::Value Json)
 		delete Output[i];
 		Output[i] = nullptr;
 	}
+
 	Output.resize(OutputsList.size());
-	for (size_t i = 0; i < OutputsList.size(); i++)
+	// Validate output socket count.
+	if (Type != "VisualNode" && SocketCountInClassDefinition.second != Output.size()) // For now VisualNode would be exempt from this check.
 	{
-		const std::string ID = Json["output"][std::to_string(i)]["ID"].asCString();
-		const std::string name = Json["output"][std::to_string(i)]["name"].asCString();
+		// TO-DO: Implement a more robust user notification system (e.g., logging, UI warning).
 
-		// This is a temporary solution for compatibility with old files.
-		std::string type = "FLOAT";
-		if (Json["output"][std::to_string(i)]["type"].type() == Json::stringValue)
-			type = Json["output"][std::to_string(i)]["type"].asCString();
+		// Safest recovery strategy: Reset the node to a default state.
+		// This avoids potential crashes or undefined behavior from mismatched data.
+		SetToDefaultState();
+		return false;
+	}
 
-		Output[i] = new NodeSocket(this, type, name, true);
+	for (size_t i = 0; i < Output.size(); i++)
+	{
+		const std::string Key = std::to_string(i);
+		if (!Json["output"].isMember(Key) || !Json["output"][Key].isObject() ||
+			!Json["output"][Key].isMember("ID") || !Json["output"][Key]["ID"].isString() ||
+			!Json["output"][Key].isMember("name") || !Json["output"][Key]["name"].isString() ||
+			!Json["output"][Key].isMember("type") || !Json["output"][Key]["type"].isString())
+		{
+			// TO-DO: Implement a more robust user notification system (e.g., logging, UI warning).
+
+			// Safest recovery strategy: Reset the node to a default state.
+			// This avoids potential crashes or undefined behavior from mismatched data.
+			SetToDefaultState();
+			return false;
+		}
+
+		const std::string ID = Json["output"][Key]["ID"].asCString();
+		const std::string Name = Json["output"][Key]["name"].asCString();
+		const std::string Type = Json["output"][Key]["type"].asString();
+
+		Output[i] = new NodeSocket(this, Type, Name, true);
 		Output[i]->ID = ID;
 	}
 }

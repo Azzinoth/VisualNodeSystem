@@ -672,7 +672,7 @@ void NodeArea::KeyboardInputUpdate()
 		}
 	}
 
-	static bool WasCopiedToClipboard = false;
+	static bool bWasCopiedToClipboard = false;
 	if (ImGui::IsKeyDown(ImGuiKey_LeftCtrl) || ImGui::IsKeyDown(ImGuiKey_RightCtrl))
 	{
 		if (ImGui::IsKeyDown(ImGuiKey_C))
@@ -686,18 +686,18 @@ void NodeArea::KeyboardInputUpdate()
 		}
 		else if (ImGui::IsKeyDown(ImGuiKey_V))
 		{
-			if (!WasCopiedToClipboard)
+			if (!bWasCopiedToClipboard)
 			{
-				WasCopiedToClipboard = true;
+				bWasCopiedToClipboard = true;
 
 				const std::string NodesToImport = NODE_CORE.GetClipboardText();
-				Json::Value data;
+				Json::Value Data;
 
-				JSONCPP_STRING err;
-				const Json::CharReaderBuilder builder;
+				JSONCPP_STRING Error;
+				const Json::CharReaderBuilder Builder;
 
-				const std::unique_ptr<Json::CharReader> reader(builder.newCharReader());
-				if (!reader->parse(NodesToImport.c_str(), NodesToImport.c_str() + NodesToImport.size(), &data, &err))
+				const std::unique_ptr<Json::CharReader> Reader(Builder.newCharReader());
+				if (!Reader->parse(NodesToImport.c_str(), NodesToImport.c_str() + NodesToImport.size(), &Data, &Error))
 					return;
 
 				NodeArea* NewNodeArea = new NodeArea();
@@ -760,7 +760,7 @@ void NodeArea::KeyboardInputUpdate()
 	}
 
 	if (!ImGui::IsKeyDown(ImGuiKey_V))
-		WasCopiedToClipboard = false;
+		bWasCopiedToClipboard = false;
 }
 
 Node* NodeArea::GetHovered() const

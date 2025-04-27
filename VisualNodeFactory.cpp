@@ -45,3 +45,28 @@ Node* NodeFactory::CopyNode(const std::string& Type, const Node& Node) const
 
     return CopyConstructorIterator->second(Node);
 }
+
+std::pair<int, int> NodeFactory::GetSocketCount(std::string NodeClassName)
+{
+	auto NodeClassNameToSocketCountIterator = NodeClassNameToSocketCount.find(NodeClassName);
+	if (NodeClassNameToSocketCountIterator != NodeClassNameToSocketCount.end())
+	{
+		return NodeClassNameToSocketCountIterator->second;
+	}
+	else
+	{
+		Node* TemporaryNode = CreateNode(NodeClassName);
+		if (TemporaryNode != nullptr)
+		{
+			int InputCount = TemporaryNode->GetInputSocketCount();
+			int OutputCount = TemporaryNode->GetOutputSocketCount();
+			NodeClassNameToSocketCount[NodeClassName] = std::pair<int, int>(InputCount, OutputCount);
+			delete TemporaryNode;
+			return std::pair<int, int>(InputCount, OutputCount);
+		}
+		else
+		{
+			return std::pair<int, int>(0, 0);
+		}
+	}
+}

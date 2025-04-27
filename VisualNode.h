@@ -26,6 +26,7 @@ namespace VisNodeSys
 	class VISUAL_NODE_SYSTEM_API Node
 	{
 	protected:
+		friend class NodeFactory;
 		friend class NodeSystem;
 		friend class NodeArea;
 
@@ -67,9 +68,11 @@ namespace VisNodeSys
 		void UpdateClientRegion();
 
 		static bool IsNodeWithIDInList(std::string ID, std::vector<Node*> List);
+
+		void SetToDefaultState();
 	public:
 		Node(std::string ID = "");
-		Node(const Node& Src);
+		Node(const Node& Other);
 
 		std::string GetID();
 
@@ -90,7 +93,7 @@ namespace VisNodeSys
 		void AddSocket(NodeSocket* Socket);
 
 		virtual Json::Value ToJson();
-		virtual void FromJson(Json::Value Json);
+		virtual bool FromJson(Json::Value Json);
 
 		size_t GetInputSocketCount() const;
 		size_t GetOutputSocketCount() const;
