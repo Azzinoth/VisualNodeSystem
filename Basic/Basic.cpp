@@ -300,7 +300,10 @@ TEST(Basic, Save_And_Load_NodeArea)
 	ASSERT_NE(LocalNodeArea, nullptr);
 	ASSERT_EQ(LocalNodeArea->GetNodeCount(), 11);
 	ASSERT_EQ(TemporaryNodesIDList.size(), 11);
+	ASSERT_EQ(LocalNodeArea->GetGroupCommentCount(), 1);
 	ASSERT_EQ(TemporaryGroupCommentsIDList.size(), 1);
+	ASSERT_EQ(LocalNodeArea->GetConnectionCount(), 5);
+	ASSERT_EQ(LocalNodeArea->GetRerouteConnectionCount(), 2);
 
 	std::string FilePath = "NodeAreaTest.json";
 	LocalNodeArea->SaveToFile(FilePath.c_str());
@@ -313,6 +316,8 @@ TEST(Basic, Save_And_Load_NodeArea)
 
 	ASSERT_EQ(LocalNodeArea->GetNodeCount(), 11);
 	ASSERT_EQ(LocalNodeArea->GetGroupCommentCount(), 1);
+	ASSERT_EQ(LocalNodeArea->GetConnectionCount(), 5);
+	ASSERT_EQ(LocalNodeArea->GetRerouteConnectionCount(), 2);
 
 	std::vector<Node*> Nodes = LocalNodeArea->GetNodesByName("Default node");
 	ASSERT_EQ(Nodes.size(), 1);
@@ -402,26 +407,31 @@ TEST(Basic, Save_And_Load_NodeArea)
 	ConnectedNodes = SecondNodeToCheck->GetNodesConnectedToOutput();
 	ASSERT_EQ(ConnectedNodes.size(), 0);
 
-	NodeToCheck = LocalNodeArea->GetNodeByID(TemporaryNodesIDList[8]);
-	ASSERT_NE(NodeToCheck, nullptr);
-	ASSERT_EQ(NodeToCheck->GetName(), "Some node");
-	ASSERT_EQ(NodeToCheck->GetInputSocketCount(), 0);
-	ASSERT_EQ(NodeToCheck->GetOutputSocketCount(), 1);
-	ASSERT_EQ(NodeToCheck->GetPosition(), ImVec2(10.0f, 490.0f));
+	Node* RerouteDemostrationNode = LocalNodeArea->GetNodeByID(TemporaryNodesIDList[8]);
+	ASSERT_NE(RerouteDemostrationNode, nullptr);
+	ASSERT_EQ(RerouteDemostrationNode->GetName(), "Some node");
+	ASSERT_EQ(RerouteDemostrationNode->GetInputSocketCount(), 0);
+	ASSERT_EQ(RerouteDemostrationNode->GetOutputSocketCount(), 1);
+	ASSERT_EQ(RerouteDemostrationNode->GetPosition(), ImVec2(10.0f, 490.0f));
 
-	NodeToCheck = LocalNodeArea->GetNodeByID(TemporaryNodesIDList[9]);
-	ASSERT_NE(NodeToCheck, nullptr);
-	ASSERT_EQ(NodeToCheck->GetName(), "Node in between");
-	ASSERT_EQ(NodeToCheck->GetInputSocketCount(), 0);
-	ASSERT_EQ(NodeToCheck->GetOutputSocketCount(), 0);
-	ASSERT_EQ(NodeToCheck->GetPosition(), ImVec2(180.0f, 490.0f));
+	Node* RerouteDemostrationNodeMiddle = LocalNodeArea->GetNodeByID(TemporaryNodesIDList[9]);
+	ASSERT_NE(RerouteDemostrationNodeMiddle, nullptr);
+	ASSERT_EQ(RerouteDemostrationNodeMiddle->GetName(), "Node in between");
+	ASSERT_EQ(RerouteDemostrationNodeMiddle->GetInputSocketCount(), 0);
+	ASSERT_EQ(RerouteDemostrationNodeMiddle->GetOutputSocketCount(), 0);
+	ASSERT_EQ(RerouteDemostrationNodeMiddle->GetPosition(), ImVec2(180.0f, 490.0f));
 
-	NodeToCheck = LocalNodeArea->GetNodeByID(TemporaryNodesIDList[10]);
-	ASSERT_NE(NodeToCheck, nullptr);
-	ASSERT_EQ(NodeToCheck->GetName(), "Some node");
-	ASSERT_EQ(NodeToCheck->GetInputSocketCount(), 1);
-	ASSERT_EQ(NodeToCheck->GetOutputSocketCount(), 0);
-	ASSERT_EQ(NodeToCheck->GetPosition(), ImVec2(350.0f, 490.0f));
+	Node* RerouteDemostrationNodeEnd = LocalNodeArea->GetNodeByID(TemporaryNodesIDList[10]);
+	ASSERT_NE(RerouteDemostrationNodeEnd, nullptr);
+	ASSERT_EQ(RerouteDemostrationNodeEnd->GetName(), "Some node");
+	ASSERT_EQ(RerouteDemostrationNodeEnd->GetInputSocketCount(), 1);
+	ASSERT_EQ(RerouteDemostrationNodeEnd->GetOutputSocketCount(), 0);
+	ASSERT_EQ(RerouteDemostrationNodeEnd->GetPosition(), ImVec2(350.0f, 490.0f));
+
+	LocalNodeArea->TryToConnect(RerouteDemostrationNode, 0, RerouteDemostrationNodeEnd, 0);
+	int SegmentIndex = 0;
+	ASSERT_EQ(LocalNodeArea->AddRerouteNodeToConnection(RerouteDemostrationNode, 0, RerouteDemostrationNodeEnd, 0, SegmentIndex, ImVec2(190.0f, 470.0f)), true);
+	ASSERT_EQ(LocalNodeArea->AddRerouteNodeToConnection(RerouteDemostrationNode, 0, RerouteDemostrationNodeEnd, 0, SegmentIndex + 1, ImVec2(312.0f, 470.0f)), true);
 
 	GroupComment* GroupCommentToCheck = LocalNodeArea->GetGroupCommentByID(TemporaryGroupCommentsIDList[0]);
 	ASSERT_NE(GroupCommentToCheck, nullptr);
@@ -466,7 +476,6 @@ TEST(Basic, NodeAreaWide_Node_Events)
 	ASSERT_EQ(LocalNodeArea->GetNodeByID(TemporaryNodesIDList[8]), nullptr);
 	ASSERT_TRUE(bNodeRemovedEventCalled);
 
-	
 	Node* NodeToConnectFrom = LocalNodeArea->GetNodeByID(TemporaryNodesIDList[1]);
 	ASSERT_NE(NodeToConnectFrom, nullptr);
 	Node* NodeToConnectTo = LocalNodeArea->GetNodeByID(TemporaryNodesIDList[5]);

@@ -61,6 +61,8 @@ file(GLOB CustomNodes_SRC
 	"CustomNodes/CustomNode3.cpp"
 	"CustomNodes/CustomNode4.h"
 	"CustomNodes/CustomNode4.cpp"
+	"CustomNodes/CustomNode5.h"
+	"CustomNodes/CustomNode5.cpp"
 	"CustomNodes/CustomNodeStyleDemonstration.h"
 	"CustomNodes/CustomNodeStyleDemonstration.cpp"
 )
@@ -68,6 +70,11 @@ file(GLOB CustomNodes_SRC
 file(GLOB Basic_SRC
 	"Basic/Basic.cpp"
 	"Basic/Basic.h"
+)
+
+file(GLOB NodeAreaLoad_SRC
+	"NodeAreaLoadTests.cpp"
+	"NodeAreaLoadTests.h"
 )
 
 file(GLOB NodeFactory_SRC
@@ -97,6 +104,7 @@ add_executable(Visual_Node_System_Tests
 			   ${source_SRC}
 			   ${CustomNodes_SRC}
 			   ${Basic_SRC}
+			   ${NodeAreaLoad_SRC}
 			   ${NodeFactory_SRC}
 			   ${GroupComment_SRC}
 			   # *************** THIRD_PARTY ***************
@@ -114,6 +122,7 @@ target_link_libraries(Visual_Node_System_Tests
 source_group("Source Files" FILES ${source_SRC})
 source_group("Source Files/CustomNodes" FILES ${CustomNodes_SRC})
 source_group("Source Files/Basic" FILES ${Basic_SRC})
+source_group("Source Files/NodeAreaLoad" FILES ${NodeAreaLoad_SRC})
 source_group("Source Files/NodeFactory" FILES ${NodeFactory_SRC})
 source_group("Source Files/GroupComment" FILES ${GroupComment_SRC})
 # *************** THIRD_PARTY ***************

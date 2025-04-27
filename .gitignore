@@ -17,6 +17,8 @@
 imgui.ini
 CMakeCache.txt
 cmake_install.cmake
+NodeAreaTest.json
+Results.xml
 
 #Folders
 Debug/
