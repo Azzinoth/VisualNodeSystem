@@ -311,7 +311,7 @@ void NodeArea::Render()
 	CurrentDrawList->ChannelsSplit(4);
 
 	// We need to render comments first, because they should be on top layer.
-	// Also font of comments should be bigger than font of nodes.
+	// Also, the font for comments should be bigger than the font for nodes.
 	Zoom *= 2.0f;
 	SelectFontSettings();
 	Zoom /= 2.0f;
@@ -550,7 +550,7 @@ void NodeArea::RenderConnection(const Connection* Connection) const
 
 		DrawHermiteLine(BeginPosition, EndPosition, Settings.Style.GeneralConnection.LineSegments, CurrentConnectionColor, &Connection->Style);
 
-		// If it is reroute than we should render circle.
+		// If it is a reroute node, then we should render a circle.
 		if (i > 0)
 			RenderReroute(Connection->RerouteNodes[i - 1]);
 	}

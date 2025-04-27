@@ -124,10 +124,10 @@ void NodeArea::PropagateNodeEventsCallbacks(Node* Node, const NODE_EVENT EventTo
 
 void NodeArea::SaveToFile(const char* FileName) const
 {
-	const std::string json_file = ToJson();
+	const std::string JsonFile = ToJson();
 	std::ofstream SaveFile;
 	SaveFile.open(FileName);
-	SaveFile << json_file;
+	SaveFile << JsonFile;
 	SaveFile.close();
 }
 
@@ -137,10 +137,10 @@ void NodeArea::SaveNodesToFile(const char* FileName, std::vector<Node*> Nodes)
 		return;
 
 	const NodeArea* NewNodeArea = NodeArea::CreateNodeArea(Nodes, std::vector<GroupComment*>());
-	const std::string json_file = NewNodeArea->ToJson();
+	const std::string JsonFile = NewNodeArea->ToJson();
 	std::ofstream SaveFile;
 	SaveFile.open(FileName);
-	SaveFile << json_file;
+	SaveFile << JsonFile;
 	SaveFile.close();
 	delete NewNodeArea;
 }
@@ -170,7 +170,7 @@ void NodeArea::ProcessConnections(const std::vector<NodeSocket*>& Sockets,
 		{
 			if (Node::IsNodeWithIDInList(ConnectedSocket->GetParent()->GetID(), SourceNodes))
 			{
-				// Check maybe we already establish this connection.
+				// Check if we have already established this connection.
 				if (!IsAlreadyConnected(OldToNewSocket[CurrentSocket], OldToNewSocket[ConnectedSocket], TargetArea->Connections))
 				{
 					std::unordered_map<RerouteNode*, RerouteNode*> OldToNewRerouteNode;
@@ -269,7 +269,7 @@ NodeArea* NodeArea::CreateNodeArea(const std::vector<Node*> Nodes, const std::ve
 
 std::string NodeArea::ToJson() const
 {
-	Json::Value root;
+	Json::Value Root;
 	std::ofstream SaveFile;
 
 	Json::Value NodesData;
@@ -277,29 +277,29 @@ std::string NodeArea::ToJson() const
 	{
 		NodesData[std::to_string(i)] = Nodes[i]->ToJson();
 	}
-	root["nodes"] = NodesData;
+	Root["nodes"] = NodesData;
 
 	Json::Value ConnectionsData;
 	for (size_t i = 0; i < Connections.size(); i++)
 	{
 		ConnectionsData[std::to_string(i)]["in"]["socket_ID"] = Connections[i]->In->GetID();
-		size_t socket_index = 0;
+		size_t SocketIndex = 0;
 		for (size_t j = 0; j < Connections[i]->In->GetParent()->Input.size(); j++)
 		{
 			if (Connections[i]->In->GetParent()->Input[j]->GetID() == Connections[i]->In->GetID())
-				socket_index = j;
+				SocketIndex = j;
 		}
-		ConnectionsData[std::to_string(i)]["in"]["socket_index"] = socket_index;
+		ConnectionsData[std::to_string(i)]["in"]["socket_index"] = SocketIndex;
 		ConnectionsData[std::to_string(i)]["in"]["node_ID"] = Connections[i]->In->GetParent()->GetID();
 
 		ConnectionsData[std::to_string(i)]["out"]["socket_ID"] = Connections[i]->Out->GetID();
-		socket_index = 0;
+		SocketIndex = 0;
 		for (size_t j = 0; j < Connections[i]->Out->GetParent()->Output.size(); j++)
 		{
 			if (Connections[i]->Out->GetParent()->Output[j]->GetID() == Connections[i]->Out->GetID())
-				socket_index = j;
+				SocketIndex = j;
 		}
-		ConnectionsData[std::to_string(i)]["out"]["socket_index"] = socket_index;
+		ConnectionsData[std::to_string(i)]["out"]["socket_index"] = SocketIndex;
 		ConnectionsData[std::to_string(i)]["out"]["node_ID"] = Connections[i]->Out->GetParent()->GetID();
 
 		for (size_t j = 0; j < Connections[i]->RerouteNodes.size(); j++)
@@ -329,20 +329,20 @@ std::string NodeArea::ToJson() const
 			ConnectionsData[std::to_string(i)]["reroute_connections"][std::to_string(j)]["end_reroute_ID"] = EndRerouteID;
 		}
 	}
-	root["connections"] = ConnectionsData;
+	Root["connections"] = ConnectionsData;
 
 	Json::Value GroupCommentsData;
 	for (size_t i = 0; i < GroupComments.size(); i++)
 	{
 		GroupCommentsData[std::to_string(i)] = GroupComments[i]->ToJson();
 	}
-	root["GroupComments"] = GroupCommentsData;
+	Root["GroupComments"] = GroupCommentsData;
 
-	root["renderOffset"]["x"] = RenderOffset.x;
-	root["renderOffset"]["y"] = RenderOffset.y;
+	Root["renderOffset"]["x"] = RenderOffset.x;
+	Root["renderOffset"]["y"] = RenderOffset.y;
 
 	Json::StreamWriterBuilder builder;
-	const std::string JsonText = Json::writeString(builder, root);
+	const std::string JsonText = Json::writeString(builder, Root);
 
 	return JsonText;
 }
