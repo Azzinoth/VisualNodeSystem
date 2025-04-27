@@ -46,7 +46,7 @@ Node* NodeFactory::CopyNode(const std::string& Type, const Node& Node) const
     return CopyConstructorIterator->second(Node);
 }
 
-std::pair<int, int> NodeFactory::GetSocketCount(std::string NodeClassName)
+std::pair<size_t, size_t> NodeFactory::GetSocketCount(std::string NodeClassName)
 {
 	auto NodeClassNameToSocketCountIterator = NodeClassNameToSocketCount.find(NodeClassName);
 	if (NodeClassNameToSocketCountIterator != NodeClassNameToSocketCount.end())
@@ -58,15 +58,15 @@ std::pair<int, int> NodeFactory::GetSocketCount(std::string NodeClassName)
 		Node* TemporaryNode = CreateNode(NodeClassName);
 		if (TemporaryNode != nullptr)
 		{
-			int InputCount = TemporaryNode->GetInputSocketCount();
-			int OutputCount = TemporaryNode->GetOutputSocketCount();
-			NodeClassNameToSocketCount[NodeClassName] = std::pair<int, int>(InputCount, OutputCount);
+			size_t InputCount = TemporaryNode->GetInputSocketCount();
+			size_t OutputCount = TemporaryNode->GetOutputSocketCount();
+			NodeClassNameToSocketCount[NodeClassName] = std::pair<size_t, size_t>(InputCount, OutputCount);
 			delete TemporaryNode;
-			return std::pair<int, int>(InputCount, OutputCount);
+			return std::pair<size_t, size_t>(InputCount, OutputCount);
 		}
 		else
 		{
-			return std::pair<int, int>(0, 0);
+			return std::pair<size_t, size_t>(0, 0);
 		}
 	}
 }

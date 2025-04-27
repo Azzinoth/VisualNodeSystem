@@ -224,7 +224,7 @@ bool Node::FromJson(Json::Value Json)
 		Input[i] = nullptr;
 	}
 
-	std::pair<int, int> SocketCountInClassDefinition = NODE_FACTORY.GetSocketCount(Type);
+	std::pair<size_t, size_t> SocketCountInClassDefinition = NODE_FACTORY.GetSocketCount(Type);
 	Input.resize(InputsList.size());
 
 	// Validate if the number of input sockets in the JSON data matches the current class definition.
@@ -306,6 +306,8 @@ bool Node::FromJson(Json::Value Json)
 		Output[i] = new NodeSocket(this, Type, Name, true);
 		Output[i]->ID = ID;
 	}
+
+	return true;
 }
 
 void Node::UpdateClientRegion()
