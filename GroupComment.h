@@ -47,7 +47,7 @@ namespace VisNodeSys
 		bool bMoveElementsWithComment = true;
 	public:
 		GroupComment(std::string ID = "");
-		GroupComment(const GroupComment& Src);
+		GroupComment(const GroupComment& Other);
 
 		std::string GetID();
 

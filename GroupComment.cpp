@@ -13,15 +13,15 @@ GroupComment::GroupComment(const std::string ID)
 	SetSize(ImVec2(200, 200));
 }
 
-GroupComment::GroupComment(const GroupComment& Src)
+GroupComment::GroupComment(const GroupComment& Other)
 {
-	ParentArea = Src.ParentArea;
+	ParentArea = Other.ParentArea;
 	ID = NODE_CORE.GetUniqueHexID();
-	Position = Src.Position;
-	Size = Src.Size;
-	Caption = Src.Caption;
-	bMoveElementsWithComment = Src.bMoveElementsWithComment;
-	BackgroundColor = Src.BackgroundColor;
+	Position = Other.Position;
+	Size = Other.Size;
+	Caption = Other.Caption;
+	bMoveElementsWithComment = Other.bMoveElementsWithComment;
+	BackgroundColor = Other.BackgroundColor;
 }
 
 std::string GroupComment::GetID()

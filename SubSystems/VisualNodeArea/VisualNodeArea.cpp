@@ -341,8 +341,8 @@ std::string NodeArea::ToJson() const
 	Root["renderOffset"]["x"] = RenderOffset.x;
 	Root["renderOffset"]["y"] = RenderOffset.y;
 
-	Json::StreamWriterBuilder builder;
-	const std::string JsonText = Json::writeString(builder, Root);
+	Json::StreamWriterBuilder Builder;
+	const std::string JsonText = Json::writeString(Builder, Root);
 
 	return JsonText;
 }
