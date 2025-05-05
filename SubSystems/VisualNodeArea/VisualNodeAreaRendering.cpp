@@ -133,8 +133,13 @@ void NodeArea::RenderNodeSocket(NodeSocket* Socket) const
 	}
 
 	ImColor SocketColor = DEFAULT_NODE_SOCKET_COLOR;
-	if (NodeSocket::SocketTypeToColorAssociations.find(Socket->GetType()) != NodeSocket::SocketTypeToColorAssociations.end())
-		SocketColor = NodeSocket::SocketTypeToColorAssociations[Socket->GetType()];
+	std::vector<std::string> SocketAllowedTypes = Socket->GetAllowedTypes();
+	// TO-DO: Add support for multiple socket types.
+	if (SocketAllowedTypes.size() == 1)
+	{
+		if (NodeSocket::SocketTypeToColorAssociations.find(SocketAllowedTypes[0]) != NodeSocket::SocketTypeToColorAssociations.end())
+			SocketColor = NodeSocket::SocketTypeToColorAssociations[SocketAllowedTypes[0]];
+	}
 
 	ImColor SocketInternalPartColor = ImColor(30, 30, 30);
 	if (SocketHovered == Socket)
@@ -144,18 +149,18 @@ void NodeArea::RenderNodeSocket(NodeSocket* Socket) const
 		// If potential connection can't be established we will provide visual indication.
 		if (SocketLookingForConnection != nullptr)
 		{
-			char** msg = new char*;
-			*msg = nullptr;
-			SocketColor = SocketHovered->GetParent()->CanConnect(SocketHovered, SocketLookingForConnection, msg) ?
+			char** Message = new char*;
+			*Message = nullptr;
+			SocketColor = SocketHovered->GetParent()->CanConnect(SocketHovered, SocketLookingForConnection, Message) ?
 																				ImColor(50, 200, 50) : ImColor(200, 50, 50);
 
-			if (*msg != nullptr)
+			if (*Message != nullptr)
 			{
 				ImGui::Begin("socket connection info", nullptr, ImGuiWindowFlags_Tooltip | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar);
-				ImGui::Text("%s",*msg);
+				ImGui::Text("%s",*Message);
 				ImGui::End();
 
-				delete msg;
+				delete Message;
 			}
 		}
 	}
@@ -165,8 +170,13 @@ void NodeArea::RenderNodeSocket(NodeSocket* Socket) const
 		static ConnectionStyle DefaultConnectionStyle;
 
 		ImColor ConnectionColor = ImColor(200, 200, 200);
-		if (NodeSocket::SocketTypeToColorAssociations.find(SocketLookingForConnection->GetType()) != NodeSocket::SocketTypeToColorAssociations.end())
-			ConnectionColor = NodeSocket::SocketTypeToColorAssociations[SocketLookingForConnection->GetType()];
+		std::vector<std::string> SocketAllowedTypes = SocketLookingForConnection->GetAllowedTypes();
+		// TO-DO: Add support for multiple socket types.
+		if (SocketAllowedTypes.size() == 1)
+		{
+			if (NodeSocket::SocketTypeToColorAssociations.find(SocketAllowedTypes[0]) != NodeSocket::SocketTypeToColorAssociations.end())
+				ConnectionColor = NodeSocket::SocketTypeToColorAssociations[SocketAllowedTypes[0]];
+		}
 		
 		CurrentDrawList->ChannelsSetCurrent(3);
 		DrawHermiteLine(SocketPosition, ImGui::GetIO().MousePos, Settings.Style.GeneralConnection.LineSegments, ConnectionColor, &DefaultConnectionStyle);
@@ -356,7 +366,7 @@ void NodeArea::Render()
 	CurrentStyle = OriginalStyle;
 
 	// ************************* RENDER CONTEXT MENU *************************
-	if (bOpenMainContextMenu && (MainContextMenuFunc != nullptr || Settings.bShowDefaultMainContextMenu))
+	if (bOpenMainContextMenu && (MainContextMenuFunction != nullptr || Settings.bShowDefaultMainContextMenu))
 	{
 		bOpenMainContextMenu = false;
 		ImGui::OpenPopup("##main_context_menu");
@@ -368,8 +378,8 @@ void NodeArea::Render()
 		if (Settings.bShowDefaultMainContextMenu)
 			RenderDefaultMainContextMenu(LocalMousePosition);
 
-		if (MainContextMenuFunc != nullptr)
-			MainContextMenuFunc();
+		if (MainContextMenuFunction != nullptr)
+			MainContextMenuFunction();
 
 		ImGui::EndPopup();
 	}
@@ -530,8 +540,22 @@ void NodeArea::RenderConnection(const Connection* Connection) const
 		return;
 
 	ImColor CurrentConnectionColor = Connection->Style.ForceColor;
-	if (NodeSocket::SocketTypeToColorAssociations.find(Connection->Out->GetType()) != NodeSocket::SocketTypeToColorAssociations.end())
-		CurrentConnectionColor = NodeSocket::SocketTypeToColorAssociations[Connection->Out->GetType()];
+
+	std::vector<std::string> ConnectOutSocketAllowedTypes = Connection->Out->GetAllowedTypes();
+	// TO-DO: Add support for multiple socket types.
+	if (ConnectOutSocketAllowedTypes.size() == 1)
+	{
+		if (NodeSocket::SocketTypeToColorAssociations.find(ConnectOutSocketAllowedTypes[0]) != NodeSocket::SocketTypeToColorAssociations.end())
+			CurrentConnectionColor = NodeSocket::SocketTypeToColorAssociations[ConnectOutSocketAllowedTypes[0]];
+	}
+
+	std::vector<std::string> ConnectInSocketAllowedTypes = Connection->In->GetAllowedTypes();
+	// TO-DO: Add support for multiple socket types.
+	if (ConnectInSocketAllowedTypes.size() == 1)
+	{
+		if (NodeSocket::SocketTypeToColorAssociations.find(ConnectInSocketAllowedTypes[0]) != NodeSocket::SocketTypeToColorAssociations.end())
+			CurrentConnectionColor = NodeSocket::SocketTypeToColorAssociations[ConnectInSocketAllowedTypes[0]];
+	}
 
 	std::vector<ConnectionSegment> Segments = GetConnectionSegments(Connection);
 	for (size_t i = 0; i < Segments.size(); i++)
@@ -943,10 +967,10 @@ void NodeArea::RenderDefaultMainContextMenu(ImVec2 LocalMousePosition)
 			bShowGroupCommentColorPicker = true;
 		}
 
-		bool bTemp = GroupCommentHovered->MoveElementsWithComment();
-		if (ImGui::MenuItem("Group movement", NULL, &bTemp))
+		bool bMoveElementsWithComment = GroupCommentHovered->MoveElementsWithComment();
+		if (ImGui::MenuItem("Group movement", NULL, &bMoveElementsWithComment))
 		{
-			GroupCommentHovered->SetMoveElementsWithComment(bTemp);
+			GroupCommentHovered->SetMoveElementsWithComment(bMoveElementsWithComment);
 		}
 
 		if (ImGui::MenuItem("Bring Forward"))
@@ -979,15 +1003,242 @@ void NodeArea::RenderDefaultMainContextMenu(ImVec2 LocalMousePosition)
 			}
 		}
 	}
-	else
+	else if (GetHovered() != nullptr)
 	{
-		if (ImGui::MenuItem("Add group comment"))
+		if (ImGui::MenuItem("Delete Node"))
+		{
+			DeleteNode(GetHovered());
+		}
+	}
+	else if (GetHovered() == nullptr)
+	{
+		if (ImGui::MenuItem("Add Group Comment"))
 		{
 			GroupComment* NewGroupComment = new GroupComment();
-			NewGroupComment->SetCaption("Group comment");
+			NewGroupComment->SetCaption("Group Comment");
 			NewGroupComment->SetPosition(LocalMousePosition);
 			NewGroupComment->bIsRenamingActive = true;
 			GroupComments.push_back(NewGroupComment);
 		}
+
+#ifdef VISUAL_NODE_SYSTEM_BUILD_STANDARD_NODES
+		if (ImGui::BeginMenu("Add Standard Node"))
+		{
+			VisNodeSys::Node* NewNode = nullptr;
+
+			if (ImGui::BeginMenu("Literals"))
+			{
+				if (ImGui::MenuItem("Bool"))
+				{
+					NewNode = new BoolLiteralNode();
+				}
+
+				if (ImGui::MenuItem("Int"))
+				{
+					NewNode = new IntegerLiteralNode();
+				}
+
+				if (ImGui::MenuItem("Float"))
+				{
+					NewNode = new FloatLiteralNode();
+				}
+
+				if (ImGui::MenuItem("Vec2"))
+				{
+					NewNode = new Vec2LiteralNode();
+				}
+
+				if (ImGui::MenuItem("Bool Vec2"))
+				{
+					NewNode = new BoolVec2LiteralNode();
+				}
+
+				if (ImGui::MenuItem("Vec3"))
+				{
+					NewNode = new Vec3LiteralNode();
+				}
+
+				if (ImGui::MenuItem("Bool Vec3"))
+				{
+					NewNode = new BoolVec3LiteralNode();
+				}
+
+				if (ImGui::MenuItem("Vec4"))
+				{
+					NewNode = new Vec4LiteralNode();
+				}
+
+				if (ImGui::MenuItem("Bool Vec4"))
+				{
+					NewNode = new BoolVec4LiteralNode();
+				}
+
+				ImGui::EndMenu();
+			}
+
+			if (ImGui::BeginMenu("Variables"))
+			{
+				if (ImGui::MenuItem("Bool"))
+				{
+					NewNode = new BoolVariableNode();
+				}
+
+				if (ImGui::MenuItem("Int"))
+				{
+					NewNode = new IntegerVariableNode();
+				}
+
+				if (ImGui::MenuItem("Float"))
+				{
+					NewNode = new FloatVariableNode();
+				}
+
+				if (ImGui::MenuItem("Vec2"))
+				{
+					NewNode = new Vec2VariableNode();
+				}
+
+				if (ImGui::MenuItem("Bool Vec2"))
+				{
+					NewNode = new BoolVec2VariableNode();
+				}
+
+				if (ImGui::MenuItem("Vec3"))
+				{
+					NewNode = new Vec3VariableNode();
+				}
+
+				if (ImGui::MenuItem("Bool Vec3"))
+				{
+					NewNode = new BoolVec3VariableNode();
+				}
+
+				if (ImGui::MenuItem("Vec4"))
+				{
+					NewNode = new Vec4VariableNode();
+				}
+
+				if (ImGui::MenuItem("Bool Vec4"))
+				{
+					NewNode = new BoolVec4VariableNode();
+				}
+
+				ImGui::EndMenu();
+			}
+
+			if (ImGui::BeginMenu("Flow Control"))
+			{
+				if (ImGui::MenuItem("Branch"))
+				{
+					NewNode = new BranchNode();
+				}
+
+				if (ImGui::MenuItem("Sequence"))
+				{
+					NewNode = new SequenceNode();
+				}
+
+				if (ImGui::MenuItem("For Loop"))
+				{
+					NewNode = new LoopNode();
+				}
+
+				if (ImGui::MenuItem("While Loop"))
+				{
+					NewNode = new WhileLoopNode();
+				}
+
+				ImGui::EndMenu();
+			}
+
+			if (ImGui::BeginMenu("Operations"))
+			{
+				if (ImGui::BeginMenu("Arithmetic"))
+				{
+					if (ImGui::MenuItem("Add"))
+					{
+						NewNode = new ArithmeticAddNode();
+					}
+
+					if (ImGui::MenuItem("Subtract"))
+					{
+						NewNode = new ArithmeticSubtractNode();
+					}
+
+					if (ImGui::MenuItem("Multiply"))
+					{
+						NewNode = new ArithmeticMultiplyNode();
+					}
+
+					if (ImGui::MenuItem("Divide"))
+					{
+						NewNode = new ArithmeticDivideNode();
+					}
+
+					if (ImGui::MenuItem("Modulus"))
+					{
+						NewNode = new ArithmeticModulusNode();
+					}
+
+					if (ImGui::MenuItem("Power"))
+					{
+						NewNode = new ArithmeticPowerNode();
+					}
+
+					ImGui::EndMenu();
+				}
+
+				if (ImGui::BeginMenu("Comparison"))
+				{
+					if (ImGui::MenuItem("Equal"))
+						NewNode = new EqualNode();
+
+					if (ImGui::MenuItem("NotEqual"))
+						NewNode = new NotEqualNode();
+
+					if (ImGui::MenuItem("Greater Than or Equal"))
+						NewNode = new GreaterThanOrEqualNode();
+
+					if (ImGui::MenuItem("Less Than or Equal"))
+						NewNode = new LessThanOrEqualNode();
+
+					if (ImGui::MenuItem("Greater Than"))
+						NewNode = new GreaterThanNode();
+
+					if (ImGui::MenuItem("Less Than"))
+						NewNode = new LessThanNode();
+
+					ImGui::EndMenu();
+				}
+
+				if (ImGui::BeginMenu("Logical"))
+				{
+					if (ImGui::MenuItem("AND"))
+						NewNode = new LogicalANDOperatorNode();
+
+					if (ImGui::MenuItem("OR"))
+						NewNode = new LogicalOROperatorNode();
+
+					if (ImGui::MenuItem("NOT"))
+						NewNode = new LogicalNOTOperatorNode();
+
+					if (ImGui::MenuItem("XOR"))
+						NewNode = new LogicalXOROperatorNode();
+
+					ImGui::EndMenu();
+				}
+
+				ImGui::EndMenu();
+			}
+
+			if (NewNode != nullptr)
+			{
+				NewNode->SetPosition(LocalMousePosition);
+				AddNode(NewNode);
+			}
+
+			ImGui::EndMenu();
+		}
+#endif
 	}
 }

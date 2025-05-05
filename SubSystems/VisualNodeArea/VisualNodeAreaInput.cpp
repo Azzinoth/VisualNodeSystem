@@ -337,7 +337,7 @@ void NodeArea::RightMouseClickNodesUpdate()
 			}
 			else
 			{
-				if (MainContextMenuFunc != nullptr)
+				if (MainContextMenuFunction != nullptr)
 				{
 					bOpenMainContextMenu = true;
 				}
@@ -1170,7 +1170,7 @@ bool NodeArea::IsSegmentInRegion(ImVec2 Begin, ImVec2 End, const int Steps)
 	const ImVec2 t1 = ImVec2(80.0f, 0.0f);
 	const ImVec2 t2 = ImVec2(80.0f, 0.0f);
 
-	ImVec2 regionCorners[4] = {
+	ImVec2 RegionCorners[4] = {
 		MouseSelectRegionMin,
 		ImVec2(MouseSelectRegionMax.x, MouseSelectRegionMin.y),
 		MouseSelectRegionMax,
@@ -1198,17 +1198,13 @@ bool NodeArea::IsSegmentInRegion(ImVec2 Begin, ImVec2 End, const int Steps)
 		// If either of the segment's points are in the region, the connection is in the region.
 		if (IsPointInRegion(SegmentStart, MouseSelectRegionMin, MouseSelectRegionMax) ||
 			IsPointInRegion(SegmentEnd, MouseSelectRegionMin, MouseSelectRegionMax))
-		{
 			return true;
-		}
 
 		// Check if the segment intersects with any of the region's edges.
 		for (int i = 0; i < 4; i++)
 		{
-			if (IsLineSegmentIntersecting(regionCorners[i], regionCorners[(i + 1) % 4], SegmentStart, SegmentEnd))
-			{
+			if (IsLineSegmentIntersecting(RegionCorners[i], RegionCorners[(i + 1) % 4], SegmentStart, SegmentEnd))
 				return true;
-			}
 		}
 	}
 

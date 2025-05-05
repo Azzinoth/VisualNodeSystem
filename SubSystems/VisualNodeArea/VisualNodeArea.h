@@ -1,6 +1,62 @@
 #pragma once
-
 #include "../../GroupComment.h"
+
+#ifdef VISUAL_NODE_SYSTEM_BUILD_STANDARD_NODES
+#include "../StandardNodes/ExecutionFlowNodes/BaseExecutionFlowNode.h"
+// Literal Nodes.
+#include "../StandardNodes/ExecutionFlowNodes/LiteralsNodes/BoolLiteralNode.h"
+#include "../StandardNodes/ExecutionFlowNodes/LiteralsNodes/FloatLiteralNode.h"
+#include "../StandardNodes/ExecutionFlowNodes/LiteralsNodes/IntegerLiteralNode.h"
+#include "../StandardNodes/ExecutionFlowNodes/LiteralsNodes/Vec2LiteralNode.h"
+#include "../StandardNodes/ExecutionFlowNodes/LiteralsNodes/BoolVec2LiteralNode.h"
+#include "../StandardNodes/ExecutionFlowNodes/LiteralsNodes/Vec3LiteralNode.h"
+#include "../StandardNodes/ExecutionFlowNodes/LiteralsNodes/BoolVec3LiteralNode.h"
+#include "../StandardNodes/ExecutionFlowNodes/LiteralsNodes/Vec4LiteralNode.h"
+#include "../StandardNodes/ExecutionFlowNodes/LiteralsNodes/BoolVec4LiteralNode.h"
+
+// Variable Nodes.
+#include "../StandardNodes/ExecutionFlowNodes/VariablesNodes/BoolVariableNode.h"
+#include "../StandardNodes/ExecutionFlowNodes/VariablesNodes/FloatVariableNode.h"
+#include "../StandardNodes/ExecutionFlowNodes/VariablesNodes/IntegerVariableNode.h"
+#include "../StandardNodes/ExecutionFlowNodes/VariablesNodes/Vec2VariableNode.h"
+#include "../StandardNodes/ExecutionFlowNodes/VariablesNodes/BoolVec2VariableNode.h"
+#include "../StandardNodes/ExecutionFlowNodes/VariablesNodes/Vec3VariableNode.h"
+#include "../StandardNodes/ExecutionFlowNodes/VariablesNodes/BoolVec3VariableNode.h"
+#include "../StandardNodes/ExecutionFlowNodes/VariablesNodes/Vec4VariableNode.h"
+#include "../StandardNodes/ExecutionFlowNodes/VariablesNodes/BoolVec4VariableNode.h"
+
+// Control Flow Nodes.
+#include "../StandardNodes/ExecutionFlowNodes/ControlFlowNodes/BranchNode.h"
+#include "../StandardNodes/ExecutionFlowNodes/ControlFlowNodes/SequenceNode.h"
+#include "../StandardNodes/ExecutionFlowNodes/ControlFlowNodes/LoopNode.h"
+#include "../StandardNodes/ExecutionFlowNodes/ControlFlowNodes/WhileLoopNode.h"
+
+// Arithmetic Operator Nodes.
+#include "../StandardNodes/ExecutionFlowNodes/OperatorNodes/Arithmetic/BaseArithmeticOperatorNode.h"
+#include "../StandardNodes/ExecutionFlowNodes/OperatorNodes/Arithmetic/ArithmeticAddNode.h"
+#include "../StandardNodes/ExecutionFlowNodes/OperatorNodes/Arithmetic/ArithmeticSubtractNode.h"
+#include "../StandardNodes/ExecutionFlowNodes/OperatorNodes/Arithmetic/ArithmeticMultiplyNode.h"
+#include "../StandardNodes/ExecutionFlowNodes/OperatorNodes/Arithmetic/ArithmeticDivideNode.h"
+#include "../StandardNodes/ExecutionFlowNodes/OperatorNodes/Arithmetic/ArithmeticPowerNode.h"
+#include "../StandardNodes/ExecutionFlowNodes/OperatorNodes/Arithmetic/ArithmeticModulusNode.h"
+
+// Comparison Operator Nodes.
+#include "../StandardNodes/ExecutionFlowNodes/OperatorNodes/Comparison/BaseComparisonOperatorNode.h"
+#include "../StandardNodes/ExecutionFlowNodes/OperatorNodes/Comparison/EqualNode.h"
+#include "../StandardNodes/ExecutionFlowNodes/OperatorNodes/Comparison/NotEqualNode.h"
+#include "../StandardNodes/ExecutionFlowNodes/OperatorNodes/Comparison/LessThanOrEqualNode.h"
+#include "../StandardNodes/ExecutionFlowNodes/OperatorNodes/Comparison/GreaterThanOrEqualNode.h"
+#include "../StandardNodes/ExecutionFlowNodes/OperatorNodes/Comparison/GreaterThanNode.h"
+#include "../StandardNodes/ExecutionFlowNodes/OperatorNodes/Comparison/LessThanNode.h"
+
+// Logical Operator Nodes.
+#include "../StandardNodes/ExecutionFlowNodes/OperatorNodes/Logical/BaseLogicalOperatorNode.h"
+#include "../StandardNodes/ExecutionFlowNodes/OperatorNodes/Logical/LogicalANDOperatorNode.h"
+#include "../StandardNodes/ExecutionFlowNodes/OperatorNodes/Logical/LogicalNOTOperatorNode.h"
+#include "../StandardNodes/ExecutionFlowNodes/OperatorNodes/Logical/LogicalOROperatorNode.h"
+#include "../StandardNodes/ExecutionFlowNodes/OperatorNodes/Logical/LogicalXOROperatorNode.h"
+
+#endif
 
 namespace VisNodeSys
 {
@@ -62,6 +118,9 @@ namespace VisNodeSys
 		bool bRequireFullOverlapToSelect = false;
 		bool bShowDefaultMainContextMenu = true;
 		bool bReduceTransparencyForUnconnectableSockets = true;
+#ifdef VISUAL_NODE_SYSTEM_BUILD_STANDARD_NODES
+		bool bSaveExecutedNodes = false;
+#endif
 	};
 
 	class VISUAL_NODE_SYSTEM_API NodeArea
@@ -78,7 +137,7 @@ namespace VisNodeSys
 		std::string ToJson() const;
 		void SaveToFile(const char* FileName) const;
 		bool LoadFromJson(std::string JsonText);
-		void LoadFromFile(const char* FileName);
+		bool LoadFromFile(const char* FileName);
 		void SaveNodesToFile(const char* FileName, std::vector<Node*> Nodes);
 
 		ImVec2 GetPosition() const;
@@ -96,6 +155,23 @@ namespace VisNodeSys
 		Node* GetHovered() const;
 		std::vector<Node*> GetSelected();
 		void UnSelectAll();
+
+		bool AddSelected(Node* Node);
+		bool IsSelected(const Node* Node) const;
+		bool AddSelected(Connection* Connection);
+		bool IsSelected(const Connection* Connection) const;
+		bool UnSelect(const Connection* Connection);
+		void UnSelectAllConnections();
+
+		bool AddSelected(RerouteNode* RerouteNode);
+		bool IsSelected(const RerouteNode* RerouteNode) const;
+		bool UnSelect(const RerouteNode* RerouteNode);
+		void UnSelectAllRerouteNodes();
+
+		bool AddSelected(GroupComment* GroupComment);
+		bool IsSelected(const GroupComment* GroupComment) const;
+		bool UnSelect(GroupComment* GroupComment);
+		void UnSelectAllGroupComments();
 
 		bool IsMouseHovered() const;
 		bool IsFillingWindow();
@@ -133,7 +209,7 @@ namespace VisNodeSys
 		std::vector<RerouteNode*> GetRerouteNodesInGroupComment(GroupComment* GroupCommentToCheck) const;
 		std::vector<GroupComment*> GetGroupCommentsInGroupComment(GroupComment* GroupCommentToCheck) const;
 
-		void SetMainContextMenuFunc(void(*Func)());
+		void SetMainContextMenuFunction(void(*Function)());
 
 		void GetAllElementsAABB(ImVec2& Min, ImVec2& Max) const;
 		ImVec2 GetAllElementsAABBCenter() const;
@@ -160,6 +236,17 @@ namespace VisNodeSys
 		void SetConnectionStyle(Node* Node, bool bOutputSocket, size_t SocketIndex, ConnectionStyle NewStyle);
 
 		size_t GetRerouteConnectionCount() const;
+
+#ifdef VISUAL_NODE_SYSTEM_BUILD_STANDARD_NODES
+		Node* GetExecutionEntryNode() const;
+		bool SetExecutionEntryNode(Node* NewEntryNode);
+		bool SetExecutionEntryNode(std::string NewEntryNode);
+		bool ExecuteNodeNetwork();
+		std::vector<Node*> GetLastExecutedNodes() const;
+
+		bool IsSaveExecutedNodes() const;
+		void SetSaveExecutedNodes(bool NewValue);
+#endif
 	private:
 		struct SocketEvent
 		{
@@ -189,6 +276,11 @@ namespace VisNodeSys
 		ImDrawList* CurrentDrawList = nullptr;
 		ImGuiWindow* NodeAreaWindow = nullptr;
 		std::vector<Node*> Nodes;
+
+#ifdef VISUAL_NODE_SYSTEM_BUILD_STANDARD_NODES
+		std::string ExecutionEntryNodeID;
+		std::vector<Node*> LastExecutedNodes;
+#endif
 
 		Node* HoveredNode = nullptr;
 		NodeSocket* SocketLookingForConnection = nullptr;
@@ -220,13 +312,12 @@ namespace VisNodeSys
 		ImVec2 Position;
 		ImVec2 Size;
 		ImVec2 RenderOffset = ImVec2(0.0, 0.0);
-		void(*MainContextMenuFunc)() = nullptr;
+		void(*MainContextMenuFunction)() = nullptr;
 		void RenderDefaultMainContextMenu(ImVec2 LocalMousePosition);
 		std::vector<std::function<void(Node*, NODE_EVENT)>> NodeEventsCallbacks;
 		std::queue<SocketEvent> SocketEventQueue;
 
 		void PropagateNodeEventsCallbacks(Node* Node, NODE_EVENT EventToPropagate) const;
-		void ProcessSocketEventQueue();
 		ImVec2 SocketToPosition(const NodeSocket* Socket) const;
 		std::vector<Connection*> GetAllConnections(const NodeSocket* Socket) const;
 		Connection* GetConnection(const NodeSocket* FirstSocket, const NodeSocket* SecondSocket) const;
@@ -278,24 +369,7 @@ namespace VisNodeSys
 		void InputUpdateSocket(NodeSocket* Socket);
 		void MouseInputUpdateConnections();
 		void InputUpdateReroute(RerouteNode* Reroute);
-
-		bool AddSelected(Node* Node);
-		bool IsSelected(const Node* Node) const;
-		bool AddSelected(Connection* Connection);
-		bool IsSelected(const Connection* Connection) const;
-		bool UnSelect(const Connection* Connection);
-		void UnSelectAllConnections();
-
-		bool AddSelected(RerouteNode* RerouteNode);
-		bool IsSelected(const RerouteNode* RerouteNode) const;
-		bool UnSelect(const RerouteNode* RerouteNode);
-		void UnSelectAllRerouteNodes();
-
-		bool AddSelected(GroupComment* GroupComment);
-		bool IsSelected(const GroupComment* GroupComment) const;
-		bool UnSelect(GroupComment* GroupComment);
-		void UnSelectAllGroupComments();
-
+	
 		bool IsMouseAboveSomethingSelected() const;
 
 		void ConnectionsDoubleMouseClick();
@@ -345,5 +419,9 @@ namespace VisNodeSys
 
 		// TO DO: Here I am using internal ImGui functions. Need to find a way to avoid it.
 		ImGuiWindow* GetCurrentWindowImpl() const;
+
+		// Scans the connection list to find a pair requiring reordering based on dependencies.
+		std::pair<int, int> FindOutOfOrderConnectionPair(Json::Value& Root, std::vector<Json::String>& ConnectionList, std::unordered_map<std::string, Node*>& LoadedNodes);
+		bool WorkOnLoadedConnection(Json::Value& Root, const Json::Value& ConnectionData, std::unordered_map<std::string, Node*>& LoadedNodes);
 	};
 }

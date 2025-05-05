@@ -19,7 +19,7 @@ namespace VisNodeSys
 
 		std::string ID;
 		bool bOutput = false;
-		std::string Type;
+		std::vector<std::string> AllowedTypes;
 		std::string Name;
 		std::vector<NodeSocket*> ConnectedSockets;
 
@@ -30,6 +30,7 @@ namespace VisNodeSys
 		Node* Parent = nullptr;
 	public:
 		NodeSocket(Node* Parent, std::string Type, std::string Name, bool bOutput = false, std::function<void* ()> OutputDataFunction = []() { return nullptr; });
+		NodeSocket(Node* Parent, std::vector<std::string> Types, std::string Name, bool bOutput = false, std::function<void* ()> OutputDataFunction = []() { return nullptr; });
 
 		Node* GetParent() const;
 		std::vector<NodeSocket*> GetConnectedSockets();
@@ -37,7 +38,7 @@ namespace VisNodeSys
 		std::string GetID() const;
 		std::string GetName() const;
 
-		std::string GetType() const;
+		std::vector<std::string> GetAllowedTypes() const;
 
 		bool IsOutput() const { return bOutput; }
 		bool IsInput() const { return !bOutput; }

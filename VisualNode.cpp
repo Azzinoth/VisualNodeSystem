@@ -2,6 +2,9 @@
 #include "VisualNodeFactory.h"
 using namespace VisNodeSys;
 
+bool Node::bInputCountCheck = true;
+bool Node::bOutputCountCheck = true;
+
 Node::Node(const std::string ID)
 {
 	this->ID = ID;
@@ -36,12 +39,12 @@ Node::Node(const Node& Other)
 
 	for (size_t i = 0; i < Other.Input.size(); i++)
 	{
-		Input.push_back(new NodeSocket(this, Other.Input[i]->GetType(), Other.Input[i]->GetName(), false, Other.Input[i]->OutputData));
+		Input.push_back(new NodeSocket(this, Other.Input[i]->GetAllowedTypes(), Other.Input[i]->GetName(), false, Other.Input[i]->OutputData));
 	}
 
 	for (size_t i = 0; i < Other.Output.size(); i++)
 	{
-		Output.push_back(new NodeSocket(this, Other.Output[i]->GetType(), Other.Output[i]->GetName(), true, Other.Output[i]->OutputData));
+		Output.push_back(new NodeSocket(this, Other.Output[i]->GetAllowedTypes(), Other.Output[i]->GetName(), true, Other.Output[i]->OutputData));
 	}
 }
 
@@ -137,8 +140,24 @@ bool Node::CanConnect(NodeSocket* OwnSocket, NodeSocket* CandidateSocket, char**
 	if (OwnSocket->bOutput == CandidateSocket->bOutput)
 		return false;
 
-	// Types must match.
-	if (OwnSocket->GetType() != CandidateSocket->GetType())
+	// Iterate through all allowed types of the candidate socket and check if the type of the own socket is in the list.
+	bool bFound = false;
+	for (size_t i = 0; i < CandidateSocket->GetAllowedTypes().size(); i++)
+	{
+		for (size_t j = 0; j < OwnSocket->GetAllowedTypes().size(); j++)
+		{
+			if (CandidateSocket->GetAllowedTypes()[i] == OwnSocket->GetAllowedTypes()[j])
+			{
+				bFound = true;
+				break;
+			}
+		}
+
+		if (bFound)
+			break;
+	}
+
+	if (!bFound)
 		return false;
 
 	return true;
@@ -154,26 +173,28 @@ Json::Value Node::ToJson()
 	Json::Value Result;
 
 	Result["ID"] = ID;
-	Result["nodeType"] = Type;
-	Result["nodeStyle"] = Style;
-	Result["position"]["x"] = Position.x;
-	Result["position"]["y"] = Position.y;
-	Result["size"]["x"] = Size.x;
-	Result["size"]["y"] = Size.y;
-	Result["name"] = Name;
+	Result["NodeType"] = Type;
+	Result["NodeStyle"] = Style;
+	Result["Position"]["X"] = Position.x;
+	Result["Position"]["Y"] = Position.y;
+	Result["Size"]["X"] = Size.x;
+	Result["Size"]["Y"] = Size.y;
+	Result["Name"] = Name;
 
 	for (size_t i = 0; i < Input.size(); i++)
 	{
-		Result["input"][std::to_string(i)]["ID"] = Input[i]->GetID();
-		Result["input"][std::to_string(i)]["name"] = Input[i]->GetName();
-		Result["input"][std::to_string(i)]["type"] = Input[i]->GetType();
+		Result["Input"][std::to_string(i)]["ID"] = Input[i]->GetID();
+		Result["Input"][std::to_string(i)]["Name"] = Input[i]->GetName();
+		for (size_t j = 0; j < Input[i]->GetAllowedTypes().size(); j++)
+			Result["Input"][std::to_string(i)]["AllowedTypes"].append(Input[i]->GetAllowedTypes()[j]);
 	}
 
 	for (size_t i = 0; i < Output.size(); i++)
 	{
-		Result["output"][std::to_string(i)]["ID"] = Output[i]->GetID();
-		Result["output"][std::to_string(i)]["name"] = Output[i]->GetName();
-		Result["output"][std::to_string(i)]["type"] = Output[i]->GetType();
+		Result["Output"][std::to_string(i)]["ID"] = Output[i]->GetID();
+		Result["Output"][std::to_string(i)]["Name"] = Output[i]->GetName();
+		for (size_t j = 0; j < Output[i]->GetAllowedTypes().size(); j++)
+			Result["Output"][std::to_string(i)]["AllowedTypes"].append(Output[i]->GetAllowedTypes()[j]);
 	}
 
 	return Result;
@@ -193,14 +214,14 @@ void Node::SetToDefaultState()
 bool Node::FromJson(Json::Value Json)
 {
 	if (!Json.isMember("ID") || !Json["ID"].isString() ||
-		!Json.isMember("nodeType") || !Json["nodeType"].isString() ||
-		!Json.isMember("position") || !Json["position"].isObject() ||
-		!Json["position"].isMember("x") || !Json["position"]["x"].isNumeric() ||
-		!Json["position"].isMember("y") || !Json["position"]["y"].isNumeric() ||
-		!Json.isMember("size") || !Json["size"].isObject() ||
-		!Json["size"].isMember("x") || !Json["size"]["x"].isNumeric() ||
-		!Json["size"].isMember("y") || !Json["size"]["y"].isNumeric() ||
-		!Json.isMember("name") || !Json["name"].isString())
+		!Json.isMember("NodeType") || !Json["NodeType"].isString() ||
+		!Json.isMember("Position") || !Json["Position"].isObject() ||
+		!Json["Position"].isMember("X") || !Json["Position"]["X"].isNumeric() ||
+		!Json["Position"].isMember("Y") || !Json["Position"]["Y"].isNumeric() ||
+		!Json.isMember("Size") || !Json["Size"].isObject() ||
+		!Json["Size"].isMember("X") || !Json["Size"]["X"].isNumeric() ||
+		!Json["Size"].isMember("Y") || !Json["Size"]["Y"].isNumeric() ||
+		!Json.isMember("Name") || !Json["Name"].isString())
 	{
 		// TO-DO: Implement a more robust user notification system (e.g., logging, UI warning).
 		SetToDefaultState();
@@ -208,16 +229,16 @@ bool Node::FromJson(Json::Value Json)
 	}
 
 	ID = Json["ID"].asCString();
-	Type = Json["nodeType"].asCString();
-	if (Json.isMember("nodeStyle"))
-		Style = NODE_STYLE(Json["nodeStyle"].asInt());
-	Position.x = Json["position"]["x"].asFloat();
-	Position.y = Json["position"]["y"].asFloat();
-	Size.x = Json["size"]["x"].asFloat();
-	Size.y = Json["size"]["y"].asFloat();
-	Name = Json["name"].asCString();
+	Type = Json["NodeType"].asCString();
+	if (Json.isMember("NodeStyle"))
+		Style = NODE_STYLE(Json["NodeStyle"].asInt());
+	Position.x = Json["Position"]["X"].asFloat();
+	Position.y = Json["Position"]["Y"].asFloat();
+	Size.x = Json["Size"]["X"].asFloat();
+	Size.y = Json["Size"]["Y"].asFloat();
+	Name = Json["Name"].asCString();
 
-	const std::vector<Json::String> InputsList = Json["input"].getMemberNames();
+	const std::vector<Json::String> InputsList = Json["Input"].getMemberNames();
 	for (size_t i = 0; i < Input.size(); i++)
 	{
 		delete Input[i];
@@ -230,7 +251,7 @@ bool Node::FromJson(Json::Value Json)
 	// Validate if the number of input sockets in the JSON data matches the current class definition.
 	// This prevents errors if the node class was modified (e.g., sockets added/removed)
 	// after the JSON file was saved.
-	if (Type != "VisualNode" && SocketCountInClassDefinition.first != Input.size()) // For now VisualNode would be exempt from this check.
+	if (Type != "VisualNode" && Node::bInputCountCheck && SocketCountInClassDefinition.first != Input.size()) // For now VisualNode would be exempted from this check.
 	{
 		// TO-DO: Implement a more robust user notification system (e.g., logging, UI warning).
 
@@ -243,10 +264,10 @@ bool Node::FromJson(Json::Value Json)
 	for (size_t i = 0; i < Input.size(); i++)
 	{
 		const std::string Key = std::to_string(i);
-		if (!Json["input"].isMember(Key) || !Json["input"][Key].isObject() ||
-			!Json["input"][Key].isMember("ID") || !Json["input"][Key]["ID"].isString() ||
-			!Json["input"][Key].isMember("name") || !Json["input"][Key]["name"].isString() ||
-			!Json["input"][Key].isMember("type") || !Json["input"][Key]["type"].isString())
+		if (!Json["Input"].isMember(Key) || !Json["Input"][Key].isObject() ||
+			!Json["Input"][Key].isMember("ID") || !Json["Input"][Key]["ID"].isString() ||
+			!Json["Input"][Key].isMember("Name") || !Json["Input"][Key]["Name"].isString() ||
+			!Json["Input"][Key].isMember("AllowedTypes") || !Json["Input"][Key]["AllowedTypes"].isArray())
 		{
 			// TO-DO: Implement a more robust user notification system (e.g., logging, UI warning).
 
@@ -256,15 +277,19 @@ bool Node::FromJson(Json::Value Json)
 			return false;
 		}
 
-		const std::string ID = Json["input"][Key]["ID"].asCString();
-		const std::string Name = Json["input"][Key]["name"].asCString();
-		const std::string Type = Json["input"][Key]["type"].asString();
+		const std::string ID = Json["Input"][Key]["ID"].asCString();
+		const std::string Name = Json["Input"][Key]["Name"].asCString();
 
-		Input[i] = new NodeSocket(this, Type, Name, false);
+		Json::Value AllowedTypesArray = Json["Input"][Key]["AllowedTypes"];
+		std::vector<std::string> AllowedTypes;
+		for (unsigned int j = 0; j < AllowedTypesArray.size(); j++)
+			AllowedTypes.push_back(AllowedTypesArray[j].asString());
+		
+		Input[i] = new NodeSocket(this, AllowedTypes, Name, false);
 		Input[i]->ID = ID;
 	}
 
-	const std::vector<Json::String> OutputsList = Json["output"].getMemberNames();
+	const std::vector<Json::String> OutputsList = Json["Output"].getMemberNames();
 	for (size_t i = 0; i < Output.size(); i++)
 	{
 		delete Output[i];
@@ -273,7 +298,7 @@ bool Node::FromJson(Json::Value Json)
 
 	Output.resize(OutputsList.size());
 	// Validate output socket count.
-	if (Type != "VisualNode" && SocketCountInClassDefinition.second != Output.size()) // For now VisualNode would be exempt from this check.
+	if (Type != "VisualNode" && Node::bOutputCountCheck && SocketCountInClassDefinition.second != Output.size()) // For now VisualNode would be exempted from this check.
 	{
 		// TO-DO: Implement a more robust user notification system (e.g., logging, UI warning).
 
@@ -286,10 +311,10 @@ bool Node::FromJson(Json::Value Json)
 	for (size_t i = 0; i < Output.size(); i++)
 	{
 		const std::string Key = std::to_string(i);
-		if (!Json["output"].isMember(Key) || !Json["output"][Key].isObject() ||
-			!Json["output"][Key].isMember("ID") || !Json["output"][Key]["ID"].isString() ||
-			!Json["output"][Key].isMember("name") || !Json["output"][Key]["name"].isString() ||
-			!Json["output"][Key].isMember("type") || !Json["output"][Key]["type"].isString())
+		if (!Json["Output"].isMember(Key) || !Json["Output"][Key].isObject() ||
+			!Json["Output"][Key].isMember("ID") || !Json["Output"][Key]["ID"].isString() ||
+			!Json["Output"][Key].isMember("Name") || !Json["Output"][Key]["Name"].isString() ||
+			!Json["Output"][Key].isMember("AllowedTypes") || !Json["Output"][Key]["AllowedTypes"].isArray())
 		{
 			// TO-DO: Implement a more robust user notification system (e.g., logging, UI warning).
 
@@ -299,11 +324,15 @@ bool Node::FromJson(Json::Value Json)
 			return false;
 		}
 
-		const std::string ID = Json["output"][Key]["ID"].asCString();
-		const std::string Name = Json["output"][Key]["name"].asCString();
-		const std::string Type = Json["output"][Key]["type"].asString();
+		const std::string ID = Json["Output"][Key]["ID"].asCString();
+		const std::string Name = Json["Output"][Key]["Name"].asCString();
 
-		Output[i] = new NodeSocket(this, Type, Name, true);
+		Json::Value AllowedTypesArray = Json["Output"][Key]["AllowedTypes"];
+		std::vector<std::string> AllowedTypes;
+		for (unsigned int j = 0; j < AllowedTypesArray.size(); j++)
+			AllowedTypes.push_back(AllowedTypesArray[j].asString());
+
+		Output[i] = new NodeSocket(this, AllowedTypes, Name, true);
 		Output[i]->ID = ID;
 	}
 

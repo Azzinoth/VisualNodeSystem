@@ -264,9 +264,9 @@ bool NodeArea::TryToConnect(const Node* OutNode, const size_t OutNodeSocketIndex
 	NodeSocket* InSocket = InNode->Input[InNodeSocketIndex];
 
 	char* Message = nullptr;
-	const bool Result = InSocket->GetParent()->CanConnect(InSocket, OutSocket, &Message);
+	const bool bResult = InSocket->GetParent()->CanConnect(InSocket, OutSocket, &Message);
 
-	if (Result)
+	if (bResult)
 	{
 		PropagateNodeEventsCallbacks(OutSocket->GetParent(), BEFORE_CONNECTED);
 		PropagateNodeEventsCallbacks(InSocket->GetParent(), BEFORE_CONNECTED);
@@ -283,7 +283,7 @@ bool NodeArea::TryToConnect(const Node* OutNode, const size_t OutNodeSocketIndex
 		PropagateNodeEventsCallbacks(InSocket->GetParent(), AFTER_CONNECTED);
 	}
 
-	return Result;
+	return bResult;
 }
 
 bool NodeArea::TryToDisconnect(const Node* OutNode, size_t OutNodeSocketIndex, const Node* InNode, size_t InNodeSocketIndex)
@@ -485,8 +485,10 @@ bool NodeArea::TriggerSocketEvent(NodeSocket* CallerNodeSocket, NodeSocket* Trig
 	if (TriggeredNodeSocket->GetParent() == nullptr)
 		return false;
 
-	SocketEventQueue.push({ TriggeredNodeSocket, CallerNodeSocket, EventType });
-
+	TriggeredNodeSocket->GetParent()->SocketEvent(TriggeredNodeSocket, CallerNodeSocket, EventType);
+	if (EventType == EXECUTE && Settings.bSaveExecutedNodes)
+		LastExecutedNodes.push_back(TriggeredNodeSocket->GetParent());
+	
 	return true;
 }
 
@@ -499,19 +501,10 @@ bool NodeArea::TriggerOrphanSocketEvent(Node* Node, NODE_SOCKET_EVENT EventType)
 		return false;
 
 	Node->SocketEvent(nullptr, nullptr, EventType);
+	if (EventType == EXECUTE && Settings.bSaveExecutedNodes)
+		LastExecutedNodes.push_back(Node);
 
 	return true;
-}
-
-void NodeArea::ProcessSocketEventQueue()
-{
-	while (!SocketEventQueue.empty())
-	{
-		SocketEvent Event = SocketEventQueue.front();
-		SocketEventQueue.pop();
-
-		Event.TriggeredNodeSocket->GetParent()->SocketEvent(Event.TriggeredNodeSocket, Event.CallerNodeSocket, Event.EventType);
-	}
 }
 
 bool NodeArea::AddRerouteNode(Connection* Connection, size_t SegmentToDivide, ImVec2 Position)

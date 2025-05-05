@@ -6,7 +6,17 @@ std::unordered_map<std::string, ImColor> NodeSocket::SocketTypeToColorAssociatio
 NodeSocket::NodeSocket(Node* Parent, const std::string Type, const std::string Name, bool bOutput, std::function<void* ()> OutputDataFunction)
 {
 	this->Parent = Parent;
-	this->Type = Type;
+	this->AllowedTypes.push_back(Type);
+	this->Name = Name;
+	this->ID = NODE_CORE.GetUniqueHexID();
+	this->bOutput = bOutput;
+	this->OutputData = OutputDataFunction;
+}
+
+NodeSocket::NodeSocket(Node* Parent, const std::vector<std::string> Types, const std::string Name, bool bOutput, std::function<void* ()> OutputDataFunction)
+{
+	this->Parent = Parent;
+	this->AllowedTypes = Types;
 	this->Name = Name;
 	this->ID = NODE_CORE.GetUniqueHexID();
 	this->bOutput = bOutput;
@@ -33,9 +43,9 @@ std::string NodeSocket::GetName() const
 	return Name;
 }
 
-std::string NodeSocket::GetType() const
+std::vector<std::string> NodeSocket::GetAllowedTypes() const
 {
-	return Type;
+	return AllowedTypes;
 }
 
 void NodeSocket::SetFunctionToOutputData(std::function<void* ()> NewFunction)

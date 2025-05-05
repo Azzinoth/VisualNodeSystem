@@ -64,16 +64,16 @@ Json::Value GroupComment::ToJson()
 	Json::Value Result;
 
 	Result["ID"] = ID;
-	Result["position"]["x"] = Position.x;
-	Result["position"]["y"] = Position.y;
-	Result["size"]["x"] = Size.x;
-	Result["size"]["y"] = Size.y;
-	Result["caption"] = Caption;
+	Result["Position"]["X"] = Position.x;
+	Result["Position"]["Y"] = Position.y;
+	Result["Size"]["X"] = Size.x;
+	Result["Size"]["Y"] = Size.y;
+	Result["Caption"] = Caption;
 	Result["bMoveElementsWithComment"] = bMoveElementsWithComment;
-	Result["BackgroundColor"]["x"] = BackgroundColor.x;
-	Result["BackgroundColor"]["y"] = BackgroundColor.y;
-	Result["BackgroundColor"]["z"] = BackgroundColor.z;
-	Result["BackgroundColor"]["w"] = BackgroundColor.w;
+	Result["BackgroundColor"]["X"] = BackgroundColor.x;
+	Result["BackgroundColor"]["Y"] = BackgroundColor.y;
+	Result["BackgroundColor"]["Z"] = BackgroundColor.z;
+	Result["BackgroundColor"]["W"] = BackgroundColor.w;
 
 	return Result;
 }
@@ -81,16 +81,16 @@ Json::Value GroupComment::ToJson()
 void GroupComment::FromJson(Json::Value Json)
 {
 	ID = Json["ID"].asCString();
-	Position.x = Json["position"]["x"].asFloat();
-	Position.y = Json["position"]["y"].asFloat();
-	Size.x = Json["size"]["x"].asFloat();
-	Size.y = Json["size"]["y"].asFloat();
-	Caption = Json["caption"].asCString();
+	Position.x = Json["Position"]["X"].asFloat();
+	Position.y = Json["Position"]["Y"].asFloat();
+	Size.x = Json["Size"]["X"].asFloat();
+	Size.y = Json["Size"]["Y"].asFloat();
+	Caption = Json["Caption"].asCString();
 	bMoveElementsWithComment = Json["bMoveElementsWithComment"].asBool();
-	BackgroundColor.x = Json["BackgroundColor"]["x"].asFloat();
-	BackgroundColor.y = Json["BackgroundColor"]["y"].asFloat();
-	BackgroundColor.z = Json["BackgroundColor"]["z"].asFloat();
-	BackgroundColor.w = Json["BackgroundColor"]["w"].asFloat();
+	BackgroundColor.x = Json["BackgroundColor"]["X"].asFloat();
+	BackgroundColor.y = Json["BackgroundColor"]["Y"].asFloat();
+	BackgroundColor.z = Json["BackgroundColor"]["Z"].asFloat();
+	BackgroundColor.w = Json["BackgroundColor"]["W"].asFloat();
 }
 
 bool GroupComment::IsHovered() const

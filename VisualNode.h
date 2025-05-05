@@ -45,6 +45,8 @@ namespace VisNodeSys
 		bool bShouldBeDestroyed = false;
 		bool bCouldBeDestroyed = true;
 		bool bCouldBeMoved = true;
+		static bool bInputCountCheck;
+		static bool bOutputCountCheck;
 
 		std::vector<NodeSocket*> Input;
 		std::vector<NodeSocket*> Output;

@@ -9,6 +9,9 @@ namespace VisNodeSys
 		SINGLETON_PRIVATE_PART(NodeSystem)
 
 		std::vector<NodeArea*> CreatedAreas;
+#ifdef VISUAL_NODE_SYSTEM_BUILD_STANDARD_NODES
+		void RegisterStandardNodes();
+#endif
 	public:
 		SINGLETON_PUBLIC_PART(NodeSystem)
 
