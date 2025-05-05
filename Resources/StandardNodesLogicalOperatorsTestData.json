@@ -1,0 +1,3702 @@
+{
+	"Connections" : 
+	{
+		"0" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "034B5134724642216C682661",
+				"SocketID" : "0D2902496508727D433C1258",
+				"SocketIndex" : 1
+			},
+			"Out" : 
+			{
+				"NodeID" : "44241A8063600A3131025471",
+				"SocketID" : "20592C6E2B5605557F6A3F2F",
+				"SocketIndex" : 0
+			}
+		},
+		"1" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "034B5134724642216C682661",
+				"SocketID" : "473F205746406F353B2F5B4C",
+				"SocketIndex" : 2
+			},
+			"Out" : 
+			{
+				"NodeID" : "1F63564F370E713529206C43",
+				"SocketID" : "2C0E397C71271742713B1B2D",
+				"SocketIndex" : 0
+			}
+		},
+		"10" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "57412C79260C5B4D3C0E0A23",
+				"SocketID" : "0F5A6B7C5A5E34412C75511E",
+				"SocketIndex" : 2
+			},
+			"Out" : 
+			{
+				"NodeID" : "2A3829385A8012065E7F0359",
+				"SocketID" : "0A0538127D6D651C286D2E16",
+				"SocketIndex" : 0
+			}
+		},
+		"11" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "36633B7533453E39795B2D78",
+				"SocketID" : "4767481072063C0F396D4772",
+				"SocketIndex" : 1
+			},
+			"Out" : 
+			{
+				"NodeID" : "57412C79260C5B4D3C0E0A23",
+				"SocketID" : "2F3C3B626B5D120D10690F64",
+				"SocketIndex" : 1
+			}
+		},
+		"12" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "36633B7533453E39795B2D78",
+				"SocketID" : "1A383D5A2E57266C0353042D",
+				"SocketIndex" : 0
+			},
+			"Out" : 
+			{
+				"NodeID" : "57412C79260C5B4D3C0E0A23",
+				"SocketID" : "664D541876526E777A1C1061",
+				"SocketIndex" : 0
+			}
+		},
+		"13" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "3F1463473D4A79264E396839",
+				"SocketID" : "7C1A6063257C1365090B126C",
+				"SocketIndex" : 1
+			},
+			"Out" : 
+			{
+				"NodeID" : "700370800D071C12610F3A4C",
+				"SocketID" : "7A307C7654196B53590C0E7C",
+				"SocketIndex" : 0
+			}
+		},
+		"14" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "7455454E58351D6E5559502C",
+				"SocketID" : "1E096A4165716C2222084672",
+				"SocketIndex" : 1
+			},
+			"Out" : 
+			{
+				"NodeID" : "1F05504A4317502139292A07",
+				"SocketID" : "4F2A615A2F4932794A176B80",
+				"SocketIndex" : 0
+			}
+		},
+		"15" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "7455454E58351D6E5559502C",
+				"SocketID" : "3006230C4B5E6C2D0E6C620B",
+				"SocketIndex" : 2
+			},
+			"Out" : 
+			{
+				"NodeID" : "462F0C2E010D527702357338",
+				"SocketID" : "80127E080E4204065547213F",
+				"SocketIndex" : 0
+			}
+		},
+		"16" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "3F1463473D4A79264E396839",
+				"SocketID" : "4160560C722B110802521877",
+				"SocketIndex" : 2
+			},
+			"Out" : 
+			{
+				"NodeID" : "362E2E081E397B1063201B0B",
+				"SocketID" : "7849101F136454205872315A",
+				"SocketIndex" : 0
+			}
+		},
+		"17" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "376D104270534A56454F0C30",
+				"SocketID" : "4E51157F513A1016571A328F",
+				"SocketIndex" : 0
+			},
+			"Out" : 
+			{
+				"NodeID" : "36633B7533453E39795B2D78",
+				"SocketID" : "771C35063F6D636845204A16",
+				"SocketIndex" : 0
+			}
+		},
+		"18" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "5D3A4252263A1006263B4250",
+				"SocketID" : "7A36533D333A044A651B714F",
+				"SocketIndex" : 1
+			},
+			"Out" : 
+			{
+				"NodeID" : "376D104270534A56454F0C30",
+				"SocketID" : "0C3069507160053B206E726F",
+				"SocketIndex" : 1
+			}
+		},
+		"19" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "5D3A4252263A1006263B4250",
+				"SocketID" : "6E072230670C804A225E6A2C",
+				"SocketIndex" : 0
+			},
+			"Out" : 
+			{
+				"NodeID" : "376D104270534A56454F0C30",
+				"SocketID" : "3F0470556E2A234C27592258",
+				"SocketIndex" : 0
+			}
+		},
+		"2" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "7B4B33354C362B685D2D1A00",
+				"SocketID" : "0A463C3C4179151F00692848",
+				"SocketIndex" : 0
+			},
+			"Out" : 
+			{
+				"NodeID" : "65567921554C468706760F62",
+				"SocketID" : "7853692D6C54782978720A2F",
+				"SocketIndex" : 0
+			}
+		},
+		"20" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "3F1463473D4A79264E396839",
+				"SocketID" : "370243472E26156C34163459",
+				"SocketIndex" : 0
+			},
+			"Out" : 
+			{
+				"NodeID" : "5D3A4252263A1006263B4250",
+				"SocketID" : "646B28015A3A590F0205083B",
+				"SocketIndex" : 0
+			}
+		},
+		"21" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "52624C1D085C3F23266E7A83",
+				"SocketID" : "094D784D7D0F4F7F04582A42",
+				"SocketIndex" : 1
+			},
+			"Out" : 
+			{
+				"NodeID" : "3F1463473D4A79264E396839",
+				"SocketID" : "7F30604A7F394F155F1F840D",
+				"SocketIndex" : 1
+			}
+		},
+		"22" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "52624C1D085C3F23266E7A83",
+				"SocketID" : "1F1C583C06112E2F4A160F5B",
+				"SocketIndex" : 0
+			},
+			"Out" : 
+			{
+				"NodeID" : "3F1463473D4A79264E396839",
+				"SocketID" : "206913110666250B64286749",
+				"SocketIndex" : 0
+			}
+		},
+		"23" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "0F4B5D7C0B3A2B3B5733303A",
+				"SocketID" : "1C6A2675676F087D00010819",
+				"SocketIndex" : 0
+			},
+			"Out" : 
+			{
+				"NodeID" : "7455454E58351D6E5559502C",
+				"SocketID" : "0C477142723E59651219201F",
+				"SocketIndex" : 0
+			}
+		},
+		"24" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "3C6D167B1C6019117E42463A",
+				"SocketID" : "7C5A2268611538795745367B",
+				"SocketIndex" : 0
+			},
+			"Out" : 
+			{
+				"NodeID" : "0F4B5D7C0B3A2B3B5733303A",
+				"SocketID" : "633C702B1E5D066347066666",
+				"SocketIndex" : 0
+			}
+		},
+		"25" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "3C6D167B1C6019117E42463A",
+				"SocketID" : "1E3F5939550F254B780D867C",
+				"SocketIndex" : 1
+			},
+			"Out" : 
+			{
+				"NodeID" : "7A0E4A3E62623C732A653916",
+				"SocketID" : "658055676D1E14136173081E",
+				"SocketIndex" : 0
+			}
+		},
+		"26" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "3C6D167B1C6019117E42463A",
+				"SocketID" : "367F73311B6613363E677A57",
+				"SocketIndex" : 2
+			},
+			"Out" : 
+			{
+				"NodeID" : "381A581A2B2D051432285F49",
+				"SocketID" : "3F7D787266267C406268802D",
+				"SocketIndex" : 0
+			}
+		},
+		"27" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "5B4D1E0B1E3D6F4508453969",
+				"SocketID" : "27442E6154566C1C7F293820",
+				"SocketIndex" : 0
+			},
+			"Out" : 
+			{
+				"NodeID" : "3C6D167B1C6019117E42463A",
+				"SocketID" : "4424596838067B22111F1873",
+				"SocketIndex" : 0
+			}
+		},
+		"28" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "5B4D1E0B1E3D6F4508453969",
+				"SocketID" : "2D1A22753200351130614501",
+				"SocketIndex" : 1
+			},
+			"Out" : 
+			{
+				"NodeID" : "3C6D167B1C6019117E42463A",
+				"SocketID" : "3157453E3214716605812204",
+				"SocketIndex" : 1
+			}
+		},
+		"29" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "57527D7B33711C465A712C7D",
+				"SocketID" : "0728606C6E1D416E71254F3B",
+				"SocketIndex" : 1
+			},
+			"Out" : 
+			{
+				"NodeID" : "600F546A2B6B50281C561171",
+				"SocketID" : "267B6D43494024291525475B",
+				"SocketIndex" : 0
+			}
+		},
+		"3" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "034B5134724642216C682661",
+				"SocketID" : "212A3A0D366C176F2F121C4F",
+				"SocketIndex" : 0
+			},
+			"Out" : 
+			{
+				"NodeID" : "7B4B33354C362B685D2D1A00",
+				"SocketID" : "642A7E221A3A4841340B5013",
+				"SocketIndex" : 0
+			}
+		},
+		"30" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "57527D7B33711C465A712C7D",
+				"SocketID" : "6E2D332F0B737A6C614E624F",
+				"SocketIndex" : 2
+			},
+			"Out" : 
+			{
+				"NodeID" : "69313D1A274E7D17585E6237",
+				"SocketID" : "5E1F4136585A7C3804100E77",
+				"SocketIndex" : 0
+			}
+		},
+		"31" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "57527D7B33711C465A712C7D",
+				"SocketID" : "4441776F3502017D43424662",
+				"SocketIndex" : 0
+			},
+			"Out" : 
+			{
+				"NodeID" : "5B4D1E0B1E3D6F4508453969",
+				"SocketID" : "68712D45067D1770752C7B49",
+				"SocketIndex" : 0
+			}
+		},
+		"32" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "497D1C1542325A5230066666",
+				"SocketID" : "2A5C0E51471C1E3D3236537A",
+				"SocketIndex" : 0
+			},
+			"Out" : 
+			{
+				"NodeID" : "57527D7B33711C465A712C7D",
+				"SocketID" : "806261333337057734333113",
+				"SocketIndex" : 0
+			}
+		},
+		"33" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "54122B210A27420B2B4F1515",
+				"SocketID" : "4C307950321777633D39640A",
+				"SocketIndex" : 1
+			},
+			"Out" : 
+			{
+				"NodeID" : "2643006D0117276E44782629",
+				"SocketID" : "7877730F552D792949293E4F",
+				"SocketIndex" : 0
+			}
+		},
+		"34" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "54122B210A27420B2B4F1515",
+				"SocketID" : "6B635A453253676E1E511F02",
+				"SocketIndex" : 2
+			},
+			"Out" : 
+			{
+				"NodeID" : "061C494F1D4D0B2510603008",
+				"SocketID" : "7340120F71233810233F4D5B",
+				"SocketIndex" : 0
+			}
+		},
+		"35" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "54122B210A27420B2B4F1515",
+				"SocketID" : "76752E541D344A1644617B31",
+				"SocketIndex" : 0
+			},
+			"Out" : 
+			{
+				"NodeID" : "497D1C1542325A5230066666",
+				"SocketID" : "6F7534770207262F1C2F7D33",
+				"SocketIndex" : 0
+			}
+		},
+		"36" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "12776C6B3F7D433E31153628",
+				"SocketID" : "1B53623D7A571266663A3875",
+				"SocketIndex" : 0
+			},
+			"Out" : 
+			{
+				"NodeID" : "54122B210A27420B2B4F1515",
+				"SocketID" : "165563573566196543660007",
+				"SocketIndex" : 0
+			}
+		},
+		"37" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "7455454E58351D6E5559502C",
+				"SocketID" : "2443213142560A38587E577B",
+				"SocketIndex" : 0
+			},
+			"Out" : 
+			{
+				"NodeID" : "7B4B33354C362B685D2D1A00",
+				"SocketID" : "3C712348621C221A6E2D272B",
+				"SocketIndex" : 1
+			}
+		},
+		"38" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "0F4B5D7C0B3A2B3B5733303A",
+				"SocketID" : "6D002201602A123D46274233",
+				"SocketIndex" : 1
+			},
+			"Out" : 
+			{
+				"NodeID" : "7455454E58351D6E5559502C",
+				"SocketID" : "46362B75432258085E647355",
+				"SocketIndex" : 1
+			}
+		},
+		"39" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "497D1C1542325A5230066666",
+				"SocketID" : "6F2732661C1E5E5C41757814",
+				"SocketIndex" : 1
+			},
+			"Out" : 
+			{
+				"NodeID" : "57527D7B33711C465A712C7D",
+				"SocketID" : "4F230A1927306C1511665406",
+				"SocketIndex" : 1
+			}
+		},
+		"4" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "376D104270534A56454F0C30",
+				"SocketID" : "0803306020721D7C77396D7E",
+				"SocketIndex" : 1
+			},
+			"Out" : 
+			{
+				"NodeID" : "6F000D3A2014215B0A120304",
+				"SocketID" : "2927007A1D78546B0B76620E",
+				"SocketIndex" : 0
+			}
+		},
+		"40" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "12776C6B3F7D433E31153628",
+				"SocketID" : "183A40102A203956751B2045",
+				"SocketIndex" : 1
+			},
+			"Out" : 
+			{
+				"NodeID" : "54122B210A27420B2B4F1515",
+				"SocketID" : "4A0A167D02621448702C162C",
+				"SocketIndex" : 1
+			}
+		},
+		"41" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "42394D7B093E33030A055007",
+				"SocketID" : "523B5E40677311020F1E0F29",
+				"SocketIndex" : 1
+			},
+			"Out" : 
+			{
+				"NodeID" : "310B3B6B45220C356C1C3B3A",
+				"SocketID" : "0D55227A01681C2264153E18",
+				"SocketIndex" : 0
+			}
+		},
+		"42" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "42394D7B093E33030A055007",
+				"SocketID" : "7C80620937762853723C1146",
+				"SocketIndex" : 2
+			},
+			"Out" : 
+			{
+				"NodeID" : "08625C640B6F77386C1C372B",
+				"SocketID" : "14201604666B73637B497564",
+				"SocketIndex" : 0
+			}
+		},
+		"43" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "42394D7B093E33030A055007",
+				"SocketID" : "3F3E6B283354355B400B2B6A",
+				"SocketIndex" : 0
+			},
+			"Out" : 
+			{
+				"NodeID" : "7B4B33354C362B685D2D1A00",
+				"SocketID" : "2424380D5853446071275A01",
+				"SocketIndex" : 2
+			}
+		},
+		"44" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "1801335819175E0E2559684D",
+				"SocketID" : "1F41346F624B4F0100380423",
+				"SocketIndex" : 0
+			},
+			"Out" : 
+			{
+				"NodeID" : "42394D7B093E33030A055007",
+				"SocketID" : "052D45417109021344132670",
+				"SocketIndex" : 0
+			}
+		},
+		"45" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "1801335819175E0E2559684D",
+				"SocketID" : "7A23604317661D44690C1662",
+				"SocketIndex" : 1
+			},
+			"Out" : 
+			{
+				"NodeID" : "42394D7B093E33030A055007",
+				"SocketID" : "784103230161435A1E0E2A75",
+				"SocketIndex" : 1
+			}
+		},
+		"46" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "7C64324B172C260C40007B7B",
+				"SocketID" : "4E761A29016E804E64423D48",
+				"SocketIndex" : 0
+			},
+			"Out" : 
+			{
+				"NodeID" : "1801335819175E0E2559684D",
+				"SocketID" : "04640A012D7A611A662D1F51",
+				"SocketIndex" : 0
+			}
+		},
+		"47" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "7C64324B172C260C40007B7B",
+				"SocketID" : "7478623F411C78597A511053",
+				"SocketIndex" : 1
+			},
+			"Out" : 
+			{
+				"NodeID" : "4D610422007603611A324172",
+				"SocketID" : "2F3A732418356515084F8545",
+				"SocketIndex" : 0
+			}
+		},
+		"48" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "7C64324B172C260C40007B7B",
+				"SocketID" : "164E211E2F3C0F4331303F5A",
+				"SocketIndex" : 2
+			},
+			"Out" : 
+			{
+				"NodeID" : "0C1E1B17595505400E56462B",
+				"SocketID" : "070D683D5463785753326C4A",
+				"SocketIndex" : 0
+			}
+		},
+		"49" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "7D19783863112B750F667457",
+				"SocketID" : "4F6A767F3E5D5A29190E6E76",
+				"SocketIndex" : 0
+			},
+			"Out" : 
+			{
+				"NodeID" : "7C64324B172C260C40007B7B",
+				"SocketID" : "1079571468100A762C053C64",
+				"SocketIndex" : 0
+			}
+		},
+		"5" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "376D104270534A56454F0C30",
+				"SocketID" : "50217838127E7E4413181815",
+				"SocketIndex" : 2
+			},
+			"Out" : 
+			{
+				"NodeID" : "26492C6635107F792E4B7C1E",
+				"SocketID" : "351E34571601552744703602",
+				"SocketIndex" : 0
+			}
+		},
+		"50" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "7D19783863112B750F667457",
+				"SocketID" : "636D2D6B38716B7241254405",
+				"SocketIndex" : 1
+			},
+			"Out" : 
+			{
+				"NodeID" : "7C64324B172C260C40007B7B",
+				"SocketID" : "12491F6F73227400170D1E73",
+				"SocketIndex" : 1
+			}
+		},
+		"51" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "1C792C615E6E402A78485641",
+				"SocketID" : "1B353B426F09156F50303543",
+				"SocketIndex" : 0
+			},
+			"Out" : 
+			{
+				"NodeID" : "7D19783863112B750F667457",
+				"SocketID" : "106C513F5B0271266255345A",
+				"SocketIndex" : 0
+			}
+		},
+		"52" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "1C792C615E6E402A78485641",
+				"SocketID" : "763B13675D4C39712745257C",
+				"SocketIndex" : 1
+			},
+			"Out" : 
+			{
+				"NodeID" : "7D114E0D558E04085D0E6D4D",
+				"SocketID" : "4414634E0120754C69543121",
+				"SocketIndex" : 0
+			}
+		},
+		"53" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "1C792C615E6E402A78485641",
+				"SocketID" : "470129552258246448320260",
+				"SocketIndex" : 2
+			},
+			"Out" : 
+			{
+				"NodeID" : "1353341C4B1349626E5B6A38",
+				"SocketID" : "0023794A6E110D2B122E4A28",
+				"SocketIndex" : 0
+			}
+		},
+		"54" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "292671376D5016491E760148",
+				"SocketID" : "2F6E5C3C712F363B337C6860",
+				"SocketIndex" : 0
+			},
+			"Out" : 
+			{
+				"NodeID" : "1C792C615E6E402A78485641",
+				"SocketID" : "3B32766F4D0B1F6C7C59385D",
+				"SocketIndex" : 0
+			}
+		},
+		"55" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "292671376D5016491E760148",
+				"SocketID" : "707F5D26576A5F65001C3B58",
+				"SocketIndex" : 1
+			},
+			"Out" : 
+			{
+				"NodeID" : "1C792C615E6E402A78485641",
+				"SocketID" : "345F094F4B3E5A450F55735C",
+				"SocketIndex" : 1
+			}
+		},
+		"56" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "6A5D3E330452162B22111504",
+				"SocketID" : "525A286F271C5F701F541D2B",
+				"SocketIndex" : 0
+			},
+			"Out" : 
+			{
+				"NodeID" : "292671376D5016491E760148",
+				"SocketID" : "783E4D1C33427E4B04032B1A",
+				"SocketIndex" : 0
+			}
+		},
+		"57" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "6A5D3E330452162B22111504",
+				"SocketID" : "091F6A2E005E3026031D395B",
+				"SocketIndex" : 1
+			},
+			"Out" : 
+			{
+				"NodeID" : "0039312342437575530D7704",
+				"SocketID" : "1C3C15194729381F353B3226",
+				"SocketIndex" : 0
+			}
+		},
+		"58" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "6A5D3E330452162B22111504",
+				"SocketID" : "00734823357F736B104A6652",
+				"SocketIndex" : 2
+			},
+			"Out" : 
+			{
+				"NodeID" : "1B2A388A176B7C756B1E6E7C",
+				"SocketID" : "7C6A20426201363E3B1B3C3F",
+				"SocketIndex" : 0
+			}
+		},
+		"59" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "31197565090F29186676650F",
+				"SocketID" : "4559100B15387B5B6B60686B",
+				"SocketIndex" : 0
+			},
+			"Out" : 
+			{
+				"NodeID" : "6A5D3E330452162B22111504",
+				"SocketID" : "49255D1B60561035694B3C54",
+				"SocketIndex" : 0
+			}
+		},
+		"6" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "5818753A73201D630F6C7E1D",
+				"SocketID" : "70632C7F2051052E67300206",
+				"SocketIndex" : 1
+			},
+			"Out" : 
+			{
+				"NodeID" : "034B5134724642216C682661",
+				"SocketID" : "323E55475126012118661800",
+				"SocketIndex" : 1
+			}
+		},
+		"60" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "31197565090F29186676650F",
+				"SocketID" : "3812273661035F0742177E16",
+				"SocketIndex" : 1
+			},
+			"Out" : 
+			{
+				"NodeID" : "6A5D3E330452162B22111504",
+				"SocketID" : "0907785A657C767D8074660D",
+				"SocketIndex" : 1
+			}
+		},
+		"61" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "2185122D76304B430100020D",
+				"SocketID" : "596A4265402A6A3D0B711B5D",
+				"SocketIndex" : 1
+			},
+			"Out" : 
+			{
+				"NodeID" : "5E7F211A1E285E1D330E1807",
+				"SocketID" : "293D0F2B55263C3229695855",
+				"SocketIndex" : 0
+			}
+		},
+		"62" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "1D4251425D2255311F074037",
+				"SocketID" : "0B490C5C7509396362407E4C",
+				"SocketIndex" : 0
+			},
+			"Out" : 
+			{
+				"NodeID" : "2185122D76304B430100020D",
+				"SocketID" : "072E0C595A6B1D0E28752D5E",
+				"SocketIndex" : 0
+			}
+		},
+		"63" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "1D4251425D2255311F074037",
+				"SocketID" : "7F50575A686E3A005A73467F",
+				"SocketIndex" : 1
+			},
+			"Out" : 
+			{
+				"NodeID" : "2185122D76304B430100020D",
+				"SocketID" : "59757B1E650F456F11631F62",
+				"SocketIndex" : 1
+			}
+		},
+		"64" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "2185122D76304B430100020D",
+				"SocketID" : "2C7A801C0061087D5F227A41",
+				"SocketIndex" : 0
+			},
+			"Out" : 
+			{
+				"NodeID" : "7B4B33354C362B685D2D1A00",
+				"SocketID" : "1A5E2068043C6E1052403E7E",
+				"SocketIndex" : 3
+			}
+		},
+		"65" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "373B76526B19645617464F3A",
+				"SocketID" : "5C3457656201606317310A09",
+				"SocketIndex" : 0
+			},
+			"Out" : 
+			{
+				"NodeID" : "1C285D274B363C147C07026A",
+				"SocketID" : "5727535249062D2B02726F43",
+				"SocketIndex" : 0
+			}
+		},
+		"66" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "373B76526B19645617464F3A",
+				"SocketID" : "384E7079187C5B2D0F4B2053",
+				"SocketIndex" : 1
+			},
+			"Out" : 
+			{
+				"NodeID" : "1C285D274B363C147C07026A",
+				"SocketID" : "63037915570A25271B2B4A45",
+				"SocketIndex" : 1
+			}
+		},
+		"67" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "1C285D274B363C147C07026A",
+				"SocketID" : "680B0D297C5D015F5D4B2246",
+				"SocketIndex" : 1
+			},
+			"Out" : 
+			{
+				"NodeID" : "21076E5C147911710E08774F",
+				"SocketID" : "61094C2C0550024441360033",
+				"SocketIndex" : 0
+			}
+		},
+		"68" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "1C285D274B363C147C07026A",
+				"SocketID" : "1D0418076D1A5E3039553D0D",
+				"SocketIndex" : 0
+			},
+			"Out" : 
+			{
+				"NodeID" : "1D4251425D2255311F074037",
+				"SocketID" : "56136F5449731D6C35622C60",
+				"SocketIndex" : 0
+			}
+		},
+		"7" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "5818753A73201D630F6C7E1D",
+				"SocketID" : "22592743076A05593808421E",
+				"SocketIndex" : 0
+			},
+			"Out" : 
+			{
+				"NodeID" : "034B5134724642216C682661",
+				"SocketID" : "206B1061467A701B67237733",
+				"SocketIndex" : 0
+			}
+		},
+		"8" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "57412C79260C5B4D3C0E0A23",
+				"SocketID" : "776570790275333739517A41",
+				"SocketIndex" : 0
+			},
+			"Out" : 
+			{
+				"NodeID" : "5818753A73201D630F6C7E1D",
+				"SocketID" : "3E5324251D594C6D20747254",
+				"SocketIndex" : 0
+			}
+		},
+		"9" : 
+		{
+			"In" : 
+			{
+				"NodeID" : "57412C79260C5B4D3C0E0A23",
+				"SocketID" : "0640651B617A4C274C411F32",
+				"SocketIndex" : 1
+			},
+			"Out" : 
+			{
+				"NodeID" : "17010E64777459044F2A1967",
+				"SocketID" : "7B567D704F554629025D631E",
+				"SocketIndex" : 0
+			}
+		}
+	},
+	"GroupComments" : null,
+	"Nodes" : 
+	{
+		"0" : 
+		{
+			"ID" : "65567921554C468706760F62",
+			"Name" : "Begin node",
+			"NodeStyle" : 1,
+			"NodeType" : "BeginNode",
+			"Output" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "7853692D6C54782978720A2F",
+					"Name" : "out"
+				}
+			},
+			"Position" : 
+			{
+				"X" : 300.0,
+				"Y" : 430.0
+			},
+			"Size" : 
+			{
+				"X" : 220.0,
+				"Y" : 78.0
+			}
+		},
+		"1" : 
+		{
+			"ID" : "034B5134724642216C682661",
+			"Input" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "212A3A0D366C176F2F121C4F",
+					"Name" : ""
+				},
+				"1" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "0D2902496508727D433C1258",
+					"Name" : "A"
+				},
+				"2" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "473F205746406F353B2F5B4C",
+					"Name" : "B"
+				}
+			},
+			"Name" : "AND",
+			"NodeStyle" : 0,
+			"NodeType" : "LogicalANDOperatorNode",
+			"Output" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "206B1061467A701B67237733",
+					"Name" : ""
+				},
+				"1" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "323E55475126012118661800",
+					"Name" : "Result"
+				}
+			},
+			"Position" : 
+			{
+				"X" : 673.0,
+				"Y" : 73.0
+			},
+			"Size" : 
+			{
+				"X" : 130.0,
+				"Y" : 120.0
+			}
+		},
+		"10" : 
+		{
+			"ID" : "26492C6635107F792E4B7C1E",
+			"Name" : "Bool Literal",
+			"NodeStyle" : 0,
+			"NodeType" : "BoolLiteralNode",
+			"Output" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "351E34571601552744703602",
+					"Name" : "Out"
+				}
+			},
+			"Position" : 
+			{
+				"X" : 1853.0,
+				"Y" : 148.0
+			},
+			"Size" : 
+			{
+				"X" : 150.0,
+				"Y" : 80.0
+			},
+			"Value" : true
+		},
+		"11" : 
+		{
+			"ID" : "3F1463473D4A79264E396839",
+			"Input" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "370243472E26156C34163459",
+					"Name" : ""
+				},
+				"1" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "7C1A6063257C1365090B126C",
+					"Name" : "A"
+				},
+				"2" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "4160560C722B110802521877",
+					"Name" : "B"
+				}
+			},
+			"Name" : "AND",
+			"NodeStyle" : 0,
+			"NodeType" : "LogicalANDOperatorNode",
+			"Output" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "206913110666250B64286749",
+					"Name" : ""
+				},
+				"1" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "7F30604A7F394F155F1F840D",
+					"Name" : "Result"
+				}
+			},
+			"Position" : 
+			{
+				"X" : 2758.0,
+				"Y" : 29.0
+			},
+			"Size" : 
+			{
+				"X" : 130.0,
+				"Y" : 120.0
+			}
+		},
+		"12" : 
+		{
+			"ID" : "700370800D071C12610F3A4C",
+			"Name" : "Bool Literal",
+			"NodeStyle" : 0,
+			"NodeType" : "BoolLiteralNode",
+			"Output" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "7A307C7654196B53590C0E7C",
+					"Name" : "Out"
+				}
+			},
+			"Position" : 
+			{
+				"X" : 2530.0,
+				"Y" : 11.0
+			},
+			"Size" : 
+			{
+				"X" : 150.0,
+				"Y" : 80.0
+			},
+			"Value" : true
+		},
+		"13" : 
+		{
+			"ID" : "362E2E081E397B1063201B0B",
+			"Name" : "Bool Literal",
+			"NodeStyle" : 0,
+			"NodeType" : "BoolLiteralNode",
+			"Output" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "7849101F136454205872315A",
+					"Name" : "Out"
+				}
+			},
+			"Position" : 
+			{
+				"X" : 2532.0,
+				"Y" : 136.0
+			},
+			"Size" : 
+			{
+				"X" : 150.0,
+				"Y" : 80.0
+			},
+			"Value" : true
+		},
+		"14" : 
+		{
+			"ID" : "5818753A73201D630F6C7E1D",
+			"Input" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "22592743076A05593808421E",
+					"Name" : ""
+				},
+				"1" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "70632C7F2051052E67300206",
+					"Name" : "Set"
+				}
+			},
+			"Name" : "Bool Variable",
+			"NodeStyle" : 0,
+			"NodeType" : "BoolVariableNode",
+			"Output" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "3E5324251D594C6D20747254",
+					"Name" : ""
+				},
+				"1" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "5A28185F430F0C6066380672",
+					"Name" : "Get"
+				}
+			},
+			"Position" : 
+			{
+				"X" : 861.0,
+				"Y" : 88.0
+			},
+			"Size" : 
+			{
+				"X" : 180.0,
+				"Y" : 80.0
+			},
+			"Value" : false
+		},
+		"15" : 
+		{
+			"ID" : "36633B7533453E39795B2D78",
+			"Input" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "1A383D5A2E57266C0353042D",
+					"Name" : ""
+				},
+				"1" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "4767481072063C0F396D4772",
+					"Name" : "Set"
+				}
+			},
+			"Name" : "Bool Variable",
+			"NodeStyle" : 0,
+			"NodeType" : "BoolVariableNode",
+			"Output" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "771C35063F6D636845204A16",
+					"Name" : ""
+				},
+				"1" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "095C4C2E1E7D23464D35314F",
+					"Name" : "Get"
+				}
+			},
+			"Position" : 
+			{
+				"X" : 1565.0,
+				"Y" : 69.5
+			},
+			"Size" : 
+			{
+				"X" : 180.0,
+				"Y" : 80.0
+			},
+			"Value" : false
+		},
+		"16" : 
+		{
+			"ID" : "5D3A4252263A1006263B4250",
+			"Input" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "6E072230670C804A225E6A2C",
+					"Name" : ""
+				},
+				"1" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "7A36533D333A044A651B714F",
+					"Name" : "Set"
+				}
+			},
+			"Name" : "Bool Variable",
+			"NodeStyle" : 0,
+			"NodeType" : "BoolVariableNode",
+			"Output" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "646B28015A3A590F0205083B",
+					"Name" : ""
+				},
+				"1" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "781E3F6B58777C5C1D59310B",
+					"Name" : "Get"
+				}
+			},
+			"Position" : 
+			{
+				"X" : 2275.0,
+				"Y" : 53.5
+			},
+			"Size" : 
+			{
+				"X" : 180.0,
+				"Y" : 80.0
+			},
+			"Value" : false
+		},
+		"17" : 
+		{
+			"ID" : "52624C1D085C3F23266E7A83",
+			"Input" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "1F1C583C06112E2F4A160F5B",
+					"Name" : ""
+				},
+				"1" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "094D784D7D0F4F7F04582A42",
+					"Name" : "Set"
+				}
+			},
+			"Name" : "Bool Variable",
+			"NodeStyle" : 0,
+			"NodeType" : "BoolVariableNode",
+			"Output" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "5A0A6C5D6D6E320618504C7F",
+					"Name" : ""
+				},
+				"1" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "0930366F445B242E225E5F6E",
+					"Name" : "Get"
+				}
+			},
+			"Position" : 
+			{
+				"X" : 2958.0,
+				"Y" : 49.5
+			},
+			"Size" : 
+			{
+				"X" : 180.0,
+				"Y" : 80.0
+			},
+			"Value" : true
+		},
+		"18" : 
+		{
+			"ID" : "7B4B33354C362B685D2D1A00",
+			"Input" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "0A463C3C4179151F00692848",
+					"Name" : ""
+				}
+			},
+			"Name" : "Sequence",
+			"NodeStyle" : 0,
+			"NodeType" : "SequenceNode",
+			"Output" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "642A7E221A3A4841340B5013",
+					"Name" : "Then 0"
+				},
+				"1" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "3C712348621C221A6E2D272B",
+					"Name" : "Then 1"
+				},
+				"2" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "2424380D5853446071275A01",
+					"Name" : "Then 2"
+				},
+				"3" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "1A5E2068043C6E1052403E7E",
+					"Name" : "Then 3"
+				}
+			},
+			"OutputCount" : 4,
+			"Position" : 
+			{
+				"X" : 446.0,
+				"Y" : -169.0
+			},
+			"Size" : 
+			{
+				"X" : 150.0,
+				"Y" : 160.0
+			}
+		},
+		"19" : 
+		{
+			"ID" : "1F05504A4317502139292A07",
+			"Name" : "Bool Literal",
+			"NodeStyle" : 0,
+			"NodeType" : "BoolLiteralNode",
+			"Output" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "4F2A615A2F4932794A176B80",
+					"Name" : "Out"
+				}
+			},
+			"Position" : 
+			{
+				"X" : 459.5,
+				"Y" : 372.0
+			},
+			"Size" : 
+			{
+				"X" : 150.0,
+				"Y" : 80.0
+			},
+			"Value" : false
+		},
+		"2" : 
+		{
+			"ID" : "2185122D76304B430100020D",
+			"Input" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "2C7A801C0061087D5F227A41",
+					"Name" : ""
+				},
+				"1" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "596A4265402A6A3D0B711B5D",
+					"Name" : "A"
+				}
+			},
+			"Name" : "NOT",
+			"NodeStyle" : 0,
+			"NodeType" : "LogicalNOTOperatorNode",
+			"Output" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "072E0C595A6B1D0E28752D5E",
+					"Name" : ""
+				},
+				"1" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "59757B1E650F456F11631F62",
+					"Name" : "Result"
+				}
+			},
+			"Position" : 
+			{
+				"X" : 692.0,
+				"Y" : 977.0
+			},
+			"Size" : 
+			{
+				"X" : 130.0,
+				"Y" : 80.0
+			}
+		},
+		"20" : 
+		{
+			"ID" : "462F0C2E010D527702357338",
+			"Name" : "Bool Literal",
+			"NodeStyle" : 0,
+			"NodeType" : "BoolLiteralNode",
+			"Output" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "80127E080E4204065547213F",
+					"Name" : "Out"
+				}
+			},
+			"Position" : 
+			{
+				"X" : 461.5,
+				"Y" : 497.0
+			},
+			"Size" : 
+			{
+				"X" : 150.0,
+				"Y" : 80.0
+			},
+			"Value" : false
+		},
+		"21" : 
+		{
+			"ID" : "7A0E4A3E62623C732A653916",
+			"Name" : "Bool Literal",
+			"NodeStyle" : 0,
+			"NodeType" : "BoolLiteralNode",
+			"Output" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "658055676D1E14136173081E",
+					"Name" : "Out"
+				}
+			},
+			"Position" : 
+			{
+				"X" : 1147.5,
+				"Y" : 363.0
+			},
+			"Size" : 
+			{
+				"X" : 150.0,
+				"Y" : 80.0
+			},
+			"Value" : true
+		},
+		"22" : 
+		{
+			"ID" : "381A581A2B2D051432285F49",
+			"Name" : "Bool Literal",
+			"NodeStyle" : 0,
+			"NodeType" : "BoolLiteralNode",
+			"Output" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "3F7D787266267C406268802D",
+					"Name" : "Out"
+				}
+			},
+			"Position" : 
+			{
+				"X" : 1147.5,
+				"Y" : 485.0
+			},
+			"Size" : 
+			{
+				"X" : 150.0,
+				"Y" : 80.0
+			},
+			"Value" : false
+		},
+		"23" : 
+		{
+			"ID" : "600F546A2B6B50281C561171",
+			"Name" : "Bool Literal",
+			"NodeStyle" : 0,
+			"NodeType" : "BoolLiteralNode",
+			"Output" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "267B6D43494024291525475B",
+					"Name" : "Out"
+				}
+			},
+			"Position" : 
+			{
+				"X" : 1865.5,
+				"Y" : 340.0
+			},
+			"Size" : 
+			{
+				"X" : 150.0,
+				"Y" : 80.0
+			},
+			"Value" : false
+		},
+		"24" : 
+		{
+			"ID" : "69313D1A274E7D17585E6237",
+			"Name" : "Bool Literal",
+			"NodeStyle" : 0,
+			"NodeType" : "BoolLiteralNode",
+			"Output" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "5E1F4136585A7C3804100E77",
+					"Name" : "Out"
+				}
+			},
+			"Position" : 
+			{
+				"X" : 1867.5,
+				"Y" : 465.0
+			},
+			"Size" : 
+			{
+				"X" : 150.0,
+				"Y" : 80.0
+			},
+			"Value" : true
+		},
+		"25" : 
+		{
+			"ID" : "2643006D0117276E44782629",
+			"Name" : "Bool Literal",
+			"NodeStyle" : 0,
+			"NodeType" : "BoolLiteralNode",
+			"Output" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "7877730F552D792949293E4F",
+					"Name" : "Out"
+				}
+			},
+			"Position" : 
+			{
+				"X" : 2544.5,
+				"Y" : 328.0
+			},
+			"Size" : 
+			{
+				"X" : 150.0,
+				"Y" : 80.0
+			},
+			"Value" : true
+		},
+		"26" : 
+		{
+			"ID" : "061C494F1D4D0B2510603008",
+			"Name" : "Bool Literal",
+			"NodeStyle" : 0,
+			"NodeType" : "BoolLiteralNode",
+			"Output" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "7340120F71233810233F4D5B",
+					"Name" : "Out"
+				}
+			},
+			"Position" : 
+			{
+				"X" : 2546.5,
+				"Y" : 453.0
+			},
+			"Size" : 
+			{
+				"X" : 150.0,
+				"Y" : 80.0
+			},
+			"Value" : true
+		},
+		"27" : 
+		{
+			"ID" : "0F4B5D7C0B3A2B3B5733303A",
+			"Input" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "1C6A2675676F087D00010819",
+					"Name" : ""
+				},
+				"1" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "6D002201602A123D46274233",
+					"Name" : "Set"
+				}
+			},
+			"Name" : "Bool Variable",
+			"NodeStyle" : 0,
+			"NodeType" : "BoolVariableNode",
+			"Output" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "633C702B1E5D066347066666",
+					"Name" : ""
+				},
+				"1" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "4331165B782069413F416B2E",
+					"Name" : "Get"
+				}
+			},
+			"Position" : 
+			{
+				"X" : 875.5,
+				"Y" : 405.0
+			},
+			"Size" : 
+			{
+				"X" : 180.0,
+				"Y" : 80.0
+			},
+			"Value" : false
+		},
+		"28" : 
+		{
+			"ID" : "5B4D1E0B1E3D6F4508453969",
+			"Input" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "27442E6154566C1C7F293820",
+					"Name" : ""
+				},
+				"1" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "2D1A22753200351130614501",
+					"Name" : "Set"
+				}
+			},
+			"Name" : "Bool Variable",
+			"NodeStyle" : 0,
+			"NodeType" : "BoolVariableNode",
+			"Output" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "68712D45067D1770752C7B49",
+					"Name" : ""
+				},
+				"1" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "620405507314652174563C68",
+					"Name" : "Get"
+				}
+			},
+			"Position" : 
+			{
+				"X" : 1579.5,
+				"Y" : 386.5
+			},
+			"Size" : 
+			{
+				"X" : 180.0,
+				"Y" : 80.0
+			},
+			"Value" : true
+		},
+		"29" : 
+		{
+			"ID" : "497D1C1542325A5230066666",
+			"Input" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "2A5C0E51471C1E3D3236537A",
+					"Name" : ""
+				},
+				"1" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "6F2732661C1E5E5C41757814",
+					"Name" : "Set"
+				}
+			},
+			"Name" : "Bool Variable",
+			"NodeStyle" : 0,
+			"NodeType" : "BoolVariableNode",
+			"Output" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "6F7534770207262F1C2F7D33",
+					"Name" : ""
+				},
+				"1" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "767C786D3C1D49380D58535D",
+					"Name" : "Get"
+				}
+			},
+			"Position" : 
+			{
+				"X" : 2289.5,
+				"Y" : 370.5
+			},
+			"Size" : 
+			{
+				"X" : 180.0,
+				"Y" : 80.0
+			},
+			"Value" : true
+		},
+		"3" : 
+		{
+			"ID" : "44241A8063600A3131025471",
+			"Name" : "Bool Literal",
+			"NodeStyle" : 0,
+			"NodeType" : "BoolLiteralNode",
+			"Output" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "20592C6E2B5605557F6A3F2F",
+					"Name" : "Out"
+				}
+			},
+			"Position" : 
+			{
+				"X" : 445.0,
+				"Y" : 55.0
+			},
+			"Size" : 
+			{
+				"X" : 150.0,
+				"Y" : 80.0
+			},
+			"Value" : false
+		},
+		"30" : 
+		{
+			"ID" : "12776C6B3F7D433E31153628",
+			"Input" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "1B53623D7A571266663A3875",
+					"Name" : ""
+				},
+				"1" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "183A40102A203956751B2045",
+					"Name" : "Set"
+				}
+			},
+			"Name" : "Bool Variable",
+			"NodeStyle" : 0,
+			"NodeType" : "BoolVariableNode",
+			"Output" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "6B0F6646423B46083217105F",
+					"Name" : ""
+				},
+				"1" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "37113B28304C5B345E321E09",
+					"Name" : "Get"
+				}
+			},
+			"Position" : 
+			{
+				"X" : 2972.5,
+				"Y" : 366.5
+			},
+			"Size" : 
+			{
+				"X" : 180.0,
+				"Y" : 80.0
+			},
+			"Value" : true
+		},
+		"31" : 
+		{
+			"ID" : "7455454E58351D6E5559502C",
+			"Input" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "2443213142560A38587E577B",
+					"Name" : ""
+				},
+				"1" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "1E096A4165716C2222084672",
+					"Name" : "A"
+				},
+				"2" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "3006230C4B5E6C2D0E6C620B",
+					"Name" : "B"
+				}
+			},
+			"Name" : "OR",
+			"NodeStyle" : 0,
+			"NodeType" : "LogicalOROperatorNode",
+			"Output" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "0C477142723E59651219201F",
+					"Name" : ""
+				},
+				"1" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "46362B75432258085E647355",
+					"Name" : "Result"
+				}
+			},
+			"Position" : 
+			{
+				"X" : 679.0,
+				"Y" : 398.0
+			},
+			"Size" : 
+			{
+				"X" : 130.0,
+				"Y" : 120.0
+			}
+		},
+		"32" : 
+		{
+			"ID" : "3C6D167B1C6019117E42463A",
+			"Input" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "7C5A2268611538795745367B",
+					"Name" : ""
+				},
+				"1" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "1E3F5939550F254B780D867C",
+					"Name" : "A"
+				},
+				"2" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "367F73311B6613363E677A57",
+					"Name" : "B"
+				}
+			},
+			"Name" : "OR",
+			"NodeStyle" : 0,
+			"NodeType" : "LogicalOROperatorNode",
+			"Output" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "4424596838067B22111F1873",
+					"Name" : ""
+				},
+				"1" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "3157453E3214716605812204",
+					"Name" : "Result"
+				}
+			},
+			"Position" : 
+			{
+				"X" : 1363.0,
+				"Y" : 395.5
+			},
+			"Size" : 
+			{
+				"X" : 130.0,
+				"Y" : 120.0
+			}
+		},
+		"33" : 
+		{
+			"ID" : "57527D7B33711C465A712C7D",
+			"Input" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "4441776F3502017D43424662",
+					"Name" : ""
+				},
+				"1" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "0728606C6E1D416E71254F3B",
+					"Name" : "A"
+				},
+				"2" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "6E2D332F0B737A6C614E624F",
+					"Name" : "B"
+				}
+			},
+			"Name" : "OR",
+			"NodeStyle" : 0,
+			"NodeType" : "LogicalOROperatorNode",
+			"Output" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "806261333337057734333113",
+					"Name" : ""
+				},
+				"1" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "4F230A1927306C1511665406",
+					"Name" : "Result"
+				}
+			},
+			"Position" : 
+			{
+				"X" : 2092.0,
+				"Y" : 365.5
+			},
+			"Size" : 
+			{
+				"X" : 130.0,
+				"Y" : 120.0
+			}
+		},
+		"34" : 
+		{
+			"ID" : "54122B210A27420B2B4F1515",
+			"Input" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "76752E541D344A1644617B31",
+					"Name" : ""
+				},
+				"1" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "4C307950321777633D39640A",
+					"Name" : "A"
+				},
+				"2" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "6B635A453253676E1E511F02",
+					"Name" : "B"
+				}
+			},
+			"Name" : "OR",
+			"NodeStyle" : 0,
+			"NodeType" : "LogicalOROperatorNode",
+			"Output" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "165563573566196543660007",
+					"Name" : ""
+				},
+				"1" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "4A0A167D02621448702C162C",
+					"Name" : "Result"
+				}
+			},
+			"Position" : 
+			{
+				"X" : 2762.0,
+				"Y" : 349.5
+			},
+			"Size" : 
+			{
+				"X" : 130.0,
+				"Y" : 120.0
+			}
+		},
+		"35" : 
+		{
+			"ID" : "310B3B6B45220C356C1C3B3A",
+			"Name" : "Bool Literal",
+			"NodeStyle" : 0,
+			"NodeType" : "BoolLiteralNode",
+			"Output" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "0D55227A01681C2264153E18",
+					"Name" : "Out"
+				}
+			},
+			"Position" : 
+			{
+				"X" : 468.5,
+				"Y" : 688.0
+			},
+			"Size" : 
+			{
+				"X" : 150.0,
+				"Y" : 80.0
+			},
+			"Value" : false
+		},
+		"36" : 
+		{
+			"ID" : "08625C640B6F77386C1C372B",
+			"Name" : "Bool Literal",
+			"NodeStyle" : 0,
+			"NodeType" : "BoolLiteralNode",
+			"Output" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "14201604666B73637B497564",
+					"Name" : "Out"
+				}
+			},
+			"Position" : 
+			{
+				"X" : 470.5,
+				"Y" : 813.0
+			},
+			"Size" : 
+			{
+				"X" : 150.0,
+				"Y" : 80.0
+			},
+			"Value" : false
+		},
+		"37" : 
+		{
+			"ID" : "4D610422007603611A324172",
+			"Name" : "Bool Literal",
+			"NodeStyle" : 0,
+			"NodeType" : "BoolLiteralNode",
+			"Output" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "2F3A732418356515084F8545",
+					"Name" : "Out"
+				}
+			},
+			"Position" : 
+			{
+				"X" : 1156.5,
+				"Y" : 679.0
+			},
+			"Size" : 
+			{
+				"X" : 150.0,
+				"Y" : 80.0
+			},
+			"Value" : true
+		},
+		"38" : 
+		{
+			"ID" : "0C1E1B17595505400E56462B",
+			"Name" : "Bool Literal",
+			"NodeStyle" : 0,
+			"NodeType" : "BoolLiteralNode",
+			"Output" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "070D683D5463785753326C4A",
+					"Name" : "Out"
+				}
+			},
+			"Position" : 
+			{
+				"X" : 1156.5,
+				"Y" : 801.0
+			},
+			"Size" : 
+			{
+				"X" : 150.0,
+				"Y" : 80.0
+			},
+			"Value" : false
+		},
+		"39" : 
+		{
+			"ID" : "7D114E0D558E04085D0E6D4D",
+			"Name" : "Bool Literal",
+			"NodeStyle" : 0,
+			"NodeType" : "BoolLiteralNode",
+			"Output" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "4414634E0120754C69543121",
+					"Name" : "Out"
+				}
+			},
+			"Position" : 
+			{
+				"X" : 1874.5,
+				"Y" : 656.0
+			},
+			"Size" : 
+			{
+				"X" : 150.0,
+				"Y" : 80.0
+			},
+			"Value" : false
+		},
+		"4" : 
+		{
+			"ID" : "1F63564F370E713529206C43",
+			"Name" : "Bool Literal",
+			"NodeStyle" : 0,
+			"NodeType" : "BoolLiteralNode",
+			"Output" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "2C0E397C71271742713B1B2D",
+					"Name" : "Out"
+				}
+			},
+			"Position" : 
+			{
+				"X" : 447.0,
+				"Y" : 180.0
+			},
+			"Size" : 
+			{
+				"X" : 150.0,
+				"Y" : 80.0
+			},
+			"Value" : false
+		},
+		"40" : 
+		{
+			"ID" : "1353341C4B1349626E5B6A38",
+			"Name" : "Bool Literal",
+			"NodeStyle" : 0,
+			"NodeType" : "BoolLiteralNode",
+			"Output" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "0023794A6E110D2B122E4A28",
+					"Name" : "Out"
+				}
+			},
+			"Position" : 
+			{
+				"X" : 1876.5,
+				"Y" : 781.0
+			},
+			"Size" : 
+			{
+				"X" : 150.0,
+				"Y" : 80.0
+			},
+			"Value" : true
+		},
+		"41" : 
+		{
+			"ID" : "0039312342437575530D7704",
+			"Name" : "Bool Literal",
+			"NodeStyle" : 0,
+			"NodeType" : "BoolLiteralNode",
+			"Output" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "1C3C15194729381F353B3226",
+					"Name" : "Out"
+				}
+			},
+			"Position" : 
+			{
+				"X" : 2553.5,
+				"Y" : 644.0
+			},
+			"Size" : 
+			{
+				"X" : 150.0,
+				"Y" : 80.0
+			},
+			"Value" : true
+		},
+		"42" : 
+		{
+			"ID" : "1B2A388A176B7C756B1E6E7C",
+			"Name" : "Bool Literal",
+			"NodeStyle" : 0,
+			"NodeType" : "BoolLiteralNode",
+			"Output" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "7C6A20426201363E3B1B3C3F",
+					"Name" : "Out"
+				}
+			},
+			"Position" : 
+			{
+				"X" : 2555.5,
+				"Y" : 769.0
+			},
+			"Size" : 
+			{
+				"X" : 150.0,
+				"Y" : 80.0
+			},
+			"Value" : true
+		},
+		"43" : 
+		{
+			"ID" : "1801335819175E0E2559684D",
+			"Input" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "1F41346F624B4F0100380423",
+					"Name" : ""
+				},
+				"1" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "7A23604317661D44690C1662",
+					"Name" : "Set"
+				}
+			},
+			"Name" : "Bool Variable",
+			"NodeStyle" : 0,
+			"NodeType" : "BoolVariableNode",
+			"Output" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "04640A012D7A611A662D1F51",
+					"Name" : ""
+				},
+				"1" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "514E055F7D354B1E69262024",
+					"Name" : "Get"
+				}
+			},
+			"Position" : 
+			{
+				"X" : 884.5,
+				"Y" : 721.0
+			},
+			"Size" : 
+			{
+				"X" : 180.0,
+				"Y" : 80.0
+			},
+			"Value" : false
+		},
+		"44" : 
+		{
+			"ID" : "7D19783863112B750F667457",
+			"Input" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "4F6A767F3E5D5A29190E6E76",
+					"Name" : ""
+				},
+				"1" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "636D2D6B38716B7241254405",
+					"Name" : "Set"
+				}
+			},
+			"Name" : "Bool Variable",
+			"NodeStyle" : 0,
+			"NodeType" : "BoolVariableNode",
+			"Output" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "106C513F5B0271266255345A",
+					"Name" : ""
+				},
+				"1" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "50294C41413B5562345B3A5C",
+					"Name" : "Get"
+				}
+			},
+			"Position" : 
+			{
+				"X" : 1588.5,
+				"Y" : 702.5
+			},
+			"Size" : 
+			{
+				"X" : 180.0,
+				"Y" : 80.0
+			},
+			"Value" : true
+		},
+		"45" : 
+		{
+			"ID" : "292671376D5016491E760148",
+			"Input" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "2F6E5C3C712F363B337C6860",
+					"Name" : ""
+				},
+				"1" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "707F5D26576A5F65001C3B58",
+					"Name" : "Set"
+				}
+			},
+			"Name" : "Bool Variable",
+			"NodeStyle" : 0,
+			"NodeType" : "BoolVariableNode",
+			"Output" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "783E4D1C33427E4B04032B1A",
+					"Name" : ""
+				},
+				"1" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "4B0D3F554874542D644A6444",
+					"Name" : "Get"
+				}
+			},
+			"Position" : 
+			{
+				"X" : 2298.5,
+				"Y" : 686.5
+			},
+			"Size" : 
+			{
+				"X" : 180.0,
+				"Y" : 80.0
+			},
+			"Value" : true
+		},
+		"46" : 
+		{
+			"ID" : "31197565090F29186676650F",
+			"Input" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "4559100B15387B5B6B60686B",
+					"Name" : ""
+				},
+				"1" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "3812273661035F0742177E16",
+					"Name" : "Set"
+				}
+			},
+			"Name" : "Bool Variable",
+			"NodeStyle" : 0,
+			"NodeType" : "BoolVariableNode",
+			"Output" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "3966142D052D186E7A80160C",
+					"Name" : ""
+				},
+				"1" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "2F193B242C2A52101C6A116A",
+					"Name" : "Get"
+				}
+			},
+			"Position" : 
+			{
+				"X" : 2981.5,
+				"Y" : 682.5
+			},
+			"Size" : 
+			{
+				"X" : 180.0,
+				"Y" : 80.0
+			},
+			"Value" : false
+		},
+		"47" : 
+		{
+			"ID" : "42394D7B093E33030A055007",
+			"Input" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "3F3E6B283354355B400B2B6A",
+					"Name" : ""
+				},
+				"1" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "523B5E40677311020F1E0F29",
+					"Name" : "A"
+				},
+				"2" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "7C80620937762853723C1146",
+					"Name" : "B"
+				}
+			},
+			"Name" : "XOR",
+			"NodeStyle" : 0,
+			"NodeType" : "LogicalXOROperatorNode",
+			"Output" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "052D45417109021344132670",
+					"Name" : ""
+				},
+				"1" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "784103230161435A1E0E2A75",
+					"Name" : "Result"
+				}
+			},
+			"Position" : 
+			{
+				"X" : 696.0,
+				"Y" : 708.0
+			},
+			"Size" : 
+			{
+				"X" : 130.0,
+				"Y" : 120.0
+			}
+		},
+		"48" : 
+		{
+			"ID" : "7C64324B172C260C40007B7B",
+			"Input" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "4E761A29016E804E64423D48",
+					"Name" : ""
+				},
+				"1" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "7478623F411C78597A511053",
+					"Name" : "A"
+				},
+				"2" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "164E211E2F3C0F4331303F5A",
+					"Name" : "B"
+				}
+			},
+			"Name" : "XOR",
+			"NodeStyle" : 0,
+			"NodeType" : "LogicalXOROperatorNode",
+			"Output" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "1079571468100A762C053C64",
+					"Name" : ""
+				},
+				"1" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "12491F6F73227400170D1E73",
+					"Name" : "Result"
+				}
+			},
+			"Position" : 
+			{
+				"X" : 1386.0,
+				"Y" : 695.5
+			},
+			"Size" : 
+			{
+				"X" : 130.0,
+				"Y" : 120.0
+			}
+		},
+		"49" : 
+		{
+			"ID" : "1C792C615E6E402A78485641",
+			"Input" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "1B353B426F09156F50303543",
+					"Name" : ""
+				},
+				"1" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "763B13675D4C39712745257C",
+					"Name" : "A"
+				},
+				"2" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "470129552258246448320260",
+					"Name" : "B"
+				}
+			},
+			"Name" : "XOR",
+			"NodeStyle" : 0,
+			"NodeType" : "LogicalXOROperatorNode",
+			"Output" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "3B32766F4D0B1F6C7C59385D",
+					"Name" : ""
+				},
+				"1" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "345F094F4B3E5A450F55735C",
+					"Name" : "Result"
+				}
+			},
+			"Position" : 
+			{
+				"X" : 2099.0,
+				"Y" : 681.5
+			},
+			"Size" : 
+			{
+				"X" : 130.0,
+				"Y" : 120.0
+			}
+		},
+		"5" : 
+		{
+			"ID" : "57412C79260C5B4D3C0E0A23",
+			"Input" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "776570790275333739517A41",
+					"Name" : ""
+				},
+				"1" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "0640651B617A4C274C411F32",
+					"Name" : "A"
+				},
+				"2" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "0F5A6B7C5A5E34412C75511E",
+					"Name" : "B"
+				}
+			},
+			"Name" : "AND",
+			"NodeStyle" : 0,
+			"NodeType" : "LogicalANDOperatorNode",
+			"Output" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "664D541876526E777A1C1061",
+					"Name" : ""
+				},
+				"1" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "2F3C3B626B5D120D10690F64",
+					"Name" : "Result"
+				}
+			},
+			"Position" : 
+			{
+				"X" : 1359.0,
+				"Y" : 61.0
+			},
+			"Size" : 
+			{
+				"X" : 130.0,
+				"Y" : 120.0
+			}
+		},
+		"50" : 
+		{
+			"ID" : "6A5D3E330452162B22111504",
+			"Input" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "525A286F271C5F701F541D2B",
+					"Name" : ""
+				},
+				"1" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "091F6A2E005E3026031D395B",
+					"Name" : "A"
+				},
+				"2" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "00734823357F736B104A6652",
+					"Name" : "B"
+				}
+			},
+			"Name" : "XOR",
+			"NodeStyle" : 0,
+			"NodeType" : "LogicalXOROperatorNode",
+			"Output" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "49255D1B60561035694B3C54",
+					"Name" : ""
+				},
+				"1" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "0907785A657C767D8074660D",
+					"Name" : "Result"
+				}
+			},
+			"Position" : 
+			{
+				"X" : 2775.0,
+				"Y" : 669.5
+			},
+			"Size" : 
+			{
+				"X" : 130.0,
+				"Y" : 120.0
+			}
+		},
+		"51" : 
+		{
+			"ID" : "5E7F211A1E285E1D330E1807",
+			"Name" : "Bool Literal",
+			"NodeStyle" : 0,
+			"NodeType" : "BoolLiteralNode",
+			"Output" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "293D0F2B55263C3229695855",
+					"Name" : "Out"
+				}
+			},
+			"Position" : 
+			{
+				"X" : 478.0,
+				"Y" : 983.5
+			},
+			"Size" : 
+			{
+				"X" : 150.0,
+				"Y" : 80.0
+			},
+			"Value" : false
+		},
+		"52" : 
+		{
+			"ID" : "1D4251425D2255311F074037",
+			"Input" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "0B490C5C7509396362407E4C",
+					"Name" : ""
+				},
+				"1" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "7F50575A686E3A005A73467F",
+					"Name" : "Set"
+				}
+			},
+			"Name" : "Bool Variable",
+			"NodeStyle" : 0,
+			"NodeType" : "BoolVariableNode",
+			"Output" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "56136F5449731D6C35622C60",
+					"Name" : ""
+				},
+				"1" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "77662C633578624779794E30",
+					"Name" : "Get"
+				}
+			},
+			"Position" : 
+			{
+				"X" : 892.0,
+				"Y" : 971.5
+			},
+			"Size" : 
+			{
+				"X" : 180.0,
+				"Y" : 80.0
+			},
+			"Value" : true
+		},
+		"53" : 
+		{
+			"ID" : "1C285D274B363C147C07026A",
+			"Input" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "1D0418076D1A5E3039553D0D",
+					"Name" : ""
+				},
+				"1" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "680B0D297C5D015F5D4B2246",
+					"Name" : "A"
+				}
+			},
+			"Name" : "NOT",
+			"NodeStyle" : 0,
+			"NodeType" : "LogicalNOTOperatorNode",
+			"Output" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "5727535249062D2B02726F43",
+					"Name" : ""
+				},
+				"1" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "63037915570A25271B2B4A45",
+					"Name" : "Result"
+				}
+			},
+			"Position" : 
+			{
+				"X" : 1386.0,
+				"Y" : 971.0
+			},
+			"Size" : 
+			{
+				"X" : 130.0,
+				"Y" : 80.0
+			}
+		},
+		"54" : 
+		{
+			"ID" : "21076E5C147911710E08774F",
+			"Name" : "Bool Literal",
+			"NodeStyle" : 0,
+			"NodeType" : "BoolLiteralNode",
+			"Output" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "61094C2C0550024441360033",
+					"Name" : "Out"
+				}
+			},
+			"Position" : 
+			{
+				"X" : 1172.0,
+				"Y" : 977.5
+			},
+			"Size" : 
+			{
+				"X" : 150.0,
+				"Y" : 80.0
+			},
+			"Value" : true
+		},
+		"55" : 
+		{
+			"ID" : "373B76526B19645617464F3A",
+			"Input" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "5C3457656201606317310A09",
+					"Name" : ""
+				},
+				"1" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "384E7079187C5B2D0F4B2053",
+					"Name" : "Set"
+				}
+			},
+			"Name" : "Bool Variable",
+			"NodeStyle" : 0,
+			"NodeType" : "BoolVariableNode",
+			"Output" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "30856C755C0A427621370663",
+					"Name" : ""
+				},
+				"1" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "491144357C0B1E002B79505B",
+					"Name" : "Get"
+				}
+			},
+			"Position" : 
+			{
+				"X" : 1586.0,
+				"Y" : 965.5
+			},
+			"Size" : 
+			{
+				"X" : 180.0,
+				"Y" : 80.0
+			},
+			"Value" : false
+		},
+		"6" : 
+		{
+			"ID" : "17010E64777459044F2A1967",
+			"Name" : "Bool Literal",
+			"NodeStyle" : 0,
+			"NodeType" : "BoolLiteralNode",
+			"Output" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "7B567D704F554629025D631E",
+					"Name" : "Out"
+				}
+			},
+			"Position" : 
+			{
+				"X" : 1131.0,
+				"Y" : 43.0
+			},
+			"Size" : 
+			{
+				"X" : 150.0,
+				"Y" : 80.0
+			},
+			"Value" : true
+		},
+		"7" : 
+		{
+			"ID" : "2A3829385A8012065E7F0359",
+			"Name" : "Bool Literal",
+			"NodeStyle" : 0,
+			"NodeType" : "BoolLiteralNode",
+			"Output" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "0A0538127D6D651C286D2E16",
+					"Name" : "Out"
+				}
+			},
+			"Position" : 
+			{
+				"X" : 1133.0,
+				"Y" : 168.0
+			},
+			"Size" : 
+			{
+				"X" : 150.0,
+				"Y" : 80.0
+			},
+			"Value" : false
+		},
+		"8" : 
+		{
+			"ID" : "376D104270534A56454F0C30",
+			"Input" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "4E51157F513A1016571A328F",
+					"Name" : ""
+				},
+				"1" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "0803306020721D7C77396D7E",
+					"Name" : "A"
+				},
+				"2" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "50217838127E7E4413181815",
+					"Name" : "B"
+				}
+			},
+			"Name" : "AND",
+			"NodeStyle" : 0,
+			"NodeType" : "LogicalANDOperatorNode",
+			"Output" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"EXECUTE"
+					],
+					"ID" : "3F0470556E2A234C27592258",
+					"Name" : ""
+				},
+				"1" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "0C3069507160053B206E726F",
+					"Name" : "Result"
+				}
+			},
+			"Position" : 
+			{
+				"X" : 2079.0,
+				"Y" : 41.0
+			},
+			"Size" : 
+			{
+				"X" : 130.0,
+				"Y" : 120.0
+			}
+		},
+		"9" : 
+		{
+			"ID" : "6F000D3A2014215B0A120304",
+			"Name" : "Bool Literal",
+			"NodeStyle" : 0,
+			"NodeType" : "BoolLiteralNode",
+			"Output" : 
+			{
+				"0" : 
+				{
+					"AllowedTypes" : 
+					[
+						"BOOL"
+					],
+					"ID" : "2927007A1D78546B0B76620E",
+					"Name" : "Out"
+				}
+			},
+			"Position" : 
+			{
+				"X" : 1851.0,
+				"Y" : 23.0
+			},
+			"Size" : 
+			{
+				"X" : 150.0,
+				"Y" : 80.0
+			},
+			"Value" : false
+		},
+		"ExecutionEntryNodeID" : "65567921554C468706760F62"
+	},
+	"RenderOffset" : 
+	{
+		"X" : -27.0,
+		"Y" : 291.0
+	}
+}

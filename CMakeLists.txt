@@ -18,6 +18,11 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # Force your path to Dear ImGui
 set(DEAR_IMGUI_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/imgui CACHE PATH "Path to Dear ImGui directory." FORCE)
+
+# Force to build standard nodes.
+set(VISUAL_NODE_SYSTEM_BUILD_STANDARD_NODES ON CACHE BOOL "Build the Visual Node System with standard nodes module" FORCE)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /DVISUAL_NODE_SYSTEM_BUILD_STANDARD_NODES")
+
 set(USE_STATIC_RUNTIME ON CACHE BOOL "Use static runtime (/MT) instead of dynamic (/MD)")
 
 if(USE_STATIC_RUNTIME)
@@ -65,6 +70,8 @@ file(GLOB CustomNodes_SRC
 	"CustomNodes/CustomNode5.cpp"
 	"CustomNodes/CustomNodeStyleDemonstration.h"
 	"CustomNodes/CustomNodeStyleDemonstration.cpp"
+	"CustomNodes/BeginNode.h"
+	"CustomNodes/BeginNode.cpp"
 )
 
 file(GLOB Basic_SRC
@@ -87,6 +94,11 @@ file(GLOB GroupComment_SRC
 	"GroupCommentTests.h"
 )
 
+file(GLOB StandardNodeTests_SRC
+	"StandardNodeTests.cpp"
+	"StandardNodeTests.h"
+)
+
 file(GLOB source_SRC
 	"main.cpp"
 	"Core.h"
@@ -107,6 +119,7 @@ add_executable(Visual_Node_System_Tests
 			   ${NodeAreaLoad_SRC}
 			   ${NodeFactory_SRC}
 			   ${GroupComment_SRC}
+			   ${StandardNodeTests_SRC}
 			   # *************** THIRD_PARTY ***************
 			   ${imgui_SRC}
 )
@@ -125,6 +138,7 @@ source_group("Source Files/Basic" FILES ${Basic_SRC})
 source_group("Source Files/NodeAreaLoad" FILES ${NodeAreaLoad_SRC})
 source_group("Source Files/NodeFactory" FILES ${NodeFactory_SRC})
 source_group("Source Files/GroupComment" FILES ${GroupComment_SRC})
+source_group("Source Files/StandardNodeTests" FILES ${StandardNodeTests_SRC})
 # *************** THIRD_PARTY ***************
 source_group("Source Files/ThirdParty/imgui" FILES ${imgui_SRC})
 

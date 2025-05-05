@@ -18,7 +18,7 @@ TEST(NodeAreaLoadTest, LoadEmptyJson)
 
 TEST(NodeAreaLoadTest, LoadJsonWithOnlyOffset)
 {
-	std::string JsonString = R"({ "renderOffset": {"x": 100.5, "y": -50.0} })";
+	std::string JsonString = R"({ "RenderOffset": {"X": 100.5, "Y": -50.0} })";
 	NodeArea* NodeArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(NodeArea, nullptr);
 
@@ -33,7 +33,7 @@ TEST(NodeAreaLoadTest, LoadJsonWithOnlyOffset)
 
 TEST(NodeAreaLoadTest, LoadJsonWithIncorrectNodes)
 {
-	std::string JsonString = R"({ "nodes": "invalid" })";
+	std::string JsonString = R"({ "Nodes": "invalid" })";
 	NodeArea* NodeArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(NodeArea, nullptr);
 
@@ -49,12 +49,12 @@ TEST(NodeAreaLoadTest, LoadJsonWithIncorrectNodes)
 TEST(NodeAreaLoadTest, LoadNodeMissingType)
 {
 	std::string JsonString = R"({ 
-		"nodes": { 
+		"Nodes": { 
 			"0": { 
 				"ID": "6621620F42545B420C103443", 
-				"position": {"x":0, "y":0}, 
-				"size": {"x":100, "y":50}, 
-				"name":"Test" 
+				"Position": {"X":0, "Y":0}, 
+				"Size": {"X":100, "Y":50}, 
+				"Name":"Test" 
 			} 
 		} 
 	})";
@@ -74,13 +74,13 @@ TEST(NodeAreaLoadTest, LoadNodeMissingType)
 TEST(NodeAreaLoadTest, LoadNodeTypeNotString)
 {
 	std::string JsonString = R"({ 
-		"nodes": { 
+		"Nodes": { 
 			"0": { 
 				"ID": "6621620F42545B420C103443", 
-				"nodeType": 123, 
-				"position": {"x":0, "y":0}, 
-				"size": {"x":100, "y":50}, 
-				"name":"Test" 
+				"NodeType": 123, 
+				"Position": {"X":0, "Y":0}, 
+				"Size": {"X":100, "Y":50}, 
+				"Name":"Test" 
 			} 
 		} 
 	})";
@@ -100,13 +100,13 @@ TEST(NodeAreaLoadTest, LoadNodeTypeNotString)
 TEST(NodeAreaLoadTest, LoadNodeUnregisteredType)
 {
 	std::string JsonString = R"({ 
-		"nodes": { 
+		"Nodes": { 
 			"0": { 
 				"ID": "6621620F42545B420C103443", 
-				"nodeType": "NonExistentNode", 
-				"position": {"x":0, "y":0}, 
-				"size": {"x":100, "y":50}, 
-				"name":"Test" 
+				"NodeType": "NonExistentNode", 
+				"Position": {"X":0, "Y":0}, 
+				"Size": {"X":100, "Y":50}, 
+				"Name":"Test" 
 			} 
 		} 
 	})";
@@ -126,19 +126,19 @@ TEST(NodeAreaLoadTest, LoadNodeUnregisteredType)
 TEST(NodeAreaLoadTest, LoadNodeFromJsonFails_SocketCountMismatch)
 {
 	std::string JsonString = R"({
-		"nodes": {
+		"Nodes": {
 			"0": {
 				"ID": "6621620F42545B420C103443",
-				"nodeType": "CustomNode2",
-				"position": {"x": 10, "y": 10},
-				"size": {"x": 150, "y": 80},
-				"name": "Mismatch Node",
-				"input": {
-					"0": {"ID": "231D2D4F1D033A39393A157C", "name": "Input 1", "type": "FLOAT"},
-					"1": {"ID": "777D5D4709303379786D3B34", "name": "Input 2", "type": "FLOAT"}
+				"NodeType": "CustomNode2",
+				"Position": {"X": 10, "Y": 10},
+				"Size": {"X": 150, "Y": 80},
+				"Name": "Mismatch Node",
+				"Input": {
+					"0": {"ID": "231D2D4F1D033A39393A157C", "Name": "Input 1", "AllowedTypes":["FLOAT"]},
+					"1": {"ID": "777D5D4709303379786D3B34", "Name": "Input 2", "AllowedTypes":["FLOAT"]}
 				},
-				"output": {
-					"0": {"ID": "6E58750D6D46781643536C0F", "name": "Output 1", "type": "FLOAT"}
+				"Output": {
+					"0": {"ID": "6E58750D6D46781643536C0F", "Name": "Output 1", "AllowedTypes":["FLOAT"]}
 				}
 			}
 		}
@@ -159,16 +159,16 @@ TEST(NodeAreaLoadTest, LoadNodeFromJsonFails_SocketCountMismatch)
 TEST(NodeAreaLoadTest, LoadConnectionEntryNotObject)
 {
 	std::string JsonString = R"({
-		"nodes": { 
+		"Nodes": { 
 			"0": { 
 				"ID": "6621620F42545B420C103443", 
-				"nodeType": "CustomNode", 
-				"position": {"x":0,"y":0},
-				"size":{"x":1,"y":1},
-				"name":"N1"
+				"NodeType": "CustomNode", 
+				"Position": {"X":0,"Y":0},
+				"Size":{"X":1,"Y":1},
+				"Name":"N1"
 			}
 		},
-		"connections": { 
+		"Connections": { 
 			"0": "invalid_connection" 
 		}
 	})";
@@ -176,7 +176,7 @@ TEST(NodeAreaLoadTest, LoadConnectionEntryNotObject)
 	NodeArea* NodeArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(NodeArea, nullptr);
 
-	ASSERT_EQ(NodeArea->LoadFromJson(JsonString), false);
+	ASSERT_EQ(NodeArea->LoadFromJson(JsonString), true);
 	ASSERT_EQ(NodeArea->GetNodeCount(), 0);
 	ASSERT_EQ(NodeArea->GetGroupCommentCount(), 0);
 	ASSERT_EQ(NodeArea->GetConnectionCount(), 0);
@@ -188,53 +188,53 @@ TEST(NodeAreaLoadTest, LoadConnectionEntryNotObject)
 TEST(NodeAreaLoadTest, LoadConnectionMissingInOrOut)
 {
 	std::string JsonString = R"({
-		"nodes": {
+		"Nodes": {
 			"0": { 
 				"ID": "6621620F42545B420C103443", 
-				"nodeType": "CustomNode5", 
-				"position": {"x":0,"y":0},
-				"size":{"x":1,"y":1},
-				"name":"N1", 
-				"input": {
+				"NodeType": "CustomNode5", 
+				"Position": {"X":0,"Y":0},
+				"Size":{"X":1,"Y":1},
+				"Name":"N1", 
+				"Input": {
 					"0": {
 						"ID": "567D5D4709303379786D3B34", 
-						"name":"In", 
-						"type":"FLOAT"
+						"Name":"In", 
+						"AllowedTypes":["FLOAT"]
 					}
 				},
-				"output": {
+				"Output": {
 					"0": {
 						"ID": "777D5D4709303379786D3B34", 
-						"name":"Out", 
-						"type":"FLOAT"
+						"Name":"Out", 
+						"AllowedTypes":["FLOAT"]
 					}
 				}
 			},
 			"1": { 
 				"ID": "6E58750D6D46781643536C0F", 
-				"nodeType": "CustomNode5", 
-				"position": {"x":200,"y":0},
-				"size":{"x":1,"y":1},
-				"name":"N2", 
-				"input": {
+				"NodeType": "CustomNode5", 
+				"Position": {"X":200,"Y":0},
+				"Size":{"X":1,"Y":1},
+				"Name":"N2", 
+				"Input": {
 					"0": {
 						"ID": "167D5D4709303379786D3B34", 
-						"name":"In", 
-						"type":"FLOAT" 
+						"Name":"In", 
+						"AllowedTypes":["FLOAT"]
 					}
 				},
-				"output": {
+				"Output": {
 					"0": {
 						"ID": "134D5D4709303379786D3B34", 
-						"name":"Out", 
-						"type":"FLOAT"
+						"Name":"Out", 
+						"AllowedTypes":["FLOAT"]
 					}
 				}
 			}
 		},
-		"connections": {
+		"Connections": {
 			"0": {
-				"out": {"socket_ID": "777D5D4709303379786D3B34", "node_ID": "6621620F42545B420C103443"}
+				"Out": {"SocketID": "777D5D4709303379786D3B34", "NodeID": "6621620F42545B420C103443"}
 			}
 		}
 	})";
@@ -254,54 +254,54 @@ TEST(NodeAreaLoadTest, LoadConnectionMissingInOrOut)
 TEST(NodeAreaLoadTest, LoadConnectionMissingIDs)
 {
 	std::string JsonString = R"({
-		"nodes": {
+		"Nodes": {
 			"0": { 
 				"ID": "6621620F42545B420C103443", 
-				"nodeType": "CustomNode5", 
-				"position": {"x":0,"y":0},
-				"size":{"x":1,"y":1},
-				"name":"N1", 
-				"input": {
+				"NodeType": "CustomNode5", 
+				"Position": {"X":0,"Y":0},
+				"Size":{"X":1,"Y":1},
+				"Name":"N1", 
+				"Input": {
 					"0": {
 						"ID": "567D5D4709303379786D3B34", 
-						"name":"In", 
-						"type":"FLOAT"
+						"Name":"In", 
+						"AllowedTypes":["FLOAT"]
 					}
 				},
-				"output": {
+				"Output": {
 					"0": {
 						"ID": "777D5D4709303379786D3B34", 
-						"name":"Out", 
-						"type":"FLOAT"
+						"Name":"Out", 
+						"AllowedTypes":["FLOAT"]
 					}
 				}
 			},
 			"1": { 
 				"ID": "6E58750D6D46781643536C0F", 
-				"nodeType": "CustomNode5", 
-				"position": {"x":200,"y":0},
-				"size":{"x":1,"y":1},
-				"name":"N2", 
-				"input": {
+				"NodeType": "CustomNode5", 
+				"Position": {"X":200,"Y":0},
+				"Size":{"X":1,"Y":1},
+				"Name":"N2", 
+				"Input": {
 					"0": {
 						"ID": "167D5D4709303379786D3B34", 
-						"name":"In", 
-						"type":"FLOAT" 
+						"Name":"In", 
+						"AllowedTypes":["FLOAT"] 
 					}
 				},
-				"output": {
+				"Output": {
 					"0": {
 						"ID": "134D5D4709303379786D3B34", 
-						"name":"Out", 
-						"type":"FLOAT"
+						"Name":"Out", 
+						"AllowedTypes":["FLOAT"]
 					}
 				}
 			}
 		},
-		"connections": {
+		"Connections": {
 			"0": {
-				"in": {"socket_ID": "567D5D4709303379786D3B34"},
-				"out": {"node_ID": "6621620F42545B420C103443"}
+				"In": {"SocketID": "567D5D4709303379786D3B34"},
+				"Out": {"NodeID": "6621620F42545B420C103443"}
 			}
 		}
 	})";
@@ -321,46 +321,46 @@ TEST(NodeAreaLoadTest, LoadConnectionMissingIDs)
 TEST(NodeAreaLoadTest, LoadIncorrectGroupCommentFromJson)
 {
 	std::string JsonString = R"({
-		"nodes": {
+		"Nodes": {
 			"0": { 
 				"ID": "6621620F42545B420C103443", 
-				"nodeType": "CustomNode5", 
-				"position": {"x":0,"y":0},
-				"size":{"x":1,"y":1},
-				"name":"N1", 
-				"input": {
+				"NodeType": "CustomNode5", 
+				"Position": {"X":0,"Y":0},
+				"Size":{"X":1,"Y":1},
+				"Name":"N1", 
+				"Input": {
 					"0": {
 						"ID": "567D5D4709303379786D3B34", 
-						"name":"In", 
-						"type":"FLOAT"
+						"Name":"In", 
+						"AllowedTypes":["FLOAT"]
 					}
 				},
-				"output": {
+				"Output": {
 					"0": {
 						"ID": "777D5D4709303379786D3B34", 
-						"name":"Out", 
-						"type":"FLOAT"
+						"Name":"Out", 
+						"AllowedTypes":["FLOAT"]
 					}
 				}
 			},
 			"1": { 
 				"ID": "6E58750D6D46781643536C0F", 
-				"nodeType": "CustomNode5", 
-				"position": {"x":200,"y":0},
-				"size":{"x":1,"y":1},
-				"name":"N2", 
-				"input": {
+				"NodeType": "CustomNode5", 
+				"Position": {"X":200,"Y":0},
+				"Size":{"X":1,"Y":1},
+				"Name":"N2", 
+				"Input": {
 					"0": {
 						"ID": "167D5D4709303379786D3B34", 
-						"name":"In", 
-						"type":"FLOAT" 
+						"Name":"In", 
+						"AllowedTypes":["FLOAT"] 
 					}
 				},
-				"output": {
+				"Output": {
 					"0": {
 						"ID": "134D5D4709303379786D3B34", 
-						"name":"Out", 
-						"type":"FLOAT"
+						"Name":"Out", 
+						"AllowedTypes":["FLOAT"]
 					}
 				}
 			}
@@ -390,37 +390,37 @@ TEST(NodeAreaLoadTest, LoadConnectionFailedTryToConnect_IncompatibleSockets)
 	// Connection 0 (Valid): n1 (out) -> n2 (in)  (FLOAT -> FLOAT)
 	// Connection 1 (Invalid): n2 (out) -> n3 (out) (FLOAT output -> FLOAT output)
 	std::string JsonString = R"({
-		"nodes": {
+		"Nodes": {
 			"0": {
-				"ID": "0E341B791D445B0B2E5B7534", "nodeType": "CustomNode5", "nodeStyle": 0,
-				"position": {"x": 0, "y": 0}, "size": {"x": 100, "y": 80}, "name": "Node 1",
-				"input": {"0": {"ID": "7B63360C3D3E410D671A0A26", "name": "In", "type": "FLOAT"}},
-				"output": {"0": {"ID": "33763545003D3B0C2B557301", "name": "Out", "type": "FLOAT"}}
+				"ID": "0E341B791D445B0B2E5B7534", "NodeType": "CustomNode5", "NodeStyle": 0,
+				"Position": {"X": 0, "Y": 0}, "Size": {"X": 100, "Y": 80}, "Name": "Node 1",
+				"Input": {"0": {"ID": "7B63360C3D3E410D671A0A26", "Name": "In", "AllowedTypes":["FLOAT"]}},
+				"Output": {"0": {"ID": "33763545003D3B0C2B557301", "Name": "Out", "AllowedTypes":["FLOAT"]}}
 			},
 			"1": {
-				"ID": "6D61442D3E48292F126B7E07", "nodeType": "CustomNode5", "nodeStyle": 0,
-				"position": {"x": 200, "y": 0}, "size": {"x": 100, "y": 80}, "name": "Node 2",
-				"input": {"0": {"ID": "4500261C5F10075178584777", "name": "In", "type": "FLOAT"}},
-				"output": {"0": {"ID": "214D5382056A20645E3C2504", "name": "Out", "type": "FLOAT"}}
+				"ID": "6D61442D3E48292F126B7E07", "NodeType": "CustomNode5", "NodeStyle": 0,
+				"Position": {"X": 200, "Y": 0}, "Size": {"X": 100, "Y": 80}, "Name": "Node 2",
+				"Input": {"0": {"ID": "4500261C5F10075178584777", "Name": "In", "AllowedTypes":["FLOAT"]}},
+				"Output": {"0": {"ID": "214D5382056A20645E3C2504", "Name": "Out", "AllowedTypes":["FLOAT"]}}
 			},
 			"2": {
-				"ID": "72387012000A79220E2B0601", "nodeType": "CustomNode5", "nodeStyle": 0,
-				"position": {"x": 400, "y": 0}, "size": {"x": 100, "y": 80}, "name": "Node 3",
-				"input": {"0": {"ID": "30108938125F62440D440F76", "name": "In", "type": "FLOAT"}},
-				"output": {"0": {"ID": "317C1F777F3B51427B081613", "name": "Out", "type": "FLOAT"}}
+				"ID": "72387012000A79220E2B0601", "NodeType": "CustomNode5", "NodeStyle": 0,
+				"Position": {"X": 400, "Y": 0}, "Size": {"X": 100, "Y": 80}, "Name": "Node 3",
+				"Input": {"0": {"ID": "30108938125F62440D440F76", "Name": "In", "AllowedTypes":["FLOAT"]}},
+				"Output": {"0": {"ID": "317C1F777F3B51427B081613", "Name": "Out", "AllowedTypes":["FLOAT"]}}
 			}
 		},
-		"connections": {
+		"Connections": {
 			"0": {
-				"in": {"socket_ID": "4500261C5F10075178584777", "node_ID": "6D61442D3E48292F126B7E07"},
-				"out": {"socket_ID": "33763545003D3B0C2B557301", "node_ID": "0E341B791D445B0B2E5B7534"}
+				"In": {"SocketID": "4500261C5F10075178584777", "NodeID": "6D61442D3E48292F126B7E07"},
+				"Out": {"SocketID": "33763545003D3B0C2B557301", "NodeID": "0E341B791D445B0B2E5B7534"}
 			},
 			"1": {
-				"in": {"socket_ID": "317C1F777F3B51427B081613", "node_ID": "72387012000A79220E2B0601"},
-				"out": {"socket_ID": "214D5382056A20645E3C2504", "node_ID": "6D61442D3E48292F126B7E07"}
+				"In": {"SocketID": "317C1F777F3B51427B081613", "NodeID": "72387012000A79220E2B0601"},
+				"Out": {"SocketID": "214D5382056A20645E3C2504", "NodeID": "6D61442D3E48292F126B7E07"}
 			}
 		},
-        "renderOffset": {"x": 0, "y": 0}
+        "RenderOffset": {"X": 0, "Y": 0}
 	})";
 
 	NodeArea* NodeArea = NODE_SYSTEM.CreateNodeArea();
@@ -441,90 +441,90 @@ TEST(NodeAreaLoadTest, LoadConnectionFailedTryToConnect_IncompatibleSockets)
 	NODE_SYSTEM.DeleteNodeArea(NodeArea);
 }
 
-TEST(NodeAreaLoadTest, LoadWhenRerouteconnectionsInfoIsNull)
+TEST(NodeAreaLoadTest, LoadWhenRerouteConnectionsInfoIsNull)
 {
 	std::string JsonString = R"({
-		"connections" : 
+		"Connections" : 
 		{
 			"0" : 
 			{
-				"in" : 
+				"In" : 
 				{
-					"node_ID" : "6451100C0778214351766B7E",
-					"socket_ID" : "1C191657360B7903691A5B66",
-					"socket_index" : 0
+					"NodeID" : "6451100C0778214351766B7E",
+					"SocketID" : "1C191657360B7903691A5B66",
+					"SocketIndex" : 0
 				},
-				"out" : 
+				"Out" : 
 				{
-					"node_ID" : "5C0E2E1D5D005C3E70421A67",
-					"socket_ID" : "5D7E2A574B7D3C3069521C3F",
-					"socket_index" : 0
+					"NodeID" : "5C0E2E1D5D005C3E70421A67",
+					"SocketID" : "5D7E2A574B7D3C3069521C3F",
+					"SocketIndex" : 0
 				},
-				"reroute_connections" : 
+				"RerouteConnections" : 
 				{
 					
 				}
 			}
 		},
-		"nodes" : 
+		"Nodes" : 
 		{
 			"0" : 
 			{
 				"ID" : "6451100C0778214351766B7E",
-				"input" : 
+				"Input" : 
 				{
 					"0" : 
 					{
 						"ID" : "1C191657360B7903691A5B66",
-						"name" : "in",
-						"type" : "EXEC"
+						"Name" : "In",
+						"AllowedTypes":["EXEC"]
 					}
 				},
-				"name" : "Some node",
-				"nodeStyle" : 0,
-				"nodeType" : "VisualNode",
-				"position" : 
+				"Name" : "Some node",
+				"NodeStyle" : 0,
+				"NodeType" : "VisualNode",
+				"Position" : 
 				{
-					"x" : 350.0,
-					"y" : 490.0
+					"X" : 350.0,
+					"Y" : 490.0
 				},
-				"size" : 
+				"Size" : 
 				{
-					"x" : 120.0,
-					"y" : 80.0
+					"X" : 120.0,
+					"Y" : 80.0
 				}
 			},
 			"1" : 
 			{
 				"ID" : "5C0E2E1D5D005C3E70421A67",
-				"name" : "Some node",
-				"nodeStyle" : 0,
-				"nodeType" : "VisualNode",
-				"output" : 
+				"Name" : "Some node",
+				"NodeStyle" : 0,
+				"NodeType" : "VisualNode",
+				"Output" : 
 				{
 					"0" : 
 					{
 						"ID" : "5D7E2A574B7D3C3069521C3F",
-						"name" : "out",
-						"type" : "EXEC"
+						"Name" : "Out",
+						"AllowedTypes":["EXEC"]
 					}
 				},
-				"position" : 
+				"Position" : 
 				{
-					"x" : 10.0,
-					"y" : 490.0
+					"X" : 10.0,
+					"Y" : 490.0
 				},
-				"size" : 
+				"Size" : 
 				{
-					"x" : 120.0,
-					"y" : 80.0
+					"X" : 120.0,
+					"Y" : 80.0
 				}
 			},
 		},
-		"renderOffset" : 
+		"RenderOffset" : 
 		{
-			"x" : 0.0,
-			"y" : 0.0
+			"X" : 0.0,
+			"Y" : 0.0
 		}
 	})";
 
@@ -546,109 +546,109 @@ TEST(NodeAreaLoadTest, LoadWhenRerouteconnectionsInfoIsNull)
 	NODE_SYSTEM.DeleteNodeArea(NodeArea);
 }
 
-TEST(NodeAreaLoadTest, LoadWhenRerouteconnectionsInfoIsDamaged)
+TEST(NodeAreaLoadTest, LoadWhenRerouteConnectionsInfoIsDamaged)
 {
 	std::string JsonString = R"({
-		"connections" : 
+		"Connections" : 
 		{
 			"0" : 
 			{
-				"in" : 
+				"In" : 
 				{
-					"node_ID" : "6451100C0778214351766B7E",
-					"socket_ID" : "1C191657360B7903691A5B66",
-					"socket_index" : 0
+					"NodeID" : "6451100C0778214351766B7E",
+					"SocketID" : "1C191657360B7903691A5B66",
+					"SocketIndex" : 0
 				},
-				"out" : 
+				"Out" : 
 				{
-					"node_ID" : "5C0E2E1D5D005C3E70421A67",
-					"socket_ID" : "5D7E2A574B7D3C3069521C3F",
-					"socket_index" : 0
+					"NodeID" : "5C0E2E1D5D005C3E70421A67",
+					"SocketID" : "5D7E2A574B7D3C3069521C3F",
+					"SocketIndex" : 0
 				},
-				"reroute_connections" : 
+				"RerouteConnections" : 
 				{
 					"0" : 
 					{
-						"begin_reroute_ID" : "",
-						"begin_socket_ID" : "NONE",
-						"end_reroute_ID" : "5E697F0B007F313E4F38577B",
-						"end_socket_ID" : "",
-						"position_x" : 190.0,
-						"position_y" : 470.0,
-						"reroute_ID" : "6E3F063E430C12373C68654C"
+						"BeginRerouteID" : "",
+						"BeginSocketID" : "NONE",
+						"EndRerouteID" : "5E697F0B007F313E4F38577B",
+						"EndSocketID" : "",
+						"PositionX" : 190.0,
+						"PositionY" : 470.0,
+						"RerouteID" : "6E3F063E430C12373C68654C"
 					},
 					"1" : 
 					{
-						"begin_reroute_ID" : "6E3F063E430C12373C68654C",
-						"begin_socket_ID" : "",
-						"end_reroute_ID" : "",
-						"end_socket_ID" : "1C191657360B7903691A5B66",
-						"position_x" : 312.0,
-						"position_y" : 470.0,
-						"reroute_ID" : "5E697F0B007F313E4F38577B"
+						"BeginRerouteID" : "6E3F063E430C12373C68654C",
+						"BeginSocketID" : "",
+						"EndRerouteID" : "",
+						"EndSocketID" : "1C191657360B7903691A5B66",
+						"PositionX" : 312.0,
+						"PositionY" : 470.0,
+						"RerouteID" : "5E697F0B007F313E4F38577B"
 					}
 				}
 			}
 		},
-		"nodes" : 
+		"Nodes" : 
 		{
 			"0" : 
 			{
 				"ID" : "6451100C0778214351766B7E",
-				"input" : 
+				"Input" : 
 				{
 					"0" : 
 					{
 						"ID" : "1C191657360B7903691A5B66",
-						"name" : "in",
-						"type" : "EXEC"
+						"Name" : "In",
+						"AllowedTypes":["EXEC"]
 					}
 				},
-				"name" : "Some node",
-				"nodeStyle" : 0,
-				"nodeType" : "VisualNode",
-				"position" : 
+				"Name" : "Some node",
+				"NodeStyle" : 0,
+				"NodeType" : "VisualNode",
+				"Position" : 
 				{
-					"x" : 350.0,
-					"y" : 490.0
+					"X" : 350.0,
+					"Y" : 490.0
 				},
-				"size" : 
+				"Size" : 
 				{
-					"x" : 120.0,
-					"y" : 80.0
+					"X" : 120.0,
+					"Y" : 80.0
 				}
 			},
 			"1" : 
 			{
 				"ID" : "5C0E2E1D5D005C3E70421A67",
-				"name" : "Some node",
-				"nodeStyle" : 0,
-				"nodeType" : "VisualNode",
-				"output" : 
+				"Name" : "Some node",
+				"NodeStyle" : 0,
+				"NodeType" : "VisualNode",
+				"Output" : 
 				{
 					"0" : 
 					{
 						"ID" : "5D7E2A574B7D3C3069521C3F",
-						"name" : "out",
-						"type" : "EXEC"
+						"Name" : "Out",
+						"AllowedTypes":["EXEC"]
 					}
 				},
-				"position" : 
+				"Position" : 
 				{
-					"x" : 10.0,
-					"y" : 490.0
+					"X" : 10.0,
+					"Y" : 490.0
 				},
-				"size" : 
+				"Size" : 
 				{
-					"x" : 120.0,
-					"y" : 80.0
+					"X" : 120.0,
+					"Y" : 80.0
 				}
 			},
 		},
-		"renderOffset" : 
+		"RenderOffset" : 
 		{
-			"x" : 0.0,
-			"y" : 0.0
+			"X" : 0.0,
+			"Y" : 0.0
 		}
 	})";
 
@@ -670,109 +670,109 @@ TEST(NodeAreaLoadTest, LoadWhenRerouteconnectionsInfoIsDamaged)
 	NODE_SYSTEM.DeleteNodeArea(NodeArea);
 }
 
-TEST(NodeAreaLoadTest, LoadWhenRerouteconnectionsInfoIsDamaged_2)
+TEST(NodeAreaLoadTest, LoadWhenRerouteConnectionsInfoIsDamaged_2)
 {
 	std::string JsonString = R"({
-		"connections" : 
+		"Connections" : 
 		{
 			"0" : 
 			{
-				"in" : 
+				"In" : 
 				{
-					"node_ID" : "6451100C0778214351766B7E",
-					"socket_ID" : "1C191657360B7903691A5B66",
-					"socket_index" : 0
+					"NodeID" : "6451100C0778214351766B7E",
+					"SocketID" : "1C191657360B7903691A5B66",
+					"SocketIndex" : 0
 				},
-				"out" : 
+				"Out" : 
 				{
-					"node_ID" : "5C0E2E1D5D005C3E70421A67",
-					"socket_ID" : "5D7E2A574B7D3C3069521C3F",
-					"socket_index" : 0
+					"NodeID" : "5C0E2E1D5D005C3E70421A67",
+					"SocketID" : "5D7E2A574B7D3C3069521C3F",
+					"SocketIndex" : 0
 				},
-				"reroute_connections" : 
+				"RerouteConnections" : 
 				{
 					"0" : 
 					{
-						"begin_reroute_ID" : "",
-						"begin_socket_ID" : "5D7E2A574B7D3C3069521C3F",
-						"end_reroute_ID" : "5E697F0B007F313E4F38577B",
-						"end_socket_ID" : "",
-						"position_x" : 190.0,
-						"position_y" : 470.0,
-						"reroute_ID" : "6E3F063E430C12373C68654C"
+						"BeginRerouteID" : "",
+						"BeginSocketID" : "5D7E2A574B7D3C3069521C3F",
+						"EndRerouteID" : "5E697F0B007F313E4F38577B",
+						"EndSocketID" : "",
+						"PositionX" : 190.0,
+						"PositionY" : 470.0,
+						"RerouteID" : "6E3F063E430C12373C68654C"
 					},
 					"1" : 
 					{
-						"begin_reroute_ID" : "6E3F063E430C12373C68654C",
-						"begin_socket_ID" : "",
-						"end_reroute_ID" : "",
-						"end_socket_ID" : 4587,
-						"position_x" : 312.0,
-						"position_y" : 470.0,
-						"reroute_ID" : "5E697F0B007F313E4F38577B"
+						"BeginRerouteID" : "6E3F063E430C12373C68654C",
+						"BeginSocketID" : "",
+						"EndRerouteID" : "",
+						"EndSocketID" : 4587,
+						"PositionX" : 312.0,
+						"PositionY" : 470.0,
+						"RerouteID" : "5E697F0B007F313E4F38577B"
 					}
 				}
 			}
 		},
-		"nodes" : 
+		"Nodes" : 
 		{
 			"0" : 
 			{
 				"ID" : "6451100C0778214351766B7E",
-				"input" : 
+				"Input" : 
 				{
 					"0" : 
 					{
 						"ID" : "1C191657360B7903691A5B66",
-						"name" : "in",
-						"type" : "EXEC"
+						"Name" : "In",
+						"AllowedTypes":["EXEC"]
 					}
 				},
-				"name" : "Some node",
-				"nodeStyle" : 0,
-				"nodeType" : "VisualNode",
-				"position" : 
+				"Name" : "Some node",
+				"NodeStyle" : 0,
+				"NodeType" : "VisualNode",
+				"Position" : 
 				{
-					"x" : 350.0,
-					"y" : 490.0
+					"X" : 350.0,
+					"Y" : 490.0
 				},
-				"size" : 
+				"Size" : 
 				{
-					"x" : 120.0,
-					"y" : 80.0
+					"X" : 120.0,
+					"Y" : 80.0
 				}
 			},
 			"1" : 
 			{
 				"ID" : "5C0E2E1D5D005C3E70421A67",
-				"name" : "Some node",
-				"nodeStyle" : 0,
-				"nodeType" : "VisualNode",
-				"output" : 
+				"Name" : "Some node",
+				"NodeStyle" : 0,
+				"NodeType" : "VisualNode",
+				"Output" : 
 				{
 					"0" : 
 					{
 						"ID" : "5D7E2A574B7D3C3069521C3F",
-						"name" : "out",
-						"type" : "EXEC"
+						"Name" : "Out",
+						"AllowedTypes":["EXEC"]
 					}
 				},
-				"position" : 
+				"Position" : 
 				{
-					"x" : 10.0,
-					"y" : 490.0
+					"X" : 10.0,
+					"Y" : 490.0
 				},
-				"size" : 
+				"Size" : 
 				{
-					"x" : 120.0,
-					"y" : 80.0
+					"X" : 120.0,
+					"Y" : 80.0
 				}
 			},
 		},
-		"renderOffset" : 
+		"RenderOffset" : 
 		{
-			"x" : 0.0,
-			"y" : 0.0
+			"X" : 0.0,
+			"Y" : 0.0
 		}
 	})";
 
@@ -794,109 +794,109 @@ TEST(NodeAreaLoadTest, LoadWhenRerouteconnectionsInfoIsDamaged_2)
 	NODE_SYSTEM.DeleteNodeArea(NodeArea);
 }
 
-TEST(NodeAreaLoadTest, LoadWhenRerouteconnectionsInfoIsDamaged_3)
+TEST(NodeAreaLoadTest, LoadWhenRerouteConnectionsInfoIsDamaged_3)
 {
 	std::string JsonString = R"({
-		"connections" : 
+		"Connections" : 
 		{
 			"0" : 
 			{
-				"in" : 
+				"In" : 
 				{
-					"node_ID" : "6451100C0778214351766B7E",
-					"socket_ID" : "1C191657360B7903691A5B66",
-					"socket_index" : 0
+					"NodeID" : "6451100C0778214351766B7E",
+					"SocketID" : "1C191657360B7903691A5B66",
+					"SocketIndex" : 0
 				},
-				"out" : 
+				"Out" : 
 				{
-					"node_ID" : "5C0E2E1D5D005C3E70421A67",
-					"socket_ID" : "5D7E2A574B7D3C3069521C3F",
-					"socket_index" : 0
+					"NodeID" : "5C0E2E1D5D005C3E70421A67",
+					"SocketID" : "5D7E2A574B7D3C3069521C3F",
+					"SocketIndex" : 0
 				},
-				"reroute_connections" : 
+				"RerouteConnections" : 
 				{
 					"0" : 
 					{
-						"begin_reroute_ID" : "",
-						"begin_socket_ID" : "5D7E2A574B7D3C3069521C3F",
-						"end_reroute_ID" : "5E697F0B007F313E4F38577B",
-						"end_socket_ID" : "",
-						"position_x" : 190.0,
-						"position_y" : 470.0,
-						"reroute_ID" : "6E3F063E430C12373C68654C"
+						"BeginRerouteID" : "",
+						"BeginSocketID" : "5D7E2A574B7D3C3069521C3F",
+						"EndRerouteID" : "5E697F0B007F313E4F38577B",
+						"EndSocketID" : "",
+						"PositionX" : 190.0,
+						"PositionY" : 470.0,
+						"RerouteID" : "6E3F063E430C12373C68654C"
 					},
 					"1" : 
 					{
-						"begin_reroute_ID" : "6E3F063E430C12373C68654C",
-						"begin_socket_ID" : "",
-						"end_reroute_ID" : "5E697F0B007F313E4F38577B",
-						"end_socket_ID" : "1C191657360B7903691A5B66",
-						"position_x" : 312.0,
-						"position_y" : 470.0,
-						"reroute_ID" : "5E697F0B007F313E4F38577B"
+						"BeginRerouteID" : "6E3F063E430C12373C68654C",
+						"BeginSocketID" : "",
+						"EndRerouteID" : "5E697F0B007F313E4F38577B",
+						"EndSocketID" : "1C191657360B7903691A5B66",
+						"PositionX" : 312.0,
+						"PositionY" : 470.0,
+						"RerouteID" : "5E697F0B007F313E4F38577B"
 					}
 				}
 			}
 		},
-		"nodes" : 
+		"Nodes" : 
 		{
 			"0" : 
 			{
 				"ID" : "6451100C0778214351766B7E",
-				"input" : 
+				"Input" : 
 				{
 					"0" : 
 					{
 						"ID" : "1C191657360B7903691A5B66",
-						"name" : "in",
-						"type" : "EXEC"
+						"Name" : "In",
+						"AllowedTypes":["EXEC"]
 					}
 				},
-				"name" : "Some node",
-				"nodeStyle" : 0,
-				"nodeType" : "VisualNode",
-				"position" : 
+				"Name" : "Some node",
+				"NodeStyle" : 0,
+				"NodeType" : "VisualNode",
+				"Position" : 
 				{
-					"x" : 350.0,
-					"y" : 490.0
+					"X" : 350.0,
+					"Y" : 490.0
 				},
-				"size" : 
+				"Size" : 
 				{
-					"x" : 120.0,
-					"y" : 80.0
+					"X" : 120.0,
+					"Y" : 80.0
 				}
 			},
 			"1" : 
 			{
 				"ID" : "5C0E2E1D5D005C3E70421A67",
-				"name" : "Some node",
-				"nodeStyle" : 0,
-				"nodeType" : "VisualNode",
-				"output" : 
+				"Name" : "Some node",
+				"NodeStyle" : 0,
+				"NodeType" : "VisualNode",
+				"Output" : 
 				{
 					"0" : 
 					{
 						"ID" : "5D7E2A574B7D3C3069521C3F",
-						"name" : "out",
-						"type" : "EXEC"
+						"Name" : "Out",
+						"AllowedTypes":["EXEC"]
 					}
 				},
-				"position" : 
+				"Position" : 
 				{
-					"x" : 10.0,
-					"y" : 490.0
+					"X" : 10.0,
+					"Y" : 490.0
 				},
-				"size" : 
+				"Size" : 
 				{
-					"x" : 120.0,
-					"y" : 80.0
+					"X" : 120.0,
+					"Y" : 80.0
 				}
 			},
 		},
-		"renderOffset" : 
+		"RenderOffset" : 
 		{
-			"x" : 0.0,
-			"y" : 0.0
+			"X" : 0.0,
+			"Y" : 0.0
 		}
 	})";
 
@@ -910,10 +910,83 @@ TEST(NodeAreaLoadTest, LoadWhenRerouteconnectionsInfoIsDamaged_3)
 	ASSERT_NE(NodeArea->GetNodeByID("5C0E2E1D5D005C3E70421A67"), nullptr);
 
 	ASSERT_EQ(NodeArea->GetConnectionCount(), 1);
-
 	ASSERT_EQ(NodeArea->GetGroupCommentCount(), 0);
 	ASSERT_EQ(NodeArea->GetSelected().size(), 0);
 	ASSERT_EQ(NodeArea->GetRerouteConnectionCount(), 0);
 
 	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+}
+
+TEST(NodeAreaLoadTest, LoadMediumNodeArea)
+{
+	NodeArea* NodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(NodeArea, nullptr);
+
+	ASSERT_EQ(NodeArea->LoadFromFile("Resources/MediumNodeArea.json"), true);
+
+	ASSERT_EQ(NodeArea->GetNodeCount(), 170);
+	ASSERT_EQ(NodeArea->GetConnectionCount(), 205);
+	ASSERT_EQ(NodeArea->GetRerouteConnectionCount(), 18);
+	ASSERT_EQ(NodeArea->GetGroupCommentCount(), 1);
+	ASSERT_EQ(NodeArea->GetSelected().size(), 0);
+
+	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+}
+
+TEST(NodeAreaLoadTest, ConnectionOrderingTest)
+{
+	std::ifstream NodesFile;
+	NodesFile.open("Resources/ConnectionOrderingTestData.json");
+
+	const std::string FileData((std::istreambuf_iterator<char>(NodesFile)), std::istreambuf_iterator<char>());
+	NodesFile.close();
+
+	Json::Value Root;
+	JSONCPP_STRING Error;
+	Json::CharReaderBuilder Builder;
+
+	const std::unique_ptr<Json::CharReader> Reader(Builder.newCharReader());
+	ASSERT_EQ(Reader->parse(FileData.c_str(), FileData.c_str() + FileData.size(), &Root, &Error), true);
+
+	std::vector<Json::String> ConnectionIDList = Root["Connections"].getMemberNames();
+	std::map<Json::String, Json::Value> OriginalConnectionMap;
+	const Json::Value& ConnectionsObject = Root["Connections"];
+	std::vector<Json::String> ConnectionKeys = Root["Connections"].getMemberNames();
+
+	for (const auto& ConnectionID : ConnectionKeys)
+	{
+		if (ConnectionsObject.isMember(ConnectionID))
+			OriginalConnectionMap[ConnectionID] = ConnectionsObject[ConnectionID];
+	}
+
+	auto GenerateShuffledConnections = [&](size_t CurrentIndex) {
+		std::mt19937 RandomEngine(static_cast<unsigned int>(CurrentIndex));
+		std::shuffle(ConnectionIDList.begin(), ConnectionIDList.end(), RandomEngine);
+
+		size_t Index = 0;
+		Root["Connections"].clear();
+		for (const auto& ShuffledID : ConnectionIDList)
+		{
+			auto ConnectionEntry = OriginalConnectionMap.find(ShuffledID);
+			Root["Connections"][std::to_string(Index++)] = ConnectionEntry->second;
+		}
+
+		Json::StreamWriterBuilder WriterBuilder;
+		return Json::writeString(WriterBuilder, Root);
+	};
+
+	const int TestIterationCount = 100;
+	for (size_t i = 0; i < TestIterationCount; i++)
+	{
+		std::string ShuffledJsonData = GenerateShuffledConnections(i);
+
+		NodeArea* TestNodeArea = NODE_SYSTEM.CreateNodeArea();
+		ASSERT_NE(TestNodeArea, nullptr);
+
+		ASSERT_EQ(TestNodeArea->LoadFromJson(ShuffledJsonData), true);
+
+		ASSERT_EQ(TestNodeArea->GetNodeCount(), 32);
+		ASSERT_EQ(TestNodeArea->GetConnectionCount(), 36);
+		NODE_SYSTEM.DeleteNodeArea(TestNodeArea);
+	}
 }
