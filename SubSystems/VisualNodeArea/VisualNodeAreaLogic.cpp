@@ -486,8 +486,10 @@ bool NodeArea::TriggerSocketEvent(NodeSocket* CallerNodeSocket, NodeSocket* Trig
 		return false;
 
 	TriggeredNodeSocket->GetParent()->SocketEvent(TriggeredNodeSocket, CallerNodeSocket, EventType);
+#ifdef VISUAL_NODE_SYSTEM_BUILD_STANDARD_NODES
 	if (EventType == EXECUTE && Settings.bSaveExecutedNodes)
 		LastExecutedNodes.push_back(TriggeredNodeSocket->GetParent());
+#endif
 	
 	return true;
 }
@@ -501,8 +503,10 @@ bool NodeArea::TriggerOrphanSocketEvent(Node* Node, NODE_SOCKET_EVENT EventType)
 		return false;
 
 	Node->SocketEvent(nullptr, nullptr, EventType);
+#ifdef VISUAL_NODE_SYSTEM_BUILD_STANDARD_NODES
 	if (EventType == EXECUTE && Settings.bSaveExecutedNodes)
 		LastExecutedNodes.push_back(Node);
+#endif
 
 	return true;
 }
