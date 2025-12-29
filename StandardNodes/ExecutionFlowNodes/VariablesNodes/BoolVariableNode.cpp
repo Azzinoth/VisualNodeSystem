@@ -17,7 +17,7 @@ BoolVariableNode::BoolVariableNode() : BaseExecutionFlowNode()
 	AddSocket(new NodeSocket(this, "EXECUTE", "", true));
 	AddSocket(new NodeSocket(this, "BOOL", "Get", true));
 
-	SetSize(ImVec2(180.0f, static_cast<float>(NODE_WITH_PER_SOCKET * std::max(Input.size(), Output.size()))));
+	SetSize(ImVec2(180.0f, static_cast<float>(NODE_HEIGHT_PER_SOCKET * std::max(Input.size(), Output.size()))));
 	Output[1]->SetFunctionToOutputData(BoolDataGetter);
 }
 

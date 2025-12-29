@@ -15,7 +15,7 @@ SequenceNode::SequenceNode() : BaseExecutionFlowNode()
 	AddSequenceOutput();
 	AddSequenceOutput();
 
-	SetSize(ImVec2(150.0f, static_cast<float>(NODE_WITH_PER_SOCKET * std::max(Input.size(), Output.size()))));
+	SetSize(ImVec2(150.0f, static_cast<float>(NODE_HEIGHT_PER_SOCKET * std::max(Input.size(), Output.size()))));
 }
 
 SequenceNode::SequenceNode(const SequenceNode& Other) : BaseExecutionFlowNode(Other)
@@ -67,7 +67,7 @@ void SequenceNode::Draw()
 	if (ImGui::Button("+", ButtonSize))
 		AddSequenceOutput();
 
-	SetSize(ImVec2(Size.x, static_cast<float>(NODE_WITH_PER_SOCKET * std::max(Input.size(), Output.size()))));
+	SetSize(ImVec2(Size.x, static_cast<float>(NODE_HEIGHT_PER_SOCKET * std::max(Input.size(), Output.size()))));
 }
 
 void SequenceNode::SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSocket, NODE_SOCKET_EVENT EventType)

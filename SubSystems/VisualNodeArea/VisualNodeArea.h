@@ -1,7 +1,8 @@
 #pragma once
 #include "../../GroupComment.h"
+#include "../../StandardNodes/SubAreaNodes/VisualSubAreaNode.h"
 
-#ifdef VISUAL_NODE_SYSTEM_BUILD_STANDARD_NODES
+#ifdef VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES
 #include "../StandardNodes/ExecutionFlowNodes/BaseExecutionFlowNode.h"
 // Literal Nodes.
 #include "../StandardNodes/ExecutionFlowNodes/LiteralsNodes/BoolLiteralNode.h"
@@ -118,7 +119,7 @@ namespace VisNodeSys
 		bool bRequireFullOverlapToSelect = false;
 		bool bShowDefaultMainContextMenu = true;
 		bool bReduceTransparencyForUnconnectableSockets = true;
-#ifdef VISUAL_NODE_SYSTEM_BUILD_STANDARD_NODES
+#ifdef VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES
 		bool bSaveExecutedNodes = false;
 #endif
 	};
@@ -128,8 +129,10 @@ namespace VisNodeSys
 		friend class GroupComment;
 		friend NodeSystem;
 	public:
-		NodeArea();
-		~NodeArea();
+		NodeArea(std::string ID = "");
+		NodeArea(const NodeArea& Other);
+
+		std::string GetID() const;
 
 		static NodeArea* CreateNodeArea(std::vector<Node*> Nodes, const std::vector<GroupComment*> GroupComments);
 		static void CopyNodesTo(NodeArea* SourceNodeArea, NodeArea* TargetNodeArea);
@@ -155,6 +158,9 @@ namespace VisNodeSys
 		Node* GetHovered() const;
 		std::vector<Node*> GetSelected();
 		void UnSelectAll();
+
+		bool IsFocused() const;
+		void SetFocused(bool NewValue);
 
 		bool AddSelected(Node* Node);
 		bool IsSelected(const Node* Node) const;
@@ -186,7 +192,7 @@ namespace VisNodeSys
 		std::vector<Node*> GetNodesByName(std::string NodeName) const;
 		std::vector<Node*> GetNodesByType(std::string NodeType) const;
 
-		void AddNode(Node* NewNode);
+		bool AddNode(Node* NewNode);
 		void DeleteNode(const Node* Node);
 		size_t GetNodeCount() const;
 		void AddNodeEventCallback(std::function<void(Node*, NODE_EVENT)> Func);
@@ -237,7 +243,7 @@ namespace VisNodeSys
 
 		size_t GetRerouteConnectionCount() const;
 
-#ifdef VISUAL_NODE_SYSTEM_BUILD_STANDARD_NODES
+#ifdef VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES
 		Node* GetExecutionEntryNode() const;
 		bool SetExecutionEntryNode(Node* NewEntryNode);
 		bool SetExecutionEntryNode(std::string NewEntryNode);
@@ -248,6 +254,9 @@ namespace VisNodeSys
 		void SetSaveExecutedNodes(bool NewValue);
 #endif
 	private:
+		std::string ID;
+		~NodeArea();
+
 		struct SocketEvent
 		{
 			NodeSocket* TriggeredNodeSocket;
@@ -272,12 +281,14 @@ namespace VisNodeSys
 
 		bool bClearing = false;
 		bool bFillWindow = false;
+		bool bFocused = false;
+		void SetFocusedInternal(bool NewValue);
 		bool bMouseHovered = false;
 		ImDrawList* CurrentDrawList = nullptr;
 		ImGuiWindow* NodeAreaWindow = nullptr;
 		std::vector<Node*> Nodes;
 
-#ifdef VISUAL_NODE_SYSTEM_BUILD_STANDARD_NODES
+#ifdef VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES
 		std::string ExecutionEntryNodeID;
 		std::vector<Node*> LastExecutedNodes;
 #endif

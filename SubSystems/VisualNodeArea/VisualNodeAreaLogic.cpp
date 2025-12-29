@@ -1,13 +1,32 @@
 #include "VisualNodeArea.h"
+#include "../VisualNodeSystem.h"
 using namespace VisNodeSys;
 
-void NodeArea::AddNode(Node* NewNode)
+bool NodeArea::AddNode(Node* NewNode)
 {
 	if (NewNode == nullptr)
-		return;
+		return false;
+
+	Node* FoundNode = GetNodeByID(NewNode->GetID());
+	if (FoundNode != nullptr)
+		return false;
+
+	if (NewNode->GetType() == "VisualSubAreaNode")
+	{
+		VisualSubAreaNode* SubAreaNode = static_cast<VisualSubAreaNode*>(NewNode);
+		if (SubAreaNode->GetSubArea() == this)
+			return false;
+	}
 
 	NewNode->ParentArea = this;
 	Nodes.push_back(NewNode);
+	if (NewNode->GetType() == "VisualSubAreaNode")
+	{
+		VisualSubAreaNode* SubAreaNode = static_cast<VisualSubAreaNode*>(NewNode);
+		NODE_SYSTEM.UpdateSubAreaNodeRecord(NewNode->GetID(), this->GetID(), SubAreaNode->SubAreaID);
+	}
+
+	return true;
 }
 
 std::vector<Connection*> NodeArea::GetAllConnections(const NodeSocket* Socket) const
@@ -486,7 +505,7 @@ bool NodeArea::TriggerSocketEvent(NodeSocket* CallerNodeSocket, NodeSocket* Trig
 		return false;
 
 	TriggeredNodeSocket->GetParent()->SocketEvent(TriggeredNodeSocket, CallerNodeSocket, EventType);
-#ifdef VISUAL_NODE_SYSTEM_BUILD_STANDARD_NODES
+#ifdef VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES
 	if (EventType == EXECUTE && Settings.bSaveExecutedNodes)
 		LastExecutedNodes.push_back(TriggeredNodeSocket->GetParent());
 #endif
@@ -503,7 +522,7 @@ bool NodeArea::TriggerOrphanSocketEvent(Node* Node, NODE_SOCKET_EVENT EventType)
 		return false;
 
 	Node->SocketEvent(nullptr, nullptr, EventType);
-#ifdef VISUAL_NODE_SYSTEM_BUILD_STANDARD_NODES
+#ifdef VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES
 	if (EventType == EXECUTE && Settings.bSaveExecutedNodes)
 		LastExecutedNodes.push_back(Node);
 #endif

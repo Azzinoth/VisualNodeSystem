@@ -1021,7 +1021,7 @@ void NodeArea::RenderDefaultMainContextMenu(ImVec2 LocalMousePosition)
 			GroupComments.push_back(NewGroupComment);
 		}
 
-#ifdef VISUAL_NODE_SYSTEM_BUILD_STANDARD_NODES
+#ifdef VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES
 		if (ImGui::BeginMenu("Add Standard Node"))
 		{
 			VisNodeSys::Node* NewNode = nullptr;

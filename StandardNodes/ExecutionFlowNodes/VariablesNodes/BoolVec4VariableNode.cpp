@@ -17,7 +17,7 @@ BoolVec4VariableNode::BoolVec4VariableNode() : BaseExecutionFlowNode()
 	AddSocket(new NodeSocket(this, "EXECUTE", "", true));
 	AddSocket(new NodeSocket(this, "BVEC4", "Get", true));
 
-	SetSize(ImVec2(220.0f, static_cast<float>(NODE_WITH_PER_SOCKET * std::max(Input.size(), Output.size()))));
+	SetSize(ImVec2(220.0f, static_cast<float>(NODE_HEIGHT_PER_SOCKET * std::max(Input.size(), Output.size()))));
 	Output[1]->SetFunctionToOutputData(DataGetter);
 }
 

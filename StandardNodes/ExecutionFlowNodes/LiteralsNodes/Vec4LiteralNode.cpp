@@ -13,7 +13,7 @@ Vec4LiteralNode::Vec4LiteralNode() : VisNodeSys::Node()
 
 	AddSocket(new NodeSocket(this, "VEC4", "Out", true));
 
-	SetSize(ImVec2(210, NODE_WITH_PER_SOCKET * 2));
+	SetSize(ImVec2(210, NODE_HEIGHT_PER_SOCKET * 2));
 	Output[0]->SetFunctionToOutputData(Vec4DataGetter);
 }
 

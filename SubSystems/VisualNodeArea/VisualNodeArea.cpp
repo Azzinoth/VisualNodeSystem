@@ -3,14 +3,29 @@ using namespace VisNodeSys;
 
 ImVec2 NodeArea::NeededShift = ImVec2();
 
-NodeArea::NodeArea()
+NodeArea::NodeArea(std::string ID)
 {
+	this->ID = ID;
+	if (ID.empty())
+		this->ID = NODE_CORE.GetUniqueHexID();
+
 	SetSize(ImVec2(256, 256));
-};
+}
+
+NodeArea::NodeArea(const NodeArea& Other)
+{
+	*this = Other;
+	ID = NODE_CORE.GetUniqueHexID();
+}
 
 NodeArea::~NodeArea() 
 {
 	Clear();
+}
+
+std::string NodeArea::GetID() const
+{
+	return ID;
 }
 
 ImVec2 NodeArea::GetSize() const
@@ -271,12 +286,14 @@ std::string NodeArea::ToJson() const
 	Json::Value Root;
 	std::ofstream SaveFile;
 
+	Root["ID"] = GetID();
+
 	Json::Value NodesData;
 	for (size_t i = 0; i < Nodes.size(); i++)
 	{
 		NodesData[std::to_string(i)] = Nodes[i]->ToJson();
 	}
-#ifdef VISUAL_NODE_SYSTEM_BUILD_STANDARD_NODES
+#ifdef VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES
 	NodesData["ExecutionEntryNodeID"] = ExecutionEntryNodeID;
 #endif
 
@@ -412,6 +429,10 @@ bool NodeArea::LoadFromJson(std::string JsonText)
 	if (!Root["Nodes"].isObject())
 		return false;
 
+	// Compatibility check, older versions did not have ID field.
+	if (Root.isMember("ID"))
+		ID = Root["ID"].asCString();
+	
 	std::unordered_map<std::string, Node*> LoadedNodes;
 	std::vector<Json::String> NodesList = Root["Nodes"].getMemberNames();
 	for (size_t i = 0; i < NodesList.size(); i++)
@@ -453,7 +474,7 @@ bool NodeArea::LoadFromJson(std::string JsonText)
 		}
 	}
 
-#ifdef VISUAL_NODE_SYSTEM_BUILD_STANDARD_NODES
+#ifdef VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES
 	if (Root["Nodes"].isMember("ExecutionEntryNodeID") && Root["Nodes"]["ExecutionEntryNodeID"].isString())
 		SetExecutionEntryNode(Root["Nodes"]["ExecutionEntryNodeID"].asString());
 #endif
@@ -888,7 +909,7 @@ ImGuiWindow* NodeArea::GetCurrentWindowImpl() const
 	return Context->CurrentWindow;
 }
 
-#ifdef VISUAL_NODE_SYSTEM_BUILD_STANDARD_NODES
+#ifdef VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES
 Node* NodeArea::GetExecutionEntryNode() const
 {
 	return GetNodeByID(ExecutionEntryNodeID);

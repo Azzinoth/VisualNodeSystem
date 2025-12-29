@@ -1,5 +1,24 @@
 #include "VisualNodeArea.h"
+#include "../VisualNodeSystem.h"
 using namespace VisNodeSys;
+
+bool NodeArea::IsFocused() const
+{
+	return bFocused;
+}
+
+void NodeArea::SetFocused(bool NewValue)
+{
+	NODE_SYSTEM.OnNodeAreaFocusChanging(this, NewValue);
+	SetFocusedInternal(NewValue);
+}
+
+void NodeArea::SetFocusedInternal(bool NewValue)
+{
+	bFocused = NewValue;
+	if (!bFocused)
+		SocketLookingForConnection = nullptr;
+}
 
 void NodeArea::InputUpdate()
 {
@@ -25,9 +44,22 @@ void NodeArea::MouseInputUpdate()
 
 	if (ImGui::GetIO().MouseClicked[0])
 		MouseDownIn = NodeAreaWindow;
-
+	
 	if (ImGui::GetIO().MouseReleased[0])
 		MouseDownIn = nullptr;
+
+	bool bLeftMouseClicked = ImGui::GetIO().MouseClicked[0];
+	bool bRightMouseClicked = ImGui::GetIO().MouseClicked[1];
+
+	if (bLeftMouseClicked || bRightMouseClicked ||
+		ImGui::GetIO().MouseClicked[2] || ImGui::GetIO().MouseClicked[3] || ImGui::GetIO().MouseClicked[4])
+	{
+		std::string DebugID = "NodeAreaInputUpdate_" + ID;
+		SetFocused(true);
+	}
+
+	if (!IsFocused())
+		return;
 
 	MouseInputUpdateNodes();
 	MouseInputUpdateGroupComments();
@@ -41,12 +73,12 @@ void NodeArea::MouseInputUpdate()
 	if (ImGui::IsMouseReleased(0))
 		LeftMouseReleased();
 
-	if (ImGui::IsMouseClicked(0))
+	if (bLeftMouseClicked)
 		LeftMouseClick();
 	
 	MouseInputUpdateConnections();
 
-	if (ImGui::IsMouseClicked(1))
+	if (bRightMouseClicked)
 		RightMouseClick();
 
 	// Should we connect two sockets ?
@@ -313,6 +345,7 @@ void NodeArea::RightMouseClick()
 	RightMouseClickConnectionsUpdate();
 	RightMouseClickRerouteUpdate();
 }
+
 void NodeArea::RightMouseClickNodesUpdate()
 {
 	if (HoveredNode != nullptr)
@@ -645,6 +678,9 @@ void NodeArea::MoveGroupComment(GroupComment* GroupComment, ImVec2 Delta)
 
 void NodeArea::KeyboardInputUpdate()
 {
+	if (!IsFocused())
+		return;
+
 	if (ImGui::IsKeyDown(ImGuiKey_Delete))
 	{
 		for (size_t i = 0; i < SelectedNodes.size(); i++)

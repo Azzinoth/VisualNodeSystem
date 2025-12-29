@@ -19,7 +19,7 @@ LoopNode::LoopNode() : BaseExecutionFlowNode()
 	AddSocket(new NodeSocket(this, "INT", "Index", true));
 	AddSocket(new NodeSocket(this, "EXECUTE", "Completed", true));
 
-	SetSize(ImVec2(270.0f, static_cast<float>(NODE_WITH_PER_SOCKET * std::max(Input.size(), Output.size()))));
+	SetSize(ImVec2(270.0f, static_cast<float>(NODE_HEIGHT_PER_SOCKET * std::max(Input.size(), Output.size()))));
 	Output[1]->SetFunctionToOutputData(CurrentIndexGetter);
 }
 

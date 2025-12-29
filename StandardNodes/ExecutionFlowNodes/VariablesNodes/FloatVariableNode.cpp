@@ -18,7 +18,7 @@ FloatVariableNode::FloatVariableNode() : BaseExecutionFlowNode()
 	AddSocket(new NodeSocket(this, "EXECUTE", "", true));
 	AddSocket(new NodeSocket(this, "FLOAT", "Get", true));
 
-	SetSize(ImVec2(220.0f, static_cast<float>(NODE_WITH_PER_SOCKET * std::max(Input.size(), Output.size()))));
+	SetSize(ImVec2(220.0f, static_cast<float>(NODE_HEIGHT_PER_SOCKET * std::max(Input.size(), Output.size()))));
 	Output[1]->SetFunctionToOutputData(FloatDataGetter);
 }
 

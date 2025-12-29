@@ -13,7 +13,7 @@ IntegerLiteralNode::IntegerLiteralNode() : VisNodeSys::Node()
 
 	AddSocket(new NodeSocket(this, "INT", "Out", true));
 
-	SetSize(ImVec2(170, NODE_WITH_PER_SOCKET * 2));
+	SetSize(ImVec2(170, NODE_HEIGHT_PER_SOCKET * 2));
 	Output[0]->SetFunctionToOutputData(IntDataGetter);
 }
 

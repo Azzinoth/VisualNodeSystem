@@ -8,7 +8,7 @@ extern "C" __declspec(dllexport) void* GetNodeSystem()
 }
 #endif
 
-#ifdef VISUAL_NODE_SYSTEM_BUILD_STANDARD_NODES
+#ifdef VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES
 	void NodeSystem::RegisterStandardNodes()
 	{
 		NODE_FACTORY.RegisterNodeType("BaseExecutionFlowNode",
@@ -453,10 +453,9 @@ extern "C" __declspec(dllexport) void* GetNodeSystem()
 	}
 #endif
 
-
 NodeSystem::NodeSystem()
 {
-#ifdef VISUAL_NODE_SYSTEM_BUILD_STANDARD_NODES
+#ifdef VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES
 	RegisterStandardNodes();
 #endif
 }
@@ -468,7 +467,7 @@ void NodeSystem::Initialize(bool bTestMode)
 	NODE_CORE.bIsInTestMode = bTestMode;
 	NODE_CORE.InitializeFonts();
 
-#ifdef VISUAL_NODE_SYSTEM_BUILD_STANDARD_NODES
+#ifdef VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES
 	AssociateSocketTypeToColor("EXECUTE", ImColor(255, 255, 255));
 	AssociateSocketTypeToColor("BOOL", ImColor(148, 0, 0));
 	AssociateSocketTypeToColor("INT", ImColor(30, 221, 170));
@@ -488,12 +487,27 @@ NodeArea* NodeSystem::CreateNodeArea()
 	return CreatedAreas.back();
 }
 
+NodeArea* NodeSystem::GetNodeAreaByID(const std::string& NodeAreaID) const
+{
+	for (size_t i = 0; i < CreatedAreas.size(); i++)
+	{
+		if (CreatedAreas[i]->GetID() == NodeAreaID)
+			return CreatedAreas[i];
+	}
+
+	return nullptr;
+}
+
 void NodeSystem::DeleteNodeArea(const NodeArea* NodeArea)
 {
 	for (size_t i = 0; i < CreatedAreas.size(); i++)
 	{
 		if (CreatedAreas[i] == NodeArea)
 		{
+			std::vector<SubAreaNodeData> RelatedSubAreaNodes = GetSubAreaNodeDataBySubAreaID(NodeArea->GetID());
+			for (size_t j = 0; j < RelatedSubAreaNodes.size(); j++)
+				DeleteSubAreaNodeRecord(RelatedSubAreaNodes[j].NodeID);
+			
 			delete CreatedAreas[i];
 			CreatedAreas.erase(CreatedAreas.begin() + i, CreatedAreas.begin() + i + 1);
 			return;
@@ -531,6 +545,83 @@ void NodeSystem::MoveNodesTo(NodeArea* SourceNodeArea, NodeArea* TargetNodeArea,
 	}
 }
 
+NodeSystem::SubAreaNodeData NodeSystem::GetSubAreaNodeDataByNodeID(const std::string& NodeID) const
+{
+	auto RecordIterator = SubAreaNodeRecords.find(NodeID);
+	if (RecordIterator != SubAreaNodeRecords.end())
+		return RecordIterator->second;
+	
+	return SubAreaNodeData();
+}
+
+std::vector<NodeSystem::SubAreaNodeData> NodeSystem::GetSubAreaNodeDataBySubAreaID(const std::string& SubAreaID) const
+{
+	auto RecordIterator = SubAreaNodeRecords.begin();
+	std::vector<SubAreaNodeData> Result;
+	while (RecordIterator != SubAreaNodeRecords.end())
+	{
+		if (RecordIterator->second.SubAreaID == SubAreaID)
+			Result.push_back(RecordIterator->second);
+		
+		RecordIterator++;
+	}
+	
+	return Result;
+}
+
+std::vector<NodeSystem::SubAreaNodeData> NodeSystem::GetSubAreaNodeDataByParentAreaID(const std::string& ParentAreaID) const
+{
+	auto RecordIterator = SubAreaNodeRecords.begin();
+	std::vector<SubAreaNodeData> Result;
+	while (RecordIterator != SubAreaNodeRecords.end())
+	{
+		if (RecordIterator->second.ParentNodeAreaID == ParentAreaID)
+			Result.push_back(RecordIterator->second);
+		
+		RecordIterator++;
+	}
+	
+	return Result;
+}
+
+bool NodeSystem::CreateSubAreaNodeRecord(const std::string& NodeID, const std::string& ParentNodeAreaID, const std::string& SubAreaID)
+{
+	if (NodeID.empty() || SubAreaID.empty())
+		return false;
+
+	SubAreaNodeData NewRecord;
+	NewRecord.NodeID = NodeID;
+	NewRecord.ParentNodeAreaID = ParentNodeAreaID;
+	NewRecord.SubAreaID = SubAreaID;
+
+	SubAreaNodeRecords[NodeID] = NewRecord;
+	return true;
+}
+
+bool NodeSystem::UpdateSubAreaNodeRecord(const std::string& NodeID, const std::string& ParentNodeAreaID, const std::string& SubAreaID)
+{
+	if (NodeID.empty())
+		return false;
+
+	auto RecordIterator = SubAreaNodeRecords.find(NodeID);
+	if (RecordIterator == SubAreaNodeRecords.end())
+		return false;
+		
+	RecordIterator->second.ParentNodeAreaID = ParentNodeAreaID;
+	RecordIterator->second.SubAreaID = SubAreaID;
+	return true;
+}
+
+bool NodeSystem::DeleteSubAreaNodeRecord(const std::string& NodeID)
+{
+	auto RecordIterator = SubAreaNodeRecords.find(NodeID);
+	if (RecordIterator == SubAreaNodeRecords.end())
+		return false;
+
+	SubAreaNodeRecords.erase(RecordIterator);
+	return true;
+}
+
 std::vector<std::pair<std::string, ImColor>> NodeSystem::GetAssociationsOfSocketTypeToColor(std::string SocketType, ImColor Color)
 {
 	std::vector<std::pair<std::string, ImColor>> Result;
@@ -547,4 +638,23 @@ std::vector<std::pair<std::string, ImColor>> NodeSystem::GetAssociationsOfSocket
 void NodeSystem::AssociateSocketTypeToColor(std::string SocketType, ImColor Color)
 {
 	NodeSocket::SocketTypeToColorAssociations[SocketType] = Color;
+}
+
+void NodeSystem::OnNodeAreaFocusChanging(NodeArea* CurrentNodeArea, bool NewFocusValue)
+{
+	if (CurrentNodeArea == nullptr)
+		return;
+
+	if (NewFocusValue)
+	{
+		for (size_t i = 0; i < CreatedAreas.size(); i++)
+		{
+			if (CreatedAreas[i] != CurrentNodeArea)
+				CreatedAreas[i]->SetFocusedInternal(false);
+		}
+	}
+	else
+	{
+		// Focus lost.
+	}
 }

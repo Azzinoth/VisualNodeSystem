@@ -13,7 +13,7 @@ BoolLiteralNode::BoolLiteralNode() : VisNodeSys::Node()
 
 	AddSocket(new NodeSocket(this, "BOOL", "Out", true));
 
-	SetSize(ImVec2(150, NODE_WITH_PER_SOCKET * 2));
+	SetSize(ImVec2(150, NODE_HEIGHT_PER_SOCKET * 2));
 	Output[0]->SetFunctionToOutputData(BoolDataGetter);
 }
 

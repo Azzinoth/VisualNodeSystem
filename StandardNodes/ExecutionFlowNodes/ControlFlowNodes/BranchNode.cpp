@@ -17,7 +17,7 @@ BranchNode::BranchNode() : BaseExecutionFlowNode()
 	AddSocket(new NodeSocket(this, "EXECUTE", "True", true));
 	AddSocket(new NodeSocket(this, "EXECUTE", "False", true));
 
-	SetSize(ImVec2(190.0f, static_cast<float>(NODE_WITH_PER_SOCKET * std::max(Input.size(), Output.size()))));
+	SetSize(ImVec2(190.0f, static_cast<float>(NODE_HEIGHT_PER_SOCKET * std::max(Input.size(), Output.size()))));
 }
 
 BranchNode::BranchNode(const BranchNode& Other) : BaseExecutionFlowNode(Other)

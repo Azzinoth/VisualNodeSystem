@@ -13,7 +13,7 @@ BoolVec3LiteralNode::BoolVec3LiteralNode() : VisNodeSys::Node()
 
 	AddSocket(new NodeSocket(this, "BVEC3", "Out", true));
 
-	SetSize(ImVec2(210, NODE_WITH_PER_SOCKET * 2));
+	SetSize(ImVec2(210, NODE_HEIGHT_PER_SOCKET * 2));
 	Output[0]->SetFunctionToOutputData(DataGetter);
 }
 

@@ -10,7 +10,7 @@ project(VisualNodeSystem LANGUAGES CXX)
 option(VISUAL_NODE_SYSTEM_USE_EXTERNAL_IMGUI "Use an external ImGui library instead of compiling our own" OFF)
 option(VISUAL_NODE_SYSTEM_BUILD_SHARED_LIBS "Build VisualNodeSystem as a shared library" OFF)
 option(VISUAL_NODE_SYSTEM_USE_STATIC_RUNTIME "Use static runtime (/MT) instead of dynamic (/MD) for VisualNodeSystem" ON)
-option(VISUAL_NODE_SYSTEM_BUILD_STANDARD_NODES "Build the Visual Node System with standard nodes module" OFF)
+option(VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES "Build the Visual Node System with execution flow nodes module" OFF)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 if(MSVC)
@@ -30,6 +30,11 @@ endif()
 # It creates "CMakePredefinedTargets" folder by default and adds CMake
 # defined projects like INSTALL.vcproj and ZERO_CHECK.vcproj
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+
+file(GLOB VisualSubAreaNodes_SRC
+	"StandardNodes/SubAreaNodes/VisualSubAreaNode.cpp"
+	"StandardNodes/SubAreaNodes/VisualSubAreaNode.h"
+)
 
 file(GLOB VisualNodeArea_SRC
 	"SubSystems/VisualNodeArea/VisualNodeArea.cpp"
@@ -67,7 +72,6 @@ file(GLOB jsoncpp_SRC
 
 # *************** THIRD_PARTY END ***************
 
-
 set(BaseExecutionFlowNodes_SOURCE_FILES)
 set(LogicalOperatorNodes_SOURCE_FILES)
 set(ComparisonOperatorNodes_SOURCE_FILES)
@@ -76,10 +80,10 @@ set(LiteralsNodes_SOURCE_FILES)
 set(VariablesNodes_SOURCE_FILES)
 set(ControlFlowNodes_SOURCE_FILES)
 
-if(VISUAL_NODE_SYSTEM_BUILD_STANDARD_NODES)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /DVISUAL_NODE_SYSTEM_BUILD_STANDARD_NODES")
+if(VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /DVISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES")
 
-	# *************** STANDARD_NODES ***************
+	# *************** EXECUTION_FLOW_NODES ***************
 	list(APPEND BaseExecutionFlowNodes_SOURCE_FILES
 		"StandardNodes/ExecutionFlowNodes/BaseExecutionFlowNode.h"
 		"StandardNodes/ExecutionFlowNodes/BaseExecutionFlowNode.cpp"
@@ -226,6 +230,7 @@ set(ALL_SOURCE_FILES "")
 list(APPEND ALL_SOURCE_FILES
             ${VisualNodeSystem_SRC}
 			${VisualNodeArea_SRC}
+			${VisualSubAreaNodes_SRC}
 			${BaseExecutionFlowNodes_SOURCE_FILES}
 			${LiteralsNodes_SOURCE_FILES}
 			${VariablesNodes_SOURCE_FILES}
@@ -254,7 +259,8 @@ endif()
 
 source_group("Source Files" FILES ${VisualNodeSystem_SRC})
 source_group("Source Files/SubSystems/VisualNodeArea/" FILES ${VisualNodeArea_SRC})
-if(VISUAL_NODE_SYSTEM_BUILD_STANDARD_NODES)
+source_group("Source Files/StandardNodes/SubAreaNodes" FILES ${VisualSubAreaNodes_SRC})
+if(VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES)
 	source_group("Source Files/StandardNodes/ExecutionFlowNodes" FILES ${BaseExecutionFlowNodes_SOURCE_FILES})
 	source_group("Source Files/StandardNodes/ExecutionFlowNodes/LiteralsNodes" FILES ${LiteralsNodes_SOURCE_FILES})
 	source_group("Source Files/StandardNodes/ExecutionFlowNodes/VariablesNodes" FILES ${VariablesNodes_SOURCE_FILES})

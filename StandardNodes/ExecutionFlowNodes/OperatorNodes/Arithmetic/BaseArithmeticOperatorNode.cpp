@@ -20,7 +20,7 @@ BaseArithmeticOperatorNode::BaseArithmeticOperatorNode(std::vector<std::string> 
 
 	Output[1]->SetFunctionToOutputData(ResultDataGetter);
 	
-	SetSize(ImVec2(130.0f, static_cast<float>(NODE_WITH_PER_SOCKET * std::max(Input.size(), Output.size()))));
+	SetSize(ImVec2(130.0f, static_cast<float>(NODE_HEIGHT_PER_SOCKET * std::max(Input.size(), Output.size()))));
 }
 
 BaseArithmeticOperatorNode::BaseArithmeticOperatorNode(const BaseArithmeticOperatorNode& Other) : BaseExecutionFlowNode(Other)

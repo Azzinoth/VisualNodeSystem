@@ -2,7 +2,7 @@
 
 #include "../../VisualNode.h"
 
-#define NODE_WITH_PER_SOCKET 40
+#define NODE_HEIGHT_PER_SOCKET 40
 
 class BaseExecutionFlowNode : public VisNodeSys::Node
 {
