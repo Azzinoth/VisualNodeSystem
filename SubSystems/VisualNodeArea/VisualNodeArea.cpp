@@ -28,6 +28,16 @@ std::string NodeArea::GetID() const
 	return ID;
 }
 
+std::string NodeArea::GetName() const
+{
+	return Name;
+}
+
+void NodeArea::SetName(std::string NewValue)
+{
+	Name = NewValue;
+}
+
 ImVec2 NodeArea::GetSize() const
 {
 	return Size;

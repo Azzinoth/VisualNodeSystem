@@ -6,7 +6,7 @@
 
 namespace VisNodeSys
 {
-	class VISUAL_NODE_SYSTEM_API VisualSubAreaNode : public VisNodeSys::Node
+	class VISUAL_NODE_SYSTEM_API VisualReferenceNode : public VisNodeSys::Node
 	{
 		friend class NodeArea;
 		static bool bIsRegistered;
@@ -14,16 +14,16 @@ namespace VisNodeSys
 		//bool CanConnect(VisNodeSys::NodeSocket* OwnSocket, VisNodeSys::NodeSocket* CandidateSocket, char** MsgToUser);
 		//void SocketEvent(VisNodeSys::NodeSocket* OwnSocket, VisNodeSys::NodeSocket* ConnectedSocket, VisNodeSys::NODE_SOCKET_EVENT EventType);
 
-		std::string SubAreaID;
+		std::string ReferencedAreaID;
 	public:
-		VisualSubAreaNode(bool bCreateEmptyNodeArea = false);
-		VisualSubAreaNode(NodeArea* SubArea);
-		VisualSubAreaNode(const VisualSubAreaNode& Other);
-		~VisualSubAreaNode();
+		VisualReferenceNode(bool bCreateEmptyNodeArea = false);
+		VisualReferenceNode(NodeArea* ReferencedArea);
+		VisualReferenceNode(const VisualReferenceNode& Other);
+		~VisualReferenceNode();
 
-		NodeArea* GetSubArea() const;
-		bool SetSubArea(NodeArea* NewSubArea);
-		bool SetSubArea(std::string NewSubAreaID);
+		NodeArea* GetReferencedArea() const;
+		bool SetReferencedArea(NodeArea* NewReferencedArea);
+		bool SetReferencedArea(std::string NewReferencedAreaID);
 
 		Json::Value ToJson();
 		bool FromJson(Json::Value Json);

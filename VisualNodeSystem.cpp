@@ -504,9 +504,9 @@ void NodeSystem::DeleteNodeArea(const NodeArea* NodeArea)
 	{
 		if (CreatedAreas[i] == NodeArea)
 		{
-			std::vector<SubAreaNodeData> RelatedSubAreaNodes = GetSubAreaNodeDataBySubAreaID(NodeArea->GetID());
-			for (size_t j = 0; j < RelatedSubAreaNodes.size(); j++)
-				DeleteSubAreaNodeRecord(RelatedSubAreaNodes[j].NodeID);
+			std::vector<ReferenceNodeData> RelatedReferenceNodes = GetReferenceNodeDataByReferencedAreaID(NodeArea->GetID());
+			for (size_t j = 0; j < RelatedReferenceNodes.size(); j++)
+				DeleteReferenceNodeRecord(RelatedReferenceNodes[j].NodeID);
 			
 			delete CreatedAreas[i];
 			CreatedAreas.erase(CreatedAreas.begin() + i, CreatedAreas.begin() + i + 1);
@@ -545,22 +545,22 @@ void NodeSystem::MoveNodesTo(NodeArea* SourceNodeArea, NodeArea* TargetNodeArea,
 	}
 }
 
-NodeSystem::SubAreaNodeData NodeSystem::GetSubAreaNodeDataByNodeID(const std::string& NodeID) const
+NodeSystem::ReferenceNodeData NodeSystem::GetReferenceNodeDataByNodeID(const std::string& NodeID) const
 {
-	auto RecordIterator = SubAreaNodeRecords.find(NodeID);
-	if (RecordIterator != SubAreaNodeRecords.end())
+	auto RecordIterator = ReferenceNodeRecords.find(NodeID);
+	if (RecordIterator != ReferenceNodeRecords.end())
 		return RecordIterator->second;
 	
-	return SubAreaNodeData();
+	return ReferenceNodeData();
 }
 
-std::vector<NodeSystem::SubAreaNodeData> NodeSystem::GetSubAreaNodeDataBySubAreaID(const std::string& SubAreaID) const
+std::vector<NodeSystem::ReferenceNodeData> NodeSystem::GetReferenceNodeDataByReferencedAreaID(const std::string& ReferencedAreaID) const
 {
-	auto RecordIterator = SubAreaNodeRecords.begin();
-	std::vector<SubAreaNodeData> Result;
-	while (RecordIterator != SubAreaNodeRecords.end())
+	auto RecordIterator = ReferenceNodeRecords.begin();
+	std::vector<ReferenceNodeData> Result;
+	while (RecordIterator != ReferenceNodeRecords.end())
 	{
-		if (RecordIterator->second.SubAreaID == SubAreaID)
+		if (RecordIterator->second.ReferencedAreaID == ReferencedAreaID)
 			Result.push_back(RecordIterator->second);
 		
 		RecordIterator++;
@@ -569,11 +569,11 @@ std::vector<NodeSystem::SubAreaNodeData> NodeSystem::GetSubAreaNodeDataBySubArea
 	return Result;
 }
 
-std::vector<NodeSystem::SubAreaNodeData> NodeSystem::GetSubAreaNodeDataByParentAreaID(const std::string& ParentAreaID) const
+std::vector<NodeSystem::ReferenceNodeData> NodeSystem::GetReferenceNodeDataByParentAreaID(const std::string& ParentAreaID) const
 {
-	auto RecordIterator = SubAreaNodeRecords.begin();
-	std::vector<SubAreaNodeData> Result;
-	while (RecordIterator != SubAreaNodeRecords.end())
+	auto RecordIterator = ReferenceNodeRecords.begin();
+	std::vector<ReferenceNodeData> Result;
+	while (RecordIterator != ReferenceNodeRecords.end())
 	{
 		if (RecordIterator->second.ParentNodeAreaID == ParentAreaID)
 			Result.push_back(RecordIterator->second);
@@ -584,41 +584,41 @@ std::vector<NodeSystem::SubAreaNodeData> NodeSystem::GetSubAreaNodeDataByParentA
 	return Result;
 }
 
-bool NodeSystem::CreateSubAreaNodeRecord(const std::string& NodeID, const std::string& ParentNodeAreaID, const std::string& SubAreaID)
+bool NodeSystem::CreateReferenceNodeRecord(const std::string& NodeID, const std::string& ParentNodeAreaID, const std::string& ReferencedAreaID)
 {
-	if (NodeID.empty() || SubAreaID.empty())
+	if (NodeID.empty() || ReferencedAreaID.empty())
 		return false;
 
-	SubAreaNodeData NewRecord;
+	ReferenceNodeData NewRecord;
 	NewRecord.NodeID = NodeID;
 	NewRecord.ParentNodeAreaID = ParentNodeAreaID;
-	NewRecord.SubAreaID = SubAreaID;
+	NewRecord.ReferencedAreaID = ReferencedAreaID;
 
-	SubAreaNodeRecords[NodeID] = NewRecord;
+	ReferenceNodeRecords[NodeID] = NewRecord;
 	return true;
 }
 
-bool NodeSystem::UpdateSubAreaNodeRecord(const std::string& NodeID, const std::string& ParentNodeAreaID, const std::string& SubAreaID)
+bool NodeSystem::UpdateReferenceNodeRecord(const std::string& NodeID, const std::string& ParentNodeAreaID, const std::string& ReferencedAreaID)
 {
 	if (NodeID.empty())
 		return false;
 
-	auto RecordIterator = SubAreaNodeRecords.find(NodeID);
-	if (RecordIterator == SubAreaNodeRecords.end())
+	auto RecordIterator = ReferenceNodeRecords.find(NodeID);
+	if (RecordIterator == ReferenceNodeRecords.end())
 		return false;
 		
 	RecordIterator->second.ParentNodeAreaID = ParentNodeAreaID;
-	RecordIterator->second.SubAreaID = SubAreaID;
+	RecordIterator->second.ReferencedAreaID = ReferencedAreaID;
 	return true;
 }
 
-bool NodeSystem::DeleteSubAreaNodeRecord(const std::string& NodeID)
+bool NodeSystem::DeleteReferenceNodeRecord(const std::string& NodeID)
 {
-	auto RecordIterator = SubAreaNodeRecords.find(NodeID);
-	if (RecordIterator == SubAreaNodeRecords.end())
+	auto RecordIterator = ReferenceNodeRecords.find(NodeID);
+	if (RecordIterator == ReferenceNodeRecords.end())
 		return false;
 
-	SubAreaNodeRecords.erase(RecordIterator);
+	ReferenceNodeRecords.erase(RecordIterator);
 	return true;
 }
 

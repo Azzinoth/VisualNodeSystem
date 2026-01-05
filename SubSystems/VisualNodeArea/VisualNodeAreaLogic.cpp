@@ -11,19 +11,19 @@ bool NodeArea::AddNode(Node* NewNode)
 	if (FoundNode != nullptr)
 		return false;
 
-	if (NewNode->GetType() == "VisualSubAreaNode")
+	if (NewNode->GetType() == "VisualReferenceNode")
 	{
-		VisualSubAreaNode* SubAreaNode = static_cast<VisualSubAreaNode*>(NewNode);
-		if (SubAreaNode->GetSubArea() == this)
+		VisualReferenceNode* ReferenceNode = static_cast<VisualReferenceNode*>(NewNode);
+		if (ReferenceNode->GetReferencedArea() == this)
 			return false;
 	}
 
 	NewNode->ParentArea = this;
 	Nodes.push_back(NewNode);
-	if (NewNode->GetType() == "VisualSubAreaNode")
+	if (NewNode->GetType() == "VisualReferenceNode")
 	{
-		VisualSubAreaNode* SubAreaNode = static_cast<VisualSubAreaNode*>(NewNode);
-		NODE_SYSTEM.UpdateSubAreaNodeRecord(NewNode->GetID(), this->GetID(), SubAreaNode->SubAreaID);
+		VisualReferenceNode* ReferenceNode = static_cast<VisualReferenceNode*>(NewNode);
+		NODE_SYSTEM.UpdateReferenceNodeRecord(NewNode->GetID(), this->GetID(), ReferenceNode->ReferencedAreaID);
 	}
 
 	return true;

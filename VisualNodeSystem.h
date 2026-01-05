@@ -6,28 +6,28 @@ namespace VisNodeSys
 {
 	class VISUAL_NODE_SYSTEM_API NodeSystem
 	{
-		friend class VisualSubAreaNode;
+		friend class VisualReferenceNode;
 		friend class NodeArea;
 
-		struct SubAreaNodeData
+		struct ReferenceNodeData
 		{
 			std::string NodeID;
 			std::string ParentNodeAreaID;
-			std::string SubAreaID;
+			std::string ReferencedAreaID;
 		};
 
 		SINGLETON_PRIVATE_PART(NodeSystem)
 
 		std::vector<NodeArea*> CreatedAreas;
-		std::unordered_map<std::string, SubAreaNodeData> SubAreaNodeRecords;
+		std::unordered_map<std::string, ReferenceNodeData> ReferenceNodeRecords;
 
-		SubAreaNodeData GetSubAreaNodeDataByNodeID(const std::string& NodeID) const;
-		std::vector<SubAreaNodeData> GetSubAreaNodeDataBySubAreaID(const std::string& SubAreaID) const;
-		std::vector<SubAreaNodeData> GetSubAreaNodeDataByParentAreaID(const std::string& ParentAreaID) const;
+		ReferenceNodeData GetReferenceNodeDataByNodeID(const std::string& NodeID) const;
+		std::vector<ReferenceNodeData> GetReferenceNodeDataByReferencedAreaID(const std::string& ReferencedAreaID) const;
+		std::vector<ReferenceNodeData> GetReferenceNodeDataByParentAreaID(const std::string& ParentAreaID) const;
 
-		bool CreateSubAreaNodeRecord(const std::string& NodeID, const std::string& ParentNodeAreaID, const std::string& SubAreaID);
-		bool UpdateSubAreaNodeRecord(const std::string& NodeID, const std::string& ParentNodeAreaID, const std::string& SubAreaID);
-		bool DeleteSubAreaNodeRecord(const std::string& NodeID);
+		bool CreateReferenceNodeRecord(const std::string& NodeID, const std::string& ParentNodeAreaID, const std::string& ReferencedAreaID);
+		bool UpdateReferenceNodeRecord(const std::string& NodeID, const std::string& ParentNodeAreaID, const std::string& ReferencedAreaID);
+		bool DeleteReferenceNodeRecord(const std::string& NodeID);
 
 #ifdef VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES
 		void RegisterStandardNodes();

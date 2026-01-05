@@ -711,10 +711,10 @@ void NodeArea::GetAllElementsAABB(ImVec2& Min, ImVec2& Max) const
 
 ImVec2 NodeArea::GetAllElementsAABBCenter() const
 {
-	ImVec2 min, max;
-	GetAllElementsAABB(min, max);
+	ImVec2 Min, Max;
+	GetAllElementsAABB(Min, Max);
 
-	return {min.x + (max.x - min.x) / 2.0f, min.y + (max.y - min.y) / 2.0f};
+	return {Min.x + (Max.x - Min.x) / 2.0f, Min.y + (Max.y - Min.y) / 2.0f};
 }
 
 ImVec2 NodeArea::GetRenderedViewCenter() const

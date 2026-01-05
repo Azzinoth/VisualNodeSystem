@@ -53,10 +53,7 @@ void NodeArea::MouseInputUpdate()
 
 	if (bLeftMouseClicked || bRightMouseClicked ||
 		ImGui::GetIO().MouseClicked[2] || ImGui::GetIO().MouseClicked[3] || ImGui::GetIO().MouseClicked[4])
-	{
-		std::string DebugID = "NodeAreaInputUpdate_" + ID;
 		SetFocused(true);
-	}
 
 	if (!IsFocused())
 		return;

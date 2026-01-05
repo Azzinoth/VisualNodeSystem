@@ -1,6 +1,6 @@
 #pragma once
 #include "../../GroupComment.h"
-#include "../../StandardNodes/SubAreaNodes/VisualSubAreaNode.h"
+#include "../../StandardNodes/ReferenceNodes/VisualReferenceNode.h"
 
 #ifdef VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES
 #include "../StandardNodes/ExecutionFlowNodes/BaseExecutionFlowNode.h"
@@ -134,6 +134,9 @@ namespace VisNodeSys
 
 		std::string GetID() const;
 
+		std::string GetName() const;
+		void SetName(std::string NewValue);
+
 		static NodeArea* CreateNodeArea(std::vector<Node*> Nodes, const std::vector<GroupComment*> GroupComments);
 		static void CopyNodesTo(NodeArea* SourceNodeArea, NodeArea* TargetNodeArea);
 
@@ -255,6 +258,8 @@ namespace VisNodeSys
 #endif
 	private:
 		std::string ID;
+		std::string Name;
+
 		~NodeArea();
 
 		struct SocketEvent
