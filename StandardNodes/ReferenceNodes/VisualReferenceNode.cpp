@@ -24,6 +24,12 @@ VisualReferenceNode::VisualReferenceNode(bool bCreateEmptyNodeArea) : Node()
 	SetStyle(DEFAULT);
 	SetName("Reference");
 
+	int R = 44 * 1.2f;
+	int G = 46 * 1.2f;
+	int B = 44 * 1.2f;
+	TitleBackgroundColor = ImColor(R, G, B);
+	TitleBackgroundColorHovered = ImColor(int(R * 1.1f), int(G * 1.1f), int(B * 1.1f));
+
 	if (bCreateEmptyNodeArea)
 		SetReferencedArea(NODE_SYSTEM.CreateNodeArea());
 }
@@ -119,7 +125,10 @@ void VisualReferenceNode::Draw()
 	std::string ReferencedAreaIDText = "NULL";
 	NodeArea* ReferencedArea = NODE_SYSTEM.GetNodeAreaByID(ReferencedAreaID);
 	ReferencedAreaIDText = ReferencedArea != nullptr ? ReferencedAreaID : "Invalid ID";
-	ImGui::Text(("Referenced Area ID:" + ReferencedAreaIDText).c_str());
+	std::string TextToDisplay = "Area ID: " + ReferencedAreaIDText;
+	int NodeWidth = GetSize().x * 0.9f;
+	TextToDisplay = NODE_CORE.TruncateText(TextToDisplay, NodeWidth);
+	ImGui::Text(TextToDisplay.c_str());
 }
 
 //void BoolLiteralNode::SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSocket, NODE_SOCKET_EVENT EventType)

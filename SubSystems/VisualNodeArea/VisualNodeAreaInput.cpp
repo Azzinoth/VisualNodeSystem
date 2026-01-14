@@ -2,6 +2,75 @@
 #include "../VisualNodeSystem.h"
 using namespace VisNodeSys;
 
+void NodeAreaContextMenuOpenState::Reset()
+{
+	MousePositionRecorded = ImVec2(0, 0);
+	NodeID = "";
+	GroupCommentID = "";
+}
+
+void NodeAreaContextMenuOpenState::CaptureState(NodeArea* ParentNodeArea)
+{
+	if (ParentNodeArea == nullptr)
+	{
+		Reset();
+		return;
+	}
+
+	NodeAreaID = ParentNodeArea->GetID();
+
+	MousePositionRecorded = ImVec2(ImGui::GetMousePos().x - ImGui::GetWindowPos().x, ImGui::GetMousePos().y - ImGui::GetWindowPos().y) - ParentNodeArea->GetRenderOffset();
+	MousePositionRecorded /= ParentNodeArea->GetZoomFactor();
+
+	if (ParentNodeArea->IsMouseHovered())
+	{
+		if (ParentNodeArea->GetHovered() != nullptr)
+			NodeID = ParentNodeArea->GetHovered()->GetID();
+		
+		if (ParentNodeArea->GetHoveredGroupComment() != nullptr)
+			GroupCommentID = ParentNodeArea->GetHoveredGroupComment()->GetID();
+	}
+	else
+	{
+		NodeID = "";
+		GroupCommentID = "";
+	}
+}
+
+std::string NodeAreaContextMenuOpenState::GetNodeID() const
+{
+	return NodeID;
+}
+
+std::string NodeAreaContextMenuOpenState::GetGroupCommentID() const
+{
+	return GroupCommentID;
+}
+
+Node* NodeAreaContextMenuOpenState::GetNode()
+{
+	if (NodeID.empty())
+		return nullptr;
+
+	NodeArea* ParentNodeArea = NODE_SYSTEM.GetNodeAreaByID(NodeAreaID);
+	if (ParentNodeArea == nullptr)
+		return nullptr;
+
+	return ParentNodeArea->GetNodeByID(NodeID);
+}
+
+GroupComment* NodeAreaContextMenuOpenState::GetGroupComment()
+{
+	if (GroupCommentID.empty())
+		return nullptr;
+
+	NodeArea* ParentNodeArea = NODE_SYSTEM.GetNodeAreaByID(NodeAreaID);
+	if (ParentNodeArea == nullptr)
+		return nullptr;
+
+	return ParentNodeArea->GetGroupCommentByID(GroupCommentID);
+}
+
 bool NodeArea::IsFocused() const
 {
 	return bFocused;
@@ -9,6 +78,8 @@ bool NodeArea::IsFocused() const
 
 void NodeArea::SetFocused(bool NewValue)
 {
+	// Although each node area manages its own focus state in update() by checking ImGui child window focus,
+	// it is possible that some node area's update() is not called but we still want to change focus state (e.g., when switching between node areas programmatically).
 	NODE_SYSTEM.OnNodeAreaFocusChanging(this, NewValue);
 	SetFocusedInternal(NewValue);
 }
@@ -50,10 +121,6 @@ void NodeArea::MouseInputUpdate()
 
 	bool bLeftMouseClicked = ImGui::GetIO().MouseClicked[0];
 	bool bRightMouseClicked = ImGui::GetIO().MouseClicked[1];
-
-	if (bLeftMouseClicked || bRightMouseClicked ||
-		ImGui::GetIO().MouseClicked[2] || ImGui::GetIO().MouseClicked[3] || ImGui::GetIO().MouseClicked[4])
-		SetFocused(true);
 
 	if (!IsFocused())
 		return;
@@ -333,14 +400,22 @@ void NodeArea::LeftMouseClickGroupCommentsUpdate()
 void NodeArea::RightMouseClick()
 {
 	if (HoveredNode == nullptr)
-	{
 		SelectedNodes.clear();
+	
+	if (HoveredNode == nullptr || !GetSelected().empty())
 		bOpenMainContextMenu = true;
-	}
-
+	
 	RightMouseClickNodesUpdate();
 	RightMouseClickConnectionsUpdate();
 	RightMouseClickRerouteUpdate();
+
+	ContextMenuOpenState.Reset();
+	ContextMenuOpenState.CaptureState(this);
+}
+
+NodeAreaContextMenuOpenState NodeArea::GetContextMenuOpenState() const
+{
+	return ContextMenuOpenState;
 }
 
 void NodeArea::RightMouseClickNodesUpdate()
@@ -367,14 +442,7 @@ void NodeArea::RightMouseClickNodesUpdate()
 			}
 			else
 			{
-				if (MainContextMenuFunction != nullptr)
-				{
-					bOpenMainContextMenu = true;
-				}
-				else
-				{
-					HoveredNode->OpenContextMenu();
-				}
+				bOpenMainContextMenu = true;
 			}
 
 			// If hovered node was already selected do nothing
@@ -552,6 +620,7 @@ void NodeArea::MouseDraggingConnectionsUpdate()
 {
 
 }
+
 void NodeArea::MouseDraggingRerouteUpdate()
 {
 	// Reroute nodes could be selected with nodes
@@ -671,6 +740,11 @@ void NodeArea::MoveGroupComment(GroupComment* GroupComment, ImVec2 Delta)
 		if (!IsSelected(GroupComment->AttachedGroupComments[i]))
 			GroupComment->AttachedGroupComments[i]->SetPosition(GroupComment->AttachedGroupComments[i]->GetPosition() + Delta);
 	}
+}
+
+GroupComment* NodeArea::GetHoveredGroupComment() const
+{
+	return GroupCommentHovered;
 }
 
 void NodeArea::KeyboardInputUpdate()

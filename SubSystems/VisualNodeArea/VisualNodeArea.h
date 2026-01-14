@@ -124,6 +124,26 @@ namespace VisNodeSys
 #endif
 	};
 
+	class NodeArea;
+	struct NodeAreaContextMenuOpenState
+	{
+		ImVec2 MousePositionRecorded = ImVec2(0, 0);
+
+		void Reset();
+		void CaptureState(NodeArea* ParentNodeArea);
+
+		std::string GetNodeID() const;
+		std::string GetGroupCommentID() const;
+
+		Node* GetNode();
+		GroupComment* GetGroupComment();
+	private:
+		std::string NodeAreaID;
+
+		std::string NodeID;
+		std::string GroupCommentID;
+	};
+
 	class VISUAL_NODE_SYSTEM_API NodeArea
 	{
 		friend class GroupComment;
@@ -190,6 +210,13 @@ namespace VisNodeSys
 		void Clear();
 		void Reset();
 
+		void SetMainContextMenuFunction(void(*Function)());
+		NodeAreaContextMenuOpenState GetContextMenuOpenState() const;
+
+		void GetAllElementsAABB(ImVec2& Min, ImVec2& Max) const;
+		ImVec2 GetAllElementsAABBCenter() const;
+		ImVec2 GetRenderedViewCenter() const;
+
 		// *********************** Nodes ************************
 		Node* GetNodeByID(std::string NodeID) const;
 		std::vector<Node*> GetNodesByName(std::string NodeName) const;
@@ -218,11 +245,7 @@ namespace VisNodeSys
 		std::vector<RerouteNode*> GetRerouteNodesInGroupComment(GroupComment* GroupCommentToCheck) const;
 		std::vector<GroupComment*> GetGroupCommentsInGroupComment(GroupComment* GroupCommentToCheck) const;
 
-		void SetMainContextMenuFunction(void(*Function)());
-
-		void GetAllElementsAABB(ImVec2& Min, ImVec2& Max) const;
-		ImVec2 GetAllElementsAABBCenter() const;
-		ImVec2 GetRenderedViewCenter() const;
+		GroupComment* GetHoveredGroupComment() const;
 
 		// *********************** Connections ************************
 		size_t GetConnectionCount() const;
@@ -258,7 +281,7 @@ namespace VisNodeSys
 #endif
 	private:
 		std::string ID;
-		std::string Name;
+		std::string Name = "New Node Area";
 
 		~NodeArea();
 
@@ -305,8 +328,6 @@ namespace VisNodeSys
 		RerouteNode* RerouteNodeHovered = nullptr;
 		GroupComment* GroupCommentHovered = nullptr;
 
-		// Info for context menu
-		GroupComment* GroupCommentHoveredWhenContextMenuWasOpened = nullptr;
 		ImVec4 ColorPickerStartValue = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
 		bool bShowGroupCommentColorPicker = false;
 
@@ -318,6 +339,7 @@ namespace VisNodeSys
 		std::vector<GroupComment*> SelectedGroupComments;
 
 		ImVec2 MouseCursorPosition;
+		NodeAreaContextMenuOpenState ContextMenuOpenState;
 		ImVec2 MouseCursorSize = ImVec2(1, 1);
 		ImVec2 MouseSelectRegionMin = ImVec2(FLT_MAX, FLT_MAX);
 		ImVec2 MouseSelectRegionMax = ImVec2(FLT_MAX, FLT_MAX);
@@ -329,7 +351,7 @@ namespace VisNodeSys
 		ImVec2 Size;
 		ImVec2 RenderOffset = ImVec2(0.0, 0.0);
 		void(*MainContextMenuFunction)() = nullptr;
-		void RenderDefaultMainContextMenu(ImVec2 LocalMousePosition);
+		void RenderDefaultMainContextMenu();
 		std::vector<std::function<void(Node*, NODE_EVENT)>> NodeEventsCallbacks;
 		std::queue<SocketEvent> SocketEventQueue;
 

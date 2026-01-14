@@ -297,3 +297,89 @@ std::string NodeCore::Base64Decode(std::string const& EncodedString)
 
 	return Result;
 }
+
+std::string NodeCore::TruncateText(const std::string& Text, float MaxWidth, EllipsisPosition Position, const std::string& Ellipsis)
+{
+	if (Text.empty())
+		return Text;
+
+	float TextWidth = ImGui::CalcTextSize(Text.c_str()).x;
+	if (TextWidth <= MaxWidth)
+		return Text;
+
+	float EllipsisWidth = ImGui::CalcTextSize(Ellipsis.c_str()).x;
+	if (MaxWidth <= EllipsisWidth)
+		return Ellipsis;
+
+	float AvailableWidth = MaxWidth - EllipsisWidth;
+
+	switch (Position)
+	{
+		case EllipsisPosition::End:
+		{
+			size_t Low = 0;
+			size_t High = Text.size();
+			while (Low < High)
+			{
+				size_t Mid = (Low + High + 1) / 2;
+				float Width = ImGui::CalcTextSize(Text.c_str(), Text.c_str() + Mid).x;
+				if (Width <= AvailableWidth)
+					Low = Mid;
+				else
+					High = Mid - 1;
+			}
+			return Text.substr(0, Low) + Ellipsis;
+		}
+
+		case EllipsisPosition::Start:
+		{
+			size_t Low = 0;
+			size_t High = Text.size();
+			while (Low < High)
+			{
+				size_t Mid = (Low + High) / 2;
+				float Width = ImGui::CalcTextSize(Text.c_str() + Mid).x;
+				if (Width <= AvailableWidth)
+					High = Mid;
+				else
+					Low = Mid + 1;
+			}
+			return Ellipsis + Text.substr(Low);
+		}
+
+		case EllipsisPosition::Middle:
+		{
+			float HalfAvailable = AvailableWidth / 2.0f;
+
+			// Find how much fits from the start
+			size_t StartLow = 0;
+			size_t StartHigh = Text.size();
+			while (StartLow < StartHigh)
+			{
+				size_t Mid = (StartLow + StartHigh + 1) / 2;
+				float Width = ImGui::CalcTextSize(Text.c_str(), Text.c_str() + Mid).x;
+				if (Width <= HalfAvailable)
+					StartLow = Mid;
+				else
+					StartHigh = Mid - 1;
+			}
+
+			// Find how much fits from the end
+			size_t EndLow = 0;
+			size_t EndHigh = Text.size();
+			while (EndLow < EndHigh)
+			{
+				size_t Mid = (EndLow + EndHigh) / 2;
+				float Width = ImGui::CalcTextSize(Text.c_str() + Mid).x;
+				if (Width <= HalfAvailable)
+					EndHigh = Mid;
+				else
+					EndLow = Mid + 1;
+			}
+
+			return Text.substr(0, StartLow) + Ellipsis + Text.substr(EndLow);
+		}
+	}
+
+	return Text;
+}

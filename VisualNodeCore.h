@@ -67,6 +67,13 @@ namespace VisNodeSys
 
 #define VISUAL_NODE_SYSTEM_VERSION "0.1.0"
 
+	enum class EllipsisPosition
+	{
+		End,
+		Middle,
+		Start
+	};
+
 	class VISUAL_NODE_SYSTEM_API NodeCore
 	{
 		SINGLETON_PRIVATE_PART(NodeCore)
@@ -100,6 +107,8 @@ namespace VisNodeSys
 		std::string Base64Encode(unsigned char const* BytesToEncode, unsigned int Length);
 		bool IsBase64(unsigned char Character);
 		std::string Base64Decode(std::string const& EncodedString);
+
+		std::string TruncateText(const std::string& Text, float MaxWidth, EllipsisPosition Position = EllipsisPosition::End, const std::string& Ellipsis = "...");
 	};
 
 #ifdef VISUAL_NODE_SYSTEM_SHARED

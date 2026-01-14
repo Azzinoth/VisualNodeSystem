@@ -70,28 +70,17 @@ void NodeArea::RenderNode(Node* Node) const
 		CurrentDrawList->AddRectFilled(Node->LeftTop + ImVec2(1, 1), TitleArea, NodeTitleBackgroundColor, 8.0f * Zoom);
 		CurrentDrawList->AddRect(Node->LeftTop, Node->RightBottom, ImColor(100, 100, 100), 8.0f * Zoom);
 
-		std::string NodeName = Node->GetName();
-		ImVec2 TextSize = ImGui::CalcTextSize(NodeName.c_str());
+		std::string NodeNameToRender = Node->GetName();
 		float AvailableWidth = Node->GetSize().x * Zoom;
-
-		// Check if text width is greater than available space.
-		if (TextSize.x > AvailableWidth)
-		{
-			// Truncate text and add "...".
-			while (!NodeName.empty() && ImGui::CalcTextSize((NodeName + "...").c_str()).x > AvailableWidth)
-			{
-				NodeName.pop_back();
-			}
-			NodeName += "...";
-			TextSize = ImGui::CalcTextSize(NodeName.c_str());
-		}
+		NodeNameToRender = NODE_CORE.TruncateText(NodeNameToRender, AvailableWidth);
+		ImVec2 TextSize = ImGui::CalcTextSize(NodeNameToRender.c_str());
 
 		ImVec2 TextPosition;
 		TextPosition.x = Node->LeftTop.x + (Node->GetSize().x * Zoom / 2) - TextSize.x / 2;
 		TextPosition.y = Node->LeftTop.y + (GetNodeTitleHeight() / 2) - TextSize.y / 2;
 
 		ImGui::SetCursorScreenPos(TextPosition);
-		ImGui::Text("%s",NodeName.c_str());
+		ImGui::Text("%s",NodeNameToRender.c_str());
 	}
 	else if (Node->GetStyle() == CIRCLE)
 	{
@@ -308,6 +297,7 @@ void NodeArea::Render()
 	}
 
 	ImGui::BeginChild("Nodes area", GetSize(), true, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoMove);
+	SetFocused(ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows));
 
 	NodeAreaWindow = GetCurrentWindowImpl();
 	CurrentDrawList = ImGui::GetWindowDrawList();
@@ -376,7 +366,7 @@ void NodeArea::Render()
 	if (ImGui::BeginPopup("##main_context_menu"))
 	{
 		if (Settings.bShowDefaultMainContextMenu)
-			RenderDefaultMainContextMenu(LocalMousePosition);
+			RenderDefaultMainContextMenu();
 
 		if (MainContextMenuFunction != nullptr)
 			MainContextMenuFunction();
@@ -390,15 +380,16 @@ void NodeArea::Render()
 	if (bShowGroupCommentColorPicker)
 	{
 		bShowGroupCommentColorPicker = false;
-		if (GroupCommentHoveredWhenContextMenuWasOpened != nullptr)
+		GroupComment* Comment = ContextMenuOpenState.GetGroupComment();
+		if (Comment != nullptr)
 		{
 			ColorPickerStartValue = Settings.Style.GroupCommentDefaultBackgroundColor;
-			if (GroupCommentHoveredWhenContextMenuWasOpened->BackgroundColor.x != 0.0f ||
-				GroupCommentHoveredWhenContextMenuWasOpened->BackgroundColor.y != 0.0f ||
-				GroupCommentHoveredWhenContextMenuWasOpened->BackgroundColor.z != 0.0f ||
-				GroupCommentHoveredWhenContextMenuWasOpened->BackgroundColor.w != 0.0f)
-				ColorPickerStartValue = GroupCommentHoveredWhenContextMenuWasOpened->BackgroundColor;
-			
+			if (Comment->BackgroundColor.x != 0.0f ||
+				Comment->BackgroundColor.y != 0.0f ||
+				Comment->BackgroundColor.z != 0.0f ||
+				Comment->BackgroundColor.w != 0.0f)
+				ColorPickerStartValue = Comment->BackgroundColor;
+
 			ImGui::OpenPopup("ColorPickerPopup");
 		}
 	}
@@ -410,16 +401,16 @@ void NodeArea::Render()
 
 		if (ImGui::Button("Close"))
 		{
-			GroupCommentHoveredWhenContextMenuWasOpened = nullptr;
 			ImGui::CloseCurrentPopup();
 		}
 		ImGui::SameLine();
 
 		if (ImGui::Button("Apply"))
 		{
-			if (GroupCommentHoveredWhenContextMenuWasOpened != nullptr)
-				GroupCommentHoveredWhenContextMenuWasOpened->BackgroundColor = ColorPickerStartValue;
-			GroupCommentHoveredWhenContextMenuWasOpened = nullptr;
+			GroupComment* Comment = ContextMenuOpenState.GetGroupComment();
+			if (Comment != nullptr)
+				Comment->BackgroundColor = ColorPickerStartValue;
+
 			ImGui::CloseCurrentPopup();
 		}
 
@@ -896,24 +887,9 @@ void NodeArea::RenderGroupComment(GroupComment* GroupComment)
 	}
 	else
 	{
-		// Render the caption text.
-		std::string Caption = GroupComment->GetCaption();
-		ImVec2 TextSize = ImGui::CalcTextSize(Caption.c_str());
-
-		// Check if text width is greater than available space.
-		if (TextSize.x > CaptionSize.x - 2.0f * Zoom + TextOffset.x)
-		{
-			// Subtracting twice the TextOffset to account for both left and right margins.
-			// Truncate text and add "...".
-			while (!Caption.empty() && ImGui::CalcTextSize((Caption + "...").c_str()).x > CaptionSize.x - 2.0f * Zoom + TextOffset.x)
-			{
-				Caption.pop_back();
-			}
-			Caption += "...";
-		}
-
-		// Render the caption text.
-		CurrentDrawList->AddText(CaptionPosition + TextOffset, CaptionTextColor, Caption.c_str());
+		std::string CaptionToRender = GroupComment->GetCaption();
+		CaptionToRender = NODE_CORE.TruncateText(CaptionToRender, CaptionSize.x - 4.0f * Zoom + TextOffset.x);
+		CurrentDrawList->AddText(CaptionPosition + TextOffset, CaptionTextColor, CaptionToRender.c_str());
 	}
 	
 	// *****************************************************************************************************************************
@@ -956,28 +932,27 @@ void NodeArea::RenderGroupComment(GroupComment* GroupComment)
 	ImGui::PopID();
 }
 
-void NodeArea::RenderDefaultMainContextMenu(ImVec2 LocalMousePosition)
+void NodeArea::RenderDefaultMainContextMenu()
 {
-	// Standard context menu items.
-	if (GroupCommentHovered != nullptr)
+	if (ContextMenuOpenState.GetGroupComment() != nullptr)
 	{
+		GroupComment* CurrentGroupComment = ContextMenuOpenState.GetGroupComment();
 		if (ImGui::MenuItem("Change background color..."))
 		{
-			GroupCommentHoveredWhenContextMenuWasOpened = GroupCommentHovered;
 			bShowGroupCommentColorPicker = true;
 		}
 
-		bool bMoveElementsWithComment = GroupCommentHovered->MoveElementsWithComment();
+		bool bMoveElementsWithComment = CurrentGroupComment->MoveElementsWithComment();
 		if (ImGui::MenuItem("Group movement", NULL, &bMoveElementsWithComment))
 		{
-			GroupCommentHovered->SetMoveElementsWithComment(bMoveElementsWithComment);
+			CurrentGroupComment->SetMoveElementsWithComment(bMoveElementsWithComment);
 		}
 
 		if (ImGui::MenuItem("Bring Forward"))
 		{
 			for (size_t i = 0; i < GroupComments.size(); i++)
 			{
-				if (GroupComments[i] == GroupCommentHovered)
+				if (GroupComments[i] == CurrentGroupComment)
 				{
 					if (i < GroupComments.size() - 1)
 					{
@@ -992,7 +967,7 @@ void NodeArea::RenderDefaultMainContextMenu(ImVec2 LocalMousePosition)
 		{
 			for (size_t i = 0; i < GroupComments.size(); i++)
 			{
-				if (GroupComments[i] == GroupCommentHovered)
+				if (GroupComments[i] == CurrentGroupComment)
 				{
 					if (i > 0)
 					{
@@ -1003,20 +978,31 @@ void NodeArea::RenderDefaultMainContextMenu(ImVec2 LocalMousePosition)
 			}
 		}
 	}
-	else if (GetHovered() != nullptr)
+	else if (ContextMenuOpenState.GetNode() != nullptr && GetSelected().size() == 1)
 	{
 		if (ImGui::MenuItem("Delete Node"))
 		{
-			DeleteNode(GetHovered());
+			DeleteNode(ContextMenuOpenState.GetNode());
 		}
 	}
-	else if (GetHovered() == nullptr)
+	else if (GetSelected().size() > 1)
+	{
+		auto SelectedList = GetSelected();
+		if (ImGui::MenuItem("Delete Selected Nodes"))
+		{
+			for (size_t i = 0; i < SelectedList.size(); i++)
+				DeleteNode(SelectedList[i]);
+			
+			UnSelectAll();
+		}
+	}
+	else if (ContextMenuOpenState.GetGroupComment() == nullptr && ContextMenuOpenState.GetNode() == nullptr && GetSelected().empty())
 	{
 		if (ImGui::MenuItem("Add Group Comment"))
 		{
 			GroupComment* NewGroupComment = new GroupComment();
 			NewGroupComment->SetCaption("Group Comment");
-			NewGroupComment->SetPosition(LocalMousePosition);
+			NewGroupComment->SetPosition(ContextMenuOpenState.MousePositionRecorded);
 			NewGroupComment->bIsRenamingActive = true;
 			GroupComments.push_back(NewGroupComment);
 		}
@@ -1233,7 +1219,7 @@ void NodeArea::RenderDefaultMainContextMenu(ImVec2 LocalMousePosition)
 
 			if (NewNode != nullptr)
 			{
-				NewNode->SetPosition(LocalMousePosition);
+				NewNode->SetPosition(ContextMenuOpenState.MousePositionRecorded);
 				AddNode(NewNode);
 			}
 
