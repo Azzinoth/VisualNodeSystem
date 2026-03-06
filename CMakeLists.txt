@@ -75,33 +75,40 @@ file(GLOB CustomNodes_SRC
 )
 
 file(GLOB Basic_SRC
-	"Basic/Basic.cpp"
-	"Basic/Basic.h"
+	"BasicTests/Basic.cpp"
+	"BasicTests/Basic.h"
 )
 
-file(GLOB NodeAreaLoad_SRC
-	"NodeAreaLoadTests.cpp"
-	"NodeAreaLoadTests.h"
+file(GLOB NodeArea_Load_SRC
+	"NodeAreaTests/LoadTests/NodeAreaLoadTests.cpp"
+	"NodeAreaTests/LoadTests/NodeAreaLoadTests.h"
+)
+
+file(GLOB NodeArea_EventSystem_SRC
+	"NodeAreaTests/EventSystemTests/NodeAreaEventSystemTests.cpp"
+	"NodeAreaTests/EventSystemTests/NodeAreaEventSystemTests.h"
 )
 
 file(GLOB NodeFactory_SRC
-	"NodeFactoryTests.cpp"
-	"NodeFactoryTests.h"
+	"NodeFactoryTests/NodeFactoryTests.cpp"
+	"NodeFactoryTests/NodeFactoryTests.h"
 )
 
 file(GLOB GroupComment_SRC
-	"GroupCommentTests.cpp"
-	"GroupCommentTests.h"
+	"GroupCommentTests/GroupCommentTests.cpp"
+	"GroupCommentTests/GroupCommentTests.h"
 )
 
-file(GLOB StandardNodeTests_SRC
-	"StandardNodeTests.cpp"
-	"StandardNodeTests.h"
+file(GLOB StandardNode_SRC
+	"StandardNodeTests/StandardNodeTests.cpp"
+	"StandardNodeTests/StandardNodeTests.h"
 )
 
 file(GLOB source_SRC
-	"main.cpp"
 	"Core.h"
+	"TestTools.cpp"
+	"TestTools.h"
+	"main.cpp"
 )
 
 link_directories(${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/GLFW/lib/$(PlatformTarget))
@@ -116,10 +123,11 @@ add_executable(Visual_Node_System_Tests
 			   ${source_SRC}
 			   ${CustomNodes_SRC}
 			   ${Basic_SRC}
-			   ${NodeAreaLoad_SRC}
+			   ${NodeArea_Load_SRC}
+			   ${NodeArea_EventSystem_SRC}
 			   ${NodeFactory_SRC}
 			   ${GroupComment_SRC}
-			   ${StandardNodeTests_SRC}
+			   ${StandardNode_SRC}
 			   # *************** THIRD_PARTY ***************
 			   ${imgui_SRC}
 )
@@ -135,10 +143,11 @@ target_link_libraries(Visual_Node_System_Tests
 source_group("Source Files" FILES ${source_SRC})
 source_group("Source Files/CustomNodes" FILES ${CustomNodes_SRC})
 source_group("Source Files/Basic" FILES ${Basic_SRC})
-source_group("Source Files/NodeAreaLoad" FILES ${NodeAreaLoad_SRC})
+source_group("Source Files/NodeArea/Load" FILES ${NodeArea_Load_SRC})
+source_group("Source Files/NodeArea/EventSystem" FILES ${NodeArea_EventSystem_SRC})
 source_group("Source Files/NodeFactory" FILES ${NodeFactory_SRC})
 source_group("Source Files/GroupComment" FILES ${GroupComment_SRC})
-source_group("Source Files/StandardNodeTests" FILES ${StandardNodeTests_SRC})
+source_group("Source Files/StandardNode" FILES ${StandardNode_SRC})
 # *************** THIRD_PARTY ***************
 source_group("Source Files/ThirdParty/imgui" FILES ${imgui_SRC})
 

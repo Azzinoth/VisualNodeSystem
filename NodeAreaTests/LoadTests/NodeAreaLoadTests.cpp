@@ -477,7 +477,7 @@ TEST(NodeAreaLoadTest, LoadWhenRerouteConnectionsInfoIsNull)
 					{
 						"ID" : "1C191657360B7903691A5B66",
 						"Name" : "In",
-						"AllowedTypes":["EXEC"]
+						"AllowedTypes":["EXECUTE"]
 					}
 				},
 				"Name" : "Some node",
@@ -506,7 +506,7 @@ TEST(NodeAreaLoadTest, LoadWhenRerouteConnectionsInfoIsNull)
 					{
 						"ID" : "5D7E2A574B7D3C3069521C3F",
 						"Name" : "Out",
-						"AllowedTypes":["EXEC"]
+						"AllowedTypes":["EXECUTE"]
 					}
 				},
 				"Position" : 
@@ -601,7 +601,7 @@ TEST(NodeAreaLoadTest, LoadWhenRerouteConnectionsInfoIsDamaged)
 					{
 						"ID" : "1C191657360B7903691A5B66",
 						"Name" : "In",
-						"AllowedTypes":["EXEC"]
+						"AllowedTypes":["EXECUTE"]
 					}
 				},
 				"Name" : "Some node",
@@ -630,7 +630,7 @@ TEST(NodeAreaLoadTest, LoadWhenRerouteConnectionsInfoIsDamaged)
 					{
 						"ID" : "5D7E2A574B7D3C3069521C3F",
 						"Name" : "Out",
-						"AllowedTypes":["EXEC"]
+						"AllowedTypes":["EXECUTE"]
 					}
 				},
 				"Position" : 
@@ -725,7 +725,7 @@ TEST(NodeAreaLoadTest, LoadWhenRerouteConnectionsInfoIsDamaged_2)
 					{
 						"ID" : "1C191657360B7903691A5B66",
 						"Name" : "In",
-						"AllowedTypes":["EXEC"]
+						"AllowedTypes":["EXECUTE"]
 					}
 				},
 				"Name" : "Some node",
@@ -754,7 +754,7 @@ TEST(NodeAreaLoadTest, LoadWhenRerouteConnectionsInfoIsDamaged_2)
 					{
 						"ID" : "5D7E2A574B7D3C3069521C3F",
 						"Name" : "Out",
-						"AllowedTypes":["EXEC"]
+						"AllowedTypes":["EXECUTE"]
 					}
 				},
 				"Position" : 
@@ -849,7 +849,7 @@ TEST(NodeAreaLoadTest, LoadWhenRerouteConnectionsInfoIsDamaged_3)
 					{
 						"ID" : "1C191657360B7903691A5B66",
 						"Name" : "In",
-						"AllowedTypes":["EXEC"]
+						"AllowedTypes":["EXECUTE"]
 					}
 				},
 				"Name" : "Some node",
@@ -878,7 +878,7 @@ TEST(NodeAreaLoadTest, LoadWhenRerouteConnectionsInfoIsDamaged_3)
 					{
 						"ID" : "5D7E2A574B7D3C3069521C3F",
 						"Name" : "Out",
-						"AllowedTypes":["EXEC"]
+						"AllowedTypes":["EXECUTE"]
 					}
 				},
 				"Position" : 

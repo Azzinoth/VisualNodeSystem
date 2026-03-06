@@ -29,7 +29,7 @@ CustomNode2::CustomNode2() : Node()
 	TitleBackgroundColor = ImColor(128, 117, 208);
 	TitleBackgroundColorHovered = ImColor(135, 145, 255);
 	
-	AddSocket(new NodeSocket(this, "EXEC", "out", true));
+	AddSocket(new NodeSocket(this, "EXECUTE", "out", true));
 }
 
 CustomNode2::CustomNode2(const CustomNode2& Src) : Node(Src)

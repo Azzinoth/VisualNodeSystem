@@ -1,6 +1,6 @@
 #pragma once
-#include "../../Core.h"
-#include "CustomNodes/BeginNode.h"
+#include "../../TestTools.h"
+#include "../CustomNodes/BeginNode.h"
 
 enum class NodeVariableSupportedType
 {
