@@ -58,7 +58,7 @@ void NodeArea::Update()
 		Render();
 }
 
-void NodeArea::SetMainContextMenuFunction(void(*Function)())
+void NodeArea::SetMainContextMenuFunction(const std::function<void()>& Function)
 {
 	MainContextMenuFunction = Function;
 }

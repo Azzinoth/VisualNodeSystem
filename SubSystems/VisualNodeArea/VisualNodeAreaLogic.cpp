@@ -391,15 +391,15 @@ bool NodeArea::IsConnected(const Node* OutNode, std::string OutSocketID, const N
 	return IsConnected(OutNode, OutSocketIndex, InNode, InSocketIndex);
 }
 
-void NodeArea::RunOnEachNode(void(*Func)(Node*))
+void NodeArea::RunOnEachNode(const std::function<void(Node*)>& Function)
 {
-	if (Func != nullptr)
-		std::for_each(Nodes.begin(), Nodes.end(), Func);
+	if (Function != nullptr)
+		std::for_each(Nodes.begin(), Nodes.end(), Function);
 }
 
-void NodeArea::RunOnEachConnectedNode(Node* StartNode, void(*Func)(Node*))
+void NodeArea::RunOnEachConnectedNode(Node* StartNode, const std::function<void(Node*)>& Function)
 {
-	if (Func == nullptr)
+	if (Function == nullptr)
 		return;
 
 	static std::unordered_map<Node*, bool> SeenNodes;
@@ -415,9 +415,13 @@ void NodeArea::RunOnEachConnectedNode(Node* StartNode, void(*Func)(Node*))
 	};
 	
 	std::vector<Node*> CurrentNodes;
-	CurrentNodes.push_back(StartNode);
-	if (bWasNodeSeen(StartNode))
-		return;
+	std::vector<Node*> NewNodes = StartNode->GetNodesConnectedToOutput();
+	for (size_t j = 0; j < NewNodes.size(); j++)
+	{
+		CurrentNodes.push_back(NewNodes[j]);
+		if (bWasNodeSeen(NewNodes[j]))
+			return;
+	}
 
 	while (!IsEmptyOrFilledByNulls(CurrentNodes))
 	{
@@ -430,7 +434,7 @@ void NodeArea::RunOnEachConnectedNode(Node* StartNode, void(*Func)(Node*))
 				continue;
 			}
 
-			Func(CurrentNodes[i]);
+			Function(CurrentNodes[i]);
 
 			std::vector<Node*> NewNodes = CurrentNodes[i]->GetNodesConnectedToOutput();
 			for (size_t j = 0; j < NewNodes.size(); j++)
