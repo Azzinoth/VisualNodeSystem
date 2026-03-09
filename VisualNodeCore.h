@@ -65,8 +65,6 @@ namespace VisNodeSys
 										   \
 	return result;
 
-#define VISUAL_NODE_SYSTEM_VERSION "0.1.0"
-
 	class VISUAL_NODE_SYSTEM_API NodeCore
 	{
 		SINGLETON_PRIVATE_PART(NodeCore)

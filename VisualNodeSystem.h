@@ -17,6 +17,9 @@ namespace VisNodeSys
 
 		void Initialize(bool bTestMode = false);
 
+		std::string GetVersion();
+		std::string GetFullVersion();
+
 		NodeArea* CreateNodeArea();
 		void DeleteNodeArea(const NodeArea* NodeArea);
 
