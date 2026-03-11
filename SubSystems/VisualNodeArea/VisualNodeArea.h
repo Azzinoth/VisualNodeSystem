@@ -350,7 +350,7 @@ namespace VisNodeSys
 		ImVec2 Size;
 		ImVec2 RenderOffset = ImVec2(0.0, 0.0);
 		std::function<void()> MainContextMenuFunction = nullptr;
-		void RenderDefaultMainContextMenu(ImVec2 LocalMousePosition);
+		void RenderDefaultMainContextMenu();
 		std::vector<std::function<void(Node*, NODE_EVENT)>> NodeEventsCallbacks;
 		std::queue<SocketEvent> SocketEventQueue;
 
