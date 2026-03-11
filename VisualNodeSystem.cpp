@@ -625,11 +625,11 @@ bool NodeSystem::DeleteReferenceNodeRecord(const std::string& NodeID)
 std::vector<std::pair<std::string, ImColor>> NodeSystem::GetAssociationsOfSocketTypeToColor(std::string SocketType, ImColor Color)
 {
 	std::vector<std::pair<std::string, ImColor>> Result;
-	auto iterator = NodeSocket::SocketTypeToColorAssociations.begin();
-	while (iterator != NodeSocket::SocketTypeToColorAssociations.end())
+	auto ColorAssociationIterator = NodeSocket::SocketTypeToColorAssociations.begin();
+	while (ColorAssociationIterator != NodeSocket::SocketTypeToColorAssociations.end())
 	{
-		Result.push_back(std::make_pair(iterator->first, iterator->second));
-		iterator++;
+		Result.push_back(std::make_pair(ColorAssociationIterator->first, ColorAssociationIterator->second));
+		ColorAssociationIterator++;
 	}
 
 	return Result;
@@ -657,4 +657,263 @@ void NodeSystem::OnNodeAreaFocusChanging(NodeArea* CurrentNodeArea, bool NewFocu
 	{
 		// Focus lost.
 	}
+}
+
+std::string NodeSystem::ToJson() const
+{
+	Json::Value Root;
+
+	// First of all we need to save the list of all node areas.
+	Json::Value NodeAreaList;
+	for (size_t i = 0; i < CreatedAreas.size(); i++)
+		NodeAreaList[std::to_string(i)] = CreatedAreas[i]->GetID();
+	
+	Root["NodeAreaList"] = NodeAreaList;
+
+	// Reference node records.
+	Json::Value ReferenceNodeRecordsJson;
+	auto RecordIterator = ReferenceNodeRecords.begin();
+	while (RecordIterator != ReferenceNodeRecords.end())
+	{
+		Json::Value RecordJson;
+		RecordJson["NodeID"] = RecordIterator->second.NodeID;
+		RecordJson["ParentNodeAreaID"] = RecordIterator->second.ParentNodeAreaID;
+		RecordJson["ReferencedAreaID"] = RecordIterator->second.ReferencedAreaID;
+		ReferenceNodeRecordsJson[RecordIterator->first] = RecordJson;
+		RecordIterator++;
+	}
+	Root["ReferenceNodeRecords"] = ReferenceNodeRecordsJson;
+
+	// Socket type to color associations.
+	Json::Value SocketTypeToColorAssociationsJson;
+	auto SocketTypeToColorIterator = NodeSocket::SocketTypeToColorAssociations.begin();
+	while (SocketTypeToColorIterator != NodeSocket::SocketTypeToColorAssociations.end())
+	{
+		Json::Value ColorJson;
+		ColorJson["R"] = SocketTypeToColorIterator->second.Value.x;
+		ColorJson["G"] = SocketTypeToColorIterator->second.Value.y;
+		ColorJson["B"] = SocketTypeToColorIterator->second.Value.z;
+		ColorJson["A"] = SocketTypeToColorIterator->second.Value.w;
+		SocketTypeToColorAssociationsJson[SocketTypeToColorIterator->first] = ColorJson;
+		SocketTypeToColorIterator++;
+	}
+	Root["SocketTypeToColorAssociations"] = SocketTypeToColorAssociationsJson;
+
+	// Finally we need to save all node areas.
+	Json::Value NodeAreasJson;
+	for (size_t i = 0; i < CreatedAreas.size(); i++)
+		NodeAreasJson[CreatedAreas[i]->GetID()] = CreatedAreas[i]->ToJson();
+	Root["NodeAreas"] = NodeAreasJson;
+
+	Json::StreamWriterBuilder Builder;
+	const std::string JsonText = Json::writeString(Builder, Root);
+
+	return JsonText;
+}
+
+bool NodeSystem::SaveToFile(const std::string& FilePath) const
+{
+	const std::string JsonFile = ToJson();
+	std::ofstream SaveFile;
+	SaveFile.open(FilePath);
+	if (!SaveFile.is_open())
+		return false;
+		
+	SaveFile << JsonFile;
+	SaveFile.close();
+	return true;
+}
+
+bool NodeSystem::LoadFromJson(const std::string& JsonText)
+{
+	if (JsonText.find("{") == std::string::npos || JsonText.find("}") == std::string::npos || JsonText.find(":") == std::string::npos)
+		return false;
+
+	Json::Value Root;
+	JSONCPP_STRING Error;
+	Json::CharReaderBuilder Builder;
+
+	const std::unique_ptr<Json::CharReader> Reader(Builder.newCharReader());
+	if (!Reader->parse(JsonText.c_str(), JsonText.c_str() + JsonText.size(), &Root, &Error))
+		return false;
+
+	if (!Root.isMember("NodeAreaList") || !Root.isMember("ReferenceNodeRecords") || !Root.isMember("SocketTypeToColorAssociations") || !Root.isMember("NodeAreas") || !Root["NodeAreas"].isObject())
+		return false;
+
+	//// First of all we need to load all node areas.
+	//std::vector<std::string> NodeAreaIDs;
+	//Json::Value NodeAreaList = Root["NodeAreaList"];
+	//for (Json::Value::ArrayIndex i = 0; i < NodeAreaList.size(); i++)
+	//{
+	//	std::string NodeAreaID = NodeAreaList[std::to_string(i)].asString();
+	//	NodeAreaIDs.push_back(NodeAreaID);
+	//}
+
+	// Reference node records.
+	std::vector<Json::String> ReferenceNodeList = Root["ReferenceNodeRecords"].getMemberNames();
+	std::vector<Json::String> ValidConnectionKeys;
+	for (size_t i = 0; i < ReferenceNodeList.size(); i++)
+	{
+		if (!Root["ReferenceNodeRecords"][ReferenceNodeList[i]].isObject())
+			continue;
+
+		const Json::Value& ReferenceNodeData = Root["ReferenceNodeRecords"][ReferenceNodeList[i]];
+		if (!ReferenceNodeData.isMember("NodeID") || !ReferenceNodeData.isMember("ParentNodeAreaID") || !ReferenceNodeData.isMember("ReferencedAreaID"))
+			continue;
+
+		std::string NodeID = ReferenceNodeData["NodeID"].asString();
+		std::string ParentNodeAreaID = ReferenceNodeData["ParentNodeAreaID"].asString();
+		std::string ReferencedAreaID = ReferenceNodeData["ReferencedAreaID"].asString();
+		if (NodeID.empty() || ParentNodeAreaID.empty() || ReferencedAreaID.empty())
+			continue;
+	}
+
+	// Socket type to color associations.
+	std::vector<Json::String> SocketTypeToColorAssociationList = Root["SocketTypeToColorAssociations"].getMemberNames();
+	for (size_t i = 0; i < SocketTypeToColorAssociationList.size(); i++)
+	{
+		if (!Root["SocketTypeToColorAssociations"][SocketTypeToColorAssociationList[i]].isObject())
+			continue;
+
+		const Json::Value& ColorJson = Root["SocketTypeToColorAssociations"][SocketTypeToColorAssociationList[i]];
+		if (!ColorJson.isMember("R") || !ColorJson.isMember("G") || !ColorJson.isMember("B") || !ColorJson.isMember("A"))
+			continue;
+
+		std::string SocketType = SocketTypeToColorAssociationList[i];
+		float R = ColorJson["R"].asFloat();
+		float G = ColorJson["G"].asFloat();
+		float B = ColorJson["B"].asFloat();
+		float A = ColorJson["A"].asFloat();
+		ImColor Color(R, G, B, A);
+		AssociateSocketTypeToColor(SocketType, Color);
+	}
+
+	//const Json::Value& NodeAreasJson = Root["NodeAreas"];
+	//// The keys are area IDs (strings), so iterate over all members
+	//std::vector<std::string> AreaIDs = NodeAreasJson.getMemberNames();
+	//for (const auto& AreaID : AreaIDs)
+	//{
+	//	const Json::Value& AreaJson = NodeAreasJson[AreaID];
+	//	NodeArea* NewNodeArea = CreateNodeArea();
+	//	NewNodeArea->LoadFromJson(AreaJson.asString());
+	//}
+
+	std::vector<Json::String> NodeAreaListKeys = Root["NodeAreas"].getMemberNames();
+	for (size_t i = 0; i < NodeAreaListKeys.size(); i++)
+	{
+		NodeArea* NewNodeArea = CreateNodeArea();
+		NewNodeArea->LoadFromJson(Root["NodeAreas"][NodeAreaListKeys[i]].asCString());
+	}
+	
+
+}
+
+bool NodeSystem::LoadFromFile(const std::string& FilePath)
+{
+	std::ifstream NodeSystemFile;
+	NodeSystemFile.open(FilePath);
+	if (!NodeSystemFile.is_open())
+		return false;
+
+	const std::string FileData((std::istreambuf_iterator<char>(NodeSystemFile)), std::istreambuf_iterator<char>());
+	NodeSystemFile.close();
+
+	return LoadFromJson(FileData);
+}
+
+std::vector<NodeArea*> NodeSystem::GetDirectlyReferencedAreas(const NodeArea* CurrentNodeArea) const
+{
+	std::vector<NodeArea*> Result;
+	if (CurrentNodeArea == nullptr)
+		return Result;
+
+	std::vector<ReferenceNodeData> ReferenceNodes = GetReferenceNodeDataByParentAreaID(CurrentNodeArea->GetID());
+	for (int i = 0; i < ReferenceNodes.size(); i++)
+	{
+		NodeArea* ReferencedArea = GetNodeAreaByID(ReferenceNodes[i].ReferencedAreaID);
+		if (ReferencedArea != nullptr)
+			Result.push_back(ReferencedArea);
+	}
+
+	return Result;
+}
+
+std::vector<NodeArea*> NodeSystem::GetAllReferencedAreasRecursive(const NodeArea* CurrentNodeArea) const
+{
+	std::vector<NodeArea*> Result;
+	if (CurrentNodeArea == nullptr)
+		return Result;
+
+	// Using Visited map to avoid cycles.
+	std::unordered_map<std::string, bool> Visited;
+	std::function<void(const NodeArea*)> Collect = [&](const NodeArea* CurrentArea) {
+		if (CurrentArea == nullptr)
+			return;
+
+		for (NodeArea* ReferencedArea : GetDirectlyReferencedAreas(CurrentArea))
+		{
+			if (Visited.find(ReferencedArea->GetID()) == Visited.end())
+			{
+				Visited[ReferencedArea->GetID()] = true;
+				Result.push_back(ReferencedArea);
+				Collect(ReferencedArea);
+			}
+		}
+	};
+
+	Collect(CurrentNodeArea);
+	return Result;
+}
+
+std::vector<NodeArea*> NodeSystem::GetReferencingAreas(const NodeArea* CurrentNodeArea) const
+{
+	std::vector<NodeArea*> Result;
+	if (CurrentNodeArea == nullptr)
+		return Result;
+
+	std::vector<ReferenceNodeData> ReferenceNodes = GetReferenceNodeDataByReferencedAreaID(CurrentNodeArea->GetID());
+	for (int i = 0; i < ReferenceNodes.size(); i++)
+	{
+		NodeArea* ParentArea = GetNodeAreaByID(ReferenceNodes[i].ParentNodeAreaID);
+		if (ParentArea != nullptr)
+			Result.push_back(ParentArea);
+	}
+
+	return Result;
+}
+
+std::vector<NodeArea*> NodeSystem::GetAllReferencingAreasRecursive(const NodeArea* CurrentNodeArea) const
+{
+	std::vector<NodeArea*> Result;
+	if (CurrentNodeArea == nullptr)
+		return Result;
+
+	// Using Visited map to avoid cycles.
+	std::unordered_map<std::string, bool> Visited;
+	std::function<void(const NodeArea*)> Collect = [&](const NodeArea* CurrentArea) {
+		if (CurrentArea == nullptr)
+			return;
+
+		for (NodeArea* ReferencingArea : GetReferencingAreas(CurrentArea))
+		{
+			if (Visited.find(ReferencingArea->GetID()) == Visited.end())
+			{
+				Visited[ReferencingArea->GetID()] = true;
+				Result.push_back(ReferencingArea);
+				Collect(ReferencingArea);
+			}
+		}
+	};
+
+	Collect(CurrentNodeArea);
+	return Result;
+}
+
+std::vector<std::string> NodeSystem::GetNodeAreaIDList() const
+{
+	std::vector<std::string> Result;
+	for (size_t i = 0; i < CreatedAreas.size(); i++)
+		Result.push_back(CreatedAreas[i]->GetID());
+
+	return Result;
 }

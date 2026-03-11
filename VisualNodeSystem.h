@@ -38,6 +38,14 @@ namespace VisNodeSys
 
 		void Initialize(bool bTestMode = false);
 
+		std::string ToJson() const;
+		bool SaveToFile(const std::string& FilePath) const;
+
+		bool LoadFromJson(const std::string& JsonText);
+		bool LoadFromFile(const std::string& FilePath);
+
+		std::vector<std::string> GetNodeAreaIDList() const;
+
 		NodeArea* CreateNodeArea();
 		NodeArea* GetNodeAreaByID(const std::string& NodeAreaID) const;
 
@@ -47,6 +55,12 @@ namespace VisNodeSys
 
 		std::vector<std::pair<std::string, ImColor>> GetAssociationsOfSocketTypeToColor(std::string SocketType, ImColor Color);
 		void AssociateSocketTypeToColor(std::string SocketType, ImColor Color);
+
+		std::vector<NodeArea*> GetDirectlyReferencedAreas(const NodeArea* CurrentNodeArea) const;
+		std::vector<NodeArea*> GetAllReferencedAreasRecursive(const NodeArea* CurrentNodeArea) const;
+
+		std::vector<NodeArea*> GetReferencingAreas(const NodeArea* CurrentNodeArea) const;
+		std::vector<NodeArea*> GetAllReferencingAreasRecursive(const NodeArea* CurrentNodeArea) const;
 	};
 
 #ifdef VISUAL_NODE_SYSTEM_SHARED

@@ -2,8 +2,6 @@
 
 #include "../../VisualNode.h"
 
-//#define NODE_HEIGHT_PER_SOCKET 40
-
 namespace VisNodeSys
 {
 	class VISUAL_NODE_SYSTEM_API VisualReferenceNode : public VisNodeSys::Node
