@@ -462,6 +462,20 @@ NodeSystem::NodeSystem()
 
 NodeSystem::~NodeSystem() {}
 
+#include "VersionInfo/VISUAL_NODE_SYSTEM_Version.h"
+#include "VersionInfo/FEVersionInfo.h"
+FE_DEFINE_VERSION_INFO(VISUAL_NODE_SYSTEM_)
+
+std::string NodeSystem::GetVersion()
+{
+	return GetVISUAL_NODE_SYSTEM_VersionInfo().GetVersion();
+}
+
+std::string NodeSystem::GetFullVersion()
+{
+	return "Visual Node System " + GetVISUAL_NODE_SYSTEM_VersionInfo().GetFullVersionString();
+}
+
 void NodeSystem::Initialize(bool bTestMode)
 {
 	NODE_CORE.bIsInTestMode = bTestMode;

@@ -18,6 +18,7 @@
 imgui.ini
 CMakeCache.txt
 cmake_install.cmake
+VISUAL_NODE_SYSTEM_Version.h
 
 #Folders
 Debug/

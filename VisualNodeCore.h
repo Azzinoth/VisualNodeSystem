@@ -65,8 +65,6 @@ namespace VisNodeSys
 										   \
 	return result;
 
-#define VISUAL_NODE_SYSTEM_VERSION "0.1.0"
-
 	enum class EllipsisPosition
 	{
 		End,

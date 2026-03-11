@@ -210,7 +210,7 @@ namespace VisNodeSys
 		void Clear();
 		void Reset();
 
-		void SetMainContextMenuFunction(void(*Function)());
+		void SetMainContextMenuFunction(const std::function<void()>& Function);
 		NodeAreaContextMenuOpenState GetContextMenuOpenState() const;
 
 		void GetAllElementsAABB(ImVec2& Min, ImVec2& Max) const;
@@ -226,8 +226,8 @@ namespace VisNodeSys
 		void DeleteNode(const Node* Node);
 		size_t GetNodeCount() const;
 		void AddNodeEventCallback(std::function<void(Node*, NODE_EVENT)> Func);
-		void RunOnEachNode(void(*Func)(Node*));
-		void RunOnEachConnectedNode(Node* StartNode, void(*Func)(Node*));
+		void RunOnEachNode(const std::function<void(Node*)>& Function);
+		void RunOnEachConnectedNode(Node* StartNode, const std::function<void(Node*)>& Function);
 		void PropagateUpdateToConnectedNodes(const Node* CallerNode) const;
 
 		bool TriggerSocketEvent(NodeSocket* CallerNodeSocket, NodeSocket* TriggeredNodeSocket, NODE_SOCKET_EVENT EventType);
@@ -246,7 +246,6 @@ namespace VisNodeSys
 		std::vector<GroupComment*> GetGroupCommentsInGroupComment(GroupComment* GroupCommentToCheck) const;
 
 		GroupComment* GetHoveredGroupComment() const;
-
 		// *********************** Connections ************************
 		size_t GetConnectionCount() const;
 
@@ -350,8 +349,8 @@ namespace VisNodeSys
 		ImVec2 Position;
 		ImVec2 Size;
 		ImVec2 RenderOffset = ImVec2(0.0, 0.0);
-		void(*MainContextMenuFunction)() = nullptr;
-		void RenderDefaultMainContextMenu();
+		std::function<void()> MainContextMenuFunction = nullptr;
+		void RenderDefaultMainContextMenu(ImVec2 LocalMousePosition);
 		std::vector<std::function<void(Node*, NODE_EVENT)>> NodeEventsCallbacks;
 		std::queue<SocketEvent> SocketEventQueue;
 

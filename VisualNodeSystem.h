@@ -45,6 +45,9 @@ namespace VisNodeSys
 		bool LoadFromFile(const std::string& FilePath);
 
 		std::vector<std::string> GetNodeAreaIDList() const;
+		
+		std::string GetVersion();
+		std::string GetFullVersion();
 
 		NodeArea* CreateNodeArea();
 		NodeArea* GetNodeAreaByID(const std::string& NodeAreaID) const;
