@@ -756,7 +756,7 @@ void NodeArea::KeyboardInputUpdate()
 	{
 		for (size_t i = 0; i < SelectedNodes.size(); i++)
 		{
-			DeleteNode(SelectedNodes[i]);
+			Delete(SelectedNodes[i]);
 		}
 		SelectedNodes.clear();
 

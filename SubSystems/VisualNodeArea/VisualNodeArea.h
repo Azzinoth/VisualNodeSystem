@@ -1,6 +1,6 @@
 #pragma once
 #include "../../GroupComment.h"
-#include "../../StandardNodes/ReferenceNodes/VisualReferenceNode.h"
+#include "../../StandardNodes/LinkNode/VisualLinkNode.h"
 
 #ifdef VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES
 #include "../StandardNodes/ExecutionFlowNodes/BaseExecutionFlowNode.h"
@@ -217,13 +217,17 @@ namespace VisNodeSys
 		ImVec2 GetAllElementsAABBCenter() const;
 		ImVec2 GetRenderedViewCenter() const;
 
+		bool DeleteByID(std::string ID);
+
 		// *********************** Nodes ************************
 		Node* GetNodeByID(std::string NodeID) const;
 		std::vector<Node*> GetNodesByName(std::string NodeName) const;
-		std::vector<Node*> GetNodesByType(std::string NodeType) const;
+		std::vector<Node*> GetNodesByStringType(std::string NodeType) const;
+		template<typename T>
+		std::vector<T*> GetNodesByType() const;
 
 		bool AddNode(Node* NewNode);
-		void DeleteNode(const Node* Node);
+		bool Delete(const Node* Node);
 		size_t GetNodeCount() const;
 		void AddNodeEventCallback(std::function<void(Node*, NODE_EVENT)> Func);
 		void RunOnEachNode(const std::function<void(Node*)>& Function);
@@ -238,7 +242,7 @@ namespace VisNodeSys
 		std::vector<GroupComment*> GetGroupCommentsByName(std::string GroupCommentName) const;
 
 		void AddGroupComment(GroupComment* NewGroupComment);
-		void DeleteGroupComment(GroupComment* GroupComment);
+		bool Delete(GroupComment* GroupComment);
 		size_t GetGroupCommentCount() const;
 
 		std::vector<Node*> GetNodesInGroupComment(GroupComment* GroupCommentToCheck) const;
@@ -262,6 +266,8 @@ namespace VisNodeSys
 		std::vector<std::pair<ImVec2, ImVec2>> GetConnectionSegments(const Node* OutNode, std::string OutSocketID, const Node* InNode, std::string InSocketID) const;
 		bool AddRerouteNodeToConnection(const Node* OutNode, size_t OutNodeSocketIndex, const Node* InNode, size_t InNodeSocketIndex, size_t SegmentToDivide, ImVec2 Position);
 		bool AddRerouteNodeToConnection(const Node* OutNode, std::string OutSocketID, const Node* InNode, std::string InSocketID, size_t SegmentToDivide, ImVec2 Position);
+		RerouteNode* GetRerouteNodeByID(std::string ID) const;
+		bool Delete(RerouteNode* RerouteNode);
 
 		bool GetConnectionStyle(Node* Node, bool bOutputSocket, size_t SocketIndex, ConnectionStyle& Style) const;
 		void SetConnectionStyle(Node* Node, bool bOutputSocket, size_t SocketIndex, ConnectionStyle NewStyle);
@@ -354,10 +360,13 @@ namespace VisNodeSys
 		std::vector<std::function<void(Node*, NODE_EVENT)>> NodeEventsCallbacks;
 		std::queue<SocketEvent> SocketEventQueue;
 
+		void DeleteNodeInternal(const Node* Node, int Index = -1);
+
 		void PropagateNodeEventsCallbacks(Node* Node, NODE_EVENT EventToPropagate) const;
 		ImVec2 SocketToPosition(const NodeSocket* Socket) const;
 		std::vector<Connection*> GetAllConnections(const NodeSocket* Socket) const;
 		Connection* GetConnection(const NodeSocket* FirstSocket, const NodeSocket* SecondSocket) const;
+		void Delete(Connection* Connection);
 
 		static bool IsAlreadyConnected(NodeSocket* FirstSocket, NodeSocket* SecondSocket, const std::vector<Connection*>& Connections);
 		static void ProcessConnections(const std::vector<NodeSocket*>& Sockets,
@@ -365,10 +374,6 @@ namespace VisNodeSys
 									   NodeArea* TargetArea, size_t NodeShift, const std::vector<Node*>& SourceNodes);
 		static void CopyNodesInternal(const std::vector<Node*>& SourceNodes, NodeArea* TargetArea, const size_t NodeShift = 0);
 		static bool IsEmptyOrFilledByNulls(const std::vector<Node*> Vector);
-
-		void Delete(Connection* Connection);
-		void Delete(RerouteNode* RerouteNode);
-		void Delete(GroupComment* GroupComment);
 
 		void InputUpdate();
 
@@ -454,11 +459,12 @@ namespace VisNodeSys
 		ImVec2 ScreenToLocal(ImVec2 ScreenPosition) const;
 		ImVec2 LocalToScreen(ImVec2 LocalPosition) const;
 
-		// TO DO: Here I am using internal ImGui functions. Need to find a way to avoid it.
+		// FE_TO_DO: Here I am using internal ImGui functions. Need to find a way to avoid it.
 		ImGuiWindow* GetCurrentWindowImpl() const;
 
 		// Scans the connection list to find a pair requiring reordering based on dependencies.
 		std::pair<int, int> FindOutOfOrderConnectionPair(Json::Value& Root, std::vector<Json::String>& ConnectionList, std::unordered_map<std::string, Node*>& LoadedNodes);
 		bool WorkOnLoadedConnection(Json::Value& Root, const Json::Value& ConnectionData, std::unordered_map<std::string, Node*>& LoadedNodes);
 	};
+#include "VisualNodeArea.inl"
 }

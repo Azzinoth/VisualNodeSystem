@@ -497,33 +497,55 @@ void NodeSystem::Initialize(bool bTestMode)
 
 NodeArea* NodeSystem::CreateNodeArea()
 {
-	CreatedAreas.push_back(new NodeArea());
-	return CreatedAreas.back();
+	Areas.push_back(new NodeArea());
+	return Areas.back();
 }
 
 NodeArea* NodeSystem::GetNodeAreaByID(const std::string& NodeAreaID) const
 {
-	for (size_t i = 0; i < CreatedAreas.size(); i++)
+	for (size_t i = 0; i < Areas.size(); i++)
 	{
-		if (CreatedAreas[i]->GetID() == NodeAreaID)
-			return CreatedAreas[i];
+		if (Areas[i]->GetID() == NodeAreaID)
+			return Areas[i];
 	}
 
 	return nullptr;
 }
 
+void NodeSystem::OnNodeDeletion(Node* DeletedNode)
+{
+	if (DeletedNode->GetType() != "VisualLinkNode")
+		return;
+
+	// We care only about nodes that are part of a link between areas.
+	NodeAreaLinkRecord Data = GetLinkDataByNodeID(DeletedNode->GetID());
+	if (Data.ID.empty())
+		return;
+
+	VisualLinkNode* LinkNode = static_cast<VisualLinkNode*>(DeletedNode);
+	NodeArea* LinkedArea = LinkNode->GetLinkedArea();
+	Node* PartnerNode = LinkedArea->GetNodeByID(LinkNode->PartnerNodeID);//nullptr;
+	/*if (Data.InNodeID == DeletedNode->GetID())
+	{
+		PartnerNode = LinkedArea->GetNodeByID(Data.OutNodeID);
+	}
+	else
+	{
+		PartnerNode = LinkedArea->GetNodeByID(Data.InNodeID);
+	}*/
+
+	LinkedArea->DeleteNodeInternal(PartnerNode);
+	DeleteLinkRecord(Data.ID);
+}
+
 void NodeSystem::DeleteNodeArea(const NodeArea* NodeArea)
 {
-	for (size_t i = 0; i < CreatedAreas.size(); i++)
+	for (size_t i = 0; i < Areas.size(); i++)
 	{
-		if (CreatedAreas[i] == NodeArea)
+		if (Areas[i] == NodeArea)
 		{
-			std::vector<ReferenceNodeData> RelatedReferenceNodes = GetReferenceNodeDataByReferencedAreaID(NodeArea->GetID());
-			for (size_t j = 0; j < RelatedReferenceNodes.size(); j++)
-				DeleteReferenceNodeRecord(RelatedReferenceNodes[j].NodeID);
-			
-			delete CreatedAreas[i];
-			CreatedAreas.erase(CreatedAreas.begin() + i, CreatedAreas.begin() + i + 1);
+			delete Areas[i];
+			Areas.erase(Areas.begin() + i, Areas.begin() + i + 1);
 			return;
 		}
 	}
@@ -559,22 +581,27 @@ void NodeSystem::MoveNodesTo(NodeArea* SourceNodeArea, NodeArea* TargetNodeArea,
 	}
 }
 
-NodeSystem::ReferenceNodeData NodeSystem::GetReferenceNodeDataByNodeID(const std::string& NodeID) const
+NodeSystem::NodeAreaLinkRecord NodeSystem::GetLinkDataByNodeID(const std::string& NodeID) const
 {
-	auto RecordIterator = ReferenceNodeRecords.find(NodeID);
-	if (RecordIterator != ReferenceNodeRecords.end())
-		return RecordIterator->second;
-	
-	return ReferenceNodeData();
+	auto RecordIterator = NodeAreaLinkRecords.begin();
+	while (RecordIterator != NodeAreaLinkRecords.end())
+	{
+		if (RecordIterator->second.InNodeID == NodeID || RecordIterator->second.OutNodeID == NodeID)
+			return RecordIterator->second;
+
+		RecordIterator++;
+	}
+
+	return NodeAreaLinkRecord();
 }
 
-std::vector<NodeSystem::ReferenceNodeData> NodeSystem::GetReferenceNodeDataByReferencedAreaID(const std::string& ReferencedAreaID) const
+std::vector<NodeSystem::NodeAreaLinkRecord> NodeSystem::GetLinkDataByAreaID(const std::string& AreaID) const
 {
-	auto RecordIterator = ReferenceNodeRecords.begin();
-	std::vector<ReferenceNodeData> Result;
-	while (RecordIterator != ReferenceNodeRecords.end())
+	auto RecordIterator = NodeAreaLinkRecords.begin();
+	std::vector<NodeAreaLinkRecord> Result;
+	while (RecordIterator != NodeAreaLinkRecords.end())
 	{
-		if (RecordIterator->second.ReferencedAreaID == ReferencedAreaID)
+		if (RecordIterator->second.InAreaID == AreaID || RecordIterator->second.OutAreaID == AreaID)
 			Result.push_back(RecordIterator->second);
 		
 		RecordIterator++;
@@ -583,56 +610,152 @@ std::vector<NodeSystem::ReferenceNodeData> NodeSystem::GetReferenceNodeDataByRef
 	return Result;
 }
 
-std::vector<NodeSystem::ReferenceNodeData> NodeSystem::GetReferenceNodeDataByParentAreaID(const std::string& ParentAreaID) const
+bool NodeSystem::LinkNodeAreas(const std::string& UpstreamAreaID, const std::string& DownstreamAreaID, std::pair<std::string, std::string>* CreatedLinkNodeIDs)
 {
-	auto RecordIterator = ReferenceNodeRecords.begin();
-	std::vector<ReferenceNodeData> Result;
-	while (RecordIterator != ReferenceNodeRecords.end())
+	NodeArea* UpstreamArea = GetNodeAreaByID(UpstreamAreaID);
+	NodeArea* DownstreamArea = GetNodeAreaByID(DownstreamAreaID);
+	if (UpstreamArea == nullptr || DownstreamArea == nullptr || UpstreamArea == DownstreamArea)
+		return false;
+
+	VisualLinkNode* InNode = new VisualLinkNode();
+	if (!UpstreamArea->AddNode(InNode))
 	{
-		if (RecordIterator->second.ParentNodeAreaID == ParentAreaID)
-			Result.push_back(RecordIterator->second);
+		delete InNode;
+		return false;
+	}
+
+	VisualLinkNode* OutNode = new VisualLinkNode();
+	if (!DownstreamArea->AddNode(OutNode))
+	{
+		UpstreamArea->Delete(InNode);
+		delete OutNode;
+		return false;
+	}
+
+	InNode->PartnerNodeID = OutNode->GetID();
+	InNode->bIsInputNode = true;
+	InNode->LinkedAreaID = DownstreamArea->GetID();
+
+	OutNode->PartnerNodeID = InNode->GetID();
+	OutNode->bIsInputNode = false;
+	OutNode->LinkedAreaID = UpstreamArea->GetID();
+
+	NodeAreaLinkRecord NewRecord;
+	NewRecord.ID = InNode->GetID() + "_" + OutNode->GetID();
+	NewRecord.InNodeID = InNode->GetID();
+	NewRecord.OutNodeID = OutNode->GetID();
+	NewRecord.InAreaID = UpstreamArea->GetID();
+	NewRecord.OutAreaID = DownstreamArea->GetID();
+
+	NodeAreaLinkRecords[NewRecord.ID] = NewRecord;
+
+	if (CreatedLinkNodeIDs != nullptr)
+		*CreatedLinkNodeIDs = std::make_pair(InNode->GetID(), OutNode->GetID());
+	return true;
+}
+
+bool NodeSystem::IsLinked(const std::string& FirstAreaID, const std::string& SecondAreaID) const
+{
+	NodeArea* FirstArea = GetNodeAreaByID(FirstAreaID);
+	NodeArea* SecondArea = GetNodeAreaByID(SecondAreaID);
+	if (FirstArea == nullptr || SecondArea == nullptr)
+		return false;
+
+	auto RecordIterator = NodeAreaLinkRecords.begin();
+	while (RecordIterator != NodeAreaLinkRecords.end())
+	{
+		NodeAreaLinkRecord Record = RecordIterator->second;
+		if (Record.InAreaID == FirstArea->GetID() && Record.OutAreaID == SecondArea->GetID() ||
+			Record.InAreaID == SecondArea->GetID() && Record.OutAreaID == FirstArea->GetID())
+			return true;
+
+		RecordIterator++;
+	}
+
+	return false;
+}
+
+bool NodeSystem::UnlinkNodeAreas(const std::string& FirstAreaID, const std::string& SecondAreaID)
+{
+	NodeArea* FirstArea = GetNodeAreaByID(FirstAreaID);
+	NodeArea* SecondArea = GetNodeAreaByID(SecondAreaID);
+	if (FirstArea == nullptr || SecondArea == nullptr)
+		return false;
+
+	// First pass: collect matching records.
+	std::vector<std::string> RecordIDsToRemove;
+	auto RecordIterator = NodeAreaLinkRecords.begin();
+	while (RecordIterator != NodeAreaLinkRecords.end())
+	{
+		NodeAreaLinkRecord Record = RecordIterator->second;
+		if ((Record.InAreaID == FirstArea->GetID() && Record.OutAreaID == SecondArea->GetID()) ||
+			(Record.InAreaID == SecondArea->GetID() && Record.OutAreaID == FirstArea->GetID()))
+		{
+			RecordIDsToRemove.push_back(RecordIterator->first);
+		}
 		
 		RecordIterator++;
 	}
-	
+
+	// Second pass: delete nodes (which internally cleans up records too).
+	for (const auto& RecordID : RecordIDsToRemove)
+	{
+		// Record might already be gone if a previous Delete removed it.
+		auto LinkRecordIterator = NodeAreaLinkRecords.find(RecordID);
+		if (LinkRecordIterator == NodeAreaLinkRecords.end())
+			continue;
+
+		NodeAreaLinkRecord Record = LinkRecordIterator->second;
+		std::string RecordID = LinkRecordIterator->first;
+		NodeArea* InArea = GetNodeAreaByID(Record.InAreaID);
+		if (InArea != nullptr)
+		{
+			Node* InNode = InArea->GetNodeByID(Record.InNodeID);
+			if (InNode != nullptr)
+				InArea->Delete(InNode);
+		}
+
+		DeleteLinkRecord(RecordID);
+	}
+
+	return !RecordIDsToRemove.empty();
+}
+
+std::vector<std::pair<std::string, std::string>> NodeSystem::GetLinkingNodesForAreas(const std::string& FirstAreaID, const std::string& SecondAreaID) const
+{
+	NodeArea* FirstArea = GetNodeAreaByID(FirstAreaID);
+	NodeArea* SecondArea = GetNodeAreaByID(SecondAreaID);
+	std::vector<std::pair<std::string, std::string>> Result;
+	if (FirstArea == nullptr || SecondArea == nullptr)
+		return Result;
+
+	auto RecordIterator = NodeAreaLinkRecords.begin();
+	while (RecordIterator != NodeAreaLinkRecords.end())
+	{
+		NodeAreaLinkRecord Record = RecordIterator->second;
+		if (Record.InAreaID == FirstArea->GetID() && Record.OutAreaID == SecondArea->GetID() ||
+			Record.InAreaID == SecondArea->GetID() && Record.OutAreaID == FirstArea->GetID())
+		{
+			Node* InNode = GetNodeAreaByID(Record.InAreaID)->GetNodeByID(Record.InNodeID);
+			Node* OutNode = GetNodeAreaByID(Record.OutAreaID)->GetNodeByID(Record.OutNodeID);
+
+			if (InNode != nullptr && OutNode != nullptr)
+				Result.push_back({ Record.InNodeID,Record.OutNodeID });
+		}
+
+		RecordIterator++;
+	}
+
 	return Result;
 }
 
-bool NodeSystem::CreateReferenceNodeRecord(const std::string& NodeID, const std::string& ParentNodeAreaID, const std::string& ReferencedAreaID)
+bool NodeSystem::DeleteLinkRecord(const std::string& LinkID)
 {
-	if (NodeID.empty() || ReferencedAreaID.empty())
+	auto RecordIterator = NodeAreaLinkRecords.find(LinkID);
+	if (RecordIterator == NodeAreaLinkRecords.end())
 		return false;
 
-	ReferenceNodeData NewRecord;
-	NewRecord.NodeID = NodeID;
-	NewRecord.ParentNodeAreaID = ParentNodeAreaID;
-	NewRecord.ReferencedAreaID = ReferencedAreaID;
-
-	ReferenceNodeRecords[NodeID] = NewRecord;
-	return true;
-}
-
-bool NodeSystem::UpdateReferenceNodeRecord(const std::string& NodeID, const std::string& ParentNodeAreaID, const std::string& ReferencedAreaID)
-{
-	if (NodeID.empty())
-		return false;
-
-	auto RecordIterator = ReferenceNodeRecords.find(NodeID);
-	if (RecordIterator == ReferenceNodeRecords.end())
-		return false;
-		
-	RecordIterator->second.ParentNodeAreaID = ParentNodeAreaID;
-	RecordIterator->second.ReferencedAreaID = ReferencedAreaID;
-	return true;
-}
-
-bool NodeSystem::DeleteReferenceNodeRecord(const std::string& NodeID)
-{
-	auto RecordIterator = ReferenceNodeRecords.find(NodeID);
-	if (RecordIterator == ReferenceNodeRecords.end())
-		return false;
-
-	ReferenceNodeRecords.erase(RecordIterator);
+	NodeAreaLinkRecords.erase(RecordIterator);
 	return true;
 }
 
@@ -661,10 +784,10 @@ void NodeSystem::OnNodeAreaFocusChanging(NodeArea* CurrentNodeArea, bool NewFocu
 
 	if (NewFocusValue)
 	{
-		for (size_t i = 0; i < CreatedAreas.size(); i++)
+		for (size_t i = 0; i < Areas.size(); i++)
 		{
-			if (CreatedAreas[i] != CurrentNodeArea)
-				CreatedAreas[i]->SetFocusedInternal(false);
+			if (Areas[i] != CurrentNodeArea)
+				Areas[i]->SetFocusedInternal(false);
 		}
 	}
 	else
@@ -679,24 +802,25 @@ std::string NodeSystem::ToJson() const
 
 	// First of all we need to save the list of all node areas.
 	Json::Value NodeAreaList;
-	for (size_t i = 0; i < CreatedAreas.size(); i++)
-		NodeAreaList[std::to_string(i)] = CreatedAreas[i]->GetID();
+	for (size_t i = 0; i < Areas.size(); i++)
+		NodeAreaList[std::to_string(i)] = Areas[i]->GetID();
 	
 	Root["NodeAreaList"] = NodeAreaList;
 
-	// Reference node records.
-	Json::Value ReferenceNodeRecordsJson;
-	auto RecordIterator = ReferenceNodeRecords.begin();
-	while (RecordIterator != ReferenceNodeRecords.end())
+	// Link node records.
+	Json::Value LinkRecordsJson;
+	auto RecordIterator = NodeAreaLinkRecords.begin();
+	while (RecordIterator != NodeAreaLinkRecords.end())
 	{
 		Json::Value RecordJson;
-		RecordJson["NodeID"] = RecordIterator->second.NodeID;
-		RecordJson["ParentNodeAreaID"] = RecordIterator->second.ParentNodeAreaID;
-		RecordJson["ReferencedAreaID"] = RecordIterator->second.ReferencedAreaID;
-		ReferenceNodeRecordsJson[RecordIterator->first] = RecordJson;
+		RecordJson["InNodeID"] = RecordIterator->second.InNodeID;
+		RecordJson["OutNodeID"] = RecordIterator->second.OutNodeID;
+		RecordJson["InAreaID"] = RecordIterator->second.InAreaID;
+		RecordJson["OutAreaID"] = RecordIterator->second.OutAreaID;
+		LinkRecordsJson[RecordIterator->first] = RecordJson;
 		RecordIterator++;
 	}
-	Root["ReferenceNodeRecords"] = ReferenceNodeRecordsJson;
+	Root["NodeAreaLinkRecords"] = LinkRecordsJson;
 
 	// Socket type to color associations.
 	Json::Value SocketTypeToColorAssociationsJson;
@@ -715,8 +839,8 @@ std::string NodeSystem::ToJson() const
 
 	// Finally we need to save all node areas.
 	Json::Value NodeAreasJson;
-	for (size_t i = 0; i < CreatedAreas.size(); i++)
-		NodeAreasJson[CreatedAreas[i]->GetID()] = CreatedAreas[i]->ToJson();
+	for (size_t i = 0; i < Areas.size(); i++)
+		NodeAreasJson[Areas[i]->GetID()] = Areas[i]->ToJson();
 	Root["NodeAreas"] = NodeAreasJson;
 
 	Json::StreamWriterBuilder Builder;
@@ -751,7 +875,7 @@ bool NodeSystem::LoadFromJson(const std::string& JsonText)
 	if (!Reader->parse(JsonText.c_str(), JsonText.c_str() + JsonText.size(), &Root, &Error))
 		return false;
 
-	if (!Root.isMember("NodeAreaList") || !Root.isMember("ReferenceNodeRecords") || !Root.isMember("SocketTypeToColorAssociations") || !Root.isMember("NodeAreas") || !Root["NodeAreas"].isObject())
+	if (!Root.isMember("NodeAreaList") || !Root.isMember("NodeAreaLinkRecords") || !Root.isMember("SocketTypeToColorAssociations") || !Root.isMember("NodeAreas") || !Root["NodeAreas"].isObject())
 		return false;
 
 	//// First of all we need to load all node areas.
@@ -763,22 +887,23 @@ bool NodeSystem::LoadFromJson(const std::string& JsonText)
 	//	NodeAreaIDs.push_back(NodeAreaID);
 	//}
 
-	// Reference node records.
-	std::vector<Json::String> ReferenceNodeList = Root["ReferenceNodeRecords"].getMemberNames();
+	// Link records.
+	std::vector<Json::String> LinkNodeList = Root["NodeAreaLinkRecords"].getMemberNames();
 	std::vector<Json::String> ValidConnectionKeys;
-	for (size_t i = 0; i < ReferenceNodeList.size(); i++)
+	for (size_t i = 0; i < LinkNodeList.size(); i++)
 	{
-		if (!Root["ReferenceNodeRecords"][ReferenceNodeList[i]].isObject())
+		if (!Root["NodeAreaLinkRecords"][LinkNodeList[i]].isObject())
 			continue;
 
-		const Json::Value& ReferenceNodeData = Root["ReferenceNodeRecords"][ReferenceNodeList[i]];
-		if (!ReferenceNodeData.isMember("NodeID") || !ReferenceNodeData.isMember("ParentNodeAreaID") || !ReferenceNodeData.isMember("ReferencedAreaID"))
+		const Json::Value& LinkRecordData = Root["NodeAreaLinkRecords"][LinkNodeList[i]];
+		if (!LinkRecordData.isMember("InNodeID") || !LinkRecordData.isMember("OutNodeID") || !LinkRecordData.isMember("InAreaID") || !LinkRecordData.isMember("OutAreaID"))
 			continue;
 
-		std::string NodeID = ReferenceNodeData["NodeID"].asString();
-		std::string ParentNodeAreaID = ReferenceNodeData["ParentNodeAreaID"].asString();
-		std::string ReferencedAreaID = ReferenceNodeData["ReferencedAreaID"].asString();
-		if (NodeID.empty() || ParentNodeAreaID.empty() || ReferencedAreaID.empty())
+		std::string InNodeID = LinkRecordData["InNodeID"].asString();
+		std::string OutNodeID = LinkRecordData["OutNodeID"].asString();
+		std::string InAreaID = LinkRecordData["InAreaID"].asString();
+		std::string OutAreaID = LinkRecordData["OutAreaID"].asString();
+		if (InNodeID.empty() || OutNodeID.empty() || InAreaID.empty() || OutAreaID.empty())
 			continue;
 	}
 
@@ -819,7 +944,7 @@ bool NodeSystem::LoadFromJson(const std::string& JsonText)
 		NewNodeArea->LoadFromJson(Root["NodeAreas"][NodeAreaListKeys[i]].asCString());
 	}
 	
-
+	return true;
 }
 
 bool NodeSystem::LoadFromFile(const std::string& FilePath)
@@ -835,42 +960,49 @@ bool NodeSystem::LoadFromFile(const std::string& FilePath)
 	return LoadFromJson(FileData);
 }
 
-std::vector<NodeArea*> NodeSystem::GetDirectlyReferencedAreas(const NodeArea* CurrentNodeArea) const
+std::vector<NodeArea*> NodeSystem::GetImmediateDownstreamAreas(const std::string& AreaID) const
 {
 	std::vector<NodeArea*> Result;
-	if (CurrentNodeArea == nullptr)
+	NodeArea* CurrentArea = GetNodeAreaByID(AreaID);
+	if (CurrentArea == nullptr)
 		return Result;
 
-	std::vector<ReferenceNodeData> ReferenceNodes = GetReferenceNodeDataByParentAreaID(CurrentNodeArea->GetID());
-	for (int i = 0; i < ReferenceNodes.size(); i++)
+	std::vector<NodeAreaLinkRecord> LinkRecords = GetLinkDataByAreaID(CurrentArea->GetID());
+	for (int i = 0; i < LinkRecords.size(); i++)
 	{
-		NodeArea* ReferencedArea = GetNodeAreaByID(ReferenceNodes[i].ReferencedAreaID);
-		if (ReferencedArea != nullptr)
-			Result.push_back(ReferencedArea);
+		if (LinkRecords[i].InAreaID == CurrentArea->GetID())
+		{
+			NodeArea* DownstreamArea = GetNodeAreaByID(LinkRecords[i].OutAreaID);
+			if (DownstreamArea != nullptr)
+				Result.push_back(DownstreamArea);
+		}
 	}
 
 	return Result;
 }
 
-std::vector<NodeArea*> NodeSystem::GetAllReferencedAreasRecursive(const NodeArea* CurrentNodeArea) const
+std::vector<NodeArea*> NodeSystem::GetAllDownstreamAreas(const std::string& AreaID) const
 {
+	NodeArea* CurrentNodeArea = GetNodeAreaByID(AreaID);
 	std::vector<NodeArea*> Result;
 	if (CurrentNodeArea == nullptr)
 		return Result;
 
-	// Using Visited map to avoid cycles.
+	// Using Visited map to avoid infinite loops in case of cycles in the graph.
 	std::unordered_map<std::string, bool> Visited;
+	// We should add current area to visited to avoid adding it to result in case of cycles.
+	Visited[CurrentNodeArea->GetID()] = true;
 	std::function<void(const NodeArea*)> Collect = [&](const NodeArea* CurrentArea) {
 		if (CurrentArea == nullptr)
 			return;
 
-		for (NodeArea* ReferencedArea : GetDirectlyReferencedAreas(CurrentArea))
+		for (NodeArea* DownstreamArea : GetImmediateDownstreamAreas(CurrentArea->GetID()))
 		{
-			if (Visited.find(ReferencedArea->GetID()) == Visited.end())
+			if (Visited.find(DownstreamArea->GetID()) == Visited.end())
 			{
-				Visited[ReferencedArea->GetID()] = true;
-				Result.push_back(ReferencedArea);
-				Collect(ReferencedArea);
+				Visited[DownstreamArea->GetID()] = true;
+				Result.push_back(DownstreamArea);
+				Collect(DownstreamArea);
 			}
 		}
 	};
@@ -879,42 +1011,49 @@ std::vector<NodeArea*> NodeSystem::GetAllReferencedAreasRecursive(const NodeArea
 	return Result;
 }
 
-std::vector<NodeArea*> NodeSystem::GetReferencingAreas(const NodeArea* CurrentNodeArea) const
+std::vector<NodeArea*> NodeSystem::GetImmediateUpstreamAreas(const std::string& AreaID) const
 {
 	std::vector<NodeArea*> Result;
+	NodeArea* CurrentNodeArea = GetNodeAreaByID(AreaID);
 	if (CurrentNodeArea == nullptr)
 		return Result;
 
-	std::vector<ReferenceNodeData> ReferenceNodes = GetReferenceNodeDataByReferencedAreaID(CurrentNodeArea->GetID());
-	for (int i = 0; i < ReferenceNodes.size(); i++)
+	std::vector<NodeAreaLinkRecord> LinkRecords = GetLinkDataByAreaID(CurrentNodeArea->GetID());
+	for (int i = 0; i < LinkRecords.size(); i++)
 	{
-		NodeArea* ParentArea = GetNodeAreaByID(ReferenceNodes[i].ParentNodeAreaID);
-		if (ParentArea != nullptr)
-			Result.push_back(ParentArea);
+		if (LinkRecords[i].OutAreaID == CurrentNodeArea->GetID())
+		{
+			NodeArea* UpstreamArea = GetNodeAreaByID(LinkRecords[i].InAreaID);
+			if (UpstreamArea != nullptr)
+				Result.push_back(UpstreamArea);
+		}
 	}
 
 	return Result;
 }
 
-std::vector<NodeArea*> NodeSystem::GetAllReferencingAreasRecursive(const NodeArea* CurrentNodeArea) const
+std::vector<NodeArea*> NodeSystem::GetAllUpstreamAreas(const std::string& AreaID) const
 {
 	std::vector<NodeArea*> Result;
+	NodeArea* CurrentNodeArea = GetNodeAreaByID(AreaID);
 	if (CurrentNodeArea == nullptr)
 		return Result;
 
-	// Using Visited map to avoid cycles.
+	// Using Visited map to avoid infinite loops in case of cycles in the graph.
 	std::unordered_map<std::string, bool> Visited;
+	// We should add current area to visited to avoid adding it to result in case of cycles.
+	Visited[CurrentNodeArea->GetID()] = true;
 	std::function<void(const NodeArea*)> Collect = [&](const NodeArea* CurrentArea) {
 		if (CurrentArea == nullptr)
 			return;
 
-		for (NodeArea* ReferencingArea : GetReferencingAreas(CurrentArea))
+		for (NodeArea* UpstreamArea : GetImmediateUpstreamAreas(CurrentArea->GetID()))
 		{
-			if (Visited.find(ReferencingArea->GetID()) == Visited.end())
+			if (Visited.find(UpstreamArea->GetID()) == Visited.end())
 			{
-				Visited[ReferencingArea->GetID()] = true;
-				Result.push_back(ReferencingArea);
-				Collect(ReferencingArea);
+				Visited[UpstreamArea->GetID()] = true;
+				Result.push_back(UpstreamArea);
+				Collect(UpstreamArea);
 			}
 		}
 	};
@@ -926,8 +1065,8 @@ std::vector<NodeArea*> NodeSystem::GetAllReferencingAreasRecursive(const NodeAre
 std::vector<std::string> NodeSystem::GetNodeAreaIDList() const
 {
 	std::vector<std::string> Result;
-	for (size_t i = 0; i < CreatedAreas.size(); i++)
-		Result.push_back(CreatedAreas[i]->GetID());
+	for (size_t i = 0; i < Areas.size(); i++)
+		Result.push_back(Areas[i]->GetID());
 
 	return Result;
 }

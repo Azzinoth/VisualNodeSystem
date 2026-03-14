@@ -6,28 +6,35 @@ namespace VisNodeSys
 {
 	class VISUAL_NODE_SYSTEM_API NodeSystem
 	{
-		friend class VisualReferenceNode;
+		friend class VisualLinkNode;
 		friend class NodeArea;
-
-		struct ReferenceNodeData
-		{
-			std::string NodeID;
-			std::string ParentNodeAreaID;
-			std::string ReferencedAreaID;
-		};
 
 		SINGLETON_PRIVATE_PART(NodeSystem)
 
-		std::vector<NodeArea*> CreatedAreas;
-		std::unordered_map<std::string, ReferenceNodeData> ReferenceNodeRecords;
+		struct NodeAreaLinkRecord
+		{
+			std::string ID;
 
-		ReferenceNodeData GetReferenceNodeDataByNodeID(const std::string& NodeID) const;
-		std::vector<ReferenceNodeData> GetReferenceNodeDataByReferencedAreaID(const std::string& ReferencedAreaID) const;
-		std::vector<ReferenceNodeData> GetReferenceNodeDataByParentAreaID(const std::string& ParentAreaID) const;
+			std::string InNodeID;
+			std::string OutNodeID;
 
-		bool CreateReferenceNodeRecord(const std::string& NodeID, const std::string& ParentNodeAreaID, const std::string& ReferencedAreaID);
-		bool UpdateReferenceNodeRecord(const std::string& NodeID, const std::string& ParentNodeAreaID, const std::string& ReferencedAreaID);
-		bool DeleteReferenceNodeRecord(const std::string& NodeID);
+			std::string InAreaID;
+			std::string OutAreaID;
+
+			bool IsNull() const
+			{
+				return ID.empty() || InNodeID.empty() || OutNodeID.empty() || InAreaID.empty() || OutAreaID.empty();
+			}
+		};
+
+		std::vector<NodeArea*> Areas;
+		std::unordered_map<std::string, NodeAreaLinkRecord> NodeAreaLinkRecords;
+
+		NodeAreaLinkRecord GetLinkDataByNodeID(const std::string& NodeID) const;
+		std::vector<NodeAreaLinkRecord> GetLinkDataByAreaID(const std::string& AreaID) const;
+		
+		void OnNodeDeletion(Node* DeletedNode);
+		bool DeleteLinkRecord(const std::string& LinkID);
 
 #ifdef VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES
 		void RegisterStandardNodes();
@@ -59,11 +66,18 @@ namespace VisNodeSys
 		std::vector<std::pair<std::string, ImColor>> GetAssociationsOfSocketTypeToColor(std::string SocketType, ImColor Color);
 		void AssociateSocketTypeToColor(std::string SocketType, ImColor Color);
 
-		std::vector<NodeArea*> GetDirectlyReferencedAreas(const NodeArea* CurrentNodeArea) const;
-		std::vector<NodeArea*> GetAllReferencedAreasRecursive(const NodeArea* CurrentNodeArea) const;
+		bool LinkNodeAreas(const std::string& UpstreamAreaID,
+						   const std::string& DownstreamAreaID,
+						   std::pair<std::string, std::string>* CreatedLinkNodeIDs = nullptr);
+		bool IsLinked(const std::string& FirstAreaID, const std::string& SecondAreaID) const;
+		bool UnlinkNodeAreas(const std::string& FirstAreaID, const std::string& SecondAreaID);
+		std::vector<std::pair<std::string, std::string>> GetLinkingNodesForAreas(const std::string& FirstAreaID, const std::string& SecondAreaID) const;
 
-		std::vector<NodeArea*> GetReferencingAreas(const NodeArea* CurrentNodeArea) const;
-		std::vector<NodeArea*> GetAllReferencingAreasRecursive(const NodeArea* CurrentNodeArea) const;
+		std::vector<NodeArea*> GetImmediateDownstreamAreas(const std::string& AreaID) const;
+		std::vector<NodeArea*> GetAllDownstreamAreas(const std::string& AreaID) const;
+
+		std::vector<NodeArea*> GetImmediateUpstreamAreas(const std::string& AreaID) const;
+		std::vector<NodeArea*> GetAllUpstreamAreas(const std::string& AreaID) const;
 	};
 
 #ifdef VISUAL_NODE_SYSTEM_SHARED

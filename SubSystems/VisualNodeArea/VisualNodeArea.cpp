@@ -73,7 +73,7 @@ void NodeArea::Update()
 	{
 		if (Nodes[i]->bShouldBeDestroyed)
 		{
-			DeleteNode(Nodes[i]);
+			Delete(Nodes[i]);
 			i--;
 			break;
 		}
@@ -94,7 +94,7 @@ void NodeArea::Clear()
 
 	for (int i = 0; i < static_cast<int>(GroupComments.size()); i++)
 	{
-		DeleteGroupComment(GroupComments[i]);
+		Delete(GroupComments[i]);
 		i--;
 	}
 	GroupComments.clear();
@@ -104,7 +104,7 @@ void NodeArea::Clear()
 	{
 		PropagateNodeEventsCallbacks(Nodes[i], DESTROYED);
 		Nodes[i]->bCouldBeDestroyed = true;
-		DeleteNode(Nodes[i]);
+		Delete(Nodes[i]);
 		i--;
 	}
 	Nodes.clear();
@@ -742,7 +742,7 @@ std::vector<Node*> NodeArea::GetNodesByName(const std::string NodeName) const
 	return Result;
 }
 
-std::vector<Node*> NodeArea::GetNodesByType(const std::string NodeType) const
+std::vector<Node*> NodeArea::GetNodesByStringType(const std::string NodeType) const
 {
 	std::vector<Node*> Result;
 	for (size_t i = 0; i < Nodes.size(); i++)

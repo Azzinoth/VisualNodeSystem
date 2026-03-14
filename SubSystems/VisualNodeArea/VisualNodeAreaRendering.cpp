@@ -982,7 +982,7 @@ void NodeArea::RenderDefaultMainContextMenu()
 	{
 		if (ImGui::MenuItem("Delete Node"))
 		{
-			DeleteNode(ContextMenuOpenState.GetNode());
+			Delete(ContextMenuOpenState.GetNode());
 		}
 	}
 	else if (GetSelected().size() > 1)
@@ -991,7 +991,7 @@ void NodeArea::RenderDefaultMainContextMenu()
 		if (ImGui::MenuItem("Delete Selected Nodes"))
 		{
 			for (size_t i = 0; i < SelectedList.size(); i++)
-				DeleteNode(SelectedList[i]);
+				Delete(SelectedList[i]);
 			
 			UnSelectAll();
 		}

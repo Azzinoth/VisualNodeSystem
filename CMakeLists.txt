@@ -31,14 +31,15 @@ endif()
 # defined projects like INSTALL.vcproj and ZERO_CHECK.vcproj
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-file(GLOB VisualReferenceNode_SRC
-	"StandardNodes/ReferenceNodes/VisualReferenceNode.cpp"
-	"StandardNodes/ReferenceNodes/VisualReferenceNode.h"
+file(GLOB VisualLinkNode_SRC
+	"StandardNodes/LinkNode/VisualLinkNode.cpp"
+	"StandardNodes/LinkNode/VisualLinkNode.h"
 )
 
 file(GLOB VisualNodeArea_SRC
 	"SubSystems/VisualNodeArea/VisualNodeArea.cpp"
 	"SubSystems/VisualNodeArea/VisualNodeArea.h"
+	"SubSystems/VisualNodeArea/VisualNodeArea.inl"
 	"SubSystems/VisualNodeArea/VisualNodeAreaLogic.cpp"
 	"SubSystems/VisualNodeArea/VisualNodeAreaInput.cpp"
 	"SubSystems/VisualNodeArea/VisualNodeAreaRendering.cpp"
@@ -230,7 +231,7 @@ set(ALL_SOURCE_FILES "")
 list(APPEND ALL_SOURCE_FILES
             ${VisualNodeSystem_SRC}
 			${VisualNodeArea_SRC}
-			${VisualReferenceNode_SRC}
+			${VisualLinkNode_SRC}
 			${BaseExecutionFlowNodes_SOURCE_FILES}
 			${LiteralsNodes_SOURCE_FILES}
 			${VariablesNodes_SOURCE_FILES}
@@ -259,7 +260,7 @@ endif()
 
 source_group("Source Files" FILES ${VisualNodeSystem_SRC})
 source_group("Source Files/SubSystems/VisualNodeArea/" FILES ${VisualNodeArea_SRC})
-source_group("Source Files/StandardNodes/ReferenceNode" FILES ${VisualReferenceNode_SRC})
+source_group("Source Files/StandardNodes/LinkNode" FILES ${VisualLinkNode_SRC})
 if(VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES)
 	source_group("Source Files/StandardNodes/ExecutionFlowNodes" FILES ${BaseExecutionFlowNodes_SOURCE_FILES})
 	source_group("Source Files/StandardNodes/ExecutionFlowNodes/LiteralsNodes" FILES ${LiteralsNodes_SOURCE_FILES})

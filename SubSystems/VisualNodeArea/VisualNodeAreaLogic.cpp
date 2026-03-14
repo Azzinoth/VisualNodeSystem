@@ -11,20 +11,15 @@ bool NodeArea::AddNode(Node* NewNode)
 	if (FoundNode != nullptr)
 		return false;
 
-	if (NewNode->GetType() == "VisualReferenceNode")
+	if (NewNode->GetType() == "VisualLinkNode")
 	{
-		VisualReferenceNode* ReferenceNode = static_cast<VisualReferenceNode*>(NewNode);
-		if (ReferenceNode->GetReferencedArea() == this)
+		VisualLinkNode* ReferenceNode = static_cast<VisualLinkNode*>(NewNode);
+		if (ReferenceNode->GetLinkedArea() == this)
 			return false;
 	}
 
 	NewNode->ParentArea = this;
 	Nodes.push_back(NewNode);
-	if (NewNode->GetType() == "VisualReferenceNode")
-	{
-		VisualReferenceNode* ReferenceNode = static_cast<VisualReferenceNode*>(NewNode);
-		NODE_SYSTEM.UpdateReferenceNodeRecord(NewNode->GetID(), this->GetID(), ReferenceNode->ReferencedAreaID);
-	}
 
 	return true;
 }
@@ -133,8 +128,11 @@ void NodeArea::Delete(Connection* Connection)
 	}
 }
 
-void NodeArea::Delete(RerouteNode* RerouteNode)
+bool NodeArea::Delete(RerouteNode* RerouteNode)
 {
+	if (RerouteNode == nullptr)
+		return false;
+
 	if (RerouteNodeHovered == RerouteNode)
 		RerouteNodeHovered = nullptr;
 
@@ -180,32 +178,16 @@ void NodeArea::Delete(RerouteNode* RerouteNode)
 	{
 		delete RerouteNode;
 		Connection->RerouteNodes.erase(Connection->RerouteNodes.begin() + IndexOfRerouteNode, Connection->RerouteNodes.begin() + IndexOfRerouteNode + 1);
+		return true;
 	}
+
+	return false;
 }
 
-void NodeArea::Delete(GroupComment* GroupComment)
-{
-	if (GroupCommentHovered == GroupComment)
-		GroupCommentHovered = nullptr;
-
-	UnSelect(GroupComment);
-
-	for (size_t i = 0; i < GroupComments.size(); i++)
-	{
-		if (GroupComments[i] == GroupComment)
-		{
-			delete GroupComments[i];
-			GroupComments.erase(GroupComments.begin() + i, GroupComments.begin() + i + 1);
-
-			break;
-		}
-	}
-}
-
-void NodeArea::DeleteNode(const Node* Node)
+bool NodeArea::Delete(const Node* Node)
 {
 	if (!Node->bCouldBeDestroyed)
-		return;
+		return false;
 
 	for (size_t i = 0; i < Nodes.size(); i++)
 	{
@@ -231,12 +213,35 @@ void NodeArea::DeleteNode(const Node* Node)
 				}
 			}
 
-			delete Nodes[i];
-			Nodes.erase(Nodes.begin() + i, Nodes.begin() + i + 1);
+			NODE_SYSTEM.OnNodeDeletion(Nodes[i]);
+			DeleteNodeInternal(Nodes[i], static_cast<int>(i));
 
-			break;
+			return true;
 		}
 	}
+
+	return false;
+}
+
+void NodeArea::DeleteNodeInternal(const Node* Node, int Index)
+{
+	if (!Node->bCouldBeDestroyed)
+		return;
+
+	if (Index == -1)
+	{
+		for (size_t i = 0; i < Nodes.size(); i++)
+		{
+			if (Nodes[i] == Node)
+				Index = static_cast<int>(i);
+		}
+	}
+
+	if (Index < 0 || Index >= Nodes.size())
+		return;
+
+	delete Nodes[Index];
+	Nodes.erase(Nodes.begin() + Index, Nodes.begin() + Index + 1);
 }
 
 void NodeArea::PropagateUpdateToConnectedNodes(const Node* CallerNode) const
@@ -647,6 +652,20 @@ std::vector<std::pair<ImVec2, ImVec2>> NodeArea::GetConnectionSegments(const Nod
 	return GetConnectionSegments(OutNode, OutSocketIndex, InNode, InSocketIndex);
 }
 
+RerouteNode* NodeArea::GetRerouteNodeByID(std::string ID) const
+{
+	for (size_t i = 0; i < Connections.size(); i++)
+	{
+		for (size_t j = 0; j < Connections[i]->RerouteNodes.size(); j++)
+		{
+			if (Connections[i]->RerouteNodes[j]->ID == ID)
+				return Connections[i]->RerouteNodes[j];
+		}
+	}
+
+	return nullptr;
+}
+
 bool NodeArea::AddRerouteNodeToConnection(const Node* OutNode, size_t OutNodeSocketIndex, const Node* InNode, size_t InNodeSocketIndex, size_t SegmentToDivide, ImVec2 Position)
 {
 	if (OutNode == nullptr || InNode == nullptr)
@@ -726,10 +745,13 @@ void NodeArea::AddGroupComment(GroupComment* NewGroupComment)
 	GroupComments.push_back(NewGroupComment);
 }
 
-void NodeArea::DeleteGroupComment(GroupComment* GroupComment)
+bool NodeArea::Delete(GroupComment* GroupComment)
 {
 	if (GroupComment == nullptr)
-		return;
+		return false;
+
+	if (GroupCommentHovered == GroupComment)
+		GroupCommentHovered = nullptr;
 
 	UnSelect(GroupComment);
 
@@ -739,9 +761,11 @@ void NodeArea::DeleteGroupComment(GroupComment* GroupComment)
 		{
 			GroupComments.erase(GroupComments.begin() + i);
 			delete GroupComment;
-			return;
+			return true;
 		}
 	}
+
+	return false;
 }
 
 size_t NodeArea::GetGroupCommentCount() const
@@ -856,4 +880,27 @@ bool NodeArea::IsRerouteNodeValid(const RerouteNode* RerouteNode)
 		return false;
 
 	return true;
+}
+
+bool NodeArea::DeleteByID(std::string ID)
+{
+	Node* FoundNode = GetNodeByID(ID);
+	if (FoundNode != nullptr)
+		return Delete(FoundNode);
+
+	GroupComment* FoundGroupComment = GetGroupCommentByID(ID);
+	if (FoundGroupComment != nullptr)
+	{
+		Delete(FoundGroupComment);
+		return true;
+	}
+
+	RerouteNode* FoundRerouteNode = GetRerouteNodeByID(ID);
+	if (FoundRerouteNode != nullptr)
+	{
+		Delete(FoundRerouteNode);
+		return true;
+	}
+
+	return false;
 }
