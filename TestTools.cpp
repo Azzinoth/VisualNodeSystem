@@ -250,3 +250,144 @@ VisNodeSys::NodeArea* TestTools::CreateSmallConnectedNodeArea(std::vector<std::s
 
 	return Area;
 }
+
+bool TestTools::IsFirstIDsListSubsetOfSecond(const std::vector<std::string>& FirstList, const std::vector<std::string>& SecondList)
+{
+	for (size_t i = 0; i < FirstList.size(); i++)
+	{
+		bool bFound = false;
+		for (size_t j = 0; j < SecondList.size(); j++)
+		{
+			if (FirstList[i] == SecondList[j])
+			{
+				bFound = true;
+				break;
+			}
+		}
+
+		if (!bFound)
+			return false;
+	}
+
+	return true;
+}
+
+static bool UnorderedAreaMatch(const std::vector<NodeArea*>& Actual, const std::vector<NodeArea*>& Expected)
+{
+	if (Actual.size() != Expected.size())
+		return false;
+
+	// Every expected area must appear in actual, and vice versa.
+	for (NodeArea* Area : Expected)
+	{
+		if (std::find(Actual.begin(), Actual.end(), Area) == Actual.end())
+			return false;
+	}
+
+	for (NodeArea* Area : Actual)
+	{
+		if (std::find(Expected.begin(), Expected.end(), Area) == Expected.end())
+			return false;
+	}
+
+	return true;
+}
+
+bool TestTools::VerifyImmediateDownstreamAreas(NodeArea* Area, const std::vector<NodeArea*>& Expected)
+{
+	std::vector<NodeArea*> Actual = NODE_SYSTEM.GetImmediateDownstreamAreas(Area->GetID());
+	return UnorderedAreaMatch(Actual, Expected);
+}
+
+bool TestTools::VerifyImmediateUpstreamAreas(NodeArea* Area, const std::vector<NodeArea*>& Expected)
+{
+	std::vector<NodeArea*> Actual = NODE_SYSTEM.GetImmediateUpstreamAreas(Area->GetID());
+	return UnorderedAreaMatch(Actual, Expected);
+}
+
+bool TestTools::VerifyAllDownstreamAreas(NodeArea* Area, const std::vector<NodeArea*>& Expected)
+{
+	std::vector<NodeArea*> Actual = NODE_SYSTEM.GetAllDownstreamAreas(Area->GetID());
+	return UnorderedAreaMatch(Actual, Expected);
+}
+
+bool TestTools::VerifyAllUpstreamAreas(VisNodeSys::NodeArea* Area, const std::vector<VisNodeSys::NodeArea*>& Expected)
+{
+	std::vector<NodeArea*> Actual = NODE_SYSTEM.GetAllUpstreamAreas(Area->GetID());
+	return UnorderedAreaMatch(Actual, Expected);
+}
+
+bool TestTools::VerifyNoLinkNodes(NodeArea* Area)
+{
+	return Area->GetNodesByType<VisualLinkNode>().size() == 0;
+}
+
+// Verifies that no dangling VisualLinkNodes remain in the given area.
+bool TestTools::VerifyNoDanglingLinkNodes(VisNodeSys::NodeArea* Area)
+{
+	std::vector<VisualLinkNode*> LinkNodes = Area->GetNodesByType<VisualLinkNode>();
+	for (VisualLinkNode* LinkNode : LinkNodes)
+	{
+		if (LinkNode->GetPartnerNode() == nullptr || LinkNode->GetLinkedArea() == nullptr)
+			return false;
+	}
+
+	return true;
+}
+
+std::vector<NodeArea*> TestTools::CreateSmallLinkedNodeAreaGraph()
+{
+	// Create 30 NodeAreas with this hierarchy:
+	//
+	//                  0
+	//          /       |       \
+    //         1        2        3
+	//       / | \    / | \    / | \
+    //      4  5  6  7  8  9  10 11 12
+	//     /\  |     |  |  |   |  |  |\
+    //   13 14 15   16 17 18  19 20 21 22
+	//   |     |     |     |      |  |  \
+    //  23    24    25    26      27 28  29
+
+	std::vector<NodeArea*> Areas;
+	for (int i = 0; i < 30; i++)
+	{
+		NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
+		Areas.push_back(Area);
+	}
+
+	// Depth Level 0.
+	NODE_SYSTEM.LinkNodeAreas(Areas[0]->GetID(), Areas[1]->GetID());
+	NODE_SYSTEM.LinkNodeAreas(Areas[0]->GetID(), Areas[2]->GetID());
+	NODE_SYSTEM.LinkNodeAreas(Areas[0]->GetID(), Areas[3]->GetID());
+
+	// Depth Level 1.
+	for (int i = 1; i <= 3; i++)
+	{
+		NODE_SYSTEM.LinkNodeAreas(Areas[i]->GetID(), Areas[i * 3 + 1]->GetID());
+		NODE_SYSTEM.LinkNodeAreas(Areas[i]->GetID(), Areas[i * 3 + 2]->GetID());
+		NODE_SYSTEM.LinkNodeAreas(Areas[i]->GetID(), Areas[i * 3 + 3]->GetID());
+	}
+
+	// Depth Level 2.
+	NODE_SYSTEM.LinkNodeAreas(Areas[4]->GetID(), Areas[13]->GetID());
+	NODE_SYSTEM.LinkNodeAreas(Areas[4]->GetID(), Areas[14]->GetID());
+	NODE_SYSTEM.LinkNodeAreas(Areas[5]->GetID(), Areas[15]->GetID());
+	NODE_SYSTEM.LinkNodeAreas(Areas[7]->GetID(), Areas[16]->GetID());
+	NODE_SYSTEM.LinkNodeAreas(Areas[8]->GetID(), Areas[17]->GetID());
+	NODE_SYSTEM.LinkNodeAreas(Areas[9]->GetID(), Areas[18]->GetID());
+	NODE_SYSTEM.LinkNodeAreas(Areas[10]->GetID(), Areas[19]->GetID());
+	NODE_SYSTEM.LinkNodeAreas(Areas[11]->GetID(), Areas[20]->GetID());
+	NODE_SYSTEM.LinkNodeAreas(Areas[12]->GetID(), Areas[21]->GetID());
+	NODE_SYSTEM.LinkNodeAreas(Areas[12]->GetID(), Areas[22]->GetID());
+
+	// Depth Level 3.
+	NODE_SYSTEM.LinkNodeAreas(Areas[13]->GetID(), Areas[23]->GetID());
+	NODE_SYSTEM.LinkNodeAreas(Areas[15]->GetID(), Areas[24]->GetID());
+	NODE_SYSTEM.LinkNodeAreas(Areas[16]->GetID(), Areas[25]->GetID());
+	NODE_SYSTEM.LinkNodeAreas(Areas[18]->GetID(), Areas[26]->GetID());
+	NODE_SYSTEM.LinkNodeAreas(Areas[20]->GetID(), Areas[27]->GetID());
+	NODE_SYSTEM.LinkNodeAreas(Areas[21]->GetID(), Areas[28]->GetID());
+	NODE_SYSTEM.LinkNodeAreas(Areas[22]->GetID(), Areas[29]->GetID());
+	return Areas;
+}

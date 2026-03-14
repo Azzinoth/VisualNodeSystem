@@ -54,8 +54,8 @@ TEST(NodeFactory, CopyKnownNodes)
 	ASSERT_EQ(CustomNodeCopiedInstance->GetData(), 1.0f);
 
 	ASSERT_EQ(NodeArea->GetNodeCount(), 2);
-	NodeArea->DeleteNode(CreatedNode);
-	NodeArea->DeleteNode(CopiedNode);
+	NodeArea->Delete(CreatedNode);
+	NodeArea->Delete(CopiedNode);
 	// Here it is same count because CustomNode is non-destructable.
 	ASSERT_EQ(NodeArea->GetNodeCount(), 2);
 
@@ -77,8 +77,8 @@ TEST(NodeFactory, CopyKnownNodes)
 	ASSERT_EQ(CustomNode2CopiedInstance->GetStringData(), "Test");
 
 	ASSERT_EQ(NodeArea->GetNodeCount(), 4);
-	NodeArea->DeleteNode(CreatedNode);
-	NodeArea->DeleteNode(CopiedNode);
+	NodeArea->Delete(CreatedNode);
+	NodeArea->Delete(CopiedNode);
 	ASSERT_EQ(NodeArea->GetNodeCount(), 2);
 
 	NODE_SYSTEM.DeleteNodeArea(NodeArea);
@@ -99,7 +99,7 @@ TEST(NodeFactory, CopyUnknownNodes)
 	CopiedNode = NODE_FACTORY.CopyNode("", *CreatedNode);
 	ASSERT_EQ(CopiedNode, nullptr);
 
-	NodeArea->DeleteNode(CreatedNode);
+	NodeArea->Delete(CreatedNode);
 }
 
 TEST(NodeFactory, IncorrectRegistration)

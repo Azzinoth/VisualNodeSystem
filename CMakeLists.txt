@@ -6,6 +6,8 @@ set(CMAKE_CONFIGURATION_TYPES Debug Release)
 
 # set the project name
 project(Visual_Node_System_Tests LANGUAGES CXX)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # set different compiler flags depending on build type
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MP")
@@ -20,8 +22,8 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 set(DEAR_IMGUI_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/imgui CACHE PATH "Path to Dear ImGui directory." FORCE)
 
 # Force to build standard nodes.
-set(VISUAL_NODE_SYSTEM_BUILD_STANDARD_NODES ON CACHE BOOL "Build the Visual Node System with standard nodes module" FORCE)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /DVISUAL_NODE_SYSTEM_BUILD_STANDARD_NODES")
+set(VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES ON CACHE BOOL "Build the Visual Node System with execution flow nodes module" FORCE)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /DVISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES")
 
 set(USE_STATIC_RUNTIME ON CACHE BOOL "Use static runtime (/MT) instead of dynamic (/MD)")
 
@@ -79,6 +81,11 @@ file(GLOB Basic_SRC
 	"BasicTests/Basic.h"
 )
 
+file(GLOB NodeArea_General_SRC
+	"NodeAreaTests/GeneralTests/NodeAreaGeneralTests.cpp"
+	"NodeAreaTests/GeneralTests/NodeAreaGeneralTests.h"
+)
+
 file(GLOB NodeArea_Load_SRC
 	"NodeAreaTests/LoadTests/NodeAreaLoadTests.cpp"
 	"NodeAreaTests/LoadTests/NodeAreaLoadTests.h"
@@ -99,9 +106,14 @@ file(GLOB GroupComment_SRC
 	"GroupCommentTests/GroupCommentTests.h"
 )
 
-file(GLOB StandardNode_SRC
-	"StandardNodeTests/StandardNodeTests.cpp"
-	"StandardNodeTests/StandardNodeTests.h"
+file(GLOB ExecutionFlowNodes_SRC
+	"ExecutionFlowNodesTests/ExecutionFlowNodesTests.cpp"
+	"ExecutionFlowNodesTests/ExecutionFlowNodesTests.h"
+)
+
+file(GLOB NodeSystem_SRC
+	"NodeSystemTests/NodeSystemTests.cpp"
+	"NodeSystemTests/NodeSystemTests.h"
 )
 
 file(GLOB source_SRC
@@ -123,11 +135,13 @@ add_executable(Visual_Node_System_Tests
 			   ${source_SRC}
 			   ${CustomNodes_SRC}
 			   ${Basic_SRC}
+			   ${NodeSystem_SRC}
+			   ${NodeArea_General_SRC}
 			   ${NodeArea_Load_SRC}
 			   ${NodeArea_EventSystem_SRC}
 			   ${NodeFactory_SRC}
 			   ${GroupComment_SRC}
-			   ${StandardNode_SRC}
+			   ${ExecutionFlowNodes_SRC}
 			   # *************** THIRD_PARTY ***************
 			   ${imgui_SRC}
 )
@@ -143,11 +157,13 @@ target_link_libraries(Visual_Node_System_Tests
 source_group("Source Files" FILES ${source_SRC})
 source_group("Source Files/CustomNodes" FILES ${CustomNodes_SRC})
 source_group("Source Files/Basic" FILES ${Basic_SRC})
+source_group("Source Files/NodeSystem" FILES ${NodeSystem_SRC})
+source_group("Source Files/NodeArea/General" FILES ${NodeArea_General_SRC})
 source_group("Source Files/NodeArea/Load" FILES ${NodeArea_Load_SRC})
 source_group("Source Files/NodeArea/EventSystem" FILES ${NodeArea_EventSystem_SRC})
 source_group("Source Files/NodeFactory" FILES ${NodeFactory_SRC})
 source_group("Source Files/GroupComment" FILES ${GroupComment_SRC})
-source_group("Source Files/StandardNode" FILES ${StandardNode_SRC})
+source_group("Source Files/ExecutionFlowNodes" FILES ${ExecutionFlowNodes_SRC})
 # *************** THIRD_PARTY ***************
 source_group("Source Files/ThirdParty/imgui" FILES ${imgui_SRC})
 

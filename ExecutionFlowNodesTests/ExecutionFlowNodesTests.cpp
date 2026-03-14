@@ -1,4 +1,4 @@
-#include "StandardNodeTests.h"
+#include "ExecutionFlowNodesTests.h"
 using namespace VisNodeSys;
 
 // Using a fixed seed to make it easier to debug.
@@ -223,10 +223,10 @@ TEST_F(StandardNodeTest, LogicalOperatorsRandom)
 		//ASSERT_EQ(LogicalOperatorNode->GetData(), Result);
 		ASSERT_EQ(ResultNode->GetData(), Result);
 
-		TestNodeArea->DeleteNode(FirstBoolNode);
-		TestNodeArea->DeleteNode(SecondBoolNode);
-		TestNodeArea->DeleteNode(LogicalOperatorNode);
-		TestNodeArea->DeleteNode(ResultNode);
+		TestNodeArea->Delete(FirstBoolNode);
+		TestNodeArea->Delete(SecondBoolNode);
+		TestNodeArea->Delete(LogicalOperatorNode);
+		TestNodeArea->Delete(ResultNode);
 
 		ASSERT_EQ(TestNodeArea->GetNodeCount(), 1);
 		ASSERT_EQ(TestNodeArea->GetConnectionCount(), 0);
@@ -400,10 +400,10 @@ TEST_F(StandardNodeTest, CompareOperatorsRandom)
 		//ASSERT_EQ(LogicalOperatorNode->GetData(), Result);
 		ASSERT_EQ(ResultNode->GetData(), Result);
 
-		TestNodeArea->DeleteNode(FirstNode);
-		TestNodeArea->DeleteNode(SecondNode);
-		TestNodeArea->DeleteNode(ComparisonOperatorNode);
-		TestNodeArea->DeleteNode(ResultNode);
+		TestNodeArea->Delete(FirstNode);
+		TestNodeArea->Delete(SecondNode);
+		TestNodeArea->Delete(ComparisonOperatorNode);
+		TestNodeArea->Delete(ResultNode);
 
 		ASSERT_EQ(TestNodeArea->GetNodeCount(), 1);
 		ASSERT_EQ(TestNodeArea->GetConnectionCount(), 0);
@@ -447,10 +447,10 @@ TEST_F(StandardNodeTest, CompareOperatorsRandom)
 		//ASSERT_EQ(LogicalOperatorNode->GetData(), Result);
 		ASSERT_EQ(ResultNode->GetData(), Result);
 
-		TestNodeArea->DeleteNode(FirstNode);
-		TestNodeArea->DeleteNode(SecondNode);
-		TestNodeArea->DeleteNode(ComparisonOperatorNode);
-		TestNodeArea->DeleteNode(ResultNode);
+		TestNodeArea->Delete(FirstNode);
+		TestNodeArea->Delete(SecondNode);
+		TestNodeArea->Delete(ComparisonOperatorNode);
+		TestNodeArea->Delete(ResultNode);
 
 		ASSERT_EQ(TestNodeArea->GetNodeCount(), 1);
 		ASSERT_EQ(TestNodeArea->GetConnectionCount(), 0);
@@ -494,10 +494,10 @@ TEST_F(StandardNodeTest, CompareOperatorsRandom)
 		//ASSERT_EQ(LogicalOperatorNode->GetData(), Result);
 		ASSERT_EQ(ResultNode->GetData(), Result);
 
-		TestNodeArea->DeleteNode(FirstNode);
-		TestNodeArea->DeleteNode(SecondNode);
-		TestNodeArea->DeleteNode(ComparisonOperatorNode);
-		TestNodeArea->DeleteNode(ResultNode);
+		TestNodeArea->Delete(FirstNode);
+		TestNodeArea->Delete(SecondNode);
+		TestNodeArea->Delete(ComparisonOperatorNode);
+		TestNodeArea->Delete(ResultNode);
 
 		ASSERT_EQ(TestNodeArea->GetNodeCount(), 1);
 		ASSERT_EQ(TestNodeArea->GetConnectionCount(), 0);
@@ -630,10 +630,10 @@ TEST_F(StandardNodeTest, ArithmeticOperatorsRandom)
 		//ASSERT_EQ(LogicalOperatorNode->GetData(), Result);
 		ASSERT_EQ(ResultNode->GetData(), Result);
 
-		TestNodeArea->DeleteNode(FirstNode);
-		TestNodeArea->DeleteNode(SecondNode);
-		TestNodeArea->DeleteNode(ArithmeticOperatorNode);
-		TestNodeArea->DeleteNode(ResultNode);
+		TestNodeArea->Delete(FirstNode);
+		TestNodeArea->Delete(SecondNode);
+		TestNodeArea->Delete(ArithmeticOperatorNode);
+		TestNodeArea->Delete(ResultNode);
 
 		ASSERT_EQ(TestNodeArea->GetNodeCount(), 1);
 		ASSERT_EQ(TestNodeArea->GetConnectionCount(), 0);
@@ -677,10 +677,10 @@ TEST_F(StandardNodeTest, ArithmeticOperatorsRandom)
 		//ASSERT_EQ(LogicalOperatorNode->GetData(), Result);
 		ASSERT_EQ(ResultNode->GetData(), Result);
 
-		TestNodeArea->DeleteNode(FirstNode);
-		TestNodeArea->DeleteNode(SecondNode);
-		TestNodeArea->DeleteNode(ArithmeticOperatorNode);
-		TestNodeArea->DeleteNode(ResultNode);
+		TestNodeArea->Delete(FirstNode);
+		TestNodeArea->Delete(SecondNode);
+		TestNodeArea->Delete(ArithmeticOperatorNode);
+		TestNodeArea->Delete(ResultNode);
 
 		ASSERT_EQ(TestNodeArea->GetNodeCount(), 1);
 		ASSERT_EQ(TestNodeArea->GetConnectionCount(), 0);
@@ -729,10 +729,10 @@ TEST_F(StandardNodeTest, ArithmeticOperatorsRandom)
 		//ASSERT_EQ(LogicalOperatorNode->GetData(), Result);
 		ASSERT_EQ(ResultNode->GetData(), Result);
 
-		TestNodeArea->DeleteNode(FirstNode);
-		TestNodeArea->DeleteNode(SecondNode);
-		TestNodeArea->DeleteNode(ArithmeticOperatorNode);
-		TestNodeArea->DeleteNode(ResultNode);
+		TestNodeArea->Delete(FirstNode);
+		TestNodeArea->Delete(SecondNode);
+		TestNodeArea->Delete(ArithmeticOperatorNode);
+		TestNodeArea->Delete(ResultNode);
 
 		ASSERT_EQ(TestNodeArea->GetNodeCount(), 1);
 		ASSERT_EQ(TestNodeArea->GetConnectionCount(), 0);

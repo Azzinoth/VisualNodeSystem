@@ -13,7 +13,7 @@ TEST(GroupComment, CreateAndDelete)
 	NodeArea->AddGroupComment(Comment);
 	EXPECT_EQ(NodeArea->GetGroupCommentCount(), 1);
 
-	NodeArea->DeleteGroupComment(Comment);
+	NodeArea->Delete(Comment);
 	EXPECT_EQ(NodeArea->GetGroupCommentCount(), 0);
 
 	NODE_SYSTEM.DeleteNodeArea(NodeArea);

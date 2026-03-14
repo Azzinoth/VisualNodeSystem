@@ -23,7 +23,7 @@ TEST(Basic, NodeTesting)
 	Node* ReturnedNode = ListOfNodes[0];
 	ASSERT_EQ(ReturnedNode, DefaultNode);
 
-	LocalNodeArea->DeleteNode(DefaultNode);
+	LocalNodeArea->Delete(DefaultNode);
 
 	ListOfNodes = LocalNodeArea->GetNodesByName("New default node");
 	ASSERT_EQ(ListOfNodes.size(), 0);
@@ -107,7 +107,7 @@ TEST(Basic, NodeSockets)
 	ASSERT_EQ(ConnectedNodes.size(), 0);
 
 	// Delete one node, check if connections are deleted.
-	LocalNodeArea->DeleteNode(FirstNode);
+	LocalNodeArea->Delete(FirstNode);
 	ASSERT_EQ(LocalNodeArea->GetNodeCount(), 1);
 
 	ConnectedNodes = SecondNode->GetNodesConnectedToInput();
@@ -154,7 +154,7 @@ TEST(Basic, NonDestractableNode)
 	LocalNodeArea->AddNode(NonDestractableNode);
 	ASSERT_EQ(LocalNodeArea->GetNodeCount(), 1);
 
-	LocalNodeArea->DeleteNode(NonDestractableNode);
+	LocalNodeArea->Delete(NonDestractableNode);
 	ASSERT_EQ(LocalNodeArea->GetNodeCount(), 1);
 
 	Node* OrdinaryNode = new Node();
@@ -163,7 +163,7 @@ TEST(Basic, NonDestractableNode)
 	LocalNodeArea->AddNode(OrdinaryNode);
 	ASSERT_EQ(LocalNodeArea->GetNodeCount(), 2);
 
-	LocalNodeArea->DeleteNode(OrdinaryNode);
+	LocalNodeArea->Delete(OrdinaryNode);
 	ASSERT_EQ(LocalNodeArea->GetNodeCount(), 1);
 
 	NODE_SYSTEM.DeleteNodeArea(LocalNodeArea);
@@ -353,7 +353,7 @@ TEST(Basic, NodeAreaWide_Node_Events)
 			}
 		}
 	});
-	LocalNodeArea->DeleteNode(NodeToDelete);
+	LocalNodeArea->Delete(NodeToDelete);
 	ASSERT_EQ(LocalNodeArea->GetNodeByID(NodesIDList[8]), nullptr);
 	ASSERT_TRUE(bNodeRemovedEventCalled);
 
