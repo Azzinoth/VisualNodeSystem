@@ -32,14 +32,15 @@ public:
 	// Verifies that recursive references to Area match Expected (order-independent).
 	bool VerifyAllUpstreamAreas(VisNodeSys::NodeArea* Area, const std::vector<VisNodeSys::NodeArea*>& Expected);
 
-	// Verifies that no VisualLinkNodes remain in the given area.
+	// Verifies that no LinkNodes remain in the given area.
 	bool VerifyNoLinkNodes(VisNodeSys::NodeArea* Area);
 
-	// Verifies that no dangling VisualLinkNodes remain in the given area.
+	// Verifies that no dangling LinkNodes remain in the given area.
 	bool VerifyNoDanglingLinkNodes(VisNodeSys::NodeArea* Area);
 
 	// Creates 30 NodeAreas linked in the same 5-level tree hierarchy.
 	std::vector<VisNodeSys::NodeArea*> CreateSmallLinkedNodeAreaGraph();
+	bool VerifyLinksInSmallNodeAreaGraph();
 };
 
 #define TEST_TOOLS TestTools::GetInstance()

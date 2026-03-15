@@ -319,14 +319,14 @@ bool TestTools::VerifyAllUpstreamAreas(VisNodeSys::NodeArea* Area, const std::ve
 
 bool TestTools::VerifyNoLinkNodes(NodeArea* Area)
 {
-	return Area->GetNodesByType<VisualLinkNode>().size() == 0;
+	return Area->GetNodesByType<LinkNode>().size() == 0;
 }
 
-// Verifies that no dangling VisualLinkNodes remain in the given area.
+// Verifies that no dangling LinkNodes remain in the given area.
 bool TestTools::VerifyNoDanglingLinkNodes(VisNodeSys::NodeArea* Area)
 {
-	std::vector<VisualLinkNode*> LinkNodes = Area->GetNodesByType<VisualLinkNode>();
-	for (VisualLinkNode* LinkNode : LinkNodes)
+	std::vector<LinkNode*> LinkNodes = Area->GetNodesByType<LinkNode>();
+	for (LinkNode* LinkNode : LinkNodes)
 	{
 		if (LinkNode->GetPartnerNode() == nullptr || LinkNode->GetLinkedArea() == nullptr)
 			return false;
@@ -353,6 +353,7 @@ std::vector<NodeArea*> TestTools::CreateSmallLinkedNodeAreaGraph()
 	for (int i = 0; i < 30; i++)
 	{
 		NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
+		Area->SetName(std::to_string(i));
 		Areas.push_back(Area);
 	}
 
@@ -390,4 +391,323 @@ std::vector<NodeArea*> TestTools::CreateSmallLinkedNodeAreaGraph()
 	NODE_SYSTEM.LinkNodeAreas(Areas[21]->GetID(), Areas[28]->GetID());
 	NODE_SYSTEM.LinkNodeAreas(Areas[22]->GetID(), Areas[29]->GetID());
 	return Areas;
+}
+
+bool TestTools::VerifyLinksInSmallNodeAreaGraph()
+{
+	std::vector<std::string> AreaIDs = NODE_SYSTEM.GetNodeAreaIDList();
+	if (AreaIDs.size() != 30)
+		return false;
+
+	// We can not rely on order of areas in the list, so we need to find them by names (which we set to be the same as their index in the hierarchy).
+	std::vector<NodeArea*> Areas(30, nullptr);
+	for (const std::string& AreaID : AreaIDs)
+	{
+		NodeArea* Area = NODE_SYSTEM.GetNodeAreaByID(AreaID);
+		if (Area == nullptr)
+			return false;
+
+		int Index = -1;
+		try
+		{ 
+			Index = std::stoi(Area->GetName());
+		}
+		catch (...)
+		{
+			return false;
+		}
+
+		if (Index < 0 || Index >= 30)
+			return false;
+
+		Areas[Index] = Area;
+	}
+	
+
+	// Depth Level 0.
+	// Root has no upstream, three immediate downstream.
+	if (!TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[0], {}))
+		return false;
+	if (!TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[0], {}))
+		return false;
+	if (!TEST_TOOLS.VerifyAllUpstreamAreas(Areas[0], {}))
+		return false;
+	if (!TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[0], { Areas[1], Areas[2], Areas[3] }))
+		return false;
+
+	// All downstream from root should be everything except root itself.
+	std::vector<NodeArea*> AllExceptRoot(Areas.begin() + 1, Areas.end());
+	if (!TEST_TOOLS.VerifyAllDownstreamAreas(Areas[0], AllExceptRoot))
+		return false;
+
+	// Depth Level 1.
+	// Node 1.
+	if (!TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[1], { Areas[0] }))
+		return false;
+	if (!TEST_TOOLS.VerifyAllUpstreamAreas(Areas[1], { Areas[0] }))
+		return false;
+	if (!TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[1], { Areas[4], Areas[5], Areas[6] }))
+		return false;
+	if (!TEST_TOOLS.VerifyAllDownstreamAreas(Areas[1], { Areas[4], Areas[5], Areas[6], Areas[13], Areas[14], Areas[15], Areas[23], Areas[24] }))
+		return false;
+	// Node 2.
+	if (!TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[2], { Areas[0] }))
+		return false;
+	if (!TEST_TOOLS.VerifyAllUpstreamAreas(Areas[2], { Areas[0] }))
+		return false;
+	if (!TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[2], { Areas[7], Areas[8], Areas[9] }))
+		return false;
+	if (!TEST_TOOLS.VerifyAllDownstreamAreas(Areas[2], { Areas[7], Areas[8], Areas[9], Areas[16], Areas[17], Areas[18], Areas[25], Areas[26] }))
+		return false;
+	// Node 3.
+	if (!TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[3], { Areas[0] }))
+		return false;
+	if (!TEST_TOOLS.VerifyAllUpstreamAreas(Areas[3], { Areas[0] }))
+		return false;
+	if (!TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[3], { Areas[10], Areas[11], Areas[12] }))
+		return false;
+	if (!TEST_TOOLS.VerifyAllDownstreamAreas(Areas[3], { Areas[10], Areas[11], Areas[12], Areas[19], Areas[20], Areas[21], Areas[22], Areas[27], Areas[28], Areas[29] }))
+		return false;
+
+	// Depth Level 2.
+	// Node 4.
+	if (!TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[4], { Areas[1] }))
+		return false;
+	if (!TEST_TOOLS.VerifyAllUpstreamAreas(Areas[4], { Areas[0], Areas[1] }))
+		return false;
+	if (!TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[4], { Areas[13], Areas[14] }))
+		return false;
+	if (!TEST_TOOLS.VerifyAllDownstreamAreas(Areas[4], { Areas[13], Areas[14], Areas[23] }))
+		return false;
+	// Node 5.
+	if (!TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[5], { Areas[1] }))
+		return false;
+	if (!TEST_TOOLS.VerifyAllUpstreamAreas(Areas[5], { Areas[0], Areas[1] }))
+		return false;
+	if (!TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[5], { Areas[15] }))
+		return false;
+	if (!TEST_TOOLS.VerifyAllDownstreamAreas(Areas[5], { Areas[15], Areas[24] }))
+		return false;
+	// Node 6.
+	if (!TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[6], { Areas[1] }))
+		return false;
+	if (!TEST_TOOLS.VerifyAllUpstreamAreas(Areas[6], { Areas[0], Areas[1] }))
+		return false;
+	if (!TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[6], { }))
+		return false;
+	if (!TEST_TOOLS.VerifyAllDownstreamAreas(Areas[6], { }))
+		return false;
+	// Node 7.
+	if (!TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[7], { Areas[2] }))
+		return false;
+	if (!TEST_TOOLS.VerifyAllUpstreamAreas(Areas[7], { Areas[0], Areas[2] }))
+		return false;
+	if (!TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[7], { Areas[16] }))
+		return false;
+	if (!TEST_TOOLS.VerifyAllDownstreamAreas(Areas[7], { Areas[16], Areas[25] }))
+		return false;
+	// Node 8.
+	if (!TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[8], { Areas[2] }))
+		return false;
+	if (!TEST_TOOLS.VerifyAllUpstreamAreas(Areas[8], { Areas[0], Areas[2] }))
+		return false;
+	if (!TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[8], { Areas[17] }))
+		return false;
+	if (!TEST_TOOLS.VerifyAllDownstreamAreas(Areas[8], { Areas[17] }))
+		return false;
+	// Node 9.
+	if (!TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[9], { Areas[2] }))
+		return false;
+	if (!TEST_TOOLS.VerifyAllUpstreamAreas(Areas[9], { Areas[0], Areas[2] }))
+		return false;
+	if (!TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[9], { Areas[18] }))
+		return false;
+	if (!TEST_TOOLS.VerifyAllDownstreamAreas(Areas[9], { Areas[18], Areas[26] }))
+		return false;
+	// Node 10.
+	if (!TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[10], { Areas[3] }))
+		return false;
+	if (!TEST_TOOLS.VerifyAllUpstreamAreas(Areas[10], { Areas[0], Areas[3] }))
+		return false;
+	if (!TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[10], { Areas[19] }))
+		return false;
+	if (!TEST_TOOLS.VerifyAllDownstreamAreas(Areas[10], { Areas[19] }))
+		return false;
+	// Node 11.
+	if (!TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[11], { Areas[3] }))
+		return false;
+	if (!TEST_TOOLS.VerifyAllUpstreamAreas(Areas[11], { Areas[0], Areas[3] }))
+		return false;
+	if (!TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[11], { Areas[20] }))
+		return false;
+	if (!TEST_TOOLS.VerifyAllDownstreamAreas(Areas[11], { Areas[20], Areas[27] }))
+		return false;
+	// Node 12.
+	if (!TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[12], { Areas[3] }))
+		return false;
+	if (!TEST_TOOLS.VerifyAllUpstreamAreas(Areas[12], { Areas[0], Areas[3] }))
+		return false;
+	if (!TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[12], { Areas[21], Areas[22] }))
+		return false;
+	if (!TEST_TOOLS.VerifyAllDownstreamAreas(Areas[12], { Areas[21], Areas[22], Areas[28], Areas[29] }))
+		return false;
+
+	// Depth Level 3.
+	// Node 13.
+	if (!TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[13], { Areas[4] }))
+		return false;
+	if (!TEST_TOOLS.VerifyAllUpstreamAreas(Areas[13], { Areas[0], Areas[1], Areas[4] }))
+		return false;
+	if (!TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[13], { Areas[23] }))
+		return false;
+	if (!TEST_TOOLS.VerifyAllDownstreamAreas(Areas[13], { Areas[23] }))
+		return false;
+	// Node 14.
+	if (!TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[14], { Areas[4] }))
+		return false;
+	if (!TEST_TOOLS.VerifyAllUpstreamAreas(Areas[14], { Areas[0], Areas[1], Areas[4] }))
+		return false;
+	if (!TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[14], { }))
+		return false;
+	if (!TEST_TOOLS.VerifyAllDownstreamAreas(Areas[14], { }))
+		return false;
+	// Node 15.
+	if (!TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[15], { Areas[5] }))
+		return false;
+	if (!TEST_TOOLS.VerifyAllUpstreamAreas(Areas[15], { Areas[0], Areas[1], Areas[5] }))
+		return false;
+	if (!TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[15], { Areas[24] }))
+		return false;
+	if (!TEST_TOOLS.VerifyAllDownstreamAreas(Areas[15], { Areas[24] }))
+		return false;
+	// Node 16.
+	if (!TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[16], { Areas[7] }))
+		return false;
+	if (!TEST_TOOLS.VerifyAllUpstreamAreas(Areas[16], { Areas[0], Areas[2], Areas[7] }))
+		return false;
+	if (!TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[16], { Areas[25] }))
+		return false;
+	if (!TEST_TOOLS.VerifyAllDownstreamAreas(Areas[16], { Areas[25] }))
+		return false;
+	// Node 17.
+	if (!TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[17], { Areas[8] }))
+		return false;
+	if (!TEST_TOOLS.VerifyAllUpstreamAreas(Areas[17], { Areas[0], Areas[2], Areas[8] }))
+		return false;
+	if (!TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[17], { }))
+		return false;
+	if (!TEST_TOOLS.VerifyAllDownstreamAreas(Areas[17], { }))
+		return false;
+	// Node 18.
+	if (!TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[18], { Areas[9] }))
+		return false;
+	if (!TEST_TOOLS.VerifyAllUpstreamAreas(Areas[18], { Areas[0], Areas[2], Areas[9] }))
+		return false;
+	if (!TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[18], { Areas[26] }))
+		return false;
+	if (!TEST_TOOLS.VerifyAllDownstreamAreas(Areas[18], { Areas[26] }))
+		return false;
+	// Node 19.
+	if (!TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[19], { Areas[10] }))
+		return false;
+	if (!TEST_TOOLS.VerifyAllUpstreamAreas(Areas[19], { Areas[0], Areas[3], Areas[10] }))
+		return false;
+	if (!TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[19], { }))
+		return false;
+	if (!TEST_TOOLS.VerifyAllDownstreamAreas(Areas[19], { }))
+		return false;
+	// Node 20.
+	if (!TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[20], { Areas[11] }))
+		return false;
+	if (!TEST_TOOLS.VerifyAllUpstreamAreas(Areas[20], { Areas[0], Areas[3], Areas[11] }))
+		return false;
+	if (!TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[20], { Areas[27] }))
+		return false;
+	if (!TEST_TOOLS.VerifyAllDownstreamAreas(Areas[20], { Areas[27] }))
+		return false;
+	// Node 21.
+	if (!TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[21], { Areas[12] }))
+		return false;
+	if (!TEST_TOOLS.VerifyAllUpstreamAreas(Areas[21], { Areas[0], Areas[3], Areas[12] }))
+		return false;
+	if (!TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[21], { Areas[28] }))
+		return false;
+	if (!TEST_TOOLS.VerifyAllDownstreamAreas(Areas[21], { Areas[28] }))
+		return false;
+	// Node 22.
+	if (!TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[22], { Areas[12] }))
+		return false;
+	if (!TEST_TOOLS.VerifyAllUpstreamAreas(Areas[22], { Areas[0], Areas[3], Areas[12] }))
+		return false;
+	if (!TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[22], { Areas[29] }))
+		return false;
+	if (!TEST_TOOLS.VerifyAllDownstreamAreas(Areas[22], { Areas[29] }))
+		return false;
+
+	// Depth Level 4.
+	// Node 23.
+	if (!TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[23], { Areas[13] }))
+		return false;
+	if (!TEST_TOOLS.VerifyAllUpstreamAreas(Areas[23], { Areas[0], Areas[1], Areas[4], Areas[13] }))
+		return false;
+	if (!TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[23], { }))
+		return false;
+	if (!TEST_TOOLS.VerifyAllDownstreamAreas(Areas[23], { }))
+		return false;
+	// Node 24.
+	if (!TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[24], { Areas[15] }))
+		return false;
+	if (!TEST_TOOLS.VerifyAllUpstreamAreas(Areas[24], { Areas[0], Areas[1], Areas[5], Areas[15] }))
+		return false;
+	if (!TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[24], { }))
+		return false;
+	if (!TEST_TOOLS.VerifyAllDownstreamAreas(Areas[24], { }))
+		return false;
+	// Node 25.
+	if (!TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[25], { Areas[16] }))
+		return false;
+	if (!TEST_TOOLS.VerifyAllUpstreamAreas(Areas[25], { Areas[0], Areas[2], Areas[7], Areas[16] }))
+		return false;
+	if (!TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[25], { }))
+		return false;
+	if (!TEST_TOOLS.VerifyAllDownstreamAreas(Areas[25], { }))
+		return false;
+	// Node 26.
+	if (!TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[26], { Areas[18] }))
+		return false;
+	if (!TEST_TOOLS.VerifyAllUpstreamAreas(Areas[26], { Areas[0], Areas[2], Areas[9], Areas[18] }))
+		return false;
+	if (!TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[26], { }))
+		return false;
+	if (!TEST_TOOLS.VerifyAllDownstreamAreas(Areas[26], { }))
+		return false;
+	// Node 27.
+	if (!TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[27], { Areas[20] }))
+		return false;
+	if (!TEST_TOOLS.VerifyAllUpstreamAreas(Areas[27], { Areas[0], Areas[3], Areas[11], Areas[20] }))
+		return false;
+	if (!TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[27], { }))
+		return false;
+	if (!TEST_TOOLS.VerifyAllDownstreamAreas(Areas[27], { }))
+		return false;
+	// Node 28.
+	if (!TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[28], { Areas[21] }))
+		return false;
+	if (!TEST_TOOLS.VerifyAllUpstreamAreas(Areas[28], { Areas[0], Areas[3], Areas[12], Areas[21] }))
+		return false;
+	if (!TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[28], { }))
+		return false;
+	if (!TEST_TOOLS.VerifyAllDownstreamAreas(Areas[28], { }))
+		return false;
+	// Node 29.
+	if (!TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[29], { Areas[22] }))
+		return false;
+	if (!TEST_TOOLS.VerifyAllUpstreamAreas(Areas[29], { Areas[0], Areas[3], Areas[12], Areas[22] }))
+		return false;
+	if (!TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[29], { }))
+		return false;
+	if (!TEST_TOOLS.VerifyAllDownstreamAreas(Areas[29], { }))
+		return false;
+
+	return true;
 }

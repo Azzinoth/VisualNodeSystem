@@ -215,174 +215,14 @@ TEST(NodeSystemTests, LinkAreas_InfiniteLoop)
 TEST(NodeSystemTests, LinkAreas_Small_Graph)
 {
 	std::vector<NodeArea*> Areas = TEST_TOOLS.CreateSmallLinkedNodeAreaGraph();
-
-	// Depth Level 0.
-	// Root has no upstream, three immediate downstream.
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[0], {}));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllUpstreamAreas(Areas[0], {}));
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[0], { Areas[1], Areas[2], Areas[3] }));
-
-	// All downstream from root should be everything except root itself.
-	std::vector<NodeArea*> AllExceptRoot(Areas.begin() + 1, Areas.end());
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllDownstreamAreas(Areas[0], AllExceptRoot));
-
-	// Depth Level 1.
-	// Node 1.
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[1], { Areas[0] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllUpstreamAreas(Areas[1], { Areas[0] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[1], { Areas[4], Areas[5], Areas[6] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllDownstreamAreas(Areas[1], { Areas[4], Areas[5], Areas[6], Areas[13], Areas[14], Areas[15], Areas[23], Areas[24] }));
-	// Node 2.
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[2], { Areas[0] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllUpstreamAreas(Areas[2], { Areas[0] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[2], { Areas[7], Areas[8], Areas[9] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllDownstreamAreas(Areas[2], { Areas[7], Areas[8], Areas[9], Areas[16], Areas[17], Areas[18], Areas[25], Areas[26] }));
-	// Node 3.
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[3], { Areas[0] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllUpstreamAreas(Areas[3], { Areas[0] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[3], { Areas[10], Areas[11], Areas[12] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllDownstreamAreas(Areas[3], { Areas[10], Areas[11], Areas[12], Areas[19], Areas[20], Areas[21], Areas[22], Areas[27], Areas[28], Areas[29] }));
-
-	// Depth Level 2.
-	// Node 4.
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[4], { Areas[1] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllUpstreamAreas(Areas[4], { Areas[0], Areas[1] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[4], { Areas[13], Areas[14] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllDownstreamAreas(Areas[4], { Areas[13], Areas[14], Areas[23] }));
-	// Node 5.
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[5], { Areas[1] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllUpstreamAreas(Areas[5], { Areas[0], Areas[1] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[5], { Areas[15] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllDownstreamAreas(Areas[5], { Areas[15], Areas[24] }));
-	// Node 6.
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[6], { Areas[1] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllUpstreamAreas(Areas[6], { Areas[0], Areas[1] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[6], { }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllDownstreamAreas(Areas[6], { }));
-	// Node 7.
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[7], { Areas[2] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllUpstreamAreas(Areas[7], { Areas[0], Areas[2] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[7], { Areas[16] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllDownstreamAreas(Areas[7], { Areas[16], Areas[25] }));
-	// Node 8.
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[8], { Areas[2] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllUpstreamAreas(Areas[8], { Areas[0], Areas[2] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[8], { Areas[17] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllDownstreamAreas(Areas[8], { Areas[17] }));
-	// Node 9.
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[9], { Areas[2] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllUpstreamAreas(Areas[9], { Areas[0], Areas[2] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[9], { Areas[18] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllDownstreamAreas(Areas[9], { Areas[18], Areas[26] }));
-	// Node 10.
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[10], { Areas[3] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllUpstreamAreas(Areas[10], { Areas[0], Areas[3] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[10], { Areas[19] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllDownstreamAreas(Areas[10], { Areas[19] }));
-	// Node 11.
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[11], { Areas[3] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllUpstreamAreas(Areas[11], { Areas[0], Areas[3] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[11], { Areas[20] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllDownstreamAreas(Areas[11], { Areas[20], Areas[27] }));
-	// Node 12.
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[12], { Areas[3] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllUpstreamAreas(Areas[12], { Areas[0], Areas[3] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[12], { Areas[21], Areas[22] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllDownstreamAreas(Areas[12], { Areas[21], Areas[22], Areas[28], Areas[29] }));
-	
-	// Depth Level 3.
-	// Node 13.
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[13], { Areas[4] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllUpstreamAreas(Areas[13], { Areas[0], Areas[1], Areas[4] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[13], { Areas[23] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllDownstreamAreas(Areas[13], { Areas[23] }));
-	// Node 14.
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[14], { Areas[4] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllUpstreamAreas(Areas[14], { Areas[0], Areas[1], Areas[4] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[14], { }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllDownstreamAreas(Areas[14], { }));
-	// Node 15.
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[15], { Areas[5] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllUpstreamAreas(Areas[15], { Areas[0], Areas[1], Areas[5] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[15], { Areas[24] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllDownstreamAreas(Areas[15], { Areas[24] }));
-	// Node 16.
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[16], { Areas[7] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllUpstreamAreas(Areas[16], { Areas[0], Areas[2], Areas[7] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[16], { Areas[25] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllDownstreamAreas(Areas[16], { Areas[25] }));
-	// Node 17.
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[17], { Areas[8] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllUpstreamAreas(Areas[17], { Areas[0], Areas[2], Areas[8] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[17], { }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllDownstreamAreas(Areas[17], { }));
-	// Node 18.
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[18], { Areas[9] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllUpstreamAreas(Areas[18], { Areas[0], Areas[2], Areas[9] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[18], { Areas[26] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllDownstreamAreas(Areas[18], { Areas[26] }));
-	// Node 19.
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[19], { Areas[10] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllUpstreamAreas(Areas[19], { Areas[0], Areas[3], Areas[10] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[19], { }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllDownstreamAreas(Areas[19], { }));
-	// Node 20.
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[20], { Areas[11] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllUpstreamAreas(Areas[20], { Areas[0], Areas[3], Areas[11] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[20], { Areas[27] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllDownstreamAreas(Areas[20], { Areas[27] }));
-	// Node 21.
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[21], { Areas[12] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllUpstreamAreas(Areas[21], { Areas[0], Areas[3], Areas[12] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[21], { Areas[28] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllDownstreamAreas(Areas[21], { Areas[28] }));
-	// Node 22.
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[22], { Areas[12] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllUpstreamAreas(Areas[22], { Areas[0], Areas[3], Areas[12] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[22], { Areas[29] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllDownstreamAreas(Areas[22], { Areas[29] }));
-
-	// Depth Level 4.
-	// Node 23.
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[23], { Areas[13] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllUpstreamAreas(Areas[23], { Areas[0], Areas[1], Areas[4], Areas[13] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[23], { }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllDownstreamAreas(Areas[23], { }));
-	// Node 24.
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[24], { Areas[15] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllUpstreamAreas(Areas[24], { Areas[0], Areas[1], Areas[5], Areas[15] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[24], { }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllDownstreamAreas(Areas[24], { }));
-	// Node 25.
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[25], { Areas[16] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllUpstreamAreas(Areas[25], { Areas[0], Areas[2], Areas[7], Areas[16] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[25], { }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllDownstreamAreas(Areas[25], { }));
-	// Node 26.
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[26], { Areas[18] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllUpstreamAreas(Areas[26], { Areas[0], Areas[2], Areas[9], Areas[18] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[26], { }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllDownstreamAreas(Areas[26], { }));
-	// Node 27.
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[27], { Areas[20] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllUpstreamAreas(Areas[27], { Areas[0], Areas[3], Areas[11], Areas[20] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[27], { }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllDownstreamAreas(Areas[27], { }));
-	// Node 28.
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[28], { Areas[21] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllUpstreamAreas(Areas[28], { Areas[0], Areas[3], Areas[12], Areas[21] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[28], { }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllDownstreamAreas(Areas[28], { }));
-	// Node 29.
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateUpstreamAreas(Areas[29], { Areas[22] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllUpstreamAreas(Areas[29], { Areas[0], Areas[3], Areas[12], Areas[22] }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyImmediateDownstreamAreas(Areas[29], { }));
-	EXPECT_TRUE(TEST_TOOLS.VerifyAllDownstreamAreas(Areas[29], { }));
+	EXPECT_TRUE(TEST_TOOLS.VerifyLinksInSmallNodeAreaGraph());
 
 	// After verification of the graph structure, unlink some areas and verify the structure updates correctly.
 	EXPECT_TRUE(NODE_SYSTEM.UnlinkNodeAreas(Areas[0]->GetID(), Areas[1]->GetID()));
 	// Try to unlink again to ensure it fails gracefully and doesn't cause issues.
 	EXPECT_FALSE(NODE_SYSTEM.UnlinkNodeAreas(Areas[0]->GetID(), Areas[1]->GetID()));
+
+	EXPECT_FALSE(TEST_TOOLS.VerifyLinksInSmallNodeAreaGraph());
 
 	// After unlinking Areas[0] => Areas[1]:
 	// Areas[0] should no longer have Areas[1] as immediate downstream.
@@ -450,4 +290,21 @@ TEST(NodeSystemTests, LinkAreas_Small_Graph)
 	// Clean up by deleting all areas.
 	for (auto Area : Areas)
 		NODE_SYSTEM.DeleteNodeArea(Area);
+}
+
+TEST(NodeSystemTests, SaveLoad_Small)
+{
+	std::vector<NodeArea*> Areas = TEST_TOOLS.CreateSmallLinkedNodeAreaGraph();
+	EXPECT_TRUE(TEST_TOOLS.VerifyLinksInSmallNodeAreaGraph());
+
+	NODE_SYSTEM.SaveToFile("NodeSystemTests_TestSaveLoad_Small.json");
+
+	for (auto Area : Areas)
+		NODE_SYSTEM.DeleteNodeArea(Area);
+
+	EXPECT_FALSE(TEST_TOOLS.VerifyLinksInSmallNodeAreaGraph());
+
+	NODE_SYSTEM.LoadFromFile("NodeSystemTests_TestSaveLoad_Small.json");
+
+	EXPECT_TRUE(TEST_TOOLS.VerifyLinksInSmallNodeAreaGraph());
 }
