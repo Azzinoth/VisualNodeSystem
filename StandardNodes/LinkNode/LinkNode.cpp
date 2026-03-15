@@ -1,26 +1,26 @@
-#include "VisualLinkNode.h"
+#include "LinkNode.h"
 #include "../../VisualNodeSystem.h"
 using namespace VisNodeSys;
 
-bool VisualLinkNode::bIsRegistered = []()
+bool LinkNode::bIsRegistered = []()
 {
-	NODE_FACTORY.RegisterNodeType("VisualLinkNode",
+	NODE_FACTORY.RegisterNodeType("LinkNode",
 		[]() -> Node* {
-			return new VisualLinkNode();
+			return new LinkNode();
 		},
 
 		[](const Node& CurrentNode) -> Node* {
-			const VisualLinkNode& NodeToCopy = static_cast<const VisualLinkNode&>(CurrentNode);
-			return new VisualLinkNode(NodeToCopy);
+			const LinkNode& NodeToCopy = static_cast<const LinkNode&>(CurrentNode);
+			return new LinkNode(NodeToCopy);
 		}
 	);
 
 	return true;
 }();
 
-VisualLinkNode::VisualLinkNode()
+LinkNode::LinkNode()
 {
-	Type = "VisualLinkNode";
+	Type = "LinkNode";
 	SetStyle(DEFAULT);
 	SetName("Reference");
 
@@ -31,7 +31,7 @@ VisualLinkNode::VisualLinkNode()
 	TitleBackgroundColorHovered = ImColor(static_cast<int>(R * 1.1f), static_cast<int>(G * 1.1f), static_cast<int>(B * 1.1f));
 }
 
-VisualLinkNode::VisualLinkNode(const VisualLinkNode& Other) : VisNodeSys::Node(Other)
+LinkNode::LinkNode(const LinkNode& Other) : VisNodeSys::Node(Other)
 {
 	SetStyle(DEFAULT);
 	LinkedAreaID = Other.LinkedAreaID;
@@ -41,22 +41,22 @@ VisualLinkNode::VisualLinkNode(const VisualLinkNode& Other) : VisNodeSys::Node(O
 	//Output[0]->SetFunctionToOutputData(BoolDataGetter);
 }
 
-VisualLinkNode::~VisualLinkNode()
+LinkNode::~LinkNode()
 {
 	NODE_SYSTEM.DeleteLinkRecord(ID);
 }
 
-NodeArea* VisualLinkNode::GetLinkedArea() const
+NodeArea* LinkNode::GetLinkedArea() const
 {
 	return NODE_SYSTEM.GetNodeAreaByID(LinkedAreaID);
 }
 
-bool VisualLinkNode::IsInputNode() const
+bool LinkNode::IsInputNode() const
 {
 	return bIsInputNode;
 }
 
-Node* VisualLinkNode::GetPartnerNode() const
+Node* LinkNode::GetPartnerNode() const
 {
 	NodeArea* ReferencedArea = GetLinkedArea();
 	if (ReferencedArea == nullptr)
@@ -65,24 +65,35 @@ Node* VisualLinkNode::GetPartnerNode() const
 	return ReferencedArea->GetNodeByID(PartnerNodeID);
 }
 
-Json::Value VisualLinkNode::ToJson()
+Json::Value LinkNode::ToJson()
 {
 	Json::Value Result = Node::ToJson();
+
+	Result["PartnerNodeID"] = PartnerNodeID;
+	Result["bIsInputNode"] = bIsInputNode;
 	Result["LinkedAreaID"] = LinkedAreaID;
+
 	return Result;
 }
 
-bool VisualLinkNode::FromJson(Json::Value Json)
+bool LinkNode::FromJson(Json::Value Json)
 {
 	bool bResult = Node::FromJson(Json);
 	if (!bResult)
 		return false;
 
-	if (!Json.isMember("LinkedAreaID"))
+	if (!Json.isMember("PartnerNodeID") || !Json["PartnerNodeID"].isString())
 		return false;
 
-	if (!Json["LinkedAreaID"].isString())
+	if (!Json.isMember("bIsInputNode") || !Json["bIsInputNode"].isBool())
 		return false;
+
+	if (!Json.isMember("LinkedAreaID") || !Json["LinkedAreaID"].isString())
+		return false;
+
+	PartnerNodeID = Json["PartnerNodeID"].asString();
+	bIsInputNode = Json["bIsInputNode"].asBool();
+	LinkedAreaID = Json["LinkedAreaID"].asString();
 
 	//// Here I am restoring the output data function.
 	//// Because the function is not serializable, I have to set it manually.
@@ -97,7 +108,7 @@ bool VisualLinkNode::FromJson(Json::Value Json)
 	return true;
 }
 
-void VisualLinkNode::Draw()
+void LinkNode::Draw()
 {
 	Node::Draw();
 
@@ -125,3 +136,28 @@ void VisualLinkNode::Draw()
 //
 //	return true;
 //}
+
+bool LinkNode::IsDangling() const
+{
+	if (GetLinkedArea() == nullptr)
+		return true;
+
+	if (GetPartnerNode() == nullptr)
+		return true;
+
+	if (NODE_SYSTEM.GetLinkDataByNodeID(ID).IsNull())
+		return true;
+
+	return false;
+}
+
+void LinkNode::AddSocket(NodeSocket* Socket)
+{
+	if (bIsInputNode != Socket->IsInput())
+		return;
+
+	//if (Socket->AllowedTypes() != "EXECUTE")
+	//	return;
+
+	Node::AddSocket(Socket);
+}

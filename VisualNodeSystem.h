@@ -6,7 +6,7 @@ namespace VisNodeSys
 {
 	class VISUAL_NODE_SYSTEM_API NodeSystem
 	{
-		friend class VisualLinkNode;
+		friend class LinkNode;
 		friend class NodeArea;
 
 		SINGLETON_PRIVATE_PART(NodeSystem)
@@ -58,10 +58,14 @@ namespace VisNodeSys
 
 		NodeArea* CreateNodeArea();
 		NodeArea* GetNodeAreaByID(const std::string& NodeAreaID) const;
-
+		std::vector<NodeArea*> GetNodeAreasByName(const std::string& Name) const;
 		void DeleteNodeArea(const NodeArea* NodeArea);
 
 		void MoveNodesTo(NodeArea* SourceNodeArea, NodeArea* TargetNodeArea, bool SelectMovedNodes = false);
+
+		Node* GetNodeByID(const std::string& NodeID) const;
+		std::vector<Node*> GetNodesByName(const std::string& Name) const;
+		std::vector<Node*> GetNodesByStringType(const std::string& Type) const;
 
 		std::vector<std::pair<std::string, ImColor>> GetAssociationsOfSocketTypeToColor(std::string SocketType, ImColor Color);
 		void AssociateSocketTypeToColor(std::string SocketType, ImColor Color);
@@ -72,12 +76,17 @@ namespace VisNodeSys
 		bool IsLinked(const std::string& FirstAreaID, const std::string& SecondAreaID) const;
 		bool UnlinkNodeAreas(const std::string& FirstAreaID, const std::string& SecondAreaID);
 		std::vector<std::pair<std::string, std::string>> GetLinkingNodesForAreas(const std::string& FirstAreaID, const std::string& SecondAreaID) const;
+		std::vector<LinkNode*> GetDanglingLinkNodes() const;
+		bool TryToFixDanglingLinkNode(LinkNode* LinkNodeToFix);
+		std::vector<LinkNode*> TryToFixAllDanglingLinkNodes();
 
 		std::vector<NodeArea*> GetImmediateDownstreamAreas(const std::string& AreaID) const;
 		std::vector<NodeArea*> GetAllDownstreamAreas(const std::string& AreaID) const;
 
 		std::vector<NodeArea*> GetImmediateUpstreamAreas(const std::string& AreaID) const;
 		std::vector<NodeArea*> GetAllUpstreamAreas(const std::string& AreaID) const;
+
+		bool AddSocketToLinkNode(const std::string& AreaID, const std::string& LinkNodeID, const std::string& SocketType);
 	};
 
 #ifdef VISUAL_NODE_SYSTEM_SHARED

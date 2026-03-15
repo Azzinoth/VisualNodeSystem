@@ -1,6 +1,6 @@
 #pragma once
 #include "../../GroupComment.h"
-#include "../../StandardNodes/LinkNode/VisualLinkNode.h"
+#include "../../StandardNodes/LinkNode/LinkNode.h"
 
 #ifdef VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES
 #include "../StandardNodes/ExecutionFlowNodes/BaseExecutionFlowNode.h"
@@ -161,10 +161,10 @@ namespace VisNodeSys
 		static void CopyNodesTo(NodeArea* SourceNodeArea, NodeArea* TargetNodeArea);
 
 		std::string ToJson() const;
-		void SaveToFile(const char* FileName) const;
+		bool SaveToFile(std::string FilePath) const;
 		bool LoadFromJson(std::string JsonText);
-		bool LoadFromFile(const char* FileName);
-		void SaveNodesToFile(const char* FileName, std::vector<Node*> Nodes);
+		bool LoadFromFile(std::string FilePath);
+		bool SaveNodesToFile(std::string FilePath, std::vector<Node*> Nodes);
 
 		ImVec2 GetPosition() const;
 		void SetPosition(ImVec2 NewValue);

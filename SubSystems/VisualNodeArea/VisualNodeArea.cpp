@@ -146,27 +146,38 @@ void NodeArea::PropagateNodeEventsCallbacks(Node* Node, const NODE_EVENT EventTo
 	}
 }
 
-void NodeArea::SaveToFile(const char* FileName) const
+bool NodeArea::SaveToFile(std::string FilePath) const
 {
 	const std::string JsonFile = ToJson();
 	std::ofstream SaveFile;
-	SaveFile.open(FileName);
+
+	SaveFile.open(FilePath);
+	if (!SaveFile.is_open())
+		return false;
+
 	SaveFile << JsonFile;
 	SaveFile.close();
+
+	return SaveFile.good();
 }
 
-void NodeArea::SaveNodesToFile(const char* FileName, std::vector<Node*> Nodes)
+bool NodeArea::SaveNodesToFile(std::string FilePath, std::vector<Node*> Nodes)
 {
 	if (Nodes.empty())
-		return;
+		return false;
 
 	const NodeArea* NewNodeArea = NodeArea::CreateNodeArea(Nodes, std::vector<GroupComment*>());
 	const std::string JsonFile = NewNodeArea->ToJson();
 	std::ofstream SaveFile;
-	SaveFile.open(FileName);
+	SaveFile.open(FilePath);
+	if (!SaveFile.is_open())
+		return false;
+
 	SaveFile << JsonFile;
 	SaveFile.close();
 	delete NewNodeArea;
+
+	return SaveFile.good();
 }
 
 bool NodeArea::IsAlreadyConnected(NodeSocket* FirstSocket, NodeSocket* SecondSocket, const std::vector<Connection*>& Connections)
@@ -297,6 +308,7 @@ std::string NodeArea::ToJson() const
 	std::ofstream SaveFile;
 
 	Root["ID"] = GetID();
+	Root["Name"] = GetName();
 
 	Json::Value NodesData;
 	for (size_t i = 0; i < Nodes.size(); i++)
@@ -309,7 +321,7 @@ std::string NodeArea::ToJson() const
 
 	Root["Nodes"] = NodesData;
 
-	Json::Value ConnectionsData;
+	Json::Value ConnectionsData(Json::objectValue);
 	for (size_t i = 0; i < Connections.size(); i++)
 	{
 		ConnectionsData[std::to_string(i)]["In"]["SocketID"] = Connections[i]->In->GetID();
@@ -443,6 +455,10 @@ bool NodeArea::LoadFromJson(std::string JsonText)
 	if (Root.isMember("ID"))
 		ID = Root["ID"].asCString();
 	
+	// Compatibility check, older versions did not have Name field.
+	if (Root.isMember("Name"))
+		Name = Root["Name"].asCString();
+
 	std::unordered_map<std::string, Node*> LoadedNodes;
 	std::vector<Json::String> NodesList = Root["Nodes"].getMemberNames();
 	for (size_t i = 0; i < NodesList.size(); i++)
@@ -706,10 +722,10 @@ bool NodeArea::WorkOnLoadedConnection(Json::Value& Root, const Json::Value& Conn
 	return true;
 }
 
-bool NodeArea::LoadFromFile(const char* FileName)
+bool NodeArea::LoadFromFile(std::string FilePath)
 {
 	std::ifstream NodesFile;
-	NodesFile.open(FileName);
+	NodesFile.open(FilePath);
 	if (!NodesFile.is_open())
 		return false;
 

@@ -4,7 +4,7 @@
 
 namespace VisNodeSys
 {
-	class VISUAL_NODE_SYSTEM_API VisualLinkNode : public VisNodeSys::Node
+	class VISUAL_NODE_SYSTEM_API LinkNode : public Node
 	{
 		friend class NodeArea;
 		friend class NodeSystem;
@@ -14,9 +14,11 @@ namespace VisNodeSys
 		bool bIsInputNode = true;
 		std::string LinkedAreaID;
 
-		VisualLinkNode();
-		VisualLinkNode(const VisualLinkNode& Other);
-		~VisualLinkNode();
+		LinkNode();
+		LinkNode(const LinkNode& Other);
+		~LinkNode();
+
+		void AddSocket(NodeSocket* Socket);
 
 		//bool CanConnect(VisNodeSys::NodeSocket* OwnSocket, VisNodeSys::NodeSocket* CandidateSocket, char** MsgToUser);
 		//void SocketEvent(VisNodeSys::NodeSocket* OwnSocket, VisNodeSys::NodeSocket* ConnectedSocket, VisNodeSys::NODE_SOCKET_EVENT EventType);
@@ -24,6 +26,7 @@ namespace VisNodeSys
 		bool IsInputNode() const;
 		Node* GetPartnerNode() const;
 		NodeArea* GetLinkedArea() const;
+		bool IsDangling() const;
 
 		Json::Value ToJson();
 		bool FromJson(Json::Value Json);

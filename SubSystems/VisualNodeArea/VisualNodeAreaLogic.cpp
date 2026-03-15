@@ -11,9 +11,9 @@ bool NodeArea::AddNode(Node* NewNode)
 	if (FoundNode != nullptr)
 		return false;
 
-	if (NewNode->GetType() == "VisualLinkNode")
+	if (NewNode->GetType() == "LinkNode")
 	{
-		VisualLinkNode* ReferenceNode = static_cast<VisualLinkNode*>(NewNode);
+		LinkNode* ReferenceNode = static_cast<LinkNode*>(NewNode);
 		if (ReferenceNode->GetLinkedArea() == this)
 			return false;
 	}

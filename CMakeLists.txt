@@ -32,8 +32,8 @@ endif()
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 file(GLOB VisualLinkNode_SRC
-	"StandardNodes/LinkNode/VisualLinkNode.cpp"
-	"StandardNodes/LinkNode/VisualLinkNode.h"
+	"StandardNodes/LinkNode/LinkNode.cpp"
+	"StandardNodes/LinkNode/LinkNode.h"
 )
 
 file(GLOB VisualNodeArea_SRC

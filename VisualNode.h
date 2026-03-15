@@ -92,7 +92,7 @@ namespace VisNodeSys
 
 		std::string GetType() const;
 
-		void AddSocket(NodeSocket* Socket);
+		virtual void AddSocket(NodeSocket* Socket);
 
 		virtual Json::Value ToJson();
 		virtual bool FromJson(Json::Value Json);
