@@ -4,6 +4,48 @@ using namespace VisNodeSys;
 TestTools::TestTools() {}
 TestTools::~TestTools() {}
 
+bool TestTools::VerifyNodeAreaSaveLoadCycle_BasicChecks(VisNodeSys::NodeArea* NodeArea)
+{
+	if (NodeArea == nullptr)
+		return false;
+
+	std::string NodeAreaID = NodeArea->GetID();
+	std::string NodeAreaName = NodeArea->GetName();
+	int NodeCount = NodeArea->GetNodeCount();
+	int ConnectionCount = NodeArea->GetConnectionCount();
+	int RerouteConnectionCount = NodeArea->GetRerouteConnectionCount();
+	int GroupCommentCount = NodeArea->GetGroupCommentCount();
+
+	if (!NodeArea->SaveToFile("TemporaryNodeArea.json"))
+		return false;
+
+	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+
+	NodeArea = NODE_SYSTEM.CreateNodeArea();
+	if (!NodeArea->LoadFromFile("TemporaryNodeArea.json"))
+		return false;
+
+	if (NodeArea->GetID() != NodeAreaID)
+		return false;
+
+	if (NodeArea->GetName() != NodeAreaName)
+		return false;
+
+	if (NodeArea->GetNodeCount() != NodeCount)
+		return false;
+
+	if (NodeArea->GetConnectionCount() != ConnectionCount)
+		return false;
+
+	if (NodeArea->GetRerouteConnectionCount() != RerouteConnectionCount)
+		return false;
+
+	if (NodeArea->GetGroupCommentCount() != GroupCommentCount)
+		return false;
+
+	return true;
+}
+
 void TestTools::AddOutputSocketsToNode(Node* NodeToAddSockets, std::string SocketType, int OutputCount)
 {
 	for (int i = 0; i < OutputCount; i++)
@@ -393,36 +435,144 @@ std::vector<NodeArea*> TestTools::CreateSmallLinkedNodeAreaGraph()
 	return Areas;
 }
 
-bool TestTools::VerifyLinksInSmallNodeAreaGraph()
+void TestTools::ConnectSmallLinkedNodeAreaGraph()
 {
+	std::vector<NodeArea*> Areas = GetOrderedAreasFromSmallLinkedNodeAreaGraph();
+	for (size_t i = 0; i < Areas.size(); i++)
+	{
+		if (Areas[i] == nullptr)
+			return;
+	}
+
+	if (Areas.size() != 30)
+		return;
+
+	NodeArea* CurrentArea = Areas[0];
+	NodeArea* CurrentUpstreamArea = nullptr;
+	NodeArea* CurrentDownstreamArea = nullptr;
+
+	Node* CurrentExecutionSourceNode = nullptr;
+	LinkNode* CurrentUpstreamLinkNode = nullptr;
+	LinkNode* CurrentDownstreamLinkNode = nullptr;
+
+	std::vector<std::pair<std::string, std::string>> UpstreamLinkingNodes = {};
+	std::vector<std::pair<std::string, std::string>> DownstreamLinkingNodes = {};
+
+	Node* BeginNode = NODE_FACTORY.CreateNode("BeginNode");
+	ASSERT_NE(BeginNode, nullptr);
+	Areas[0]->AddNode(BeginNode);
+	Areas[0]->SetExecutionEntryNode(BeginNode);
+	
+	// 0 => 1.
+	CurrentExecutionSourceNode = BeginNode;
+	CurrentDownstreamArea = Areas[1];
+	DownstreamLinkingNodes = NODE_SYSTEM.GetLinkingNodesForAreas(CurrentArea->GetID(), CurrentDownstreamArea->GetID());
+	CurrentDownstreamLinkNode = reinterpret_cast<LinkNode*>(CurrentArea->GetNodeByID(DownstreamLinkingNodes[0].first));
+	ASSERT_EQ(CurrentArea->TryToConnect(CurrentExecutionSourceNode, 0, CurrentDownstreamLinkNode, 0), true);
+
+	// 0 => 2.
+	CurrentDownstreamArea = Areas[2];
+	DownstreamLinkingNodes = NODE_SYSTEM.GetLinkingNodesForAreas(CurrentArea->GetID(), CurrentDownstreamArea->GetID());
+	CurrentDownstreamLinkNode = reinterpret_cast<LinkNode*>(CurrentArea->GetNodeByID(DownstreamLinkingNodes[0].first));
+	ASSERT_EQ(CurrentArea->TryToConnect(CurrentExecutionSourceNode, 0, CurrentDownstreamLinkNode, 0), true);
+
+	// 0 => 3.
+	CurrentDownstreamArea = Areas[2];
+	DownstreamLinkingNodes = NODE_SYSTEM.GetLinkingNodesForAreas(CurrentArea->GetID(), CurrentDownstreamArea->GetID());
+	CurrentDownstreamLinkNode = reinterpret_cast<LinkNode*>(CurrentArea->GetNodeByID(DownstreamLinkingNodes[0].first));
+	ASSERT_EQ(CurrentArea->TryToConnect(CurrentExecutionSourceNode, 0, CurrentDownstreamLinkNode, 0), true);
+
+
+	// Connects the incoming upstream link node to the link node leading to the given downstream area.
+	auto ConnectFromUpstream = [&](NodeArea* CurrentArea, NodeArea* UpstreamArea, NodeArea* DownstreamArea) {
+		auto UpstreamLinkingNodes = NODE_SYSTEM.GetLinkingNodesForAreas(UpstreamArea->GetID(), CurrentArea->GetID());
+		auto DownstreamLinkingNodes = NODE_SYSTEM.GetLinkingNodesForAreas(CurrentArea->GetID(), DownstreamArea->GetID());
+		LinkNode* UpstreamLinkNode = reinterpret_cast<LinkNode*>(CurrentArea->GetNodeByID(UpstreamLinkingNodes[0].second));
+		LinkNode* DownstreamLinkNode = reinterpret_cast<LinkNode*>(CurrentArea->GetNodeByID(DownstreamLinkingNodes[0].first));
+		ASSERT_EQ(CurrentArea->TryToConnect(UpstreamLinkNode, 0, DownstreamLinkNode, 0), true);
+	};
+
+	// Depth Level 1.
+	ConnectFromUpstream(Areas[1], Areas[0], Areas[4]);
+	ConnectFromUpstream(Areas[1], Areas[0], Areas[5]);
+	ConnectFromUpstream(Areas[1], Areas[0], Areas[6]);
+
+	ConnectFromUpstream(Areas[2], Areas[0], Areas[7]);
+	ConnectFromUpstream(Areas[2], Areas[0], Areas[8]);
+	ConnectFromUpstream(Areas[2], Areas[0], Areas[9]);
+
+	ConnectFromUpstream(Areas[3], Areas[0], Areas[10]);
+	ConnectFromUpstream(Areas[3], Areas[0], Areas[11]);
+	ConnectFromUpstream(Areas[3], Areas[0], Areas[12]);
+
+	// Depth Level 2.
+	ConnectFromUpstream(Areas[4], Areas[1], Areas[13]);
+	ConnectFromUpstream(Areas[4], Areas[1], Areas[14]);
+	ConnectFromUpstream(Areas[5], Areas[1], Areas[15]);
+
+	ConnectFromUpstream(Areas[7], Areas[2], Areas[16]);
+	ConnectFromUpstream(Areas[8], Areas[2], Areas[17]);
+	ConnectFromUpstream(Areas[9], Areas[2], Areas[18]);
+
+	ConnectFromUpstream(Areas[10], Areas[3], Areas[19]);
+	ConnectFromUpstream(Areas[11], Areas[3], Areas[20]);
+	ConnectFromUpstream(Areas[12], Areas[3], Areas[21]);
+	ConnectFromUpstream(Areas[12], Areas[3], Areas[22]);
+
+	// Depth Level 3.
+	ConnectFromUpstream(Areas[13], Areas[4], Areas[23]);
+	ConnectFromUpstream(Areas[15], Areas[5], Areas[24]);
+	ConnectFromUpstream(Areas[16], Areas[7], Areas[25]);
+	ConnectFromUpstream(Areas[18], Areas[9], Areas[26]);
+	ConnectFromUpstream(Areas[20], Areas[11], Areas[27]);
+	ConnectFromUpstream(Areas[21], Areas[12], Areas[28]);
+	ConnectFromUpstream(Areas[22], Areas[12], Areas[29]);
+}
+
+std::vector<NodeArea*> TestTools::GetOrderedAreasFromSmallLinkedNodeAreaGraph()
+{
+	std::vector<NodeArea*> Result(30, nullptr);
 	std::vector<std::string> AreaIDs = NODE_SYSTEM.GetNodeAreaIDList();
 	if (AreaIDs.size() != 30)
-		return false;
+		return Result;
 
 	// We can not rely on order of areas in the list, so we need to find them by names (which we set to be the same as their index in the hierarchy).
-	std::vector<NodeArea*> Areas(30, nullptr);
 	for (const std::string& AreaID : AreaIDs)
 	{
 		NodeArea* Area = NODE_SYSTEM.GetNodeAreaByID(AreaID);
 		if (Area == nullptr)
-			return false;
+			return Result;
 
 		int Index = -1;
 		try
-		{ 
+		{
 			Index = std::stoi(Area->GetName());
 		}
 		catch (...)
 		{
-			return false;
+			return Result;
 		}
 
 		if (Index < 0 || Index >= 30)
-			return false;
+			return Result;
 
-		Areas[Index] = Area;
+		Result[Index] = Area;
 	}
-	
+
+	return Result;
+}
+
+bool TestTools::VerifyLinksInSmallNodeAreaGraph()
+{
+	std::vector<NodeArea*> Areas = GetOrderedAreasFromSmallLinkedNodeAreaGraph();
+	for (size_t i = 0; i < Areas.size(); i++)
+	{
+		if (Areas[i] == nullptr)
+			return false;
+	}
+
+	if (Areas.size() != 30)
+		return false;
 
 	// Depth Level 0.
 	// Root has no upstream, three immediate downstream.
@@ -710,4 +860,434 @@ bool TestTools::VerifyLinksInSmallNodeAreaGraph()
 		return false;
 
 	return true;
+}
+
+// ************************ Execution flow test tools ************************
+
+NodeVariableSupportedType TestTools::GetRandomNodeVariableType()
+{
+	int RandomValue = rand() % 9;
+	switch (RandomValue)
+	{
+		case 0:
+			return NodeVariableSupportedType::BOOL;
+		case 1:
+			return NodeVariableSupportedType::INT;
+		case 2:
+			return NodeVariableSupportedType::FLOAT;
+		case 3:
+			return NodeVariableSupportedType::VEC2;
+		case 4:
+			return NodeVariableSupportedType::BVEC2;
+		case 5:
+			return NodeVariableSupportedType::VEC3;
+		case 6:
+			return NodeVariableSupportedType::BVEC3;
+		case 7:
+			return NodeVariableSupportedType::VEC4;
+		case 8:
+			return NodeVariableSupportedType::BVEC4;
+	}
+
+	return NodeVariableSupportedType::BOOL;
+}
+
+bool TestTools::GetRandomBoolValue()
+{
+	return rand() % 2 == 0;
+}
+
+BoolLiteralNode* TestTools::CreateBoolLiteralNode(bool bValue)
+{
+	BoolLiteralNode* NewNode = new BoolLiteralNode();
+	NewNode->SetData(bValue);
+	return NewNode;
+}
+
+BoolVariableNode* TestTools::CreateBoolVariableNode(bool bValue)
+{
+	BoolVariableNode* NewNode = new BoolVariableNode();
+	NewNode->SetData(bValue);
+	return NewNode;
+}
+
+int TestTools::GetRandomIntValue()
+{
+	return rand() % 10;
+}
+
+IntegerLiteralNode* TestTools::CreateIntegerLiteralNode(int Value)
+{
+	IntegerLiteralNode* NewNode = new IntegerLiteralNode();
+	NewNode->SetData(Value);
+	return NewNode;
+}
+
+IntegerVariableNode* TestTools::CreateIntegerVariableNode(int Value)
+{
+	IntegerVariableNode* NewNode = new IntegerVariableNode();
+	NewNode->SetData(Value);
+	return NewNode;
+}
+
+float TestTools::GetRandomFloatValue()
+{
+	return static_cast<float>(rand() % 1000) / 10.0f;
+}
+
+FloatLiteralNode* TestTools::CreateFloatLiteralNode(float Value)
+{
+	FloatLiteralNode* NewNode = new FloatLiteralNode();
+	NewNode->SetData(Value);
+	return NewNode;
+}
+
+FloatVariableNode* TestTools::CreateFloatVariableNode(float Value)
+{
+	FloatVariableNode* NewNode = new FloatVariableNode();
+	NewNode->SetData(Value);
+	return NewNode;
+}
+
+glm::vec2 TestTools::GetRandomVec2Value()
+{
+	glm::vec2 RandomValue;
+	RandomValue.x = TEST_TOOLS.GetRandomFloatValue();
+	RandomValue.y = TEST_TOOLS.GetRandomFloatValue();
+	return RandomValue;
+}
+
+Vec2LiteralNode* TestTools::CreateVec2LiteralNode(glm::vec2 Value)
+{
+	Vec2LiteralNode* NewNode = new Vec2LiteralNode();
+	NewNode->SetData(Value);
+	return NewNode;
+}
+
+Vec2VariableNode* TestTools::CreateVec2VariableNode(glm::vec2 Value)
+{
+	Vec2VariableNode* NewNode = new Vec2VariableNode();
+	NewNode->SetData(Value);
+	return NewNode;
+}
+
+glm::bvec2 TestTools::GetRandomBVec2Value()
+{
+	glm::bvec2 RandomValue;
+	RandomValue.x = TEST_TOOLS.GetRandomBoolValue();
+	RandomValue.y = TEST_TOOLS.GetRandomBoolValue();
+	return RandomValue;
+}
+
+BoolVec2LiteralNode* TestTools::CreateBVec2LiteralNode(glm::bvec2 Value)
+{
+	BoolVec2LiteralNode* NewNode = new BoolVec2LiteralNode();
+	NewNode->SetData(Value);
+	return NewNode;
+}
+
+BoolVec2VariableNode* TestTools::CreateBVec2VariableNode(glm::bvec2 Value)
+{
+	BoolVec2VariableNode* NewNode = new BoolVec2VariableNode();
+	NewNode->SetData(Value);
+	return NewNode;
+}
+
+LogicalNodeOperatorType TestTools::GetRandomLogicalOperatorType()
+{
+	int RandomValue = rand() % 4;
+	switch (RandomValue)
+	{
+	case 0:
+		return LogicalNodeOperatorType::AND;
+	case 1:
+		return LogicalNodeOperatorType::OR;
+	case 2:
+		return LogicalNodeOperatorType::XOR;
+	case 3:
+		return LogicalNodeOperatorType::NOT;
+	}
+
+	return LogicalNodeOperatorType::AND;
+}
+
+BaseLogicalOperatorNode* TestTools::CreateBaseLogicalOperatorNode(LogicalNodeOperatorType Type)
+{
+	BaseLogicalOperatorNode* NewNode = nullptr;
+
+	switch (Type)
+	{
+	case LogicalNodeOperatorType::AND:
+		NewNode = new LogicalANDOperatorNode();
+		break;
+
+	case LogicalNodeOperatorType::OR:
+		NewNode = new LogicalOROperatorNode();
+		break;
+
+	case LogicalNodeOperatorType::XOR:
+		NewNode = new LogicalXOROperatorNode();
+		break;
+
+	case LogicalNodeOperatorType::NOT:
+		NewNode = new LogicalNOTOperatorNode();
+		break;
+	}
+
+	return NewNode;
+}
+
+bool TestTools::GetResultFromLogicalOperator(LogicalNodeOperatorType Type, bool A, bool B)
+{
+	switch (Type)
+	{
+	case LogicalNodeOperatorType::AND:
+		return A && B;
+	case LogicalNodeOperatorType::OR:
+		return A || B;
+	case LogicalNodeOperatorType::XOR:
+		return A != B;
+	case LogicalNodeOperatorType::NOT:
+		return !A;
+	}
+
+	return false;
+}
+
+ComparisonNodeOperatorType TestTools::GetRandomComparisonOperatorType()
+{
+	int RandomValue = rand() % 6;
+	switch (RandomValue)
+	{
+	case 0:
+		return ComparisonNodeOperatorType::EQUAL;
+	case 1:
+		return ComparisonNodeOperatorType::NOT_EQUAL;
+	case 2:
+		return ComparisonNodeOperatorType::GREATER_THAN_OR_EQUAL;
+	case 3:
+		return ComparisonNodeOperatorType::GREATER_THAN;
+	case 4:
+		return ComparisonNodeOperatorType::LESS_THAN_OR_EQUAL;
+	case 5:
+		return ComparisonNodeOperatorType::LESS_THAN;
+	}
+
+	return ComparisonNodeOperatorType::EQUAL;
+}
+
+BaseComparisonOperatorNode* TestTools::CreateBaseComparisonOperatorNode(ComparisonNodeOperatorType Type)
+{
+	BaseComparisonOperatorNode* NewNode = nullptr;
+	switch (Type)
+	{
+	case ComparisonNodeOperatorType::EQUAL:
+		NewNode = new EqualNode();
+		break;
+	case ComparisonNodeOperatorType::NOT_EQUAL:
+		NewNode = new NotEqualNode();
+		break;
+	case ComparisonNodeOperatorType::GREATER_THAN_OR_EQUAL:
+		NewNode = new GreaterThanOrEqualNode();
+		break;
+	case ComparisonNodeOperatorType::GREATER_THAN:
+		NewNode = new GreaterThanNode();
+		break;
+	case ComparisonNodeOperatorType::LESS_THAN_OR_EQUAL:
+		NewNode = new LessThanOrEqualNode();
+		break;
+	case ComparisonNodeOperatorType::LESS_THAN:
+		NewNode = new LessThanNode();
+		break;
+	}
+	return NewNode;
+}
+
+bool TestTools::GetResultFromComparisonOperator(ComparisonNodeOperatorType Type, int A, int B)
+{
+	switch (Type)
+	{
+	case ComparisonNodeOperatorType::EQUAL:
+		return A == B;
+	case ComparisonNodeOperatorType::NOT_EQUAL:
+		return A != B;
+	case ComparisonNodeOperatorType::GREATER_THAN_OR_EQUAL:
+		return A >= B;
+	case ComparisonNodeOperatorType::GREATER_THAN:
+		return A > B;
+	case ComparisonNodeOperatorType::LESS_THAN_OR_EQUAL:
+		return A <= B;
+	case ComparisonNodeOperatorType::LESS_THAN:
+		return A < B;
+	}
+
+	return false;
+}
+
+bool TestTools::GetResultFromComparisonOperator(ComparisonNodeOperatorType Type, float A, float B)
+{
+	switch (Type)
+	{
+	case ComparisonNodeOperatorType::EQUAL:
+		return A == B;
+	case ComparisonNodeOperatorType::NOT_EQUAL:
+		return A != B;
+	case ComparisonNodeOperatorType::GREATER_THAN_OR_EQUAL:
+		return A >= B;
+	case ComparisonNodeOperatorType::GREATER_THAN:
+		return A > B;
+	case ComparisonNodeOperatorType::LESS_THAN_OR_EQUAL:
+		return A <= B;
+	case ComparisonNodeOperatorType::LESS_THAN:
+		return A < B;
+	}
+
+	return false;
+}
+
+glm::bvec2 TestTools::GetResultFromComparisonOperator(ComparisonNodeOperatorType Type, glm::vec2 A, glm::vec2 B)
+{
+	switch (Type)
+	{
+	case ComparisonNodeOperatorType::EQUAL:
+		return glm::equal(A, B);
+	case ComparisonNodeOperatorType::NOT_EQUAL:
+		return glm::notEqual(A, B);
+	case ComparisonNodeOperatorType::GREATER_THAN_OR_EQUAL:
+		return glm::greaterThanEqual(A, B);
+	case ComparisonNodeOperatorType::GREATER_THAN:
+		return glm::greaterThan(A, B);
+	case ComparisonNodeOperatorType::LESS_THAN_OR_EQUAL:
+		return glm::lessThanEqual(A, B);
+	case ComparisonNodeOperatorType::LESS_THAN:
+		return glm::lessThan(A, B);
+	}
+
+	return glm::bvec2(false);
+}
+
+ArithmeticOperationType TestTools::GetRandomArithmeticOperatorType()
+{
+	int RandomValue = rand() % 6;
+	switch (RandomValue)
+	{
+	case 0:
+		return ArithmeticOperationType::ADD;
+	case 1:
+		return ArithmeticOperationType::SUBTRACT;
+	case 2:
+		return ArithmeticOperationType::MULTIPLY;
+	case 3:
+		return ArithmeticOperationType::DIVIDE;
+	case 4:
+		return ArithmeticOperationType::MODULUS;
+	case 5:
+		return ArithmeticOperationType::POWER;
+
+	}
+
+	return ArithmeticOperationType::ADD;
+}
+
+BaseArithmeticOperatorNode* TestTools::CreateBaseArithmeticOperatorNode(ArithmeticOperationType Type)
+{
+	BaseArithmeticOperatorNode* NewNode = nullptr;
+	switch (Type)
+	{
+	case ArithmeticOperationType::ADD:
+		NewNode = new ArithmeticAddNode();
+		break;
+	case ArithmeticOperationType::SUBTRACT:
+		NewNode = new ArithmeticSubtractNode();
+		break;
+	case ArithmeticOperationType::MULTIPLY:
+		NewNode = new ArithmeticMultiplyNode();
+		break;
+	case ArithmeticOperationType::DIVIDE:
+		NewNode = new ArithmeticDivideNode();
+		break;
+	case ArithmeticOperationType::MODULUS:
+		NewNode = new ArithmeticModulusNode();
+		break;
+	case ArithmeticOperationType::POWER:
+		NewNode = new ArithmeticPowerNode();
+		break;
+	}
+
+	return NewNode;
+}
+
+int TestTools::GetResultFromArithmeticOperator(ArithmeticOperationType Type, int A, int B)
+{
+	switch (Type)
+	{
+	case ArithmeticOperationType::ADD:
+		return A + B;
+	case ArithmeticOperationType::SUBTRACT:
+		return A - B;
+	case ArithmeticOperationType::MULTIPLY:
+		return A * B;
+	case ArithmeticOperationType::DIVIDE:
+		if (B == 0)
+			return A;
+		return A / B;
+	case ArithmeticOperationType::MODULUS:
+		if (B == 0)
+			return A;
+		return A % B;
+	case ArithmeticOperationType::POWER:
+		return static_cast<int>(std::pow(static_cast<double>(A), static_cast<double>(B)));
+	}
+
+	return 0;
+}
+
+float TestTools::GetResultFromArithmeticOperator(ArithmeticOperationType Type, float A, float B)
+{
+	switch (Type)
+	{
+	case ArithmeticOperationType::ADD:
+		return A + B;
+	case ArithmeticOperationType::SUBTRACT:
+		return A - B;
+	case ArithmeticOperationType::MULTIPLY:
+		return A * B;
+	case ArithmeticOperationType::DIVIDE:
+		if (B == 0.0f)
+			return A;
+		return A / B;
+	case ArithmeticOperationType::MODULUS:
+		if (B == 0.0f)
+			return A;
+		return std::fmod(A, B);
+	case ArithmeticOperationType::POWER:
+		return static_cast<float>(std::pow(static_cast<double>(A), static_cast<double>(B)));
+	}
+
+	return 0.0f;
+}
+
+glm::vec2 TestTools::GetResultFromArithmeticOperator(ArithmeticOperationType Type, glm::vec2 A, glm::vec2 B)
+{
+	switch (Type)
+	{
+	case ArithmeticOperationType::ADD:
+		return A + B;
+	case ArithmeticOperationType::SUBTRACT:
+		return A - B;
+	case ArithmeticOperationType::MULTIPLY:
+		return A * B;
+	case ArithmeticOperationType::DIVIDE:
+		if (B == glm::vec2(0.0f))
+			return A;
+		return A / B;
+	case ArithmeticOperationType::MODULUS:
+		if (B == glm::vec2(0.0f))
+			return A;
+		return glm::mod(A, B);
+	case ArithmeticOperationType::POWER:
+		return glm::pow(A, B);
+	}
+
+	return glm::vec2(0.0f);
 }

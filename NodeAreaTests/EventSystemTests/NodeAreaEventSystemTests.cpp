@@ -1,6 +1,166 @@
 #include "NodeAreaEventSystemTests.h"
 using namespace VisNodeSys;
 
+TEST(NodeAreaEventSystemTests, Node_Events)
+{
+	std::vector<std::string> NodesIDList;
+	std::vector<std::string> GroupCommentsIDList;
+
+	NodeArea* LocalNodeArea = TEST_TOOLS.CreateTinyPopulatedNodeArea(NodesIDList, GroupCommentsIDList);
+	ASSERT_NE(LocalNodeArea, nullptr);
+	ASSERT_EQ(LocalNodeArea->GetNodeCount(), 11);
+	ASSERT_EQ(NodesIDList.size(), 11);
+	ASSERT_EQ(GroupCommentsIDList.size(), 1);
+
+	bool bFirstRemoveCall = true;
+	Node* NodeToDelete = LocalNodeArea->GetNodeByID(NodesIDList[8]);
+	ASSERT_NE(NodeToDelete, nullptr);
+	bool bNodeRemovedEventCalled = false;
+	LocalNodeArea->AddNodeEventCallback([&](Node* Node, NODE_EVENT EventType) {
+		if (EventType == NODE_EVENT::REMOVED)
+		{
+			if (bFirstRemoveCall)
+			{
+				bNodeRemovedEventCalled = true;
+				ASSERT_EQ(Node->GetID(), NodeToDelete->GetID());
+				bFirstRemoveCall = false;
+			}
+		}
+	});
+	LocalNodeArea->Delete(NodeToDelete);
+	ASSERT_EQ(LocalNodeArea->GetNodeByID(NodesIDList[8]), nullptr);
+	ASSERT_TRUE(bNodeRemovedEventCalled);
+
+	Node* NodeToConnectFrom = LocalNodeArea->GetNodeByID(NodesIDList[1]);
+	ASSERT_NE(NodeToConnectFrom, nullptr);
+	Node* NodeToConnectTo = LocalNodeArea->GetNodeByID(NodesIDList[5]);
+	ASSERT_NE(NodeToConnectTo, nullptr);
+
+	bool bFirstCall = true;
+	bool bNodeBeforeConnectedEventCalled = false;
+	LocalNodeArea->AddNodeEventCallback([&](Node* Node, NODE_EVENT EventType) {
+		if (EventType == NODE_EVENT::BEFORE_CONNECTED)
+		{
+			ASSERT_EQ(NodeToConnectTo->GetNodesConnectedToInput().size(), 0);
+			ASSERT_EQ(NodeToConnectFrom->GetNodesConnectedToOutput().size(), 0);
+
+			if (bFirstCall)
+			{
+				ASSERT_EQ(Node->GetID(), NodeToConnectFrom->GetID());
+				bFirstCall = false;
+			}
+			else
+			{
+				bNodeBeforeConnectedEventCalled = true;
+				ASSERT_EQ(Node->GetID(), NodeToConnectTo->GetID());
+				bFirstCall = true;
+			}
+		}
+	});
+
+	bool bNodeAfterConnectedEventCalled = false;
+	LocalNodeArea->AddNodeEventCallback([&](Node* Node, NODE_EVENT EventType) {
+		if (EventType == NODE_EVENT::AFTER_CONNECTED)
+		{
+			ASSERT_EQ(NodeToConnectTo->GetNodesConnectedToInput().size(), 1);
+			ASSERT_EQ(NodeToConnectFrom->GetNodesConnectedToOutput().size(), 1);
+
+			if (bFirstCall)
+			{
+				ASSERT_EQ(Node->GetID(), NodeToConnectFrom->GetID());
+				bFirstCall = false;
+			}
+			else
+			{
+				bNodeAfterConnectedEventCalled = true;
+				ASSERT_EQ(Node->GetID(), NodeToConnectTo->GetID());
+			}
+		}
+	});
+
+	ASSERT_TRUE(LocalNodeArea->TryToConnect(NodeToConnectFrom, 0, NodeToConnectTo, 0));
+	ASSERT_TRUE(bNodeBeforeConnectedEventCalled);
+	ASSERT_TRUE(bNodeAfterConnectedEventCalled);
+
+	bFirstCall = true;
+	bool bNodeBeforeDisconnectedEventCalled = false;
+	LocalNodeArea->AddNodeEventCallback([&](Node* Node, NODE_EVENT EventType) {
+		if (EventType == NODE_EVENT::BEFORE_DISCONNECTED)
+		{
+			ASSERT_EQ(NodeToConnectTo->GetNodesConnectedToInput().size(), 1);
+			ASSERT_EQ(NodeToConnectFrom->GetNodesConnectedToOutput().size(), 1);
+
+			if (bFirstCall)
+			{
+
+				ASSERT_EQ(Node->GetID(), NodeToConnectFrom->GetID());
+				bFirstCall = false;
+			}
+			else
+			{
+				ASSERT_EQ(Node->GetID(), NodeToConnectTo->GetID());
+				bNodeBeforeDisconnectedEventCalled = true;
+				bFirstCall = true;
+			}
+		}
+	});
+
+	bool bNodeAfterDisconnectedEventCalled = false;
+	LocalNodeArea->AddNodeEventCallback([&](Node* Node, NODE_EVENT EventType) {
+		if (EventType == NODE_EVENT::AFTER_DISCONNECTED)
+		{
+			ASSERT_EQ(NodeToConnectTo->GetNodesConnectedToInput().size(), 0);
+			ASSERT_EQ(NodeToConnectFrom->GetNodesConnectedToOutput().size(), 0);
+
+			if (bFirstCall)
+			{
+				ASSERT_EQ(Node->GetID(), NodeToConnectFrom->GetID());
+				bFirstCall = false;
+			}
+			else
+			{
+				ASSERT_EQ(Node->GetID(), NodeToConnectTo->GetID());
+				bNodeAfterDisconnectedEventCalled = true;
+				bFirstCall = true;
+			}
+		}
+	});
+
+	ASSERT_TRUE(LocalNodeArea->TryToDisconnect(NodeToConnectFrom, 0, NodeToConnectTo, 0));
+	ASSERT_TRUE(bNodeBeforeDisconnectedEventCalled);
+	ASSERT_TRUE(bNodeAfterDisconnectedEventCalled);
+
+	bFirstCall = true;
+	bool bNodeDestroyedEventCalled = false;
+	LocalNodeArea->AddNodeEventCallback([&](Node* Node, NODE_EVENT EventType) {
+		if (EventType == NODE_EVENT::DESTROYED)
+		{
+			ASSERT_EQ(NodeToConnectTo->GetNodesConnectedToInput().size(), 0);
+			ASSERT_EQ(NodeToConnectFrom->GetNodesConnectedToOutput().size(), 0);
+
+			if (bFirstCall)
+			{
+				ASSERT_EQ(Node->GetID(), NodesIDList[0]);
+				bFirstCall = false;
+				bNodeDestroyedEventCalled = true;
+			}
+		}
+	});
+
+	NODE_SYSTEM.DeleteNodeArea(LocalNodeArea);
+	ASSERT_TRUE(bNodeDestroyedEventCalled);
+}
+
+TEST(NodeAreaEventSystemTests, Node_CanConnect_Functionality)
+{
+	// To-Do
+}
+
+TEST(NodeAreaEventSystemTests, Node_SocketEvent_Functionality)
+{
+	// To-Do
+}
+
 TEST(NodeAreaEventSystemTests, RunOnEachNode_VisitsAllNodes)
 {
 	std::vector<std::string> NodesIDList;

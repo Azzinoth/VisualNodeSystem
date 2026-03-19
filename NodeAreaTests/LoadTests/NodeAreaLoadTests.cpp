@@ -8,22 +8,8 @@ TEST(NodeAreaLoadTest, BasicSaveLoad)
 	std::string NodeAreaID = NodeArea->GetID();
 	NodeArea->SetName("TestNodeArea");
 
-	ASSERT_EQ(NodeArea->SaveToFile("TemporaryNodeArea.json"), true);
-	NODE_SYSTEM.DeleteNodeArea(NodeArea);
-
-	NodeArea = NODE_SYSTEM.CreateNodeArea();
-	ASSERT_NE(NodeArea, nullptr);
-
-	ASSERT_EQ(NodeArea->LoadFromFile("TemporaryNodeArea.json"), true);
-
-	ASSERT_EQ(NodeArea->GetID(), NodeAreaID);
-	ASSERT_EQ(NodeArea->GetName(), "TestNodeArea");
-	ASSERT_EQ(NodeArea->GetNodeCount(), 0);
-	ASSERT_EQ(NodeArea->GetConnectionCount(), 0);
-	ASSERT_EQ(NodeArea->GetRerouteConnectionCount(), 0);
-	ASSERT_EQ(NodeArea->GetGroupCommentCount(), 0);
-	ASSERT_EQ(NodeArea->GetSelected().size(), 0);
-
+	EXPECT_TRUE(TEST_TOOLS.VerifyNodeAreaSaveLoadCycle_BasicChecks(NodeArea));
+	NodeArea = NODE_SYSTEM.GetNodeAreaByID(NodeAreaID);
 	NODE_SYSTEM.DeleteNodeArea(NodeArea);
 }
 

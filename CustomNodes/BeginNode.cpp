@@ -50,8 +50,8 @@ void BeginNode::SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSocket, 
 
 	if (EventType == EXECUTE)
 	{
-		if (Output[0]->GetConnectedSockets().size() > 0)
-			ParentArea->TriggerSocketEvent(Output[0], Output[0]->GetConnectedSockets()[0], EXECUTE);
+		for (size_t i = 0; i < Output[0]->GetConnectedSockets().size(); i++)
+			ParentArea->TriggerSocketEvent(Output[0], Output[0]->GetConnectedSockets()[i], EXECUTE);
 	}
 }
 

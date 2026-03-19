@@ -5,10 +5,7 @@ using namespace VisNodeSys;
 #define RANDOM_SEED 42
 #define RANDOM_ACTIONS_ITERATIONS 1000
 
-void StandardNodeTest::SetUp() {}
-void StandardNodeTest::TearDown() {}
-
-TEST_F(StandardNodeTest, LogicalOperators)
+TEST(ExecutionFlowNodesTests, LogicalOperators)
 {
 	const std::unordered_map<std::string, bool> ExpectedNodeValues = {
 		// AND part.
@@ -92,87 +89,7 @@ TEST_F(StandardNodeTest, LogicalOperators)
 	NODE_SYSTEM.DeleteNodeArea(TestNodeArea);
 }
 
-bool StandardNodeTest::GetRandomBoolValue()
-{
-	return rand() % 2 == 0;
-}
-
-LogicalNodeOperatorType StandardNodeTest::GetRandomLogicalOperatorType()
-{
-	int RandomValue = rand() % 4;
-	switch (RandomValue)
-	{
-		case 0:
-			return LogicalNodeOperatorType::AND;
-		case 1:
-			return LogicalNodeOperatorType::OR;
-		case 2:
-			return LogicalNodeOperatorType::XOR;
-		case 3:
-			return LogicalNodeOperatorType::NOT;
-	}
-
-	return LogicalNodeOperatorType::AND;
-}
-
-BoolLiteralNode* StandardNodeTest::BoolToBoolLiteralNode(bool bValue)
-{
-	BoolLiteralNode* NewNode = new BoolLiteralNode();
-	NewNode->SetData(bValue);
-	return NewNode;
-}
-
-BoolVariableNode* StandardNodeTest::BoolToBoolVariableNode(bool bValue)
-{
-	BoolVariableNode* NewNode = new BoolVariableNode();
-	NewNode->SetData(bValue);
-	return NewNode;
-}
-
-BaseLogicalOperatorNode* StandardNodeTest::CreateBaseLogicalOperatorNode(LogicalNodeOperatorType Type)
-{
-	BaseLogicalOperatorNode* NewNode = nullptr;
-
-	switch (Type)
-	{
-		case LogicalNodeOperatorType::AND:
-			NewNode = new LogicalANDOperatorNode();
-			break;
-
-		case LogicalNodeOperatorType::OR:
-			NewNode = new LogicalOROperatorNode();
-			break;
-
-		case LogicalNodeOperatorType::XOR:
-			NewNode = new LogicalXOROperatorNode();
-			break;
-
-		case LogicalNodeOperatorType::NOT:
-			NewNode = new LogicalNOTOperatorNode();
-			break;
-	}
-
-	return NewNode;
-}
-
-bool StandardNodeTest::GetResultFromLogicalOperator(LogicalNodeOperatorType Type, bool A, bool B)
-{
-	switch (Type)
-	{
-		case LogicalNodeOperatorType::AND:
-			return A && B;
-		case LogicalNodeOperatorType::OR:
-			return A || B;
-		case LogicalNodeOperatorType::XOR:
-			return A != B;
-		case LogicalNodeOperatorType::NOT:
-			return !A;
-	}
-
-	return false;
-}
-
-TEST_F(StandardNodeTest, LogicalOperatorsRandom)
+TEST(ExecutionFlowNodesTests, LogicalOperatorsRandom)
 {
 	NodeArea* TestNodeArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(TestNodeArea, nullptr);
@@ -187,17 +104,17 @@ TEST_F(StandardNodeTest, LogicalOperatorsRandom)
 	srand(RANDOM_SEED);
 	for (size_t i = 0; i < RANDOM_ACTIONS_ITERATIONS; i++)
 	{
-		bool bFirst = GetRandomBoolValue();
-		bool bSecond = GetRandomBoolValue();
-		LogicalNodeOperatorType Type = GetRandomLogicalOperatorType();
-		bool Result = GetResultFromLogicalOperator(Type, bFirst, bSecond);
+		bool bFirst = TEST_TOOLS.GetRandomBoolValue();
+		bool bSecond = TEST_TOOLS.GetRandomBoolValue();
+		LogicalNodeOperatorType Type = TEST_TOOLS.GetRandomLogicalOperatorType();
+		bool Result = TEST_TOOLS.GetResultFromLogicalOperator(Type, bFirst, bSecond);
 
-		BoolLiteralNode* FirstBoolNode = BoolToBoolLiteralNode(bFirst);
+		BoolLiteralNode* FirstBoolNode = TEST_TOOLS.CreateBoolLiteralNode(bFirst);
 		ASSERT_NE(FirstBoolNode, nullptr);
-		BoolLiteralNode* SecondBoolNode = BoolToBoolLiteralNode(bSecond);
+		BoolLiteralNode* SecondBoolNode = TEST_TOOLS.CreateBoolLiteralNode(bSecond);
 		ASSERT_NE(SecondBoolNode, nullptr);
 
-		BaseLogicalOperatorNode* LogicalOperatorNode = CreateBaseLogicalOperatorNode(Type);
+		BaseLogicalOperatorNode* LogicalOperatorNode = TEST_TOOLS.CreateBaseLogicalOperatorNode(Type);
 		ASSERT_NE(LogicalOperatorNode, nullptr);
 
 		BoolVariableNode* ResultNode = new BoolVariableNode();
@@ -233,124 +150,7 @@ TEST_F(StandardNodeTest, LogicalOperatorsRandom)
 	}
 }
 
-NodeVariableSupportedType StandardNodeTest::GetRandomNodeVariableType()
-{
-	int RandomValue = rand() % 9;
-	switch (RandomValue)
-	{
-		case 0:
-			return NodeVariableSupportedType::BOOL;
-		case 1:
-			return NodeVariableSupportedType::INT;
-		case 2:
-			return NodeVariableSupportedType::FLOAT;
-		case 3:
-			return NodeVariableSupportedType::VEC2;
-		case 4:
-			return NodeVariableSupportedType::BVEC2;
-		case 5:
-			return NodeVariableSupportedType::VEC3;
-		case 6:
-			return NodeVariableSupportedType::BVEC3;
-		case 7:
-			return NodeVariableSupportedType::VEC4;
-		case 8:
-			return NodeVariableSupportedType::BVEC4;
-	}
-
-	return NodeVariableSupportedType::BOOL;
-}
-
-int StandardNodeTest::GetRandomIntValue()
-{
-	return rand() % 10;
-}
-
-IntegerLiteralNode* StandardNodeTest::IntToIntegerLiteralNode(int Value)
-{
-	IntegerLiteralNode* NewNode = new IntegerLiteralNode();
-	NewNode->SetData(Value);
-	return NewNode;
-}
-
-IntegerVariableNode* StandardNodeTest::IntToIntegerVariableNode(int Value)
-{
-	IntegerVariableNode* NewNode = new IntegerVariableNode();
-	NewNode->SetData(Value);
-	return NewNode;
-}
-
-ComparisonNodeOperatorType StandardNodeTest::GetRandomComparisonOperatorType()
-{
-	int RandomValue = rand() % 6;
-	switch (RandomValue)
-	{
-		case 0:
-			return ComparisonNodeOperatorType::EQUAL;
-		case 1:
-			return ComparisonNodeOperatorType::NOT_EQUAL;
-		case 2:
-			return ComparisonNodeOperatorType::GREATER_THAN_OR_EQUAL;
-		case 3:
-			return ComparisonNodeOperatorType::GREATER_THAN;
-		case 4:
-			return ComparisonNodeOperatorType::LESS_THAN_OR_EQUAL;
-		case 5:
-			return ComparisonNodeOperatorType::LESS_THAN;
-	}
-
-	return ComparisonNodeOperatorType::EQUAL;
-}
-
-BaseComparisonOperatorNode* StandardNodeTest::CreateBaseComparisonOperatorNode(ComparisonNodeOperatorType Type)
-{
-	BaseComparisonOperatorNode* NewNode = nullptr;
-	switch (Type)
-	{
-		case ComparisonNodeOperatorType::EQUAL:
-			NewNode = new EqualNode();
-			break;
-		case ComparisonNodeOperatorType::NOT_EQUAL:
-			NewNode = new NotEqualNode();
-			break;
-		case ComparisonNodeOperatorType::GREATER_THAN_OR_EQUAL:
-			NewNode = new GreaterThanOrEqualNode();
-			break;
-		case ComparisonNodeOperatorType::GREATER_THAN:
-			NewNode = new GreaterThanNode();
-			break;
-		case ComparisonNodeOperatorType::LESS_THAN_OR_EQUAL:
-			NewNode = new LessThanOrEqualNode();
-			break;
-		case ComparisonNodeOperatorType::LESS_THAN:
-			NewNode = new LessThanNode();
-			break;
-	}
-	return NewNode;
-}
-
-bool StandardNodeTest::GetResultFromComparisonOperator(ComparisonNodeOperatorType Type, int A, int B)
-{
-	switch (Type)
-	{
-		case ComparisonNodeOperatorType::EQUAL:
-			return A == B;
-		case ComparisonNodeOperatorType::NOT_EQUAL:
-			return A != B;
-		case ComparisonNodeOperatorType::GREATER_THAN_OR_EQUAL:
-			return A >= B;
-		case ComparisonNodeOperatorType::GREATER_THAN:
-			return A > B;
-		case ComparisonNodeOperatorType::LESS_THAN_OR_EQUAL:
-			return A <= B;
-		case ComparisonNodeOperatorType::LESS_THAN:
-			return A < B;
-	}
-
-	return false;
-}
-
-TEST_F(StandardNodeTest, CompareOperatorsRandom)
+TEST(ExecutionFlowNodesTests, CompareOperatorsRandom)
 {
 	NodeArea* TestNodeArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(TestNodeArea, nullptr);
@@ -365,20 +165,20 @@ TEST_F(StandardNodeTest, CompareOperatorsRandom)
 	srand(RANDOM_SEED);
 	for (size_t i = 0; i < RANDOM_ACTIONS_ITERATIONS; i++)
 	{
-		int First = GetRandomIntValue();
-		int Second = GetRandomIntValue();
-		ComparisonNodeOperatorType Type = GetRandomComparisonOperatorType();
-		bool Result = GetResultFromComparisonOperator(Type, First, Second);
+		int First = TEST_TOOLS.GetRandomIntValue();
+		int Second = TEST_TOOLS.GetRandomIntValue();
+		ComparisonNodeOperatorType Type = TEST_TOOLS.GetRandomComparisonOperatorType();
+		bool Result = TEST_TOOLS.GetResultFromComparisonOperator(Type, First, Second);
 
-		IntegerLiteralNode* FirstNode = IntToIntegerLiteralNode(First);
+		IntegerLiteralNode* FirstNode = TEST_TOOLS.CreateIntegerLiteralNode(First);
 		ASSERT_NE(FirstNode, nullptr);
-		IntegerLiteralNode* SecondNode = IntToIntegerLiteralNode(Second);
+		IntegerLiteralNode* SecondNode = TEST_TOOLS.CreateIntegerLiteralNode(Second);
 		ASSERT_NE(SecondNode, nullptr);
 
-		BaseComparisonOperatorNode* ComparisonOperatorNode = CreateBaseComparisonOperatorNode(Type);
+		BaseComparisonOperatorNode* ComparisonOperatorNode = TEST_TOOLS.CreateBaseComparisonOperatorNode(Type);
 		ASSERT_NE(ComparisonOperatorNode, nullptr);
 
-		BoolVariableNode* ResultNode = BoolToBoolVariableNode(false);
+		BoolVariableNode* ResultNode = TEST_TOOLS.CreateBoolVariableNode(false);
 		ASSERT_NE(ResultNode, nullptr);
 
 		TestNodeArea->AddNode(FirstNode);
@@ -412,20 +212,20 @@ TEST_F(StandardNodeTest, CompareOperatorsRandom)
 	srand(RANDOM_SEED);
 	for (size_t i = 0; i < RANDOM_ACTIONS_ITERATIONS; i++)
 	{
-		float First = GetRandomFloatValue();
-		float Second = GetRandomFloatValue();
-		ComparisonNodeOperatorType Type = GetRandomComparisonOperatorType();
-		bool Result = GetResultFromComparisonOperator(Type, First, Second);
+		float First = TEST_TOOLS.GetRandomFloatValue();
+		float Second = TEST_TOOLS.GetRandomFloatValue();
+		ComparisonNodeOperatorType Type = TEST_TOOLS.GetRandomComparisonOperatorType();
+		bool Result = TEST_TOOLS.GetResultFromComparisonOperator(Type, First, Second);
 
-		FloatLiteralNode* FirstNode = FloatToFloatLiteralNode(First);
+		FloatLiteralNode* FirstNode = TEST_TOOLS.CreateFloatLiteralNode(First);
 		ASSERT_NE(FirstNode, nullptr);
-		FloatLiteralNode* SecondNode = FloatToFloatLiteralNode(Second);
+		FloatLiteralNode* SecondNode = TEST_TOOLS.CreateFloatLiteralNode(Second);
 		ASSERT_NE(SecondNode, nullptr);
 
-		BaseComparisonOperatorNode* ComparisonOperatorNode = CreateBaseComparisonOperatorNode(Type);
+		BaseComparisonOperatorNode* ComparisonOperatorNode = TEST_TOOLS.CreateBaseComparisonOperatorNode(Type);
 		ASSERT_NE(ComparisonOperatorNode, nullptr);
 
-		BoolVariableNode* ResultNode = BoolToBoolVariableNode(false);
+		BoolVariableNode* ResultNode = TEST_TOOLS.CreateBoolVariableNode(false);
 		ASSERT_NE(ResultNode, nullptr);
 
 		TestNodeArea->AddNode(FirstNode);
@@ -459,20 +259,20 @@ TEST_F(StandardNodeTest, CompareOperatorsRandom)
 	srand(RANDOM_SEED);
 	for (size_t i = 0; i < RANDOM_ACTIONS_ITERATIONS; i++)
 	{
-		glm::vec2 First = GetRandomVec2Value();
-		glm::vec2 Second = GetRandomVec2Value();
-		ComparisonNodeOperatorType Type = GetRandomComparisonOperatorType();
-		glm::bvec2 Result = GetResultFromComparisonOperator(Type, First, Second);
+		glm::vec2 First = TEST_TOOLS.GetRandomVec2Value();
+		glm::vec2 Second = TEST_TOOLS.GetRandomVec2Value();
+		ComparisonNodeOperatorType Type = TEST_TOOLS.GetRandomComparisonOperatorType();
+		glm::bvec2 Result = TEST_TOOLS.GetResultFromComparisonOperator(Type, First, Second);
 
-		Vec2LiteralNode* FirstNode = Vec2ToVec2LiteralNode(First);
+		Vec2LiteralNode* FirstNode = TEST_TOOLS.CreateVec2LiteralNode(First);
 		ASSERT_NE(FirstNode, nullptr);
-		Vec2LiteralNode* SecondNode = Vec2ToVec2LiteralNode(Second);
+		Vec2LiteralNode* SecondNode = TEST_TOOLS.CreateVec2LiteralNode(Second);
 		ASSERT_NE(SecondNode, nullptr);
 
-		BaseComparisonOperatorNode* ComparisonOperatorNode = CreateBaseComparisonOperatorNode(Type);
+		BaseComparisonOperatorNode* ComparisonOperatorNode = TEST_TOOLS.CreateBaseComparisonOperatorNode(Type);
 		ASSERT_NE(ComparisonOperatorNode, nullptr);
 
-		BoolVec2VariableNode* ResultNode = BVec2ToBVec2VariableNode(glm::bvec2(false));
+		BoolVec2VariableNode* ResultNode = TEST_TOOLS.CreateBVec2VariableNode(glm::bvec2(false));
 		ASSERT_NE(ResultNode, nullptr);
 
 		TestNodeArea->AddNode(FirstNode);
@@ -504,83 +304,7 @@ TEST_F(StandardNodeTest, CompareOperatorsRandom)
 	}
 }
 
-ArithmeticOperationType StandardNodeTest::GetRandomArithmeticOperatorType()
-{
-	int RandomValue = rand() % 6;
-	switch (RandomValue)
-	{
-		case 0:
-			return ArithmeticOperationType::ADD;
-		case 1:
-			return ArithmeticOperationType::SUBTRACT;
-		case 2:
-			return ArithmeticOperationType::MULTIPLY;
-		case 3:
-			return ArithmeticOperationType::DIVIDE;
-		case 4:
-			return ArithmeticOperationType::MODULUS;
-		case 5:
-			return ArithmeticOperationType::POWER;
-
-	}
-
-	return ArithmeticOperationType::ADD;
-}
-
-BaseArithmeticOperatorNode* StandardNodeTest::CreateBaseArithmeticOperatorNode(ArithmeticOperationType Type)
-{
-	BaseArithmeticOperatorNode* NewNode = nullptr;
-	switch (Type)
-	{
-		case ArithmeticOperationType::ADD:
-			NewNode = new ArithmeticAddNode();
-			break;
-		case ArithmeticOperationType::SUBTRACT:
-			NewNode = new ArithmeticSubtractNode();
-			break;
-		case ArithmeticOperationType::MULTIPLY:
-			NewNode = new ArithmeticMultiplyNode();
-			break;
-		case ArithmeticOperationType::DIVIDE:
-			NewNode = new ArithmeticDivideNode();
-			break;
-		case ArithmeticOperationType::MODULUS:
-			NewNode = new ArithmeticModulusNode();
-			break;
-		case ArithmeticOperationType::POWER:
-			NewNode = new ArithmeticPowerNode();
-			break;
-	}
-
-	return NewNode;
-}
-
-int StandardNodeTest::GetResultFromArithmeticOperator(ArithmeticOperationType Type, int A, int B)
-{
-	switch (Type)
-	{
-		case ArithmeticOperationType::ADD:
-			return A + B;
-		case ArithmeticOperationType::SUBTRACT:
-			return A - B;
-		case ArithmeticOperationType::MULTIPLY:
-			return A * B;
-		case ArithmeticOperationType::DIVIDE:
-			if (B == 0)
-				return A;
-			return A / B;
-		case ArithmeticOperationType::MODULUS:
-			if (B == 0)
-				return A;
-			return A % B;
-		case ArithmeticOperationType::POWER:
-			return static_cast<int>(std::pow(static_cast<double>(A), static_cast<double>(B)));
-	}
-
-	return 0;
-}
-
-TEST_F(StandardNodeTest, ArithmeticOperatorsRandom)
+TEST(ExecutionFlowNodesTests, ArithmeticOperatorsRandom)
 {
 	NodeArea* TestNodeArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(TestNodeArea, nullptr);
@@ -595,20 +319,20 @@ TEST_F(StandardNodeTest, ArithmeticOperatorsRandom)
 	srand(RANDOM_SEED);
 	for (size_t i = 0; i < RANDOM_ACTIONS_ITERATIONS; i++)
 	{
-		int First = GetRandomIntValue();
-		int Second = GetRandomIntValue();
-		ArithmeticOperationType Type = GetRandomArithmeticOperatorType();
-		int Result = GetResultFromArithmeticOperator(Type, First, Second);
+		int First = TEST_TOOLS.GetRandomIntValue();
+		int Second = TEST_TOOLS.GetRandomIntValue();
+		ArithmeticOperationType Type = TEST_TOOLS.GetRandomArithmeticOperatorType();
+		int Result = TEST_TOOLS.GetResultFromArithmeticOperator(Type, First, Second);
 
-		IntegerLiteralNode* FirstNode = IntToIntegerLiteralNode(First);
+		IntegerLiteralNode* FirstNode = TEST_TOOLS.CreateIntegerLiteralNode(First);
 		ASSERT_NE(FirstNode, nullptr);
-		IntegerLiteralNode* SecondNode = IntToIntegerLiteralNode(Second);
+		IntegerLiteralNode* SecondNode = TEST_TOOLS.CreateIntegerLiteralNode(Second);
 		ASSERT_NE(SecondNode, nullptr);
 
-		BaseArithmeticOperatorNode* ArithmeticOperatorNode = CreateBaseArithmeticOperatorNode(Type);
+		BaseArithmeticOperatorNode* ArithmeticOperatorNode = TEST_TOOLS.CreateBaseArithmeticOperatorNode(Type);
 		ASSERT_NE(ArithmeticOperatorNode, nullptr);
 
-		IntegerVariableNode* ResultNode = IntToIntegerVariableNode(0);
+		IntegerVariableNode* ResultNode = TEST_TOOLS.CreateIntegerVariableNode(0);
 		ASSERT_NE(ResultNode, nullptr);
 
 		TestNodeArea->AddNode(FirstNode);
@@ -642,20 +366,20 @@ TEST_F(StandardNodeTest, ArithmeticOperatorsRandom)
 	srand(RANDOM_SEED);
 	for (size_t i = 0; i < RANDOM_ACTIONS_ITERATIONS; i++)
 	{
-		float First = GetRandomFloatValue();
-		float Second = GetRandomFloatValue();
-		ArithmeticOperationType Type = GetRandomArithmeticOperatorType();
-		float Result = GetResultFromArithmeticOperator(Type, First, Second);
+		float First = TEST_TOOLS.GetRandomFloatValue();
+		float Second = TEST_TOOLS.GetRandomFloatValue();
+		ArithmeticOperationType Type = TEST_TOOLS.GetRandomArithmeticOperatorType();
+		float Result = TEST_TOOLS.GetResultFromArithmeticOperator(Type, First, Second);
 
-		FloatLiteralNode* FirstNode = FloatToFloatLiteralNode(First);
+		FloatLiteralNode* FirstNode = TEST_TOOLS.CreateFloatLiteralNode(First);
 		ASSERT_NE(FirstNode, nullptr);
-		FloatLiteralNode* SecondNode = FloatToFloatLiteralNode(Second);
+		FloatLiteralNode* SecondNode = TEST_TOOLS.CreateFloatLiteralNode(Second);
 		ASSERT_NE(SecondNode, nullptr);
 
-		BaseArithmeticOperatorNode* ArithmeticOperatorNode = CreateBaseArithmeticOperatorNode(Type);
+		BaseArithmeticOperatorNode* ArithmeticOperatorNode = TEST_TOOLS.CreateBaseArithmeticOperatorNode(Type);
 		ASSERT_NE(ArithmeticOperatorNode, nullptr);
 
-		FloatVariableNode* ResultNode = FloatToFloatVariableNode(0);
+		FloatVariableNode* ResultNode = TEST_TOOLS.CreateFloatVariableNode(0);
 		ASSERT_NE(ResultNode, nullptr);
 
 		TestNodeArea->AddNode(FirstNode);
@@ -689,25 +413,25 @@ TEST_F(StandardNodeTest, ArithmeticOperatorsRandom)
 	srand(RANDOM_SEED);
 	for (size_t i = 0; i < RANDOM_ACTIONS_ITERATIONS; i++)
 	{
-		glm::vec2 First = GetRandomVec2Value();
-		glm::vec2 Second = GetRandomVec2Value();
-		ArithmeticOperationType Type = GetRandomArithmeticOperatorType();
+		glm::vec2 First = TEST_TOOLS.GetRandomVec2Value();
+		glm::vec2 Second = TEST_TOOLS.GetRandomVec2Value();
+		ArithmeticOperationType Type = TEST_TOOLS.GetRandomArithmeticOperatorType();
 		if (Type == ArithmeticOperationType::POWER || Type == ArithmeticOperationType::MODULUS)
 		{
 			// Modus and Power operators currently are not supported for vec2.
 			continue;
 		}
-		glm::vec2 Result = GetResultFromArithmeticOperator(Type, First, Second);
+		glm::vec2 Result = TEST_TOOLS.GetResultFromArithmeticOperator(Type, First, Second);
 
-		Vec2LiteralNode* FirstNode = Vec2ToVec2LiteralNode(First);
+		Vec2LiteralNode* FirstNode = TEST_TOOLS.CreateVec2LiteralNode(First);
 		ASSERT_NE(FirstNode, nullptr);
-		Vec2LiteralNode* SecondNode = Vec2ToVec2LiteralNode(Second);
+		Vec2LiteralNode* SecondNode = TEST_TOOLS.CreateVec2LiteralNode(Second);
 		ASSERT_NE(SecondNode, nullptr);
 
-		BaseArithmeticOperatorNode* ArithmeticOperatorNode = CreateBaseArithmeticOperatorNode(Type);
+		BaseArithmeticOperatorNode* ArithmeticOperatorNode = TEST_TOOLS.CreateBaseArithmeticOperatorNode(Type);
 		ASSERT_NE(ArithmeticOperatorNode, nullptr);
 
-		Vec2VariableNode* ResultNode = Vec2ToVec2VariableNode(glm::vec2(0.0f));
+		Vec2VariableNode* ResultNode = TEST_TOOLS.CreateVec2VariableNode(glm::vec2(0.0f));
 		ASSERT_NE(ResultNode, nullptr);
 
 		TestNodeArea->AddNode(FirstNode);
@@ -739,162 +463,7 @@ TEST_F(StandardNodeTest, ArithmeticOperatorsRandom)
 	}
 }
 
-float StandardNodeTest::GetRandomFloatValue()
-{
-	return static_cast<float>(rand() % 1000) / 10.0f;
-}
-
-FloatLiteralNode* StandardNodeTest::FloatToFloatLiteralNode(float Value)
-{
-	FloatLiteralNode* NewNode = new FloatLiteralNode();
-	NewNode->SetData(Value);
-	return NewNode;
-}
-
-FloatVariableNode* StandardNodeTest::FloatToFloatVariableNode(float Value)
-{
-	FloatVariableNode* NewNode = new FloatVariableNode();
-	NewNode->SetData(Value);
-	return NewNode;
-}
-
-bool StandardNodeTest::GetResultFromComparisonOperator(ComparisonNodeOperatorType Type, float A, float B)
-{
-	switch (Type)
-	{
-		case ComparisonNodeOperatorType::EQUAL:
-			return A == B;
-		case ComparisonNodeOperatorType::NOT_EQUAL:
-			return A != B;
-		case ComparisonNodeOperatorType::GREATER_THAN_OR_EQUAL:
-			return A >= B;
-		case ComparisonNodeOperatorType::GREATER_THAN:
-			return A > B;
-		case ComparisonNodeOperatorType::LESS_THAN_OR_EQUAL:
-			return A <= B;
-		case ComparisonNodeOperatorType::LESS_THAN:
-			return A < B;
-	}
-
-	return false;
-}
-
-float StandardNodeTest::GetResultFromArithmeticOperator(ArithmeticOperationType Type, float A, float B)
-{
-	switch (Type)
-	{
-		case ArithmeticOperationType::ADD:
-			return A + B;
-		case ArithmeticOperationType::SUBTRACT:
-			return A - B;
-		case ArithmeticOperationType::MULTIPLY:
-			return A * B;
-		case ArithmeticOperationType::DIVIDE:
-			if (B == 0.0f)
-				return A;
-			return A / B;
-		case ArithmeticOperationType::MODULUS:
-			if (B == 0.0f)
-				return A;
-			return std::fmod(A, B);
-		case ArithmeticOperationType::POWER:
-			return static_cast<float>(std::pow(static_cast<double>(A), static_cast<double>(B)));
-	}
-
-	return 0.0f;
-}
-
-glm::vec2 StandardNodeTest::GetRandomVec2Value()
-{
-	glm::vec2 RandomValue;
-	RandomValue.x = GetRandomFloatValue();
-	RandomValue.y = GetRandomFloatValue();
-	return RandomValue;
-}
-
-Vec2LiteralNode* StandardNodeTest::Vec2ToVec2LiteralNode(glm::vec2 Value)
-{
-	Vec2LiteralNode* NewNode = new Vec2LiteralNode();
-	NewNode->SetData(Value);
-	return NewNode;
-}
-
-Vec2VariableNode* StandardNodeTest::Vec2ToVec2VariableNode(glm::vec2 Value)
-{
-	Vec2VariableNode* NewNode = new Vec2VariableNode();
-	NewNode->SetData(Value);
-	return NewNode;
-}
-
-glm::bvec2 StandardNodeTest::GetResultFromComparisonOperator(ComparisonNodeOperatorType Type, glm::vec2 A, glm::vec2 B)
-{
-	switch (Type)
-	{
-		case ComparisonNodeOperatorType::EQUAL:
-			return glm::equal(A, B);
-		case ComparisonNodeOperatorType::NOT_EQUAL:
-			return glm::notEqual(A, B);
-		case ComparisonNodeOperatorType::GREATER_THAN_OR_EQUAL:
-			return glm::greaterThanEqual(A, B);
-		case ComparisonNodeOperatorType::GREATER_THAN:
-			return glm::greaterThan(A, B);
-		case ComparisonNodeOperatorType::LESS_THAN_OR_EQUAL:
-			return glm::lessThanEqual(A, B);
-		case ComparisonNodeOperatorType::LESS_THAN:
-			return glm::lessThan(A, B);
-	}
-
-	return glm::bvec2(false);
-}
-
-glm::vec2 StandardNodeTest::GetResultFromArithmeticOperator(ArithmeticOperationType Type, glm::vec2 A, glm::vec2 B)
-{
-	switch (Type)
-	{
-		case ArithmeticOperationType::ADD:
-			return A + B;
-		case ArithmeticOperationType::SUBTRACT:
-			return A - B;
-		case ArithmeticOperationType::MULTIPLY:
-			return A * B;
-		case ArithmeticOperationType::DIVIDE:
-			if (B == glm::vec2(0.0f))
-				return A;
-			return A / B;
-		case ArithmeticOperationType::MODULUS:
-			if (B == glm::vec2(0.0f))
-				return A;
-			return glm::mod(A, B);
-		case ArithmeticOperationType::POWER:
-			return glm::pow(A, B);
-	}
-
-	return glm::vec2(0.0f);
-}
-
-glm::bvec2 StandardNodeTest::GetRandomBVec2Value()
-{
-	glm::bvec2 RandomValue;
-	RandomValue.x = GetRandomBoolValue();
-	RandomValue.y = GetRandomBoolValue();
-	return RandomValue;
-}
-
-BoolVec2LiteralNode* StandardNodeTest::BVec2ToBVec2LiteralNode(glm::bvec2 Value)
-{
-	BoolVec2LiteralNode* NewNode = new BoolVec2LiteralNode();
-	NewNode->SetData(Value);
-	return NewNode;
-}
-
-BoolVec2VariableNode* StandardNodeTest::BVec2ToBVec2VariableNode(glm::bvec2 Value)
-{
-	BoolVec2VariableNode* NewNode = new BoolVec2VariableNode();
-	NewNode->SetData(Value);
-	return NewNode;
-}
-
-TEST_F(StandardNodeTest, ControlFlow)
+TEST(ExecutionFlowNodesTests, ControlFlow)
 {
 	NodeArea* TestNodeArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(TestNodeArea, nullptr);
@@ -983,4 +552,135 @@ TEST_F(StandardNodeTest, ControlFlow)
 	ASSERT_EQ(bVariableValue, true);
 
 	NODE_SYSTEM.DeleteNodeArea(TestNodeArea);
+}
+
+TEST(ExecutionFlowNodesTests, SavingLoading_RandomArithmetic_Calculation)
+{
+	srand(RANDOM_SEED);
+
+	for (int i = 0; i < RANDOM_ACTIONS_ITERATIONS / 20; i++)
+	{
+		NodeArea* TestNodeArea = NODE_SYSTEM.CreateNodeArea();
+		ASSERT_NE(TestNodeArea, nullptr);
+		std::string NodeAreaID = TestNodeArea->GetID();
+		TestNodeArea->SetSaveExecutedNodes(true);
+
+		Node* BeginNode = NODE_FACTORY.CreateNode("BeginNode");
+		ASSERT_NE(BeginNode, nullptr);
+		TestNodeArea->AddNode(BeginNode);
+		TestNodeArea->SetExecutionEntryNode(BeginNode);
+
+		// Create first two int literal nodes with random values.
+		int FirstValue = TEST_TOOLS.GetRandomIntValue();
+		IntegerLiteralNode* FirstIntegerLiteralNode = TEST_TOOLS.CreateIntegerLiteralNode(FirstValue);
+		TestNodeArea->AddNode(FirstIntegerLiteralNode);
+
+		int SecondValue = TEST_TOOLS.GetRandomIntValue();
+		IntegerLiteralNode* SecondIntegerLiteralNode = TEST_TOOLS.CreateIntegerLiteralNode(SecondValue);
+		TestNodeArea->AddNode(SecondIntegerLiteralNode);
+
+		Node* CurrentFirstInputNode = nullptr;
+		Node* CurrentSecondInputNode = nullptr;
+
+		BaseArithmeticOperatorNode* PreviousArithmeticOperatorNode = nullptr;
+		BaseArithmeticOperatorNode* CurrentArithmeticOperatorNode = nullptr;
+
+		IntegerVariableNode* PreviousResultNode = nullptr;
+		IntegerVariableNode* CurrentResultNode = nullptr;
+
+		int IterationCount = 0;
+		while (true)
+		{
+			// We should have at least one operation node.
+			if (IterationCount > 0)
+			{
+				// With 5% chance we will stop generating.
+				if (rand() % 100 > 95)
+					break;
+			}
+
+			ArithmeticOperationType Type = TEST_TOOLS.GetRandomArithmeticOperatorType();
+			// Skipping these operators for int.
+			if (Type == ArithmeticOperationType::POWER || Type == ArithmeticOperationType::MODULUS)
+				continue;
+
+			BaseArithmeticOperatorNode* ArithmeticOperatorNode = TEST_TOOLS.CreateBaseArithmeticOperatorNode(Type);
+			TestNodeArea->AddNode(ArithmeticOperatorNode);
+			PreviousArithmeticOperatorNode = CurrentArithmeticOperatorNode;
+			CurrentArithmeticOperatorNode = ArithmeticOperatorNode;
+
+			if (IterationCount == 0)
+			{
+				CurrentFirstInputNode = FirstIntegerLiteralNode;
+				CurrentSecondInputNode = SecondIntegerLiteralNode;
+			}
+			else
+			{
+				CurrentFirstInputNode = CurrentResultNode;
+
+				int RandomValue = TEST_TOOLS.GetRandomIntValue();
+				CurrentSecondInputNode = TEST_TOOLS.CreateIntegerLiteralNode(SecondValue);
+				TestNodeArea->AddNode(CurrentSecondInputNode);
+			}
+
+			IntegerVariableNode* ResultNode = TEST_TOOLS.CreateIntegerVariableNode(0);
+			TestNodeArea->AddNode(ResultNode);
+			PreviousResultNode = CurrentResultNode;
+			CurrentResultNode = ResultNode;
+
+			if (IterationCount == 0)
+			{
+				ASSERT_EQ(TestNodeArea->TryToConnect(CurrentFirstInputNode, 0, ArithmeticOperatorNode, 1), true);
+			}
+			else
+			{
+				ASSERT_EQ(TestNodeArea->TryToConnect(CurrentFirstInputNode, 1, ArithmeticOperatorNode, 1), true);
+			}
+
+			ASSERT_EQ(TestNodeArea->TryToConnect(CurrentSecondInputNode, 0, ArithmeticOperatorNode, 2), true);
+			ASSERT_EQ(TestNodeArea->TryToConnect(ArithmeticOperatorNode, 0, ResultNode, 0), true);
+			ASSERT_EQ(TestNodeArea->TryToConnect(ArithmeticOperatorNode, 1, ResultNode, 1), true);
+
+			if (IterationCount == 0)
+			{
+				ASSERT_EQ(TestNodeArea->TryToConnect(BeginNode, 0, ArithmeticOperatorNode, 0), true);
+			}
+			else
+			{
+				ASSERT_EQ(TestNodeArea->TryToConnect(PreviousResultNode, 0, ArithmeticOperatorNode, 0), true);
+			}
+
+			IterationCount++;
+		}
+
+		ASSERT_EQ(TestNodeArea->TryToConnect(CurrentArithmeticOperatorNode, 0, CurrentResultNode, 0), true);
+		TestNodeArea->ExecuteNodeNetwork();
+		std::string FinalResultNodeID = CurrentResultNode->GetID();
+		int FinalResultValue = CurrentResultNode->GetData();
+		int ExecutedNodesCount = TestNodeArea->GetLastExecutedNodes().size();
+
+		// Now we will save the node area and load it again to check if we get the same result.
+		// We will start with bacis checks.
+		EXPECT_TRUE(TEST_TOOLS.VerifyNodeAreaSaveLoadCycle_BasicChecks(TestNodeArea));
+
+		// VerifyNodeAreaSaveLoadCycle_BasicChecks already saved node area to "TemporaryNodeArea.json".
+		TestNodeArea = NODE_SYSTEM.GetNodeAreaByID(NodeAreaID);
+		NODE_SYSTEM.DeleteNodeArea(TestNodeArea);
+
+		TestNodeArea = NODE_SYSTEM.CreateNodeArea();
+		EXPECT_TRUE(TestNodeArea->LoadFromFile("TemporaryNodeArea.json"));
+		TestNodeArea->SetSaveExecutedNodes(true);
+
+		Node* LoadedFinalResultNode = TestNodeArea->GetNodeByID(FinalResultNodeID);
+		ASSERT_NE(LoadedFinalResultNode, nullptr);
+		IntegerVariableNode* CastedLoadedFinalResultNode = reinterpret_cast<IntegerVariableNode*>(LoadedFinalResultNode);
+		CastedLoadedFinalResultNode->SetData(-INT_MAX);
+
+		TestNodeArea->ExecuteNodeNetwork();
+		int LoadedFinalResultValue = CastedLoadedFinalResultNode->GetData();
+		ASSERT_EQ(FinalResultValue, LoadedFinalResultValue);
+
+		int LoadedExecutedNodesCount = TestNodeArea->GetLastExecutedNodes().size();
+		ASSERT_EQ(ExecutedNodesCount, LoadedExecutedNodesCount);
+	}
 }
