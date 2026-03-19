@@ -227,7 +227,7 @@ namespace VisNodeSys
 		std::vector<T*> GetNodesByType() const;
 
 		bool AddNode(Node* NewNode);
-		bool Delete(const Node* Node);
+		bool Delete(const Node* NodeToDelete);
 		size_t GetNodeCount() const;
 		void AddNodeEventCallback(std::function<void(Node*, NODE_EVENT)> Func);
 		void RunOnEachNode(const std::function<void(Node*)>& Function);
@@ -277,7 +277,7 @@ namespace VisNodeSys
 #ifdef VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES
 		Node* GetExecutionEntryNode() const;
 		bool SetExecutionEntryNode(Node* NewEntryNode);
-		bool SetExecutionEntryNode(std::string NewEntryNode);
+		bool SetExecutionEntryNodeByID(std::string NewEntryNodeID);
 		bool ExecuteNodeNetwork();
 		std::vector<Node*> GetLastExecutedNodes() const;
 
@@ -320,6 +320,7 @@ namespace VisNodeSys
 		ImDrawList* CurrentDrawList = nullptr;
 		ImGuiWindow* NodeAreaWindow = nullptr;
 		std::vector<Node*> Nodes;
+		int GetNodeIndex(const Node* Node) const;
 
 #ifdef VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES
 		std::string ExecutionEntryNodeID;

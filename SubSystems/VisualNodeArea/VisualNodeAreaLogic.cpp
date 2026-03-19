@@ -184,43 +184,53 @@ bool NodeArea::Delete(RerouteNode* RerouteNode)
 	return false;
 }
 
-bool NodeArea::Delete(const Node* Node)
+int NodeArea::GetNodeIndex(const Node* Node) const
 {
-	if (!Node->bCouldBeDestroyed)
-		return false;
-
 	for (size_t i = 0; i < Nodes.size(); i++)
 	{
 		if (Nodes[i] == Node)
-		{
-			PropagateNodeEventsCallbacks(Nodes[i], REMOVED);
-
-			for (size_t j = 0; j < Nodes[i]->Input.size(); j++)
-			{
-				auto Connections = GetAllConnections(Nodes[i]->Input[j]);
-				for (size_t p = 0; p < Connections.size(); p++)
-				{
-					Delete(Connections[p]);
-				}
-			}
-
-			for (size_t j = 0; j < Nodes[i]->Output.size(); j++)
-			{
-				auto Connections = GetAllConnections(Nodes[i]->Output[j]);
-				for (size_t p = 0; p < Connections.size(); p++)
-				{
-					Delete(Connections[p]);
-				}
-			}
-
-			NODE_SYSTEM.OnNodeDeletion(Nodes[i]);
-			DeleteNodeInternal(Nodes[i], static_cast<int>(i));
-
-			return true;
-		}
+			return static_cast<int>(i);
 	}
 
-	return false;
+	return -1;
+}
+
+bool NodeArea::Delete(const Node* NodeToDelete)
+{
+	if (!NodeToDelete->bCouldBeDestroyed)
+		return false;
+
+	int Index = GetNodeIndex(NodeToDelete);
+	if (Index == -1)
+		return false;
+
+	PropagateNodeEventsCallbacks(Nodes[Index], REMOVED);
+
+	for (size_t i = 0; i < Nodes[Index]->Input.size(); i++)
+	{
+		auto Connections = GetAllConnections(Nodes[Index]->Input[i]);
+		for (size_t j = 0; j < Connections.size(); j++)
+			Delete(Connections[j]);
+	}
+
+	for (size_t i = 0; i < Nodes[Index]->Output.size(); i++)
+	{
+		auto Connections = GetAllConnections(Nodes[Index]->Output[i]);
+		for (size_t j = 0; j < Connections.size(); j++)
+			Delete(Connections[j]);
+	}
+
+	std::string NodeToDeleteID = Nodes[Index]->GetID();
+	NODE_SYSTEM.OnNodeDeletion(Nodes[Index]);
+	Node* NodeAfterOnNodeDeletion = GetNodeByID(NodeToDeleteID);
+	// NODE_SYSTEM.OnNodeDeletion can potentially delete the node, so we need to check if it still exists before trying to delete it.
+	if (NodeAfterOnNodeDeletion != nullptr)
+	{
+		int NewIndex = GetNodeIndex(NodeToDelete);
+		DeleteNodeInternal(NodeAfterOnNodeDeletion, NewIndex);
+	}
+
+	return true;
 }
 
 void NodeArea::DeleteNodeInternal(const Node* Node, int Index)

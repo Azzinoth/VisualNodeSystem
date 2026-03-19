@@ -30,8 +30,9 @@ namespace VisNodeSys
 		std::vector<NodeArea*> Areas;
 		std::unordered_map<std::string, NodeAreaLinkRecord> NodeAreaLinkRecords;
 
-		NodeAreaLinkRecord GetLinkDataByNodeID(const std::string& NodeID) const;
-		std::vector<NodeAreaLinkRecord> GetLinkDataByAreaID(const std::string& AreaID) const;
+		LinkNode* CreateLinkNodeInternal(bool bIsInputNode);
+		NodeAreaLinkRecord* GetLinkDataByNodeID(const std::string& NodeID);
+		std::vector<NodeAreaLinkRecord*> GetLinkDataByAreaID(const std::string& AreaID);
 		
 		void OnNodeDeletion(Node* DeletedNode);
 		bool DeleteLinkRecord(const std::string& LinkID);
@@ -51,6 +52,8 @@ namespace VisNodeSys
 		bool LoadFromJson(const std::string& JsonText);
 		bool LoadFromFile(const std::string& FilePath);
 
+		void Clear();
+
 		std::vector<std::string> GetNodeAreaIDList() const;
 		
 		std::string GetVersion();
@@ -60,6 +63,18 @@ namespace VisNodeSys
 		NodeArea* GetNodeAreaByID(const std::string& NodeAreaID) const;
 		std::vector<NodeArea*> GetNodeAreasByName(const std::string& Name) const;
 		void DeleteNodeArea(const NodeArea* NodeArea);
+		void DeleteNodeAreaByID(const std::string& NodeAreaID);
+
+		size_t GetNodeAreaCount() const;
+		size_t GetTotalNodeCount(std::vector<std::string> AreaIDFilter = {}) const;
+		size_t GetTotalConnectionCount(std::vector<std::string> AreaIDFilter = {}) const;
+		size_t GetGroupCommentCount(std::vector<std::string> AreaIDFilter = {}) const;
+		size_t GetRerouteConnectionCount(std::vector<std::string> AreaIDFilter = {}) const;
+
+#ifdef VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES
+		// Will return a map where key is node area IDs and value is a list of of nodes that were executed last time in that area.
+		std::unordered_map<std::string, std::vector<Node*>> GetLastExecutedNodes(std::string StartingAreaID = "") const;
+#endif
 
 		void MoveNodesTo(NodeArea* SourceNodeArea, NodeArea* TargetNodeArea, bool SelectMovedNodes = false);
 
@@ -80,13 +95,13 @@ namespace VisNodeSys
 		bool TryToFixDanglingLinkNode(LinkNode* LinkNodeToFix);
 		std::vector<LinkNode*> TryToFixAllDanglingLinkNodes();
 
-		std::vector<NodeArea*> GetImmediateDownstreamAreas(const std::string& AreaID) const;
-		std::vector<NodeArea*> GetAllDownstreamAreas(const std::string& AreaID) const;
+		std::vector<NodeArea*> GetImmediateDownstreamAreas(const std::string& AreaID);
+		std::vector<NodeArea*> GetAllDownstreamAreas(const std::string& AreaID);
 
-		std::vector<NodeArea*> GetImmediateUpstreamAreas(const std::string& AreaID) const;
-		std::vector<NodeArea*> GetAllUpstreamAreas(const std::string& AreaID) const;
+		std::vector<NodeArea*> GetImmediateUpstreamAreas(const std::string& AreaID);
+		std::vector<NodeArea*> GetAllUpstreamAreas(const std::string& AreaID);
 
-		bool AddSocketToLinkNode(const std::string& AreaID, const std::string& LinkNodeID, const std::string& SocketType);
+		bool AddSocketToLink(const std::string& AreaID, const std::string& AnyNodeIDThatIsPartOfLink, std::string Type);
 	};
 
 #ifdef VISUAL_NODE_SYSTEM_SHARED

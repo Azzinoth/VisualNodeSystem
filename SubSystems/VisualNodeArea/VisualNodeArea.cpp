@@ -502,7 +502,7 @@ bool NodeArea::LoadFromJson(std::string JsonText)
 
 #ifdef VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES
 	if (Root["Nodes"].isMember("ExecutionEntryNodeID") && Root["Nodes"]["ExecutionEntryNodeID"].isString())
-		SetExecutionEntryNode(Root["Nodes"]["ExecutionEntryNodeID"].asString());
+		SetExecutionEntryNodeByID(Root["Nodes"]["ExecutionEntryNodeID"].asString());
 #endif
 
 	if (Root.isMember("Connections"))
@@ -946,15 +946,15 @@ bool NodeArea::SetExecutionEntryNode(Node* TargetNode)
 	if (TargetNode == nullptr)
 		return false;
 
-	return SetExecutionEntryNode(TargetNode->GetID());
+	return SetExecutionEntryNodeByID(TargetNode->GetID());
 }
 
-bool NodeArea::SetExecutionEntryNode(std::string NewEntryNode)
+bool NodeArea::SetExecutionEntryNodeByID(std::string NewEntryNodeID)
 {
-	if (NewEntryNode.empty())
+	if (NewEntryNodeID.empty())
 		return false;
 
-	Node* EntryNode = GetNodeByID(NewEntryNode);
+	Node* EntryNode = GetNodeByID(NewEntryNodeID);
 	if (EntryNode == nullptr)
 		return false;
 

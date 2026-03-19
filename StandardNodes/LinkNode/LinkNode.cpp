@@ -22,7 +22,7 @@ LinkNode::LinkNode()
 {
 	Type = "LinkNode";
 	SetStyle(DEFAULT);
-	SetName("Reference");
+	SetName("Link");
 
 	int R = static_cast<int>(44.0f * 1.2f);
 	int G = static_cast<int>(46.0f * 1.2f);
@@ -65,6 +65,24 @@ Node* LinkNode::GetPartnerNode() const
 	return ReferencedArea->GetNodeByID(PartnerNodeID);
 }
 
+std::function<void* ()> LinkNode::CreateCrossAreaDataGetter(int SocketIndex)
+{
+	return [this, SocketIndex]() -> void* {
+		LinkNode* Partner = dynamic_cast<LinkNode*>(GetPartnerNode());
+		if (Partner == nullptr)
+			return nullptr;
+
+		if (SocketIndex >= static_cast<int>(Partner->Input.size()))
+			return nullptr;
+
+		auto Connected = Partner->Input[SocketIndex]->GetConnectedSockets();
+		if (Connected.empty())
+			return nullptr;
+
+		return Connected[0]->GetData();
+	};
+}
+
 Json::Value LinkNode::ToJson()
 {
 	Json::Value Result = Node::ToJson();
@@ -78,9 +96,18 @@ Json::Value LinkNode::ToJson()
 
 bool LinkNode::FromJson(Json::Value Json)
 {
+	bool bPreviousInputCheck = Node::bInputCountCheck;
+	bool bPreviousOutputCheck = Node::bOutputCountCheck;
+
+	Node::bInputCountCheck = false;
+	Node::bOutputCountCheck = false;
+
 	bool bResult = Node::FromJson(Json);
 	if (!bResult)
 		return false;
+
+	Node::bInputCountCheck = bPreviousInputCheck;
+	Node::bOutputCountCheck = bPreviousOutputCheck;
 
 	if (!Json.isMember("PartnerNodeID") || !Json["PartnerNodeID"].isString())
 		return false;
@@ -95,15 +122,15 @@ bool LinkNode::FromJson(Json::Value Json)
 	bIsInputNode = Json["bIsInputNode"].asBool();
 	LinkedAreaID = Json["LinkedAreaID"].asString();
 
-	//// Here I am restoring the output data function.
-	//// Because the function is not serializable, I have to set it manually.
-	//if (Output.size() < 1)
-	//	return false;
+	// Here I am restoring the output data function.
+	// Because the function is not serializable, I have to set it manually.
+	for (size_t i = 0; i < Output.size(); i++)
+	{
+		if (Output[i] == nullptr)
+			return false;
 
-	//if (Output[0] == nullptr)
-	//	return false;
-
-	//Output[0]->SetFunctionToOutputData(BoolDataGetter);
+		Output[i]->SetFunctionToOutputData(CreateCrossAreaDataGetter(static_cast<int>(i)));
+	}
 
 	return true;
 }
@@ -124,18 +151,44 @@ void LinkNode::Draw()
 	ImGui::Text(TextToDisplay.c_str());
 }
 
-//void BoolLiteralNode::SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSocket, NODE_SOCKET_EVENT EventType)
-//{
-//	Node::SocketEvent(OwnSocket, ConnectedSocket, EventType);
-//}
-//
-//bool BoolLiteralNode::CanConnect(NodeSocket* OwnSocket, NodeSocket* CandidateSocket, char** MsgToUser)
-//{
-//	if (!Node::CanConnect(OwnSocket, CandidateSocket, nullptr))
-//		return false;
-//
-//	return true;
-//}
+void LinkNode::SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSocket, NODE_SOCKET_EVENT EventType)
+{
+	Node::SocketEvent(OwnSocket, ConnectedSocket, EventType);
+
+	Node* PartnerNode = GetPartnerNode();
+	if (PartnerNode == nullptr || PartnerNode->GetType() != "LinkNode")
+		return;
+
+	int SocketIndex = -1;
+	std::vector<NodeSocket*>& SocketsToCheck = bIsInputNode ? Input : Output;
+	for (size_t i = 0; i < SocketsToCheck.size(); i++)
+	{
+		if (SocketsToCheck[i] == OwnSocket)
+		{
+			SocketIndex = static_cast<int>(i);
+			break;
+		}
+	}
+
+	std::vector<NodeSocket*>& OutputSocketsToCheck = bIsInputNode ? PartnerNode->Output : Output;
+	if (SocketIndex == -1 || SocketIndex >= static_cast<int>(OutputSocketsToCheck.size()))
+		return;
+	
+	if (bIsInputNode)
+	{
+		NodeArea* LinkedArea = GetLinkedArea();
+		if (LinkedArea == nullptr)
+			return;
+			
+		NodeSocket* PartnerOutSocket = PartnerNode->Output[SocketIndex];
+		LinkedArea->TriggerSocketEvent(OwnSocket, PartnerOutSocket, EventType);
+	}
+	else
+	{
+		for (size_t i = 0; i < Output[SocketIndex]->GetConnectedSockets().size(); i++)
+			ParentArea->TriggerSocketEvent(Output[SocketIndex], Output[SocketIndex]->GetConnectedSockets()[i], EventType);
+	}
+}
 
 bool LinkNode::IsDangling() const
 {
@@ -145,7 +198,7 @@ bool LinkNode::IsDangling() const
 	if (GetPartnerNode() == nullptr)
 		return true;
 
-	if (NODE_SYSTEM.GetLinkDataByNodeID(ID).IsNull())
+	if (NODE_SYSTEM.GetLinkDataByNodeID(ID) == nullptr)
 		return true;
 
 	return false;
@@ -156,8 +209,11 @@ void LinkNode::AddSocket(NodeSocket* Socket)
 	if (bIsInputNode != Socket->IsInput())
 		return;
 
-	//if (Socket->AllowedTypes() != "EXECUTE")
-	//	return;
-
 	Node::AddSocket(Socket);
+
+	if (bIsInputNode)
+		return;
+
+	int SocketIndex = static_cast<int>(Output.size()) - 1;
+	Output[SocketIndex]->SetFunctionToOutputData(CreateCrossAreaDataGetter(SocketIndex));
 }

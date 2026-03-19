@@ -29,6 +29,7 @@ namespace VisNodeSys
 		friend class NodeFactory;
 		friend class NodeSystem;
 		friend class NodeArea;
+		friend class LinkNode;
 
 		virtual ~Node();
 

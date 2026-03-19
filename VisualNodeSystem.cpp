@@ -530,24 +530,28 @@ void NodeSystem::OnNodeDeletion(Node* DeletedNode)
 		return;
 
 	// We care only about nodes that are part of a link between areas.
-	NodeAreaLinkRecord Data = GetLinkDataByNodeID(DeletedNode->GetID());
-	if (Data.ID.empty())
+	NodeAreaLinkRecord* Data = GetLinkDataByNodeID(DeletedNode->GetID());
+	if (Data == nullptr)
 		return;
 
+	std::string LinkID = Data->ID;
 	LinkNode* CurrentLinkNode = static_cast<LinkNode*>(DeletedNode);
 	NodeArea* LinkedArea = CurrentLinkNode->GetLinkedArea();
-	Node* PartnerNode = LinkedArea->GetNodeByID(CurrentLinkNode->PartnerNodeID);//nullptr;
-	/*if (Data.InNodeID == DeletedNode->GetID())
+	if (LinkedArea != nullptr)
 	{
-		PartnerNode = LinkedArea->GetNodeByID(Data.OutNodeID);
+		Node* PartnerNode = LinkedArea->GetNodeByID(CurrentLinkNode->PartnerNodeID);
+		if (PartnerNode != nullptr)
+		{
+			LinkNode* CastedPartnerNode = static_cast<LinkNode*>(PartnerNode);
+			if (!CastedPartnerNode->bIsInProcessOfBeingDestroyed)
+			{
+				CastedPartnerNode->bIsInProcessOfBeingDestroyed = true;
+				LinkedArea->Delete(CastedPartnerNode);
+			}
+		}
 	}
-	else
-	{
-		PartnerNode = LinkedArea->GetNodeByID(Data.InNodeID);
-	}*/
-
-	LinkedArea->DeleteNodeInternal(PartnerNode);
-	DeleteLinkRecord(Data.ID);
+		
+	DeleteLinkRecord(LinkID);
 }
 
 void NodeSystem::DeleteNodeArea(const NodeArea* NodeArea)
@@ -562,6 +566,136 @@ void NodeSystem::DeleteNodeArea(const NodeArea* NodeArea)
 		}
 	}
 }
+
+void NodeSystem::DeleteNodeAreaByID(const std::string& NodeAreaID)
+{
+	NodeArea* AreaToDelete = GetNodeAreaByID(NodeAreaID);
+	if (AreaToDelete != nullptr)
+		DeleteNodeArea(AreaToDelete);
+}
+
+size_t NodeSystem::GetNodeAreaCount() const
+{
+	return Areas.size();
+}
+
+size_t NodeSystem::GetTotalNodeCount(std::vector<std::string> AreaIDFilter) const
+{
+	size_t Result = 0;
+	if (AreaIDFilter.empty())
+	{
+		for (size_t i = 0; i < Areas.size(); i++)
+			Result += Areas[i]->GetNodeCount();
+	}
+	else
+	{
+		for (size_t i = 0; i < AreaIDFilter.size(); i++)
+		{
+			NodeArea* Area = GetNodeAreaByID(AreaIDFilter[i]);
+			if (Area != nullptr)
+				Result += Area->GetNodeCount();
+		}
+	}
+	
+	return Result;
+}
+
+size_t NodeSystem::GetTotalConnectionCount(std::vector<std::string> AreaIDFilter) const
+{
+	size_t Result = 0;
+	if (AreaIDFilter.empty())
+	{
+		for (size_t i = 0; i < Areas.size(); i++)
+			Result += Areas[i]->GetConnectionCount();
+	}
+	else
+	{
+		for (size_t i = 0; i < AreaIDFilter.size(); i++)
+		{
+			NodeArea* Area = GetNodeAreaByID(AreaIDFilter[i]);
+			if (Area != nullptr)
+				Result += Area->GetConnectionCount();
+		}
+	}
+
+	return Result;
+}
+
+size_t NodeSystem::GetGroupCommentCount(std::vector<std::string> AreaIDFilter) const
+{
+	size_t Result = 0;
+	if (AreaIDFilter.empty())
+	{
+		for (size_t i = 0; i < Areas.size(); i++)
+			Result += Areas[i]->GetGroupCommentCount();
+	}
+	else
+	{
+		for (size_t i = 0; i < AreaIDFilter.size(); i++)
+		{
+			NodeArea* Area = GetNodeAreaByID(AreaIDFilter[i]);
+			if (Area != nullptr)
+				Result += Area->GetGroupCommentCount();
+		}
+	}
+
+	return Result;
+}
+
+size_t NodeSystem::GetRerouteConnectionCount(std::vector<std::string> AreaIDFilter) const
+{
+	size_t Result = 0;
+	if (AreaIDFilter.empty())
+	{
+		for (size_t i = 0; i < Areas.size(); i++)
+			Result += Areas[i]->GetRerouteConnectionCount();
+	}
+	else
+	{
+		for (size_t i = 0; i < AreaIDFilter.size(); i++)
+		{
+			NodeArea* Area = GetNodeAreaByID(AreaIDFilter[i]);
+			if (Area != nullptr)
+				Result += Area->GetRerouteConnectionCount();
+		}
+	}
+
+	return Result;
+}
+
+#ifdef VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES
+std::unordered_map<std::string, std::vector<Node*>> NodeSystem::GetLastExecutedNodes(std::string StartingAreaID) const
+{
+	std::unordered_map<std::string, std::vector<Node*>> Result;
+	if (StartingAreaID.empty())
+	{
+		for (size_t i = 0; i < Areas.size(); i++)
+		{
+			std::vector<Node*> ExecutedNodes = Areas[i]->GetLastExecutedNodes();
+			if (!ExecutedNodes.empty())
+				Result[Areas[i]->GetID()] = ExecutedNodes;
+		}
+	}
+	else
+	{
+		NodeArea* StartingArea = GetNodeAreaByID(StartingAreaID);
+		if (StartingArea == nullptr)
+			return Result;
+
+		std::vector<NodeArea*> AreasToCheck = { StartingArea };
+		std::vector<NodeArea*> AllDownstreamAreas = NODE_SYSTEM.GetAllDownstreamAreas(StartingAreaID);
+		AreasToCheck.insert(AreasToCheck.end(), AllDownstreamAreas.begin(), AllDownstreamAreas.end());
+		for (size_t i = 0; i < AreasToCheck.size(); i++)
+		{
+			std::vector<Node*> ExecutedNodes = AreasToCheck[i]->GetLastExecutedNodes();
+			if (!ExecutedNodes.empty())
+				Result[AreasToCheck[i]->GetID()] = ExecutedNodes;
+		}
+	}
+
+	return Result;
+}
+#endif
 
 void NodeSystem::MoveNodesTo(NodeArea* SourceNodeArea, NodeArea* TargetNodeArea, const bool SelectMovedNodes)
 {
@@ -593,28 +727,28 @@ void NodeSystem::MoveNodesTo(NodeArea* SourceNodeArea, NodeArea* TargetNodeArea,
 	}
 }
 
-NodeSystem::NodeAreaLinkRecord NodeSystem::GetLinkDataByNodeID(const std::string& NodeID) const
+NodeSystem::NodeAreaLinkRecord* NodeSystem::GetLinkDataByNodeID(const std::string& NodeID)
 {
 	auto RecordIterator = NodeAreaLinkRecords.begin();
 	while (RecordIterator != NodeAreaLinkRecords.end())
 	{
 		if (RecordIterator->second.InNodeID == NodeID || RecordIterator->second.OutNodeID == NodeID)
-			return RecordIterator->second;
+			return &RecordIterator->second;
 
 		RecordIterator++;
 	}
 
-	return NodeAreaLinkRecord();
+	return nullptr;
 }
 
-std::vector<NodeSystem::NodeAreaLinkRecord> NodeSystem::GetLinkDataByAreaID(const std::string& AreaID) const
+std::vector<NodeSystem::NodeAreaLinkRecord*> NodeSystem::GetLinkDataByAreaID(const std::string& AreaID)
 {
 	auto RecordIterator = NodeAreaLinkRecords.begin();
-	std::vector<NodeAreaLinkRecord> Result;
+	std::vector<NodeAreaLinkRecord*> Result;
 	while (RecordIterator != NodeAreaLinkRecords.end())
 	{
 		if (RecordIterator->second.InAreaID == AreaID || RecordIterator->second.OutAreaID == AreaID)
-			Result.push_back(RecordIterator->second);
+			Result.push_back(&RecordIterator->second);
 		
 		RecordIterator++;
 	}
@@ -629,14 +763,14 @@ bool NodeSystem::LinkNodeAreas(const std::string& UpstreamAreaID, const std::str
 	if (UpstreamArea == nullptr || DownstreamArea == nullptr || UpstreamArea == DownstreamArea)
 		return false;
 
-	LinkNode* InNode = new LinkNode();
+	LinkNode* InNode = CreateLinkNodeInternal(true);
 	if (!UpstreamArea->AddNode(InNode))
 	{
 		delete InNode;
 		return false;
 	}
 
-	LinkNode* OutNode = new LinkNode();
+	LinkNode* OutNode = CreateLinkNodeInternal(false);
 	if (!DownstreamArea->AddNode(OutNode))
 	{
 		UpstreamArea->Delete(InNode);
@@ -812,29 +946,6 @@ std::string NodeSystem::ToJson() const
 {
 	Json::Value Root;
 
-	// First of all we need to save the list of all node areas.
-	Json::Value NodeAreaList;
-	for (size_t i = 0; i < Areas.size(); i++)
-		NodeAreaList[std::to_string(i)] = Areas[i]->GetID();
-	
-	Root["NodeAreaList"] = NodeAreaList;
-
-	// Link node records.
-	Json::Value LinkRecordsJson;
-	auto RecordIterator = NodeAreaLinkRecords.begin();
-	while (RecordIterator != NodeAreaLinkRecords.end())
-	{
-		Json::Value RecordJson;
-		RecordJson["ID"] = RecordIterator->second.ID;
-		RecordJson["InNodeID"] = RecordIterator->second.InNodeID;
-		RecordJson["OutNodeID"] = RecordIterator->second.OutNodeID;
-		RecordJson["InAreaID"] = RecordIterator->second.InAreaID;
-		RecordJson["OutAreaID"] = RecordIterator->second.OutAreaID;
-		LinkRecordsJson[RecordIterator->first] = RecordJson;
-		RecordIterator++;
-	}
-	Root["NodeAreaLinkRecords"] = LinkRecordsJson;
-
 	// Socket type to color associations.
 	Json::Value SocketTypeToColorAssociationsJson;
 	auto SocketTypeToColorIterator = NodeSocket::SocketTypeToColorAssociations.begin();
@@ -888,39 +999,8 @@ bool NodeSystem::LoadFromJson(const std::string& JsonText)
 	if (!Reader->parse(JsonText.c_str(), JsonText.c_str() + JsonText.size(), &Root, &Error))
 		return false;
 
-	if (!Root.isMember("NodeAreaList") || !Root.isMember("NodeAreaLinkRecords") || !Root.isMember("SocketTypeToColorAssociations") || !Root.isMember("NodeAreas") || !Root["NodeAreas"].isObject())
+	if (!Root.isMember("SocketTypeToColorAssociations") || !Root.isMember("NodeAreas") || !Root["NodeAreas"].isObject())
 		return false;
-
-	//// First of all we need to load all node areas.
-	//std::vector<std::string> NodeAreaIDs;
-	//Json::Value NodeAreaList = Root["NodeAreaList"];
-	//for (Json::Value::ArrayIndex i = 0; i < NodeAreaList.size(); i++)
-	//{
-	//	std::string NodeAreaID = NodeAreaList[std::to_string(i)].asString();
-	//	NodeAreaIDs.push_back(NodeAreaID);
-	//}
-
-	// Link records.
-	std::vector<Json::String> LinkNodeList = Root["NodeAreaLinkRecords"].getMemberNames();
-	std::vector<Json::String> ValidConnectionKeys;
-	for (size_t i = 0; i < LinkNodeList.size(); i++)
-	{
-		if (!Root["NodeAreaLinkRecords"][LinkNodeList[i]].isObject())
-			continue;
-
-		const Json::Value& LinkRecordData = Root["NodeAreaLinkRecords"][LinkNodeList[i]];
-		if (!LinkRecordData.isMember("ID") || !LinkRecordData.isMember("InNodeID") || !LinkRecordData.isMember("OutNodeID") || !LinkRecordData.isMember("InAreaID") || !LinkRecordData.isMember("OutAreaID"))
-			continue;
-
-		std::string ID = LinkRecordData["ID"].asString();
-		std::string InNodeID = LinkRecordData["InNodeID"].asString();
-		std::string OutNodeID = LinkRecordData["OutNodeID"].asString();
-		std::string InAreaID = LinkRecordData["InAreaID"].asString();
-		std::string OutAreaID = LinkRecordData["OutAreaID"].asString();
-
-		if (ID.empty() || InNodeID.empty() || OutNodeID.empty() || InAreaID.empty() || OutAreaID.empty())
-			continue;
-	}
 
 	// Socket type to color associations.
 	std::vector<Json::String> SocketTypeToColorAssociationList = Root["SocketTypeToColorAssociations"].getMemberNames();
@@ -942,16 +1022,6 @@ bool NodeSystem::LoadFromJson(const std::string& JsonText)
 		AssociateSocketTypeToColor(SocketType, Color);
 	}
 
-	//const Json::Value& NodeAreasJson = Root["NodeAreas"];
-	//// The keys are area IDs (strings), so iterate over all members
-	//std::vector<std::string> AreaIDs = NodeAreasJson.getMemberNames();
-	//for (const auto& AreaID : AreaIDs)
-	//{
-	//	const Json::Value& AreaJson = NodeAreasJson[AreaID];
-	//	NodeArea* NewNodeArea = CreateNodeArea();
-	//	NewNodeArea->LoadFromJson(AreaJson.asString());
-	//}
-
 	std::vector<Json::String> NodeAreaListKeys = Root["NodeAreas"].getMemberNames();
 	for (size_t i = 0; i < NodeAreaListKeys.size(); i++)
 	{
@@ -968,14 +1038,13 @@ bool NodeSystem::LoadFromJson(const std::string& JsonText)
 	{
 		if (std::find(RecoveredDanglingLinkNodes.begin(), RecoveredDanglingLinkNodes.end(), LinkNode) == RecoveredDanglingLinkNodes.end())
 		{
-			NodeAreaLinkRecord Record = GetLinkDataByNodeID(LinkNode->GetID());
-			if (!Record.ID.empty())
-				LinkRecordsToDelete.push_back(Record.ID);
+			NodeAreaLinkRecord* Record = GetLinkDataByNodeID(LinkNode->GetID());
+			if (Record != nullptr)
+				LinkRecordsToDelete.push_back(Record->ID);
 		}
 	}
 
 	// FE_TO_DO: Should we notify user or leave dangling nodes in case user willing to fix them manually after loading?
-
 	
 	return true;
 }
@@ -993,19 +1062,31 @@ bool NodeSystem::LoadFromFile(const std::string& FilePath)
 	return LoadFromJson(FileData);
 }
 
-std::vector<NodeArea*> NodeSystem::GetImmediateDownstreamAreas(const std::string& AreaID) const
+void NodeSystem::Clear()
+{
+	for (size_t i = 0; i < Areas.size(); i++)
+	{
+		delete Areas[i];
+		Areas.erase(Areas.begin() + i, Areas.begin() + i + 1);
+		i--;
+	}
+
+	NodeAreaLinkRecords.clear();
+}
+
+std::vector<NodeArea*> NodeSystem::GetImmediateDownstreamAreas(const std::string& AreaID)
 {
 	std::vector<NodeArea*> Result;
 	NodeArea* CurrentArea = GetNodeAreaByID(AreaID);
 	if (CurrentArea == nullptr)
 		return Result;
 
-	std::vector<NodeAreaLinkRecord> LinkRecords = GetLinkDataByAreaID(CurrentArea->GetID());
+	std::vector<NodeAreaLinkRecord*> LinkRecords = GetLinkDataByAreaID(CurrentArea->GetID());
 	for (int i = 0; i < LinkRecords.size(); i++)
 	{
-		if (LinkRecords[i].InAreaID == CurrentArea->GetID())
+		if (LinkRecords[i]->InAreaID == CurrentArea->GetID())
 		{
-			NodeArea* DownstreamArea = GetNodeAreaByID(LinkRecords[i].OutAreaID);
+			NodeArea* DownstreamArea = GetNodeAreaByID(LinkRecords[i]->OutAreaID);
 			if (DownstreamArea != nullptr)
 				Result.push_back(DownstreamArea);
 		}
@@ -1014,7 +1095,7 @@ std::vector<NodeArea*> NodeSystem::GetImmediateDownstreamAreas(const std::string
 	return Result;
 }
 
-std::vector<NodeArea*> NodeSystem::GetAllDownstreamAreas(const std::string& AreaID) const
+std::vector<NodeArea*> NodeSystem::GetAllDownstreamAreas(const std::string& AreaID)
 {
 	NodeArea* CurrentNodeArea = GetNodeAreaByID(AreaID);
 	std::vector<NodeArea*> Result;
@@ -1044,19 +1125,19 @@ std::vector<NodeArea*> NodeSystem::GetAllDownstreamAreas(const std::string& Area
 	return Result;
 }
 
-std::vector<NodeArea*> NodeSystem::GetImmediateUpstreamAreas(const std::string& AreaID) const
+std::vector<NodeArea*> NodeSystem::GetImmediateUpstreamAreas(const std::string& AreaID)
 {
 	std::vector<NodeArea*> Result;
 	NodeArea* CurrentNodeArea = GetNodeAreaByID(AreaID);
 	if (CurrentNodeArea == nullptr)
 		return Result;
 
-	std::vector<NodeAreaLinkRecord> LinkRecords = GetLinkDataByAreaID(CurrentNodeArea->GetID());
+	std::vector<NodeAreaLinkRecord*> LinkRecords = GetLinkDataByAreaID(CurrentNodeArea->GetID());
 	for (int i = 0; i < LinkRecords.size(); i++)
 	{
-		if (LinkRecords[i].OutAreaID == CurrentNodeArea->GetID())
+		if (LinkRecords[i]->OutAreaID == CurrentNodeArea->GetID())
 		{
-			NodeArea* UpstreamArea = GetNodeAreaByID(LinkRecords[i].InAreaID);
+			NodeArea* UpstreamArea = GetNodeAreaByID(LinkRecords[i]->InAreaID);
 			if (UpstreamArea != nullptr)
 				Result.push_back(UpstreamArea);
 		}
@@ -1065,7 +1146,7 @@ std::vector<NodeArea*> NodeSystem::GetImmediateUpstreamAreas(const std::string& 
 	return Result;
 }
 
-std::vector<NodeArea*> NodeSystem::GetAllUpstreamAreas(const std::string& AreaID) const
+std::vector<NodeArea*> NodeSystem::GetAllUpstreamAreas(const std::string& AreaID)
 {
 	std::vector<NodeArea*> Result;
 	NodeArea* CurrentNodeArea = GetNodeAreaByID(AreaID);
@@ -1129,7 +1210,7 @@ bool NodeSystem::TryToFixDanglingLinkNode(LinkNode* LinkNodeToFix)
 	if (LinkNodeToFix->GetPartnerNode() == nullptr)
 		return false;
 
-	if (NODE_SYSTEM.GetLinkDataByNodeID(LinkNodeToFix->GetID()).IsNull())
+	if (NODE_SYSTEM.GetLinkDataByNodeID(LinkNodeToFix->GetID()) == nullptr)
 	{
 		LinkNode* InNode = LinkNodeToFix->IsInputNode() ? LinkNodeToFix : reinterpret_cast<LinkNode*>(LinkNodeToFix->GetPartnerNode());
 		LinkNode* OutNode = LinkNodeToFix->IsInputNode() ? reinterpret_cast<LinkNode*>(LinkNodeToFix->GetPartnerNode()) : LinkNodeToFix;
@@ -1152,10 +1233,17 @@ std::vector<LinkNode*> NodeSystem::TryToFixAllDanglingLinkNodes()
 {
 	std::vector<LinkNode*> Result;
 	std::vector<LinkNode*> DanglingLinkNodes = GetDanglingLinkNodes();
-	for (LinkNode* LinkNode : DanglingLinkNodes)
+	for (LinkNode* CurrentLinkNode : DanglingLinkNodes)
 	{
-		if (TryToFixDanglingLinkNode(LinkNode))
-			Result.push_back(LinkNode);
+		if (TryToFixDanglingLinkNode(CurrentLinkNode))
+		{
+			LinkNode* Partner = reinterpret_cast<LinkNode*>(CurrentLinkNode->GetPartnerNode());
+			if (Partner != nullptr)
+			{
+				Result.push_back(CurrentLinkNode);
+				Result.push_back(Partner);
+			}
+		}
 	}
 
 	return Result;
@@ -1197,16 +1285,28 @@ std::vector<Node*> NodeSystem::GetNodesByStringType(const std::string& Type) con
 	return Result;
 }
 
-bool NodeSystem::AddSocketToLinkNode(const std::string& AreaID, const std::string& LinkNodeID, const std::string& SocketType)
+LinkNode* NodeSystem::CreateLinkNodeInternal(bool bIsInputNode)
 {
-	if (SocketType.empty())
+	LinkNode* NewNode = new LinkNode();
+	NewNode->bIsInputNode = bIsInputNode;
+
+#ifdef VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES
+	NewNode->AddSocket(new NodeSocket(NewNode, "EXECUTE", "", !bIsInputNode));
+#endif
+
+	return NewNode;
+}
+
+bool NodeSystem::AddSocketToLink(const std::string& AreaID, const std::string& AnyNodeIDThatIsPartOfLink, std::string Type)
+{
+	if (Type.empty())
 		return false;
 
 	NodeArea* Area = GetNodeAreaByID(AreaID);
 	if(Area == nullptr)
 		return false;
 
-	Node* Node = Area->GetNodeByID(LinkNodeID);
+	Node* Node = Area->GetNodeByID(AnyNodeIDThatIsPartOfLink);
 	if (Node == nullptr || Node->GetType() != "LinkNode")
 		return false;
 
@@ -1214,6 +1314,28 @@ bool NodeSystem::AddSocketToLinkNode(const std::string& AreaID, const std::strin
 	if (CurrentLinkNode == nullptr)
 		return false;
 
-	//CurrentLinkNode->AddSocket(new NodeSocket(CurrentLinkNode, SocketType, "out_" + std::to_string(CurrentLinkNode->GetSocketCount()), true));
+	if (CurrentLinkNode->IsDangling())
+		return false;
+
+	NodeAreaLinkRecord* Record = GetLinkDataByNodeID(CurrentLinkNode->GetID());
+	if (Record == nullptr)
+		return false;
+
+	LinkNode* InNode = CurrentLinkNode->IsInputNode() ? CurrentLinkNode : reinterpret_cast<LinkNode*>(CurrentLinkNode->GetPartnerNode());
+//#ifdef VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES
+//	if (InNode->Input.empty())
+//		InNode->AddSocket(new NodeSocket(InNode, "EXECUTE", "", false));
+//#endif
+	NodeSocket* InNodeSocket = new NodeSocket(InNode, Type, Type, false);
+	InNode->AddSocket(InNodeSocket);
+
+	LinkNode* OutNode = CurrentLinkNode->IsInputNode() ? reinterpret_cast<LinkNode*>(CurrentLinkNode->GetPartnerNode()) : CurrentLinkNode;
+//#ifdef VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES
+//	if (OutNode->Output.empty())
+//		OutNode->AddSocket(new NodeSocket(OutNode, "EXECUTE", "", true));
+//#endif
+	NodeSocket* PartnerOutSocket = new NodeSocket(OutNode, Type, Type, true);
+	OutNode->AddSocket(PartnerOutSocket);
+
 	return true;
 }

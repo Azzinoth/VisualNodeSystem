@@ -13,6 +13,11 @@ namespace VisNodeSys
 		std::string PartnerNodeID;
 		bool bIsInputNode = true;
 		std::string LinkedAreaID;
+		// Prevents mutual destruction cycle, deleting one LinkNode triggers
+		// deletion of its partner, which would try to delete this node again.
+		bool bIsInProcessOfBeingDestroyed = false;
+
+		std::function<void* ()> CreateCrossAreaDataGetter(int SocketIndex);
 
 		LinkNode();
 		LinkNode(const LinkNode& Other);
@@ -20,8 +25,7 @@ namespace VisNodeSys
 
 		void AddSocket(NodeSocket* Socket);
 
-		//bool CanConnect(VisNodeSys::NodeSocket* OwnSocket, VisNodeSys::NodeSocket* CandidateSocket, char** MsgToUser);
-		//void SocketEvent(VisNodeSys::NodeSocket* OwnSocket, VisNodeSys::NodeSocket* ConnectedSocket, VisNodeSys::NODE_SOCKET_EVENT EventType);
+		void SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSocket, NODE_SOCKET_EVENT EventType);
 	public:
 		bool IsInputNode() const;
 		Node* GetPartnerNode() const;

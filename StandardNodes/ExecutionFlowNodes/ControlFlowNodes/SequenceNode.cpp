@@ -39,11 +39,11 @@ Json::Value SequenceNode::ToJson()
 
 bool SequenceNode::FromJson(Json::Value Json)
 {
-	bool bPreviousCheck = Node::bInputCountCheck;
+	bool bPreviousCheck = Node::bOutputCountCheck;
 	Node::bOutputCountCheck = false;
 
 	bool bResult = Node::FromJson(Json);
-	Node::bInputCountCheck = bPreviousCheck;
+	Node::bOutputCountCheck = bPreviousCheck;
 
 	if (!bResult)
 		return false;
@@ -51,9 +51,7 @@ bool SequenceNode::FromJson(Json::Value Json)
 	if (!Json.isMember("OutputCount") || !Json["OutputCount"].isNumeric())
 		return false;
 
-	int LocalOutputCount = Json["OutputCount"].asInt();
-	OutputCount = LocalOutputCount;
-	
+	OutputCount = Json["OutputCount"].asInt();
 	return true;
 }
 
