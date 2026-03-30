@@ -141,6 +141,46 @@ TEST(Basic, NodeSockets)
 	NODE_SYSTEM.DeleteNodeArea(LocalNodeArea);
 }
 
+TEST(Basic, NodeSocketDeletion)
+{
+	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(LocalNodeArea, nullptr);
+	ASSERT_EQ(LocalNodeArea->GetNodeCount(), 0);
+
+	Node* FirstNode = new Node();
+	ASSERT_NE(FirstNode, nullptr);
+	ASSERT_EQ(FirstNode->GetInputSocketCount(), 0);
+	ASSERT_EQ(FirstNode->GetOutputSocketCount(), 0);
+
+	FirstNode->AddSocket(new NodeSocket(FirstNode, "EXECUTE", "in", false));
+	ASSERT_EQ(FirstNode->GetInputSocketCount(), 1);
+	FirstNode->AddSocket(new NodeSocket(FirstNode, "EXECUTE", "out", true));
+	ASSERT_EQ(FirstNode->GetOutputSocketCount(), 1);
+
+	LocalNodeArea->AddNode(FirstNode);
+	ASSERT_EQ(LocalNodeArea->GetNodeCount(), 1);
+
+	Node* SecondNode = new Node();
+	ASSERT_NE(SecondNode, nullptr);
+	ASSERT_EQ(SecondNode->GetInputSocketCount(), 0);
+	ASSERT_EQ(SecondNode->GetOutputSocketCount(), 0);
+
+	SecondNode->AddSocket(new NodeSocket(SecondNode, "EXECUTE", "in", false));
+	ASSERT_EQ(SecondNode->GetInputSocketCount(), 1);
+	ASSERT_EQ(SecondNode->GetOutputSocketCount(), 0);
+
+	LocalNodeArea->AddNode(SecondNode);
+	ASSERT_EQ(LocalNodeArea->GetNodeCount(), 2);
+
+	ASSERT_TRUE(LocalNodeArea->TryToConnect(FirstNode, 0, SecondNode, 0));
+	
+	// Delete socket, check if connections are deleted.
+	FirstNode->DeleteSocket(FirstNode->GetSocketIDByIndex(0, true));
+	ASSERT_FALSE(LocalNodeArea->IsConnected(FirstNode, SecondNode));
+
+	NODE_SYSTEM.DeleteNodeArea(LocalNodeArea);
+}
+
 TEST(Basic, NonDestractableNode)
 {
 	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();

@@ -135,8 +135,10 @@ TEST(NodeAreaLoadTest, LoadNodeUnregisteredType)
 	NODE_SYSTEM.DeleteNodeArea(NodeArea);
 }
 
-TEST(NodeAreaLoadTest, LoadNodeFromJsonFails_SocketCountMismatch)
+TEST(NodeAreaLoadTest, LoadNodeWithMoreInputsThanClassDefinition)
 {
+	// CustomNode2 normally has 1 input, but JSON provides 2 inputs.
+	// This simulates loading an old file after the class lost a socket.
 	std::string JsonString = R"({
 		"Nodes": {
 			"0": {
@@ -144,7 +146,7 @@ TEST(NodeAreaLoadTest, LoadNodeFromJsonFails_SocketCountMismatch)
 				"NodeType": "CustomNode2",
 				"Position": {"X": 10, "Y": 10},
 				"Size": {"X": 150, "Y": 80},
-				"Name": "Mismatch Node",
+				"Name": "Extra Input Node",
 				"Input": {
 					"0": {"ID": "231D2D4F1D033A39393A157C", "Name": "Input 1", "AllowedTypes":["FLOAT"]},
 					"1": {"ID": "777D5D4709303379786D3B34", "Name": "Input 2", "AllowedTypes":["FLOAT"]}
@@ -158,12 +160,148 @@ TEST(NodeAreaLoadTest, LoadNodeFromJsonFails_SocketCountMismatch)
 
 	NodeArea* NodeArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(NodeArea, nullptr);
-	
+
 	ASSERT_EQ(NodeArea->LoadFromJson(JsonString), true);
-	ASSERT_EQ(NodeArea->GetNodeCount(), 0);
-	ASSERT_EQ(NodeArea->GetGroupCommentCount(), 0);
-	ASSERT_EQ(NodeArea->GetConnectionCount(), 0);
-	ASSERT_EQ(NodeArea->GetSelected().size(), 0);
+	ASSERT_EQ(NodeArea->GetNodeCount(), 1);
+
+	const Node* LoadedNode = NodeArea->GetNodeByID("6621620F42545B420C103443");
+	ASSERT_NE(LoadedNode, nullptr);
+	EXPECT_EQ(LoadedNode->GetInputSocketCount(), 2);
+	EXPECT_EQ(LoadedNode->GetOutputSocketCount(), 1);
+
+	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+}
+
+TEST(NodeAreaLoadTest, LoadNodeWithFewerInputsThanClassDefinition)
+{
+	// CustomNode2 normally has 1 input, but JSON provides 0 inputs.
+	// This simulates loading an old file after the class gained a socket.
+	std::string JsonString = R"({
+		"Nodes": {
+			"0": {
+				"ID": "6621620F42545B420C103443",
+				"NodeType": "CustomNode2",
+				"Position": {"X": 10, "Y": 10},
+				"Size": {"X": 150, "Y": 80},
+				"Name": "No Input Node",
+				"Input": {},
+				"Output": {
+					"0": {"ID": "6E58750D6D46781643536C0F", "Name": "Output 1", "AllowedTypes":["FLOAT"]}
+				}
+			}
+		}
+	})";
+
+	NodeArea* NodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(NodeArea, nullptr);
+
+	ASSERT_EQ(NodeArea->LoadFromJson(JsonString), true);
+	ASSERT_EQ(NodeArea->GetNodeCount(), 1);
+
+	const Node* LoadedNode = NodeArea->GetNodeByID("6621620F42545B420C103443");
+	ASSERT_NE(LoadedNode, nullptr);
+	EXPECT_EQ(LoadedNode->GetInputSocketCount(), 0);
+	EXPECT_EQ(LoadedNode->GetOutputSocketCount(), 1);
+
+	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+}
+
+TEST(NodeAreaLoadTest, LoadNodeWithMoreOutputsThanClassDefinition)
+{
+	// CustomNode2 normally has 1 output, but JSON provides 3 outputs.
+	std::string JsonString = R"({
+		"Nodes": {
+			"0": {
+				"ID": "6621620F42545B420C103443",
+				"NodeType": "CustomNode2",
+				"Position": {"X": 10, "Y": 10},
+				"Size": {"X": 150, "Y": 80},
+				"Name": "Extra Output Node",
+				"Input": {
+					"0": {"ID": "231D2D4F1D033A39393A157C", "Name": "Input 1", "AllowedTypes":["FLOAT"]}
+				},
+				"Output": {
+					"0": {"ID": "6E58750D6D46781643536C0F", "Name": "Output 1", "AllowedTypes":["FLOAT"]},
+					"1": {"ID": "7F69860E7E80424F503947AC", "Name": "Output 2", "AllowedTypes":["FLOAT"]},
+					"2": {"ID": "8A7A971F8F91535060504ABC", "Name": "Output 3", "AllowedTypes":["FLOAT"]}
+				}
+			}
+		}
+	})";
+
+	NodeArea* NodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(NodeArea, nullptr);
+
+	ASSERT_EQ(NodeArea->LoadFromJson(JsonString), true);
+	ASSERT_EQ(NodeArea->GetNodeCount(), 1);
+
+	const Node* LoadedNode = NodeArea->GetNodeByID("6621620F42545B420C103443");
+	ASSERT_NE(LoadedNode, nullptr);
+	EXPECT_EQ(LoadedNode->GetInputSocketCount(), 1);
+	EXPECT_EQ(LoadedNode->GetOutputSocketCount(), 3);
+
+	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+}
+
+TEST(NodeAreaLoadTest, LoadNodeWithMismatchedSocketsAndConnections)
+{
+	// Two CustomNode2 nodes, each with extra sockets beyond class definition.
+	// A valid connection exists between them through the "extra" sockets.
+	// Verifies the full round-trip: mismatched load + connection restoration.
+	std::string JsonString = R"({
+		"Nodes": {
+			"0": {
+				"ID": "0E341B791D445B0B2E5B7534",
+				"NodeType": "CustomNode2",
+				"Position": {"X": 0, "Y": 0},
+				"Size": {"X": 150, "Y": 80},
+				"Name": "Source",
+				"Input": {
+					"0": {"ID": "7B63360C3D3E410D671A0A26", "Name": "Input 1", "AllowedTypes":["FLOAT"]}
+				},
+				"Output": {
+					"0": {"ID": "33763545003D3B0C2B557301", "Name": "Output 1", "AllowedTypes":["FLOAT"]},
+					"1": {"ID": "44874656114D4C1D782A1B12", "Name": "Output 2", "AllowedTypes":["FLOAT"]}
+				}
+			},
+			"1": {
+				"ID": "6D61442D3E48292F126B7E07",
+				"NodeType": "CustomNode2",
+				"Position": {"X": 200, "Y": 0},
+				"Size": {"X": 150, "Y": 80},
+				"Name": "Destination",
+				"Input": {
+					"0": {"ID": "4500261C5F10075178584777", "Name": "Input 1", "AllowedTypes":["FLOAT"]},
+					"1": {"ID": "5611372D604121626839287A", "Name": "Input 2", "AllowedTypes":["FLOAT"]}
+				},
+				"Output": {
+					"0": {"ID": "214D5382056A20645E3C2504", "Name": "Output 1", "AllowedTypes":["FLOAT"]}
+				}
+			}
+		},
+		"Connections": {
+			"0": {
+				"In": {"SocketID": "5611372D604121626839287A", "NodeID": "6D61442D3E48292F126B7E07"},
+				"Out": {"SocketID": "44874656114D4C1D782A1B12", "NodeID": "0E341B791D445B0B2E5B7534"}
+			}
+		},
+		"RenderOffset": {"X": 0, "Y": 0}
+	})";
+
+	NodeArea* NodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(NodeArea, nullptr);
+
+	ASSERT_EQ(NodeArea->LoadFromJson(JsonString), true);
+	ASSERT_EQ(NodeArea->GetNodeCount(), 2);
+	ASSERT_EQ(NodeArea->GetConnectionCount(), 1);
+
+	const Node* SourceNode = NodeArea->GetNodeByID("0E341B791D445B0B2E5B7534");
+	const Node* DestNode = NodeArea->GetNodeByID("6D61442D3E48292F126B7E07");
+	ASSERT_NE(SourceNode, nullptr);
+	ASSERT_NE(DestNode, nullptr);
+
+	EXPECT_EQ(SourceNode->GetOutputSocketCount(), 2);
+	EXPECT_EQ(DestNode->GetInputSocketCount(), 2);
 
 	NODE_SYSTEM.DeleteNodeArea(NodeArea);
 }
@@ -189,7 +327,7 @@ TEST(NodeAreaLoadTest, LoadConnectionEntryNotObject)
 	ASSERT_NE(NodeArea, nullptr);
 
 	ASSERT_EQ(NodeArea->LoadFromJson(JsonString), true);
-	ASSERT_EQ(NodeArea->GetNodeCount(), 0);
+	ASSERT_EQ(NodeArea->GetNodeCount(), 1);
 	ASSERT_EQ(NodeArea->GetGroupCommentCount(), 0);
 	ASSERT_EQ(NodeArea->GetConnectionCount(), 0);
 	ASSERT_EQ(NodeArea->GetSelected().size(), 0);

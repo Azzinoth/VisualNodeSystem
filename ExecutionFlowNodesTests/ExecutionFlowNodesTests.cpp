@@ -657,7 +657,7 @@ TEST(ExecutionFlowNodesTests, SavingLoading_RandomArithmetic_Calculation)
 		TestNodeArea->ExecuteNodeNetwork();
 		std::string FinalResultNodeID = CurrentResultNode->GetID();
 		int FinalResultValue = CurrentResultNode->GetData();
-		int ExecutedNodesCount = TestNodeArea->GetLastExecutedNodes().size();
+		size_t ExecutedNodesCount = TestNodeArea->GetLastExecutedNodes().size();
 
 		// Now we will save the node area and load it again to check if we get the same result.
 		// We will start with bacis checks.
@@ -680,7 +680,7 @@ TEST(ExecutionFlowNodesTests, SavingLoading_RandomArithmetic_Calculation)
 		int LoadedFinalResultValue = CastedLoadedFinalResultNode->GetData();
 		ASSERT_EQ(FinalResultValue, LoadedFinalResultValue);
 
-		int LoadedExecutedNodesCount = TestNodeArea->GetLastExecutedNodes().size();
+		size_t LoadedExecutedNodesCount = TestNodeArea->GetLastExecutedNodes().size();
 		ASSERT_EQ(ExecutedNodesCount, LoadedExecutedNodesCount);
 	}
 }

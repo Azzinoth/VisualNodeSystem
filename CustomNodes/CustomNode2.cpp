@@ -90,5 +90,5 @@ bool CustomNode2::CanConnect(NodeSocket* OwnSocket, NodeSocket* CandidateSocket,
 	if (!Node::CanConnect(OwnSocket, CandidateSocket, nullptr))
 		return false;
 
-	return false;
+	return true;
 }

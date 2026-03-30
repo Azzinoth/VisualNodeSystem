@@ -87,10 +87,10 @@ TEST(NodeSystemTests, LinkAreas_Basic_AddSockets)
 	EXPECT_EQ(NODE_SYSTEM.LinkNodeAreas(UpstreamAreaID, DownstreamAreaID, &LinkResult), true);
 	ASSERT_NE(LinkResult.first, "");
 	ASSERT_NE(LinkResult.second, "");
-	EXPECT_TRUE(NODE_SYSTEM.AddSocketToLink(UpstreamAreaID, LinkResult.first, "BOOL"));
+	LinkNode* UpstreamLinkNode = dynamic_cast<LinkNode*>(NODE_SYSTEM.GetNodeByID(LinkResult.first));
+	EXPECT_TRUE(UpstreamLinkNode->AddSocket({ "BOOL" }));
 
 	// Connect node to a parent link node.
-	Node* UpstreamLinkNode = UpstreamArea->GetNodeByID(LinkResult.first);
 	ASSERT_NE(UpstreamLinkNode, nullptr);
 	ASSERT_EQ(UpstreamArea->TryToConnect(BeginNode, 0, UpstreamLinkNode, 0), true);
 	ASSERT_EQ(UpstreamArea->TryToConnect(UpstreamBoolNode, 0, UpstreamLinkNode, 1), true);
@@ -143,8 +143,10 @@ TEST(NodeSystemTests, LinkAreas_MultipleSockets)
 
 	std::pair<std::string, std::string> LinkResult;
 	ASSERT_TRUE(NODE_SYSTEM.LinkNodeAreas(UpstreamAreaID, DownstreamAreaID, &LinkResult));
-	ASSERT_TRUE(NODE_SYSTEM.AddSocketToLink(UpstreamAreaID, LinkResult.first, "BOOL"));
-	ASSERT_TRUE(NODE_SYSTEM.AddSocketToLink(UpstreamAreaID, LinkResult.first, "FLOAT"));
+
+	LinkNode* CurrentLinkNode = dynamic_cast<LinkNode*>(NODE_SYSTEM.GetNodeByID(LinkResult.first));
+	ASSERT_TRUE(CurrentLinkNode->AddSocket({ "BOOL" }));
+	ASSERT_TRUE(CurrentLinkNode->AddSocket({ "FLOAT" }));
 
 	Node* UpstreamLinkNode = UpstreamArea->GetNodeByID(LinkResult.first);
 	Node* DownstreamLinkNode = DownstreamArea->GetNodeByID(LinkResult.second);
@@ -207,7 +209,8 @@ TEST(NodeSystemTests, LinkAreas_ArithmeticAcrossLink)
 
 	std::pair<std::string, std::string> LinkResult;
 	ASSERT_TRUE(NODE_SYSTEM.LinkNodeAreas(UpstreamAreaID, DownstreamAreaID, &LinkResult));
-	ASSERT_TRUE(NODE_SYSTEM.AddSocketToLink(UpstreamAreaID, LinkResult.first, "INT"));
+	LinkNode* CurrentLinkNode = dynamic_cast<LinkNode*>(NODE_SYSTEM.GetNodeByID(LinkResult.first));
+	ASSERT_TRUE(CurrentLinkNode->AddSocket({ "INT" }));
 
 	Node* UpstreamLinkNode = UpstreamArea->GetNodeByID(LinkResult.first);
 	Node* DownstreamLinkNode = DownstreamArea->GetNodeByID(LinkResult.second);
@@ -222,6 +225,161 @@ TEST(NodeSystemTests, LinkAreas_ArithmeticAcrossLink)
 	EXPECT_EQ(ResultNode->GetData(), 0);
 	ASSERT_TRUE(UpstreamArea->ExecuteNodeNetwork());
 	EXPECT_EQ(ResultNode->GetData(), 30);
+
+	NODE_SYSTEM.DeleteNodeArea(UpstreamArea);
+	NODE_SYSTEM.DeleteNodeArea(DownstreamArea);
+}
+
+TEST(NodeSystemTests, LinkAreas_SocketIndexRoutesDataCorrectly)
+{
+	NodeArea* UpstreamArea = NODE_SYSTEM.CreateNodeArea();
+	std::string UpstreamAreaID = UpstreamArea->GetID();
+	UpstreamArea->SetSaveExecutedNodes(true);
+
+	Node* BeginNode = NODE_FACTORY.CreateNode("BeginNode");
+	UpstreamArea->AddNode(BeginNode);
+	UpstreamArea->SetExecutionEntryNode(BeginNode);
+
+	IntegerVariableNode* IntegerA = new IntegerVariableNode();
+	IntegerA->SetData(1);
+	UpstreamArea->AddNode(IntegerA);
+
+	NodeArea* DownstreamArea = NODE_SYSTEM.CreateNodeArea();
+	std::string DownstreamAreaID = DownstreamArea->GetID();
+	DownstreamArea->SetSaveExecutedNodes(true);
+
+	IntegerVariableNode* IntegerB = new IntegerVariableNode();
+	IntegerB->SetData(0);
+	DownstreamArea->AddNode(IntegerB);
+
+	std::pair<std::string, std::string> LinkResult;
+	ASSERT_TRUE(NODE_SYSTEM.LinkNodeAreas(UpstreamAreaID, DownstreamAreaID, &LinkResult));
+	LinkNode* CurrentLinkNode = dynamic_cast<LinkNode*>(NODE_SYSTEM.GetNodeByID(LinkResult.first));
+	ASSERT_TRUE(CurrentLinkNode->AddSocket({ "INT" }, "INT_0"));
+	ASSERT_TRUE(CurrentLinkNode->AddSocket({ "INT" }, "INT_1"));
+
+	Node* UpstreamLinkNode = UpstreamArea->GetNodeByID(LinkResult.first);
+	Node* DownstreamLinkNode = DownstreamArea->GetNodeByID(LinkResult.second);
+
+	// Connecting execution sockets.
+	ASSERT_EQ(UpstreamArea->TryToConnect(BeginNode, 0, UpstreamLinkNode, 0), true);
+	ASSERT_EQ(DownstreamArea->TryToConnect(DownstreamLinkNode, 0, IntegerB, 0), true);
+
+	// Config 1: Mismatched indices. Upstream socket 2, downstream socket 1.
+	ASSERT_EQ(UpstreamArea->TryToConnect(IntegerA, 1, UpstreamLinkNode, 2), true);
+	ASSERT_EQ(DownstreamArea->TryToConnect(DownstreamLinkNode, 1, IntegerB, 1), true);
+
+	EXPECT_EQ(IntegerB->GetData(), 0);
+	ASSERT_TRUE(UpstreamArea->ExecuteNodeNetwork());
+	EXPECT_EQ(IntegerB->GetData(), 0);
+
+	// Config 2: Fix upstream to match downstream at socket 1.
+	IntegerA->SetData(1);
+	IntegerB->SetData(0);
+
+	ASSERT_EQ(UpstreamArea->TryToDisconnect(IntegerA, 1, UpstreamLinkNode, 2), true);
+	ASSERT_EQ(UpstreamArea->TryToConnect(IntegerA, 1, UpstreamLinkNode, 1), true);
+
+	EXPECT_EQ(IntegerB->GetData(), 0);
+	ASSERT_TRUE(UpstreamArea->ExecuteNodeNetwork());
+	EXPECT_EQ(IntegerB->GetData(), 1);
+
+	// Config 3: Fix downstream to match upstream at socket 2 instead.
+	IntegerA->SetData(1);
+	IntegerB->SetData(0);
+
+	ASSERT_EQ(UpstreamArea->TryToDisconnect(IntegerA, 1, UpstreamLinkNode, 1), true);
+	ASSERT_EQ(UpstreamArea->TryToConnect(IntegerA, 1, UpstreamLinkNode, 2), true);
+	ASSERT_EQ(DownstreamArea->TryToDisconnect(DownstreamLinkNode, 1, IntegerB, 1), true);
+	ASSERT_EQ(DownstreamArea->TryToConnect(DownstreamLinkNode, 2, IntegerB, 1), true);
+
+	EXPECT_EQ(IntegerB->GetData(), 0);
+	ASSERT_TRUE(UpstreamArea->ExecuteNodeNetwork());
+	EXPECT_EQ(IntegerB->GetData(), 1);
+
+	// Config 4: Mismatch again. Upstream stays at socket 2, move downstream back to socket 1.
+	IntegerA->SetData(1);
+	IntegerB->SetData(0);
+
+	ASSERT_EQ(DownstreamArea->TryToDisconnect(DownstreamLinkNode, 2, IntegerB, 1), true);
+	ASSERT_EQ(DownstreamArea->TryToConnect(DownstreamLinkNode, 1, IntegerB, 1), true);
+
+	EXPECT_EQ(IntegerB->GetData(), 0);
+	ASSERT_TRUE(UpstreamArea->ExecuteNodeNetwork());
+	EXPECT_EQ(IntegerB->GetData(), 0);
+
+	NODE_SYSTEM.DeleteNodeArea(UpstreamArea);
+	NODE_SYSTEM.DeleteNodeArea(DownstreamArea);
+}
+
+TEST(NodeSystemTests, LinkAreas_SocketIndexRoutesDataCorrectly_AfterDeletion)
+{
+	NodeArea* UpstreamArea = NODE_SYSTEM.CreateNodeArea();
+	std::string UpstreamAreaID = UpstreamArea->GetID();
+	UpstreamArea->SetSaveExecutedNodes(true);
+
+	Node* BeginNode = NODE_FACTORY.CreateNode("BeginNode");
+	UpstreamArea->AddNode(BeginNode);
+	UpstreamArea->SetExecutionEntryNode(BeginNode);
+
+	IntegerVariableNode* IntegerA = new IntegerVariableNode();
+	IntegerA->SetData(1);
+	UpstreamArea->AddNode(IntegerA);
+
+	NodeArea* DownstreamArea = NODE_SYSTEM.CreateNodeArea();
+	std::string DownstreamAreaID = DownstreamArea->GetID();
+	DownstreamArea->SetSaveExecutedNodes(true);
+
+	IntegerVariableNode* IntegerB = new IntegerVariableNode();
+	IntegerB->SetData(0);
+	DownstreamArea->AddNode(IntegerB);
+
+	std::pair<std::string, std::string> LinkResult;
+	ASSERT_TRUE(NODE_SYSTEM.LinkNodeAreas(UpstreamAreaID, DownstreamAreaID, &LinkResult));
+	LinkNode* CurrentLinkNode = dynamic_cast<LinkNode*>(NODE_SYSTEM.GetNodeByID(LinkResult.first));
+	ASSERT_TRUE(CurrentLinkNode->AddSocket({ "INT" }, "INT_0"));
+	ASSERT_TRUE(CurrentLinkNode->AddSocket({ "INT" }, "INT_1"));
+
+	Node* UpstreamLinkNode = UpstreamArea->GetNodeByID(LinkResult.first);
+	Node* DownstreamLinkNode = DownstreamArea->GetNodeByID(LinkResult.second);
+
+	// Connecting execution sockets.
+	ASSERT_EQ(UpstreamArea->TryToConnect(BeginNode, 0, UpstreamLinkNode, 0), true);
+	ASSERT_EQ(DownstreamArea->TryToConnect(DownstreamLinkNode, 0, IntegerB, 0), true);
+
+	// Mismatched indices. Upstream socket 2, downstream socket 1.
+	ASSERT_EQ(UpstreamArea->TryToConnect(IntegerA, 1, UpstreamLinkNode, 2), true);
+	ASSERT_EQ(DownstreamArea->TryToConnect(DownstreamLinkNode, 1, IntegerB, 1), true);
+
+	// No data should flow due to mismatch.
+	EXPECT_EQ(IntegerB->GetData(), 0);
+	ASSERT_TRUE(UpstreamArea->ExecuteNodeNetwork());
+	EXPECT_EQ(IntegerB->GetData(), 0);
+
+	// Now delete first data socket in link node.
+	std::string SocketIDToDelete = UpstreamLinkNode->GetSocketIDByIndex(1, false);
+	ASSERT_EQ(UpstreamLinkNode->DeleteSocket(SocketIDToDelete), true);
+	// Connection on downstream area should also be deleted since the socket was removed.
+	ASSERT_EQ(DownstreamArea->IsConnected(DownstreamLinkNode, 1, IntegerB, 1), false);
+	
+	IntegerA->SetData(1);
+	IntegerB->SetData(0);
+
+	// Still no data flow.
+	EXPECT_EQ(IntegerB->GetData(), 0);
+	ASSERT_TRUE(UpstreamArea->ExecuteNodeNetwork());
+	EXPECT_EQ(IntegerB->GetData(), 0);
+
+	// Connect downstream int socket.
+	ASSERT_EQ(DownstreamArea->TryToConnect(DownstreamLinkNode, 1, IntegerB, 1), true);
+
+	IntegerA->SetData(1);
+	IntegerB->SetData(0);
+
+	// Finally data should flow.
+	EXPECT_EQ(IntegerB->GetData(), 0);
+	ASSERT_TRUE(UpstreamArea->ExecuteNodeNetwork());
+	EXPECT_EQ(IntegerB->GetData(), 1);
 
 	NODE_SYSTEM.DeleteNodeArea(UpstreamArea);
 	NODE_SYSTEM.DeleteNodeArea(DownstreamArea);
@@ -251,7 +409,8 @@ TEST(NodeSystemTests, LinkAreas_ReExecuteWithChangedData)
 
 	std::pair<std::string, std::string> LinkResult;
 	ASSERT_TRUE(NODE_SYSTEM.LinkNodeAreas(UpstreamAreaID, DownstreamAreaID, &LinkResult));
-	ASSERT_TRUE(NODE_SYSTEM.AddSocketToLink(UpstreamAreaID, LinkResult.first, "FLOAT"));
+	LinkNode* CurrentLinkNode = dynamic_cast<LinkNode*>(NODE_SYSTEM.GetNodeByID(LinkResult.first));
+	ASSERT_TRUE(CurrentLinkNode->AddSocket({ "FLOAT" }));
 
 	Node* UpstreamLinkNode = UpstreamArea->GetNodeByID(LinkResult.first);
 	Node* DownstreamLinkNode = DownstreamArea->GetNodeByID(LinkResult.second);
@@ -637,7 +796,7 @@ void IntCalculationInSmallLinkedNodeAreaGraph()
 			// Connect AddNode execution output to downstream link node.
 			ASSERT_EQ(CurrentArea->TryToConnect(AddNode, 0, DownstreamLinkNode, 0), true);
 			// Create new socket on link for integer data.
-			NODE_SYSTEM.AddSocketToLink(CurrentArea->GetID(), DownstreamLinkingNodeIDs[0].first, "INT");
+			ASSERT_TRUE(DownstreamLinkNode->AddSocket({ "INT" }));
 			// Connect AddNode integer output to downstream link node.
 			ASSERT_EQ(CurrentArea->TryToConnect(AddNode, 1, DownstreamLinkNode, 1), true);
 		}
@@ -688,8 +847,8 @@ TEST(NodeSystemTests, SaveLoad_With_Execute_Connections_Small)
 	EXPECT_TRUE(TEST_TOOLS.VerifyLinksInSmallNodeAreaGraph());
 	IntCalculationInSmallLinkedNodeAreaGraph();
 
-	int TotalConnections = NODE_SYSTEM.GetTotalConnectionCount();
-	std::vector<int> PerAreaConnectionCounts;
+	size_t TotalConnections = NODE_SYSTEM.GetTotalConnectionCount();
+	std::vector<size_t> PerAreaConnectionCounts;
 	for (auto Area : Areas)
 	{
 		PerAreaConnectionCounts.push_back(Area->GetConnectionCount());
@@ -699,8 +858,8 @@ TEST(NodeSystemTests, SaveLoad_With_Execute_Connections_Small)
 	Areas[0]->ExecuteNodeNetwork();
 
 	std::unordered_map<std::string, std::vector<Node*>> ExecutedNodes = NODE_SYSTEM.GetLastExecutedNodes(Areas[0]->GetID());
-	int ExecutedNodeAreaCount = ExecutedNodes.size();
-	std::vector<int> ExecutedNodesPerArea;
+	size_t ExecutedNodeAreaCount = ExecutedNodes.size();
+	std::vector<size_t> ExecutedNodesPerArea;
 	for (auto Area : Areas)
 		ExecutedNodesPerArea.push_back(ExecutedNodes[Area->GetID()].size());
 
@@ -740,7 +899,7 @@ TEST(NodeSystemTests, SaveLoad_With_Execute_Connections_Small)
 	for (auto Area : Areas)
 		Area->SetSaveExecutedNodes(true);
 
-	int AfterLoadTotalConnections = NODE_SYSTEM.GetTotalConnectionCount();
+	size_t AfterLoadTotalConnections = NODE_SYSTEM.GetTotalConnectionCount();
 	for (int i = 0; i < PerAreaConnectionCounts.size(); i++)
 		ASSERT_EQ(PerAreaConnectionCounts[i], Areas[i]->GetConnectionCount());
 
@@ -749,7 +908,7 @@ TEST(NodeSystemTests, SaveLoad_With_Execute_Connections_Small)
 	Areas[0]->ExecuteNodeNetwork();
 
 	std::unordered_map<std::string, std::vector<Node*>> AfterLoadExecutedNodes = NODE_SYSTEM.GetLastExecutedNodes(Areas[0]->GetID());
-	int AfterLoadExecutedNodeAreaCount = AfterLoadExecutedNodes.size();
+	size_t AfterLoadExecutedNodeAreaCount = AfterLoadExecutedNodes.size();
 	ASSERT_EQ(ExecutedNodeAreaCount, AfterLoadExecutedNodeAreaCount);
 	for (int i = 0; i < Areas.size(); i++)
 		ASSERT_EQ(ExecutedNodesPerArea[i], static_cast<int>(AfterLoadExecutedNodes[Areas[i]->GetID()].size()));
@@ -784,8 +943,8 @@ TEST(NodeSystemTests, SaveLoad_With_Execute_And_Integer_Connections_Small)
 		Areas[i]->AddNode(VariableNode);
 	}
 
-	int TotalConnections = 0;
-	std::vector<int> PerAreaConnectionCounts;
+	size_t TotalConnections = 0;
+	std::vector<size_t> PerAreaConnectionCounts;
 	for (auto Area : Areas)
 	{
 		TotalConnections += Area->GetConnectionCount();
@@ -800,7 +959,7 @@ TEST(NodeSystemTests, SaveLoad_With_Execute_And_Integer_Connections_Small)
 	EXPECT_TRUE(TEST_TOOLS.VerifyLinksInSmallNodeAreaGraph());
 	Areas = TEST_TOOLS.GetOrderedAreasFromSmallLinkedNodeAreaGraph();
 
-	int AfterLoadTotalConnections = 0;
+	size_t AfterLoadTotalConnections = 0;
 	for (int i = 0; i < PerAreaConnectionCounts.size(); i++)
 	{
 		AfterLoadTotalConnections += Areas[i]->GetConnectionCount();

@@ -11,10 +11,10 @@ bool TestTools::VerifyNodeAreaSaveLoadCycle_BasicChecks(VisNodeSys::NodeArea* No
 
 	std::string NodeAreaID = NodeArea->GetID();
 	std::string NodeAreaName = NodeArea->GetName();
-	int NodeCount = NodeArea->GetNodeCount();
-	int ConnectionCount = NodeArea->GetConnectionCount();
-	int RerouteConnectionCount = NodeArea->GetRerouteConnectionCount();
-	int GroupCommentCount = NodeArea->GetGroupCommentCount();
+	size_t NodeCount = NodeArea->GetNodeCount();
+	size_t ConnectionCount = NodeArea->GetConnectionCount();
+	size_t RerouteConnectionCount = NodeArea->GetRerouteConnectionCount();
+	size_t GroupCommentCount = NodeArea->GetGroupCommentCount();
 
 	if (!NodeArea->SaveToFile("TemporaryNodeArea.json"))
 		return false;
