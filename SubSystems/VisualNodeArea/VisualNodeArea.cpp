@@ -487,7 +487,7 @@ bool NodeArea::LoadFromJson(std::string JsonText)
 		bool bResult = NewNode->FromJson(Root["Nodes"][NodeKey]);
 		if (!bResult)
 		{
-			// TO-DO: Implement a more robust user notification system (e.g., logging, UI warning).
+			// FE_TO_DO: Implement a more robust user notification system (e.g., logging, UI warning).
 			delete NewNode;
 			NewNode = nullptr;
 			continue;
@@ -521,7 +521,7 @@ bool NodeArea::LoadFromJson(std::string JsonText)
 			if (!ConnectionData.isMember("In") || !ConnectionData.isMember("Out") || !ConnectionData["In"].isObject() || !ConnectionData["Out"].isObject())
 				continue;
 
-			// TO-DO: Implement a more robust user notification system (e.g., logging, UI warning).
+			// FE_TO_DO: Implement a more robust user notification system (e.g., logging, UI warning).
 			if (!ConnectionData["In"].isMember("SocketID") || !ConnectionData["In"]["SocketID"].isString() ||
 				!ConnectionData["In"].isMember("NodeID") || !ConnectionData["In"]["NodeID"].isString() ||
 				!ConnectionData["Out"].isMember("SocketID") || !ConnectionData["Out"]["SocketID"].isString() ||

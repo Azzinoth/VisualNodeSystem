@@ -62,25 +62,28 @@ void NodeArea::RenderNode(Node* Node) const
 
 	if (Node->GetStyle() == DEFAULT)
 	{
-		// Drawing caption area.
-		ImVec2 TitleArea = Node->RightBottom;
-		TitleArea.y = Node->LeftTop.y + GetNodeTitleHeight();
-		const ImU32 NodeTitleBackgroundColor = (HoveredNode == Node || IsSelected(Node)) ? Node->TitleBackgroundColorHovered : Node->TitleBackgroundColor;
+		if (Node->GetRenderTitleBar())
+		{
+			// Drawing caption area.
+			ImVec2 TitleArea = Node->RightBottom;
+			TitleArea.y = Node->LeftTop.y + GetNodeTitleHeight();
+			const ImU32 NodeTitleBackgroundColor = (HoveredNode == Node || IsSelected(Node)) ? Node->TitleBackgroundColorHovered : Node->TitleBackgroundColor;
 
-		CurrentDrawList->AddRectFilled(Node->LeftTop + ImVec2(1, 1), TitleArea, NodeTitleBackgroundColor, 8.0f * Zoom);
-		CurrentDrawList->AddRect(Node->LeftTop, Node->RightBottom, ImColor(100, 100, 100), 8.0f * Zoom);
+			CurrentDrawList->AddRectFilled(Node->LeftTop + ImVec2(1, 1), TitleArea, NodeTitleBackgroundColor, 8.0f * Zoom);
+			CurrentDrawList->AddRect(Node->LeftTop, Node->RightBottom, ImColor(100, 100, 100), 8.0f * Zoom);
 
-		std::string NodeNameToRender = Node->GetName();
-		float AvailableWidth = Node->GetSize().x * Zoom;
-		NodeNameToRender = NODE_CORE.TruncateText(NodeNameToRender, AvailableWidth);
-		ImVec2 TextSize = ImGui::CalcTextSize(NodeNameToRender.c_str());
+			std::string NodeNameToRender = Node->GetName();
+			float AvailableWidth = Node->GetSize().x * Zoom;
+			NodeNameToRender = NODE_CORE.TruncateText(NodeNameToRender, AvailableWidth);
+			ImVec2 TextSize = ImGui::CalcTextSize(NodeNameToRender.c_str());
 
-		ImVec2 TextPosition;
-		TextPosition.x = Node->LeftTop.x + (Node->GetSize().x * Zoom / 2) - TextSize.x / 2;
-		TextPosition.y = Node->LeftTop.y + (GetNodeTitleHeight() / 2) - TextSize.y / 2;
+			ImVec2 TextPosition;
+			TextPosition.x = Node->LeftTop.x + (Node->GetSize().x * Zoom / 2) - TextSize.x / 2;
+			TextPosition.y = Node->LeftTop.y + (GetNodeTitleHeight() / 2) - TextSize.y / 2;
 
-		ImGui::SetCursorScreenPos(TextPosition);
-		ImGui::Text("%s",NodeNameToRender.c_str());
+			ImGui::SetCursorScreenPos(TextPosition);
+			ImGui::Text("%s", NodeNameToRender.c_str());
+		}
 	}
 	else if (Node->GetStyle() == CIRCLE)
 	{
@@ -110,12 +113,12 @@ void NodeArea::RenderNodeSocket(NodeSocket* Socket) const
 	const ImVec2 SocketPosition = SocketToPosition(Socket);
 	if (Socket->GetParent()->GetStyle() == DEFAULT)
 	{
-		const bool Input = !Socket->bOutput;
+		const bool bIsInput = !Socket->bOutput;
 		// Socket description.
 		const ImVec2 TextSize = ImGui::CalcTextSize(Socket->GetName().c_str());
 
 		float TextX = SocketPosition.x;
-		TextX += Input ? GetNodeSocketSize() * 2.0f : -GetNodeSocketSize() * 2.0f - TextSize.x;
+		TextX += bIsInput ? GetNodeSocketSize() * 2.0f : -GetNodeSocketSize() * 2.0f - TextSize.x;
 
 		ImGui::SetCursorScreenPos(ImVec2(TextX, SocketPosition.y - TextSize.y / 2.0f));
 		ImGui::Text("%s",Socket->GetName().c_str());
@@ -205,36 +208,36 @@ void NodeArea::RenderGrid(ImVec2 CurrentPosition) const
 	const int StepCount = static_cast<int>(ceil(Settings.Style.Grid.GRID_SIZE));
 	for (int i = StartingStep; i < StepCount; i++)
 	{
-		ImVec2 from = ImVec2(CurrentPosition.x - Settings.Style.Grid.GRID_SIZE * Zoom, CurrentPosition.y + i * ZoomedGridStep);
-		ImVec2 to = ImVec2(CurrentPosition.x + Settings.Style.Grid.GRID_SIZE * Zoom * 4, CurrentPosition.y + i * ZoomedGridStep);
+		ImVec2 LineStart = ImVec2(CurrentPosition.x - Settings.Style.Grid.GRID_SIZE * Zoom, CurrentPosition.y + i * ZoomedGridStep);
+		ImVec2 LineEnd = ImVec2(CurrentPosition.x + Settings.Style.Grid.GRID_SIZE * Zoom * 4, CurrentPosition.y + i * ZoomedGridStep);
 
 		if (i % Settings.Style.Grid.BOLD_LINE_FREQUENCY != 0)
 		{
 			CurrentDrawList->ChannelsSetCurrent(1);
-			CurrentDrawList->AddLine(from, to, ImGui::GetColorU32(Settings.Style.Grid.GridLinesColor), Settings.Style.Grid.DEFAULT_LINE_WIDTH);
+			CurrentDrawList->AddLine(LineStart, LineEnd, ImGui::GetColorU32(Settings.Style.Grid.GridLinesColor), Settings.Style.Grid.DEFAULT_LINE_WIDTH);
 		}
 		else
 		{
 			CurrentDrawList->ChannelsSetCurrent(0);
-			CurrentDrawList->AddLine(from, to, ImGui::GetColorU32(Settings.Style.Grid.GridBoldLinesColor), Settings.Style.Grid.BOLD_LINE_WIDTH);
+			CurrentDrawList->AddLine(LineStart, LineEnd, ImGui::GetColorU32(Settings.Style.Grid.GridBoldLinesColor), Settings.Style.Grid.BOLD_LINE_WIDTH);
 		}
 	}
 
 	// Vertical lines
 	for (int i = StartingStep; i < StepCount; i++)
 	{
-		ImVec2 from = ImVec2(CurrentPosition.x + i * ZoomedGridStep, CurrentPosition.y - Settings.Style.Grid.GRID_SIZE * Zoom);
-		ImVec2 to = ImVec2(CurrentPosition.x + i * ZoomedGridStep, CurrentPosition.y + Settings.Style.Grid.GRID_SIZE * Zoom * 4);
+		ImVec2 LineStart = ImVec2(CurrentPosition.x + i * ZoomedGridStep, CurrentPosition.y - Settings.Style.Grid.GRID_SIZE * Zoom);
+		ImVec2 LineEnd = ImVec2(CurrentPosition.x + i * ZoomedGridStep, CurrentPosition.y + Settings.Style.Grid.GRID_SIZE * Zoom * 4);
 
 		if (i % Settings.Style.Grid.BOLD_LINE_FREQUENCY != 0)
 		{
 			CurrentDrawList->ChannelsSetCurrent(1);
-			CurrentDrawList->AddLine(from, to, ImGui::GetColorU32(Settings.Style.Grid.GridLinesColor), Settings.Style.Grid.DEFAULT_LINE_WIDTH);
+			CurrentDrawList->AddLine(LineStart, LineEnd, ImGui::GetColorU32(Settings.Style.Grid.GridLinesColor), Settings.Style.Grid.DEFAULT_LINE_WIDTH);
 		}
 		else
 		{
 			CurrentDrawList->ChannelsSetCurrent(0);
-			CurrentDrawList->AddLine(from, to, ImGui::GetColorU32(Settings.Style.Grid.GridBoldLinesColor), Settings.Style.Grid.BOLD_LINE_WIDTH);
+			CurrentDrawList->AddLine(LineStart, LineEnd, ImGui::GetColorU32(Settings.Style.Grid.GridBoldLinesColor), Settings.Style.Grid.BOLD_LINE_WIDTH);
 		}
 	}
 
@@ -418,6 +421,19 @@ void NodeArea::Render()
 	}
 }
 
+ImVec2 NodeArea::EvaluateHermiteSpline(float NormalizedParameter, ImVec2 StartPoint, ImVec2 EndPoint, const std::vector<ImVec2>& Tangents) const
+{
+	const float SquaredParameter = NormalizedParameter * NormalizedParameter;
+	const float CubedParameter = SquaredParameter * NormalizedParameter;
+	const float BasisStart = 2.0f * CubedParameter - 3.0f * SquaredParameter + 1.0f;
+	const float BasisEnd = -2.0f * CubedParameter + 3.0f * SquaredParameter;
+	const float BasisTangentStart = CubedParameter - 2.0f * SquaredParameter + NormalizedParameter;
+	const float BasisTangentEnd = CubedParameter - SquaredParameter;
+
+	return ImVec2(BasisStart * StartPoint.x + BasisEnd * EndPoint.x + BasisTangentStart * Tangents[0].x + BasisTangentEnd * Tangents[1].x,
+				  BasisStart * StartPoint.y + BasisEnd * EndPoint.y + BasisTangentStart * Tangents[0].y + BasisTangentEnd * Tangents[1].y);
+}
+
 void NodeArea::DrawHermiteLine(const ImVec2 Begin, const ImVec2 End, const int Steps, const ImVec4 Color, const ConnectionStyle* Style) const
 {
 	std::vector<ImVec2> LineTangents = GetTangentsForLine(Begin, End);
@@ -430,15 +446,9 @@ void NodeArea::DrawHermiteLine(const ImVec2 Begin, const ImVec2 End, const int S
 
 		for (int Step = 0; Step <= Steps; Step++)
 		{
-			const float t = static_cast<float>(Step) / static_cast<float>(Steps);
-			const float h1 = +2 * t * t * t - 3 * t * t + 1.0f;
-			const float h2 = -2 * t * t * t + 3 * t * t;
-			const float h3 = t * t * t - 2 * t * t + t;
-			const float h4 = t * t * t - t * t;
+			ImVec2 CurrentPoint = EvaluateHermiteSpline(static_cast<float>(Step) / static_cast<float>(Steps), Begin, End, LineTangents);
 
-			ImVec2 CurrentPoint = ImVec2(h1 * Begin.x + h2 * End.x + h3 * LineTangents[0].x + h4 * LineTangents[1].x, h1 * Begin.y + h2 * End.y + h3 * LineTangents[0].y + h4 * LineTangents[1].y);
-
-			if (Step != 0) // Avoid drawing on the first step because lastPoint is not valid.
+			if (Step != 0) // Avoid drawing on the first step because LastPoint is not valid.
 			{
 				float Thickness = 0.0f;
 				float Intensity = 0.0f;
@@ -465,16 +475,8 @@ void NodeArea::DrawHermiteLine(const ImVec2 Begin, const ImVec2 End, const int S
 	else if (Style->bPulseEffect)
 	{
 		for (int Step = 0; Step <= Steps; Step++)
-		{
-			const float t = static_cast<float>(Step) / static_cast<float>(Steps);
-			const float h1 = +2 * t * t * t - 3 * t * t + 1.0f;
-			const float h2 = -2 * t * t * t + 3 * t * t;
-			const float h3 = t * t * t - 2 * t * t + t;
-			const float h4 = t * t * t - t * t;
-
-			CurrentDrawList->PathLineTo(ImVec2(h1 * Begin.x + h2 * End.x + h3 * LineTangents[0].x + h4 * LineTangents[1].x, h1 * Begin.y + h2 * End.y + h3 * LineTangents[0].y + h4 * LineTangents[1].y));
-		}
-
+			CurrentDrawList->PathLineTo(EvaluateHermiteSpline(static_cast<float>(Step) / static_cast<float>(Steps), Begin, End, LineTangents));
+		
 		double Time = std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
 		float Pulse = static_cast<float>((sin(Time * 5 * Style->PulseSpeed) + 1.0f) / 2.0f);
 		Pulse = glm::max(Style->PulseMin, Pulse);
@@ -487,13 +489,7 @@ void NodeArea::DrawHermiteLine(const ImVec2 Begin, const ImVec2 End, const int S
 		ImVec2 LastPoint = ImVec2(0, 0);
 		for (int Step = 0; Step <= Steps; Step++)
 		{
-			const float t = static_cast<float>(Step) / static_cast<float>(Steps);
-			const float h1 = +2 * t * t * t - 3 * t * t + 1.0f;
-			const float h2 = -2 * t * t * t + 3 * t * t;
-			const float h3 = t * t * t - 2 * t * t + t;
-			const float h4 = t * t * t - t * t;
-
-			ImVec2 CurrentPoint = ImVec2(h1 * Begin.x + h2 * End.x + h3 * LineTangents[0].x + h4 * LineTangents[1].x, h1 * Begin.y + h2 * End.y + h3 * LineTangents[0].y + h4 * LineTangents[1].y);
+			ImVec2 CurrentPoint = EvaluateHermiteSpline(static_cast<float>(Step) / static_cast<float>(Steps), Begin, End, LineTangents);
 			CurrentDrawList->PathLineTo(CurrentPoint);
 
 			LastPoint = CurrentPoint;
@@ -510,13 +506,7 @@ void NodeArea::DrawHermiteLine(const ImVec2 Begin, const ImVec2 End, const int S
 	ImVec2 LastPoint = ImVec2(0, 0);
 	for (int Step = 0; Step <= Steps; Step++)
 	{
-		const float t = static_cast<float>(Step) / static_cast<float>(Steps);
-		const float h1 = +2 * t * t * t - 3 * t * t + 1.0f;
-		const float h2 = -2 * t * t * t + 3 * t * t;
-		const float h3 = t * t * t - 2 * t * t + t;
-		const float h4 = t * t * t - t * t;
-
-		ImVec2 CurrentPoint = ImVec2(h1 * Begin.x + h2 * End.x + h3 * LineTangents[0].x + h4 * LineTangents[1].x, h1 * Begin.y + h2 * End.y + h3 * LineTangents[0].y + h4 * LineTangents[1].y);
+		ImVec2 CurrentPoint = EvaluateHermiteSpline(static_cast<float>(Step) / static_cast<float>(Steps), Begin, End, LineTangents);
 		CurrentDrawList->PathLineTo(CurrentPoint);
 
 		LastPoint = CurrentPoint;
@@ -533,7 +523,7 @@ void NodeArea::RenderConnection(const Connection* Connection) const
 	ImColor CurrentConnectionColor = Connection->Style.ForceColor;
 
 	std::vector<std::string> ConnectOutSocketAllowedTypes = Connection->Out->GetAllowedTypes();
-	// TO-DO: Add support for multiple socket types.
+	// FE_TO_DO: Add support for multiple socket types.
 	if (ConnectOutSocketAllowedTypes.size() == 1)
 	{
 		if (NodeSocket::SocketTypeToColorAssociations.find(ConnectOutSocketAllowedTypes[0]) != NodeSocket::SocketTypeToColorAssociations.end())
@@ -541,7 +531,7 @@ void NodeArea::RenderConnection(const Connection* Connection) const
 	}
 
 	std::vector<std::string> ConnectInSocketAllowedTypes = Connection->In->GetAllowedTypes();
-	// TO-DO: Add support for multiple socket types.
+	// FE_TO_DO: Add support for multiple socket types.
 	if (ConnectInSocketAllowedTypes.size() == 1)
 	{
 		if (NodeSocket::SocketTypeToColorAssociations.find(ConnectInSocketAllowedTypes[0]) != NodeSocket::SocketTypeToColorAssociations.end())
@@ -585,18 +575,24 @@ void NodeArea::RenderReroute(const RerouteNode* RerouteNode) const
 	CurrentDrawList->AddCircleFilled(LocalToScreen(RerouteNode->Position), GetRerouteNodeSize(), ImColor(DEFAULT_NODE_SOCKET_COLOR.Value + ImColor(15, 25, 15).Value));
 }
 
+ImVec2 NodeArea::SocketToPosition(Node* Node, const std::string& SocketID) const
+{
+	return SocketToPosition(Node->GetSocketByID(SocketID));
+}
+
 ImVec2 NodeArea::SocketToPosition(const NodeSocket* Socket) const
 {
-	const bool Input = !Socket->bOutput;
+	const bool bIsInput = !Socket->bOutput;
 	float SocketX = 0.0f;
 	float SocketY = 0.0f;
+	Node* SocketParent = Socket->GetParent();
 
 	int SocketIndex = -1;
-	if (Input)
+	if (bIsInput)
 	{
-		for (size_t i = 0; i < Socket->Parent->Input.size(); i++)
+		for (size_t i = 0; i < SocketParent->Input.size(); i++)
 		{
-			if (Socket->Parent->Input[i] == Socket)
+			if (SocketParent->Input[i] == Socket)
 			{
 				SocketIndex = static_cast<int>(i);
 				break;
@@ -605,9 +601,9 @@ ImVec2 NodeArea::SocketToPosition(const NodeSocket* Socket) const
 	}
 	else
 	{
-		for (size_t i = 0; i < Socket->Parent->Output.size(); i++)
+		for (size_t i = 0; i < SocketParent->Output.size(); i++)
 		{
-			if (Socket->Parent->Output[i] == Socket)
+			if (SocketParent->Output[i] == Socket)
 			{
 				SocketIndex = static_cast<int>(i);
 				break;
@@ -615,33 +611,33 @@ ImVec2 NodeArea::SocketToPosition(const NodeSocket* Socket) const
 		}
 	}
 
-	if (Socket->GetParent()->GetStyle() == DEFAULT)
+	if (SocketParent->GetStyle() == DEFAULT)
 	{
-		SocketX = Input ? Socket->Parent->LeftTop.x + GetNodeSocketSize() * 3 : Socket->Parent->RightBottom.x - GetNodeSocketSize() * 3;
+		SocketX = bIsInput ? SocketParent->LeftTop.x + GetNodeSocketSize() * 3 : SocketParent->RightBottom.x - GetNodeSocketSize() * 3;
 
-		const float HeightForSockets = Socket->Parent->GetSize().y * Zoom - GetNodeTitleHeight();
-		const float SocketSpacing = HeightForSockets / (Input ? Socket->Parent->Input.size() : Socket->Parent->Output.size());
+		const float HeightForSockets = SocketParent->GetSize().y * Zoom - (SocketParent->GetRenderTitleBar() ? GetNodeTitleHeight() : 0.0f);
+		const float SocketSpacing = HeightForSockets / (bIsInput ? SocketParent->Input.size() : SocketParent->Output.size());
 
-		SocketY = (Socket->Parent->LeftTop.y + GetNodeTitleHeight() + SocketSpacing * (SocketIndex + 1) - SocketSpacing / 2.0f);
+		SocketY = (SocketParent->LeftTop.y + (SocketParent->GetRenderTitleBar() ? GetNodeTitleHeight() : 0.0f) + SocketSpacing * (SocketIndex + 1) - SocketSpacing / 2.0f);
 	}
-	else if (Socket->GetParent()->GetStyle() == CIRCLE)
+	else if (SocketParent->GetStyle() == CIRCLE)
 	{
-		const size_t SocketCount = Input ? Socket->Parent->Input.size() : Socket->Parent->Output.size();
+		const size_t SocketCount = bIsInput ? SocketParent->Input.size() : SocketParent->Output.size();
 		float BeginAngle = (180.0f / static_cast<float>(SocketCount) / 2.0f);
-		if (Input)
+		if (bIsInput)
 			BeginAngle = -BeginAngle;
 
-		float step = (180.0f / static_cast<float>(SocketCount) * (SocketIndex));
-		if (Input)
-			step = -step;
+		float RotationOffset = (180.0f / static_cast<float>(SocketCount) * (SocketIndex));
+		if (bIsInput)
+			RotationOffset = -RotationOffset;
 
-		const float angle = BeginAngle + step;
+		const float SocketAngle = BeginAngle + RotationOffset;
 
-		const float NodeCenterX = Socket->Parent->LeftTop.x + NODE_DIAMETER * Zoom / 2.0f;
-		const float NodeCenterY = Socket->Parent->LeftTop.y + NODE_DIAMETER * Zoom / 2.0f;
+		const float NodeCenterX = SocketParent->LeftTop.x + NODE_DIAMETER * Zoom / 2.0f;
+		const float NodeCenterY = SocketParent->LeftTop.y + NODE_DIAMETER * Zoom / 2.0f;
 
-		SocketX = NodeCenterX + NODE_DIAMETER * Zoom * 0.95f * sin(glm::radians(angle));
-		SocketY = NodeCenterY + NODE_DIAMETER * Zoom * 0.95f * cos(glm::radians(angle));
+		SocketX = NodeCenterX + NODE_DIAMETER * Zoom * 0.95f * sin(glm::radians(SocketAngle));
+		SocketY = NodeCenterY + NODE_DIAMETER * Zoom * 0.95f * cos(glm::radians(SocketAngle));
 	}
 
 	return {SocketX, SocketY};

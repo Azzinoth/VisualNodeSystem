@@ -46,11 +46,10 @@ namespace VisNodeSys
 		bool bShouldBeDestroyed = false;
 		bool bCouldBeDestroyed = true;
 		bool bCouldBeMoved = true;
-		static bool bInputCountCheck;
-		static bool bOutputCountCheck;
 
 		std::vector<NodeSocket*> Input;
 		std::vector<NodeSocket*> Output;
+		NodeSocket* GetSocketByIDInternal(std::string SocketID) const;
 
 		ImVec2 LeftTop;
 		ImVec2 RightBottom;
@@ -59,9 +58,10 @@ namespace VisNodeSys
 		ImColor TitleBackgroundColorHovered = ImColor(140, 190, 35);
 
 		bool bHovered = false;
-		void SetIsHovered(bool NewValue);
+		void SetIsHovered(bool bNewValue);
 
 		NODE_STYLE Style = DEFAULT;
+		bool bRenderTitleBar = true;
 
 		virtual void Draw();
 		virtual bool CanConnect(NodeSocket* OwnSocket, NodeSocket* CandidateSocket, char** MsgToUser = nullptr);
@@ -92,16 +92,29 @@ namespace VisNodeSys
 		void SetName(std::string NewValue);
 
 		std::string GetType() const;
+		
+		bool GetRenderTitleBar() const;
+		void SetRenderTitleBar(bool bNewValue);
 
-		virtual void AddSocket(NodeSocket* Socket);
+		virtual bool AddSocket(NodeSocket* Socket);
+		virtual bool DeleteSocket(NodeSocket* Socket);
+		virtual bool DeleteSocket(std::string SocketID);
 
 		virtual Json::Value ToJson();
 		virtual bool FromJson(Json::Value Json);
 
-		size_t GetInputSocketCount() const;
-		size_t GetOutputSocketCount() const;
+		const NodeSocket* GetSocketByID(std::string SocketID) const;
+		size_t GetSocketIndexByID(std::string SocketID) const;
 
+		const NodeSocket* GetSocketByIndex(size_t SocketIndex, bool bOutput) const;
+		std::string GetSocketIDByIndex(size_t SocketIndex, bool bOutput) const;
+
+		size_t GetInputSocketCount() const;
+		std::vector<std::pair<size_t, std::vector<std::string>>> GetInputSocketTypes() const;
 		std::vector<Node*> GetNodesConnectedToInput() const;
+
+		size_t GetOutputSocketCount() const;
+		std::vector<std::pair<size_t, std::vector<std::string>>> GetOutputSocketTypes() const;
 		std::vector<Node*> GetNodesConnectedToOutput() const;
 
 		NODE_STYLE GetStyle() const;
@@ -110,7 +123,7 @@ namespace VisNodeSys
 		bool IsHovered() const;
 
 		bool CouldBeMoved() const;
-		void SetCouldBeMoved(bool NewValue);
+		void SetCouldBeMoved(bool bNewValue);
 
 		bool CouldBeDestroyed() const;
 

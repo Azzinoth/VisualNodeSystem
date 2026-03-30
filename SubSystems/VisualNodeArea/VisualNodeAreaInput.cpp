@@ -1174,21 +1174,8 @@ bool NodeArea::IsMouseOverSegment(ImVec2 Begin, ImVec2 End, const int Steps, con
 
 	for (int Step = 0; Step <= Steps; Step++)
 	{
-		float t = static_cast<float>(Step) / static_cast<float>(Steps);
-		float h1 = +2 * t * t * t - 3 * t * t + 1.0f;
-		float h2 = -2 * t * t * t + 3 * t * t;
-		float h3 = t * t * t - 2 * t * t + t;
-		float h4 = t * t * t - t * t;
-
-		ImVec2 SegmentStart = ImVec2(h1 * Begin.x + h2 * End.x + h3 * LineTangents[0].x + h4 * LineTangents[1].x, h1 * Begin.y + h2 * End.y + h3 * LineTangents[0].y + h4 * LineTangents[1].y);
-
-		t = static_cast<float>(Step + 1) / static_cast<float>(Steps); // Update t for the end segment.
-		h1 = +2 * t * t * t - 3 * t * t + 1.0f;
-		h2 = -2 * t * t * t + 3 * t * t;
-		h3 = t * t * t - 2 * t * t + t;
-		h4 = t * t * t - t * t;
-
-		ImVec2 SegmentEnd = ImVec2(h1 * Begin.x + h2 * End.x + h3 * LineTangents[0].x + h4 * LineTangents[1].x, h1 * Begin.y + h2 * End.y + h3 * LineTangents[0].y + h4 * LineTangents[1].y);
+		ImVec2 SegmentStart = EvaluateHermiteSpline(static_cast<float>(Step) / static_cast<float>(Steps), Begin, End, LineTangents);
+		ImVec2 SegmentEnd = EvaluateHermiteSpline(static_cast<float>(Step + 1) / static_cast<float>(Steps), Begin, End, LineTangents);
 
 		// Compute the shortest distance from mousePos to the line defined by the segment.
 		ImVec2 SegmentDirection = SegmentEnd - SegmentStart;
@@ -1286,21 +1273,8 @@ bool NodeArea::IsSegmentInRegion(ImVec2 Begin, ImVec2 End, const int Steps)
 
 	for (int Step = 0; Step <= Steps; Step++)
 	{
-		float t = static_cast<float>(Step) / static_cast<float>(Steps);
-		float h1 = +2 * t * t * t - 3 * t * t + 1.0f;
-		float h2 = -2 * t * t * t + 3 * t * t;
-		float h3 = t * t * t - 2 * t * t + t;
-		float h4 = t * t * t - t * t;
-
-		ImVec2 SegmentStart = ImVec2(h1 * Begin.x + h2 * End.x + h3 * t1.x + h4 * t2.x, h1 * Begin.y + h2 * End.y + h3 * t1.y + h4 * t2.y);
-
-		t = static_cast<float>(Step + 1) / static_cast<float>(Steps); // Update t for the end segment.
-		h1 = +2 * t * t * t - 3 * t * t + 1.0f;
-		h2 = -2 * t * t * t + 3 * t * t;
-		h3 = t * t * t - 2 * t * t + t;
-		h4 = t * t * t - t * t;
-
-		ImVec2 SegmentEnd = ImVec2(h1 * Begin.x + h2 * End.x + h3 * t1.x + h4 * t2.x, h1 * Begin.y + h2 * End.y + h3 * t1.y + h4 * t2.y);
+		ImVec2 SegmentStart = EvaluateHermiteSpline(static_cast<float>(Step) / static_cast<float>(Steps), Begin, End, std::vector<ImVec2>{t1, t2});
+		ImVec2 SegmentEnd = EvaluateHermiteSpline(static_cast<float>(Step + 1) / static_cast<float>(Steps), Begin, End, std::vector<ImVec2>{t1, t2});
 
 		// If either of the segment's points are in the region, the connection is in the region.
 		if (IsPointInRegion(SegmentStart, MouseSelectRegionMin, MouseSelectRegionMax) ||

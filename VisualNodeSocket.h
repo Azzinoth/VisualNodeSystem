@@ -33,18 +33,18 @@ namespace VisNodeSys
 		NodeSocket(Node* Parent, std::vector<std::string> Types, std::string Name, bool bOutput = false, std::function<void* ()> OutputDataFunction = []() { return nullptr; });
 
 		Node* GetParent() const;
-		std::vector<NodeSocket*> GetConnectedSockets();
+		std::vector<NodeSocket*> GetConnectedSockets() const;
 
 		std::string GetID() const;
 		std::string GetName() const;
 
 		std::vector<std::string> GetAllowedTypes() const;
 
-		bool IsOutput() const { return bOutput; }
-		bool IsInput() const { return !bOutput; }
+		bool IsOutput() const;
+		bool IsInput() const;
 
 		void SetFunctionToOutputData(std::function<void* ()> NewFunction);
-		void* GetData() { return OutputData(); }
+		void* GetData();
 	};
 
 	struct ConnectionStyle

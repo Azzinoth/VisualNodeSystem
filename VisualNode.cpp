@@ -1,9 +1,7 @@
 #include "VisualNode.h"
 #include "VisualNodeFactory.h"
+#include "VisualNodeSystem.h"
 using namespace VisNodeSys;
-
-bool Node::bInputCountCheck = true;
-bool Node::bOutputCountCheck = true;
 
 Node::Node(const std::string ID)
 {
@@ -106,15 +104,47 @@ void Node::SetName(const std::string NewValue)
 	Name = NewValue;
 }
 
-void Node::AddSocket(NodeSocket* Socket)
+bool Node::AddSocket(NodeSocket* Socket)
 {
 	if (Socket == nullptr)
-		return;
+		return false;
 
 	if (Socket->bOutput)
 		Output.push_back(Socket);
 	else
 		Input.push_back(Socket);
+
+	return true;
+}
+
+bool Node::DeleteSocket(std::string SocketID)
+{
+	return DeleteSocket(GetSocketByIDInternal(SocketID));
+}
+
+bool Node::DeleteSocket(NodeSocket* Socket)
+{
+	if (Socket == nullptr)
+		return false;
+
+	if (Socket->GetParent() != nullptr)
+	{
+		NODE_SYSTEM.DeleteSocket(GetID(), Socket->GetID());
+		return true;
+	}
+
+	std::vector<NodeSocket*>& SocketList = Socket->IsOutput() ? Output : Input;
+	for (size_t i = 0; i < SocketList.size(); i++)
+	{
+		if (SocketList[i]->GetID() == Socket->GetID())
+		{
+			delete SocketList[i];
+			SocketList.erase(SocketList.begin() + i, SocketList.begin() + i + 1);
+			return true;
+		}
+	}
+
+	return false;
 }
 
 void Node::Draw()
@@ -166,6 +196,16 @@ bool Node::CanConnect(NodeSocket* OwnSocket, NodeSocket* CandidateSocket, char**
 std::string Node::GetType() const
 {
 	return Type;
+}
+
+bool Node::GetRenderTitleBar() const
+{
+	return bRenderTitleBar;
+}
+
+void Node::SetRenderTitleBar(bool bNewValue)
+{
+	bRenderTitleBar = bNewValue;
 }
 
 Json::Value Node::ToJson()
@@ -223,7 +263,7 @@ bool Node::FromJson(Json::Value Json)
 		!Json["Size"].isMember("Y") || !Json["Size"]["Y"].isNumeric() ||
 		!Json.isMember("Name") || !Json["Name"].isString())
 	{
-		// TO-DO: Implement a more robust user notification system (e.g., logging, UI warning).
+		// FE_TO_DO: Implement a more robust user notification system (e.g., logging, UI warning).
 		SetToDefaultState();
 		return false;
 	}
@@ -247,19 +287,6 @@ bool Node::FromJson(Json::Value Json)
 
 	std::pair<size_t, size_t> SocketCountInClassDefinition = NODE_FACTORY.GetSocketCount(Type);
 	Input.resize(InputsList.size());
-
-	// Validate if the number of input sockets in the JSON data matches the current class definition.
-	// This prevents errors if the node class was modified (e.g., sockets added/removed)
-	// after the JSON file was saved.
-	if (Type != "VisualNode" && Node::bInputCountCheck && SocketCountInClassDefinition.first != Input.size()) // For now VisualNode would be exempted from this check.
-	{
-		// TO-DO: Implement a more robust user notification system (e.g., logging, UI warning).
-
-		// Safest recovery strategy: Reset the node to a default state.
-		// This avoids potential crashes or undefined behavior from mismatched data.
-		SetToDefaultState();
-		return false;
-	}
 
 	for (size_t i = 0; i < Input.size(); i++)
 	{
@@ -297,17 +324,6 @@ bool Node::FromJson(Json::Value Json)
 	}
 
 	Output.resize(OutputsList.size());
-	// Validate output socket count.
-	if (Type != "VisualNode" && Node::bOutputCountCheck && SocketCountInClassDefinition.second != Output.size()) // For now VisualNode would be exempted from this check.
-	{
-		// TO-DO: Implement a more robust user notification system (e.g., logging, UI warning).
-
-		// Safest recovery strategy: Reset the node to a default state.
-		// This avoids potential crashes or undefined behavior from mismatched data.
-		SetToDefaultState();
-		return false;
-	}
-
 	for (size_t i = 0; i < Output.size(); i++)
 	{
 		const std::string Key = std::to_string(i);
@@ -316,7 +332,7 @@ bool Node::FromJson(Json::Value Json)
 			!Json["Output"][Key].isMember("Name") || !Json["Output"][Key]["Name"].isString() ||
 			!Json["Output"][Key].isMember("AllowedTypes") || !Json["Output"][Key]["AllowedTypes"].isArray())
 		{
-			// TO-DO: Implement a more robust user notification system (e.g., logging, UI warning).
+			// FE_TO_DO: Implement a more robust user notification system (e.g., logging, UI warning).
 
 			// Safest recovery strategy: Reset the node to a default state.
 			// This avoids potential crashes or undefined behavior from mismatched data.
@@ -381,9 +397,27 @@ size_t Node::GetInputSocketCount() const
 	return Input.size();
 }
 
+std::vector<std::pair<size_t, std::vector<std::string>>> Node::GetInputSocketTypes() const
+{
+	std::vector<std::pair<size_t, std::vector<std::string>>> Result;
+	for (size_t i = 0; i < Input.size(); i++)
+		Result.push_back(std::make_pair(i, Input[i]->GetAllowedTypes()));
+
+	return Result;
+}
+
 size_t Node::GetOutputSocketCount() const
 {
 	return Output.size();
+}
+
+std::vector<std::pair<size_t, std::vector<std::string>>> Node::GetOutputSocketTypes() const
+{
+	std::vector<std::pair<size_t, std::vector<std::string>>> Result;
+	for (size_t i = 0; i < Output.size(); i++)
+		Result.push_back(std::make_pair(i, Output[i]->GetAllowedTypes()));
+
+	return Result;
 }
 
 std::vector<Node*> Node::GetNodesConnectedToInput() const
@@ -443,9 +477,9 @@ bool Node::IsHovered() const
 	return bHovered;
 }
 
-void Node::SetIsHovered(const bool NewValue)
+void Node::SetIsHovered(const bool bNewValue)
 {
-	bHovered = NewValue;
+	bHovered = bNewValue;
 }
 
 bool Node::CouldBeMoved() const
@@ -453,9 +487,9 @@ bool Node::CouldBeMoved() const
 	return bCouldBeMoved;
 }
 
-void Node::SetCouldBeMoved(bool NewValue)
+void Node::SetCouldBeMoved(bool bNewValue)
 {
-	bCouldBeMoved = NewValue;
+	bCouldBeMoved = bNewValue;
 }
 
 NodeArea* Node::GetParentArea() const
@@ -477,4 +511,73 @@ bool Node::IsNodeWithIDInList(const std::string ID, const std::vector<Node*> Lis
 	}
 
 	return false;
+}
+
+NodeSocket* Node::GetSocketByIDInternal(std::string SocketID) const
+{
+	for (size_t i = 0; i < Input.size(); i++)
+	{
+		if (Input[i]->GetID() == SocketID)
+			return Input[i];
+	}
+
+	for (size_t i = 0; i < Output.size(); i++)
+	{
+		if (Output[i]->GetID() == SocketID)
+			return Output[i];
+	}
+
+	return nullptr;
+}
+
+const NodeSocket* Node::GetSocketByID(std::string SocketID) const
+{
+	for (size_t i = 0; i < Input.size(); i++)
+	{
+		if (Input[i]->GetID() == SocketID)
+			return Input[i];
+	}
+
+	for (size_t i = 0; i < Output.size(); i++)
+	{
+		if (Output[i]->GetID() == SocketID)
+			return Output[i];
+	}
+
+	return nullptr;
+}
+
+size_t Node::GetSocketIndexByID(std::string SocketID) const
+{
+	for (size_t i = 0; i < Input.size(); i++)
+	{
+		if (Input[i]->GetID() == SocketID)
+			return i;
+	}
+
+	for (size_t i = 0; i < Output.size(); i++)
+	{
+		if (Output[i]->GetID() == SocketID)
+			return i;
+	}
+
+	return -1;
+}
+
+const NodeSocket* Node::GetSocketByIndex(size_t SocketIndex, bool bOutput) const
+{
+	std::vector<NodeSocket*> SocketList = bOutput ? Output : Input;
+	if (SocketIndex >= SocketList.size())
+		return nullptr;
+
+	return SocketList[SocketIndex];
+}
+
+std::string Node::GetSocketIDByIndex(size_t SocketIndex, bool bOutput) const
+{
+	const NodeSocket* Socket = GetSocketByIndex(SocketIndex, bOutput);
+	if (!Socket)
+		return "";
+
+	return Socket->GetID();
 }

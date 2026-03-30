@@ -697,33 +697,29 @@ std::unordered_map<std::string, std::vector<Node*>> NodeSystem::GetLastExecutedN
 }
 #endif
 
-void NodeSystem::MoveNodesTo(NodeArea* SourceNodeArea, NodeArea* TargetNodeArea, const bool SelectMovedNodes)
+void NodeSystem::MoveNodesTo(NodeArea* SourceNodeArea, NodeArea* TargetNodeArea, const bool bSelectNodesAfterMovement)
 {
 	if (SourceNodeArea == nullptr || TargetNodeArea == nullptr)
 		return;
 
 	for (size_t i = 0; i < SourceNodeArea->Nodes.size(); i++)
-	{
 		TargetNodeArea->AddNode(SourceNodeArea->Nodes[i]);
-	}
+
 	const size_t SourceNodeCount = SourceNodeArea->Nodes.size();
 	SourceNodeArea->Nodes.clear();
 
 	for (size_t i = 0; i < SourceNodeArea->Connections.size(); i++)
-	{
 		TargetNodeArea->Connections.push_back(SourceNodeArea->Connections[i]);
-	}
+
 	SourceNodeArea->Connections.clear();
 	SourceNodeArea->Clear();
 
 	// Select moved nodes.
-	if (SelectMovedNodes)
+	if (bSelectNodesAfterMovement)
 	{
 		TargetNodeArea->SelectedNodes.clear();
 		for (size_t i = TargetNodeArea->Nodes.size() - SourceNodeCount; i < TargetNodeArea->Nodes.size(); i++)
-		{
 			TargetNodeArea->SelectedNodes.push_back(TargetNodeArea->Nodes[i]);
-		}
 	}
 }
 
@@ -923,12 +919,12 @@ void NodeSystem::AssociateSocketTypeToColor(std::string SocketType, ImColor Colo
 	NodeSocket::SocketTypeToColorAssociations[SocketType] = Color;
 }
 
-void NodeSystem::OnNodeAreaFocusChanging(NodeArea* CurrentNodeArea, bool NewFocusValue)
+void NodeSystem::OnNodeAreaFocusChanging(NodeArea* CurrentNodeArea, bool bNewFocusValue)
 {
 	if (CurrentNodeArea == nullptr)
 		return;
 
-	if (NewFocusValue)
+	if (bNewFocusValue)
 	{
 		for (size_t i = 0; i < Areas.size(); i++)
 		{
@@ -1291,22 +1287,18 @@ LinkNode* NodeSystem::CreateLinkNodeInternal(bool bIsInputNode)
 	NewNode->bIsInputNode = bIsInputNode;
 
 #ifdef VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES
-	NewNode->AddSocket(new NodeSocket(NewNode, "EXECUTE", "", !bIsInputNode));
+	NewNode->AddSocketInternal({ "EXECUTE" });
 #endif
 
 	return NewNode;
 }
 
-bool NodeSystem::AddSocketToLink(const std::string& AreaID, const std::string& AnyNodeIDThatIsPartOfLink, std::string Type)
+bool NodeSystem::AddSocketToLink(const std::string& AnyNodeIDThatIsPartOfLink, std::vector<std::string> AllowedTypes, std::string Name)
 {
-	if (Type.empty())
+	if (AllowedTypes.empty())
 		return false;
 
-	NodeArea* Area = GetNodeAreaByID(AreaID);
-	if(Area == nullptr)
-		return false;
-
-	Node* Node = Area->GetNodeByID(AnyNodeIDThatIsPartOfLink);
+	Node* Node = GetNodeByID(AnyNodeIDThatIsPartOfLink);
 	if (Node == nullptr || Node->GetType() != "LinkNode")
 		return false;
 
@@ -1321,21 +1313,82 @@ bool NodeSystem::AddSocketToLink(const std::string& AreaID, const std::string& A
 	if (Record == nullptr)
 		return false;
 
-	LinkNode* InNode = CurrentLinkNode->IsInputNode() ? CurrentLinkNode : reinterpret_cast<LinkNode*>(CurrentLinkNode->GetPartnerNode());
-//#ifdef VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES
-//	if (InNode->Input.empty())
-//		InNode->AddSocket(new NodeSocket(InNode, "EXECUTE", "", false));
-//#endif
-	NodeSocket* InNodeSocket = new NodeSocket(InNode, Type, Type, false);
-	InNode->AddSocket(InNodeSocket);
+	LinkNode* PartnerNode = reinterpret_cast<LinkNode*>(CurrentLinkNode->GetPartnerNode());
+	if (PartnerNode->SocketIDBeingModified.empty())
+	{
+		NodeSocket* PartnerNodeSocket = new NodeSocket(PartnerNode, AllowedTypes, Name, !PartnerNode->IsInputNode());
+		PartnerNode->AddSocket(AllowedTypes, Name);
+	}
 
-	LinkNode* OutNode = CurrentLinkNode->IsInputNode() ? reinterpret_cast<LinkNode*>(CurrentLinkNode->GetPartnerNode()) : CurrentLinkNode;
-//#ifdef VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES
-//	if (OutNode->Output.empty())
-//		OutNode->AddSocket(new NodeSocket(OutNode, "EXECUTE", "", true));
-//#endif
-	NodeSocket* PartnerOutSocket = new NodeSocket(OutNode, Type, Type, true);
-	OutNode->AddSocket(PartnerOutSocket);
+	return true;
+}
+
+bool NodeSystem::DeleteSocketFromLink(const std::string& AnyNodeIDThatIsPartOfLink, std::string SocketID)
+{
+	Node* Node = GetNodeByID(AnyNodeIDThatIsPartOfLink);
+	if (Node == nullptr || Node->GetType() != "LinkNode")
+		return false;
+
+	size_t SocketIndex = Node->GetSocketIndexByID(SocketID);
+	if (SocketIndex == static_cast<size_t>(-1))
+		return false;
+
+	return DeleteSocketFromLink(AnyNodeIDThatIsPartOfLink, SocketIndex);
+}
+
+bool NodeSystem::DeleteSocket(const std::string& NodeID, std::string SocketID)
+{
+	Node* Node = GetNodeByID(NodeID);
+	if (Node == nullptr)
+		return false;
+
+	NodeSocket* SocketToDelete = Node->GetSocketByIDInternal(SocketID);
+	if (SocketToDelete == nullptr)
+		return false;
+
+	NodeArea* ParentArea = Node->GetParentArea();
+	if (ParentArea != nullptr)
+		ParentArea->TryToDisconnect(Node, SocketID);
+	
+	std::vector<NodeSocket*>& SocketList = SocketToDelete->IsOutput() ? Node->Output : Node->Input;
+	for (size_t i = 0; i < SocketList.size(); i++)
+	{
+		if (SocketList[i]->GetID() == SocketID)
+		{
+			delete SocketList[i];
+			SocketList.erase(SocketList.begin() + i, SocketList.begin() + i + 1);
+
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool NodeSystem::DeleteSocketFromLink(const std::string& AnyNodeIDThatIsPartOfLink, size_t SocketIndex)
+{
+	if (SocketIndex == 0)
+		return false; // We should never delete execution socket.
+	
+	Node* Node = GetNodeByID(AnyNodeIDThatIsPartOfLink);
+	if (Node == nullptr || Node->GetType() != "LinkNode")
+		return false;
+
+	LinkNode* CurrentLinkNode = reinterpret_cast<LinkNode*>(Node);
+	if (CurrentLinkNode == nullptr)
+		return false;
+
+	if (CurrentLinkNode->IsDangling())
+		return false;
+
+	NodeAreaLinkRecord* Record = GetLinkDataByNodeID(CurrentLinkNode->GetID());
+	if (Record == nullptr)
+		return false;
+
+	LinkNode* PartnerNode = reinterpret_cast<LinkNode*>(CurrentLinkNode->GetPartnerNode());
+	std::string SocketID = PartnerNode->GetSocketIDByIndex(SocketIndex, !PartnerNode->IsInputNode());
+	if (PartnerNode->SocketIDBeingModified != SocketID)
+		PartnerNode->DeleteSocket(SocketID);
 
 	return true;
 }

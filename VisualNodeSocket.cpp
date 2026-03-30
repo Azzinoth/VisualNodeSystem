@@ -33,7 +33,7 @@ Node* NodeSocket::GetParent() const
 	return Parent;
 }
 
-std::vector<NodeSocket*> NodeSocket::GetConnectedSockets()
+std::vector<NodeSocket*> NodeSocket::GetConnectedSockets() const
 {
 	return ConnectedSockets;
 }
@@ -48,9 +48,24 @@ std::vector<std::string> NodeSocket::GetAllowedTypes() const
 	return AllowedTypes;
 }
 
+bool NodeSocket::IsOutput() const
+{ 
+	return bOutput;
+}
+
+bool NodeSocket::IsInput() const
+{ 
+	return !bOutput;
+}
+
 void NodeSocket::SetFunctionToOutputData(std::function<void* ()> NewFunction)
 {
 	OutputData = NewFunction;
+}
+
+void* NodeSocket::GetData()
+{
+	return OutputData();
 }
 
 Connection::Connection(NodeSocket* Out, NodeSocket* In)

@@ -18,10 +18,16 @@ bool LinkNode::bIsRegistered = []()
 	return true;
 }();
 
+ImTextureID LinkNode::LinkIconTextureID = 0;
+ImTextureID LinkNode::PlusIconTextureID = 0;
+ImTextureID LinkNode::EditIconTextureID = 0;
+ImTextureID LinkNode::TrashBinIconTextureID = 0;
+
 LinkNode::LinkNode()
 {
 	Type = "LinkNode";
 	SetStyle(DEFAULT);
+	SetRenderTitleBar(false);
 	SetName("Link");
 
 	int R = static_cast<int>(44.0f * 1.2f);
@@ -29,6 +35,8 @@ LinkNode::LinkNode()
 	int B = static_cast<int>(44.0f * 1.2f);
 	TitleBackgroundColor = ImColor(R, G, B);
 	TitleBackgroundColorHovered = ImColor(static_cast<int>(R * 1.1f), static_cast<int>(G * 1.1f), static_cast<int>(B * 1.1f));
+
+	SetSize(ImVec2(300.0f, static_cast<float>(NODE_HEIGHT_PER_SOCKET * 0.75f * std::max(size_t(2), std::max(Input.size(), Output.size())))));
 }
 
 LinkNode::LinkNode(const LinkNode& Other) : VisNodeSys::Node(Other)
@@ -96,18 +104,9 @@ Json::Value LinkNode::ToJson()
 
 bool LinkNode::FromJson(Json::Value Json)
 {
-	bool bPreviousInputCheck = Node::bInputCountCheck;
-	bool bPreviousOutputCheck = Node::bOutputCountCheck;
-
-	Node::bInputCountCheck = false;
-	Node::bOutputCountCheck = false;
-
 	bool bResult = Node::FromJson(Json);
 	if (!bResult)
 		return false;
-
-	Node::bInputCountCheck = bPreviousInputCheck;
-	Node::bOutputCountCheck = bPreviousOutputCheck;
 
 	if (!Json.isMember("PartnerNodeID") || !Json["PartnerNodeID"].isString())
 		return false;
@@ -141,14 +140,92 @@ void LinkNode::Draw()
 
 	float Zoom = ParentArea->GetZoomFactor();
 
-	ImGui::SetCursorScreenPos(ImVec2(ImGui::GetCursorScreenPos().x + 10.0f * Zoom, ImGui::GetCursorScreenPos().y + 45.0f * Zoom));
-	std::string ReferencedAreaIDText = "NULL";
-	NodeArea* ReferencedArea = NODE_SYSTEM.GetNodeAreaByID(LinkedAreaID);
-	ReferencedAreaIDText = ReferencedArea != nullptr ? LinkedAreaID : "Invalid ID";
-	std::string TextToDisplay = "Linked Area ID: " + ReferencedAreaIDText;
-	float NodeWidth = GetSize().x * 0.9f;
-	TextToDisplay = NODE_CORE.TruncateText(TextToDisplay, NodeWidth);
-	ImGui::Text(TextToDisplay.c_str());
+	float NodeCenterX = ImGui::GetCursorScreenPos().x + GetSize().x / 2.0f * Zoom;
+	float NodeCenterY = ImGui::GetCursorScreenPos().y + GetSize().y / 2.0f * Zoom;
+	float EditIconX = NodeCenterX + 64.0f * Zoom - (32.0f * Zoom) / 2.0f;
+	float EditIconY = NodeCenterY - (32.0f * Zoom) / 2.0f;
+
+	float XPosition = ImGui::GetCursorScreenPos().x;
+	if (bIsInputNode)
+		XPosition += GetSize().x * Zoom - 32.0f * 1.5f * Zoom;
+	else
+		XPosition += 32.0f * 0.5f * Zoom;
+	
+	float YPosition = ImGui::GetCursorScreenPos().y + GetSize().y / 2.0f * Zoom - 32.0f / 2.0f * Zoom;
+
+	std::vector<NodeSocket*>& SocketsToWorkWith = bIsInputNode ? Input : Output;
+
+	if (LinkNode::LinkIconTextureID != 0)
+	{
+		ImGui::SetCursorScreenPos(ImVec2(XPosition, YPosition));
+		ImGui::Image(LinkNode::LinkIconTextureID, ImVec2(32.0f, 32.0f) * Zoom);
+	}
+
+	if (LinkNode::PlusIconTextureID != 0 && bInEditMode)
+	{
+		size_t LastSocketIndex = SocketsToWorkWith.size() - 1;
+		std::string SocketID = SocketsToWorkWith[LastSocketIndex]->GetID();
+		ImVec2 SocketPosition = ParentArea->SocketToPosition(this, SocketID);
+		ImGui::SetCursorScreenPos(ImVec2(EditIconX - 48.0f * Zoom - (16.0f * Zoom) / 2.0f, SocketPosition.y - (16.0f * Zoom) / 2.0f));
+		
+		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
+		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+
+		if (ImGui::ImageButton(("PlusIcon_LinkNode_ID" + ID).c_str(), PlusIconTextureID, ImVec2(16.0f, 16.0f) * Zoom, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImVec4(0, 0, 0, 0)))
+		{
+			AddSocket(new NodeSocket(this, std::vector<std::string>{ "INT" }, "TEST", bIsInputNode));
+			//NODE_SYSTEM.AddSocketToLink(ID, { "INT" }, "TEST");
+		}
+		NODE_CORE.ShowToolTip("Add socket");
+
+		ImGui::PopStyleVar();
+		ImGui::PopStyleColor();
+	}
+
+	if (LinkNode::EditIconTextureID != 0)
+	{
+		ImGui::SetCursorScreenPos(ImVec2(EditIconX, EditIconY));
+
+		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
+		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+
+		if (ImGui::ImageButton(("EditIcon_LinkNode_ID" + ID).c_str(), EditIconTextureID, ImVec2(32.0f, 32.0f) * Zoom, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImVec4(0, 0, 0, 0)))
+		{
+			bInEditMode = !bInEditMode;
+		}
+
+		ImGui::PopStyleVar();
+		ImGui::PopStyleColor();
+	}
+
+	if (LinkNode::TrashBinIconTextureID != 0 && bInEditMode)
+	{
+		for (size_t i = 0; i < SocketsToWorkWith.size(); i++)
+		{
+			if (i > 0)
+			{
+				std::string SocketID = SocketsToWorkWith[i]->GetID();
+				ImVec2 SocketPosition = ParentArea->SocketToPosition(this, SocketID);
+				ImGui::SetCursorScreenPos(ImVec2(EditIconX - 16.0f * Zoom - (16.0f * Zoom) / 2.0f, SocketPosition.y - (16.0f * Zoom) / 2.0f));
+
+				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
+				ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+
+				if (ImGui::ImageButton(("TrashBinIcon_LinkNode_ID" + SocketID).c_str(), TrashBinIconTextureID, ImVec2(16.0f, 16.0f) * Zoom, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImVec4(0, 0, 0, 0)))
+				{
+					DeleteSocket(SocketID);
+					
+					ImGui::PopStyleVar();
+					ImGui::PopStyleColor();
+					break;
+				}
+				NODE_CORE.ShowToolTip("Delete socket");
+
+				ImGui::PopStyleVar();
+				ImGui::PopStyleColor();
+			}
+		}
+	}
 }
 
 void LinkNode::SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSocket, NODE_SOCKET_EVENT EventType)
@@ -204,16 +281,78 @@ bool LinkNode::IsDangling() const
 	return false;
 }
 
-void LinkNode::AddSocket(NodeSocket* Socket)
+bool LinkNode::AddSocket(std::vector<std::string> AllowedTypes, std::string Name)
+{
+	NodeSocket* NewSocket = new NodeSocket(this, AllowedTypes, Name, !IsInputNode());
+	bool bResult = AddSocket(NewSocket);
+	if (!bResult)
+		delete NewSocket;
+
+	return bResult;
+}
+
+bool LinkNode::AddSocket(NodeSocket* Socket)
 {
 	if (bIsInputNode != Socket->IsInput())
-		return;
+		return false;
+
+	SocketIDBeingModified = Socket->GetID();
+	if (!NODE_SYSTEM.AddSocketToLink(ID, Socket->GetAllowedTypes(), Socket->GetName()))
+	{
+		SocketIDBeingModified = "";
+		return false;
+	}
 
 	Node::AddSocket(Socket);
+	SetSize(ImVec2(300.0f, static_cast<float>(NODE_HEIGHT_PER_SOCKET * 0.75f * std::max(size_t(2), std::max(Input.size(), Output.size())))));
 
 	if (bIsInputNode)
-		return;
+	{
+		SocketIDBeingModified = "";
+		return true;
+	}
 
 	int SocketIndex = static_cast<int>(Output.size()) - 1;
 	Output[SocketIndex]->SetFunctionToOutputData(CreateCrossAreaDataGetter(SocketIndex));
+
+	SocketIDBeingModified = "";
+	return true;
+}
+
+bool LinkNode::AddSocketInternal(std::vector<std::string> AllowedTypes, std::string Name)
+{
+	NodeSocket* NewSocket = new NodeSocket(this, AllowedTypes, Name, !IsInputNode());
+	bool bResult =Node::AddSocket(NewSocket);
+	SetSize(ImVec2(300.0f, static_cast<float>(NODE_HEIGHT_PER_SOCKET * 0.75f * std::max(size_t(2), std::max(Input.size(), Output.size())))));
+
+	return bResult;
+}
+
+bool LinkNode::DeleteSocket(std::string SocketID)
+{
+	return DeleteSocket(GetSocketByIDInternal(SocketID));
+}
+
+bool LinkNode::DeleteSocket(NodeSocket* Socket)
+{
+	if (Socket == nullptr)
+		return false;
+
+	SocketIDBeingModified = Socket->GetID();
+	NODE_SYSTEM.DeleteSocketFromLink(ID, Socket->GetID());
+	Node::DeleteSocket(Socket);
+	SetSize(ImVec2(300.0f, static_cast<float>(NODE_HEIGHT_PER_SOCKET * 0.75f * std::max(size_t(2), std::max(Input.size(), Output.size())))));
+
+	if (bIsInputNode)
+	{
+		SocketIDBeingModified = "";
+		return true;
+	}
+		
+	// After removing the socket, We need to update the output data functions of the remaining sockets.
+	for (size_t i = 0; i < Output.size(); i++)
+		Output[i]->SetFunctionToOutputData(CreateCrossAreaDataGetter(static_cast<int>(i)));
+
+	SocketIDBeingModified = "";
+	return true;
 }

@@ -69,6 +69,6 @@ namespace VisNodeSys
 		std::string GetCaption() const;
 
 		bool MoveElementsWithComment() const;
-		void SetMoveElementsWithComment(bool NewValue);
+		void SetMoveElementsWithComment(bool bNewValue);
 	};
 }

@@ -39,11 +39,7 @@ Json::Value SequenceNode::ToJson()
 
 bool SequenceNode::FromJson(Json::Value Json)
 {
-	bool bPreviousCheck = Node::bOutputCountCheck;
-	Node::bOutputCountCheck = false;
-
 	bool bResult = Node::FromJson(Json);
-	Node::bOutputCountCheck = bPreviousCheck;
 
 	if (!bResult)
 		return false;

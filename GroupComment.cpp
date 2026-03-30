@@ -133,7 +133,7 @@ bool GroupComment::MoveElementsWithComment() const
 	return bMoveElementsWithComment;
 }
 
-void GroupComment::SetMoveElementsWithComment(bool NewValue)
+void GroupComment::SetMoveElementsWithComment(bool bNewValue)
 {
-	bMoveElementsWithComment = NewValue;
+	bMoveElementsWithComment = bNewValue;
 }

@@ -370,6 +370,23 @@ bool NodeArea::TryToDisconnect(const Node* OutNode, std::string OutSocketID, con
 	return TryToDisconnect(OutNode, OutSocketIndex, InNode, InSocketIndex);
 }
 
+bool NodeArea::TryToDisconnect(const Node* Node, std::string SocketID)
+{
+	if (Node == nullptr)
+		return false;
+
+	const NodeSocket* Socket = Node->GetSocketByID(SocketID);
+	if (Socket == nullptr)
+		return false;
+
+	std::vector<Connection*> Connections = GetAllConnections(Socket);
+	bool bResult = !Connections.empty();
+	for (size_t i = 0; i < Connections.size(); i++)
+		Delete(Connections[i]);
+	
+	return bResult;
+}
+
 bool NodeArea::IsConnected(const Node* OutNode, size_t OutNodeSocketIndex, const Node* InNode, size_t InNodeSocketIndex)
 {
 	if (OutNode == nullptr || InNode == nullptr)
@@ -423,6 +440,34 @@ bool NodeArea::IsConnected(const Node* OutNode, std::string OutSocketID, const N
 	}
 
 	return IsConnected(OutNode, OutSocketIndex, InNode, InSocketIndex);
+}
+
+bool NodeArea::IsConnected(const Node* FirstNode, const Node* SecondNode)
+{
+	if (FirstNode == nullptr || SecondNode == nullptr)
+		return false;
+
+	for (size_t i = 0; i < FirstNode->Input.size(); i++)
+	{
+		auto Connections = GetAllConnections(FirstNode->Input[i]);
+		for (size_t j = 0; j < Connections.size(); j++)
+		{
+			if (Connections[j]->Out->GetParent() == SecondNode)
+				return true;
+		}
+	}
+
+	for (size_t i = 0; i < FirstNode->Output.size(); i++)
+	{
+		auto Connections = GetAllConnections(FirstNode->Output[i]);
+		for (size_t j = 0; j < Connections.size(); j++)
+		{
+			if (Connections[j]->In->GetParent() == SecondNode)
+				return true;
+		}
+	}
+
+	return false;
 }
 
 void NodeArea::RunOnEachNode(const std::function<void(Node*)>& Function)

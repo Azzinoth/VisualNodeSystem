@@ -1,4 +1,5 @@
 #include "VisualNodeCore.h"
+#include "StandardNodes/LinkNode/LinkNode.h"
 using namespace VisNodeSys;
 
 #ifdef VISUAL_NODE_SYSTEM_SHARED
@@ -382,4 +383,45 @@ std::string NodeCore::TruncateText(const std::string& Text, float MaxWidth, Elli
 	}
 
 	return Text;
+}
+
+void NodeCore::LoadTextureFromBase64(const std::string& Base64Data, ImTextureID& TextureID)
+{
+	std::string DecodedBytes = NODE_CORE.Base64Decode(Base64Data);
+
+	std::ofstream OutFile("TemporaryIcon.png", std::ios::binary);
+	OutFile.write(DecodedBytes.data(), DecodedBytes.size());
+	OutFile.close();
+
+	TextureID = TextureLoader("TemporaryIcon.png");
+
+	std::remove("TemporaryIcon.png");
+}
+
+void NodeCore::SetTextureLoader(std::function<ImTextureID(const std::string&)> Loader)
+{
+	TextureLoader = Loader;
+	if (TextureLoader != nullptr)
+	{
+		if (LinkNode::LinkIconTextureID == 0)
+			LoadTextureFromBase64(LinkIconBase64, LinkNode::LinkIconTextureID);
+		if (LinkNode::PlusIconTextureID == 0)
+			LoadTextureFromBase64(PlusIconBase64, LinkNode::PlusIconTextureID);
+		if (LinkNode::EditIconTextureID == 0)
+			LoadTextureFromBase64(EditIconBase64, LinkNode::EditIconTextureID);
+		if (LinkNode::TrashBinIconTextureID == 0)
+			LoadTextureFromBase64(TrashBinIconBase64, LinkNode::TrashBinIconTextureID);
+	}
+}
+
+void NodeCore::ShowToolTip(std::string Text) const
+{
+	if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
+	{
+		ImVec2 MousePosition = ImGui::GetMousePos();
+		ImGui::SetNextWindowPos(ImVec2(MousePosition.x + 16.0f, MousePosition.y + 8.0f));
+		ImGui::BeginTooltip();
+		ImGui::TextUnformatted(Text.c_str());
+		ImGui::EndTooltip();
+	}
 }

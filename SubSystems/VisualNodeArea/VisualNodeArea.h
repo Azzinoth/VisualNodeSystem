@@ -258,9 +258,11 @@ namespace VisNodeSys
 
 		bool TryToDisconnect(const Node* OutNode, size_t OutNodeSocketIndex, const Node* InNode, size_t InNodeSocketIndex);
 		bool TryToDisconnect(const Node* OutNode, std::string OutSocketID, const Node* InNode, std::string InSocketID);
+		bool TryToDisconnect(const Node* Node, std::string SocketID);
 
 		bool IsConnected(const Node* OutNode, size_t OutNodeSocketIndex, const Node* InNode, size_t InNodeSocketIndex);
 		bool IsConnected(const Node* OutNode, std::string OutSocketID, const Node* InNode, std::string InSocketID);
+		bool IsConnected(const Node* FirstNode,  const Node* SecondNode);
 
 		std::vector<std::pair<ImVec2, ImVec2>> GetConnectionSegments(const Node* OutNode, size_t OutNodeSocketIndex, const Node* InNode, size_t InNodeSocketIndex) const;
 		std::vector<std::pair<ImVec2, ImVec2>> GetConnectionSegments(const Node* OutNode, std::string OutSocketID, const Node* InNode, std::string InSocketID) const;
@@ -271,6 +273,8 @@ namespace VisNodeSys
 
 		bool GetConnectionStyle(Node* Node, bool bOutputSocket, size_t SocketIndex, ConnectionStyle& Style) const;
 		void SetConnectionStyle(Node* Node, bool bOutputSocket, size_t SocketIndex, ConnectionStyle NewStyle);
+
+		ImVec2 SocketToPosition(Node* Node, const std::string& SocketID) const;
 
 		size_t GetRerouteConnectionCount() const;
 
@@ -447,6 +451,7 @@ namespace VisNodeSys
 		void RenderNodeSockets(const Node* Node) const;
 		void RenderNodeSocket(NodeSocket* Socket) const;
 		std::vector<ImVec2> GetTangentsForLine(const ImVec2 P1, const ImVec2 P2) const;
+		ImVec2 EvaluateHermiteSpline(float NormalizedParameter, ImVec2 Begin, ImVec2 End, const std::vector<ImVec2>& Tangents) const;
 		void DrawHermiteLine(ImVec2 P1, ImVec2 P2, int Steps, ImVec4 Color, const ConnectionStyle* Style) const;
 		void DrawHermiteLine(const ImVec2 P1, const ImVec2 P2, const int Steps, const ImVec4 Color, const float Thickness) const;
 		void RenderConnection(const Connection* Connection) const;

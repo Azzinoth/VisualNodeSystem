@@ -6,6 +6,7 @@ namespace VisNodeSys
 {
 	class VISUAL_NODE_SYSTEM_API NodeSystem
 	{
+		friend class Node;
 		friend class LinkNode;
 		friend class NodeArea;
 
@@ -40,7 +41,12 @@ namespace VisNodeSys
 #ifdef VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES
 		void RegisterStandardNodes();
 #endif
-		void OnNodeAreaFocusChanging(NodeArea* CurrentNodeArea, bool NewFocusValue);
+		void OnNodeAreaFocusChanging(NodeArea* CurrentNodeArea, bool bNewFocusValue);
+
+		bool AddSocketToLink(const std::string& AnyNodeIDThatIsPartOfLink, std::vector<std::string> AllowedTypes, std::string Name);
+		bool DeleteSocketFromLink(const std::string& AnyNodeIDThatIsPartOfLink, size_t SocketIndex);
+		bool DeleteSocketFromLink(const std::string& AnyNodeIDThatIsPartOfLink, std::string SocketID);
+		bool DeleteSocket(const std::string& NodeID, std::string SocketID);
 	public:
 		SINGLETON_PUBLIC_PART(NodeSystem)
 
@@ -76,7 +82,7 @@ namespace VisNodeSys
 		std::unordered_map<std::string, std::vector<Node*>> GetLastExecutedNodes(std::string StartingAreaID = "") const;
 #endif
 
-		void MoveNodesTo(NodeArea* SourceNodeArea, NodeArea* TargetNodeArea, bool SelectMovedNodes = false);
+		void MoveNodesTo(NodeArea* SourceNodeArea, NodeArea* TargetNodeArea, bool bSelectNodesAfterMovement = false);
 
 		Node* GetNodeByID(const std::string& NodeID) const;
 		std::vector<Node*> GetNodesByName(const std::string& Name) const;
@@ -101,7 +107,7 @@ namespace VisNodeSys
 		std::vector<NodeArea*> GetImmediateUpstreamAreas(const std::string& AreaID);
 		std::vector<NodeArea*> GetAllUpstreamAreas(const std::string& AreaID);
 
-		bool AddSocketToLink(const std::string& AreaID, const std::string& AnyNodeIDThatIsPartOfLink, std::string Type);
+		
 	};
 
 #ifdef VISUAL_NODE_SYSTEM_SHARED

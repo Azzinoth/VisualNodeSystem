@@ -18,7 +18,7 @@ class BaseLogicalOperatorNode : public BaseExecutionFlowNode
 protected:
 	LogicalNodeOperatorType OperatorType = LogicalNodeOperatorType::AND;
 private:
-	bool LocalBoolData = false;
+	bool bLocalBool = false;
 
 	void Execute()
 	{
@@ -38,50 +38,50 @@ private:
 		if (AData == nullptr && BData == nullptr)
 			return;
 
-		bool A = false;
-		bool B = false;
+		bool bFirstBool = false;
+		bool bSecondBool = false;
 		if (OperatorType == LogicalNodeOperatorType::NOT)
 		{
 			if (AData == nullptr)
 				return;
 
-			A = *reinterpret_cast<bool*>(AData);
+			bFirstBool = *reinterpret_cast<bool*>(AData);
 		}
 		else
 		{
 			if (AData == nullptr || BData == nullptr)
 				return;
 
-			A = *reinterpret_cast<bool*>(AData);
-			B = *reinterpret_cast<bool*>(BData);
+			bFirstBool = *reinterpret_cast<bool*>(AData);
+			bSecondBool = *reinterpret_cast<bool*>(BData);
 		}
 
 		switch (OperatorType)
 		{
 			case LogicalNodeOperatorType::AND:
-				LocalBoolData = A && B;
+				bLocalBool = bFirstBool && bSecondBool;
 				break;
 
 			case LogicalNodeOperatorType::OR:
-				LocalBoolData = A || B;
+				bLocalBool = bFirstBool || bSecondBool;
 				break;
 
 			case LogicalNodeOperatorType::XOR:
-				LocalBoolData = A ^ B;
+				bLocalBool = bFirstBool ^ bSecondBool;
 				break;
 
 			case LogicalNodeOperatorType::NOT:
-				LocalBoolData = !A;
+				bLocalBool = !bFirstBool;
 				break;
 
 			default:
-				LocalBoolData = A && B;
+				bLocalBool = bFirstBool && bSecondBool;
 				break;
 		}
 	}
 
 	std::function<void* ()> DataGetter = [this]() -> void* {
-		return &LocalBoolData;
+		return &bLocalBool;
 	};
 
 public:

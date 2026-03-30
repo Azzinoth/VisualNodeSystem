@@ -20,8 +20,8 @@ class BaseComparisonOperatorNode : public BaseExecutionFlowNode
 protected:
 	ComparisonNodeOperatorType OperatorType = ComparisonNodeOperatorType::EQUAL;
 private:
-	// TO-DO: use std::optional to save memory.
-	bool LocalBoolData = false;
+	// FE_TO_DO: use std::optional to save memory.
+	bool bLocalBool = false;
 	glm::bvec2 LocalBVec2Data = glm::bvec2(false);
 	glm::bvec3 LocalBVec3Data = glm::bvec3(false);
 	glm::bvec4 LocalBVec4Data = glm::bvec4(false);
@@ -97,21 +97,21 @@ private:
 			bool A = *reinterpret_cast<bool*>(AData);
 			bool B = *reinterpret_cast<bool*>(BData);
 
-			LocalBoolData = CompareValues(A, B);
+			bLocalBool = CompareValues(A, B);
 		}
 		else if (CurrentMode == "INT")
 		{
 			int A = *reinterpret_cast<int*>(AData);
 			int B = *reinterpret_cast<int*>(BData);
 
-			LocalBoolData = CompareValues(A, B);
+			bLocalBool = CompareValues(A, B);
 		}
 		else if (CurrentMode == "FLOAT")
 		{
 			float A = *reinterpret_cast<float*>(AData);
 			float B = *reinterpret_cast<float*>(BData);
 
-			LocalBoolData = CompareValues(A, B);
+			bLocalBool = CompareValues(A, B);
 		}
 		else if (CurrentMode == "VEC2")
 		{
@@ -143,15 +143,15 @@ private:
 
 		if (CurrentMode == "BOOL")
 		{
-			return &LocalBoolData;
+			return &bLocalBool;
 		}
 		else if (CurrentMode == "INT")
 		{
-			return &LocalBoolData;
+			return &bLocalBool;
 		}
 		else if (CurrentMode == "FLOAT")
 		{
-			return &LocalBoolData;
+			return &bLocalBool;
 		}
 		else if (CurrentMode == "VEC2")
 		{
