@@ -366,3 +366,100 @@ TEST(Basic, Save_And_Load_NodeArea)
 
 	NODE_SYSTEM.DeleteNodeArea(LocalNodeArea);
 }
+
+TEST(Basic, SetAllowedTypes_DisconnectsIncompatible)
+{
+	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(LocalNodeArea, nullptr);
+
+	Node* FirstNode = new Node();
+	FirstNode->AddSocket(new NodeSocket(FirstNode, "TYPE_A", "out", true));
+	LocalNodeArea->AddNode(FirstNode);
+
+	Node* SecondNode = new Node();
+	SecondNode->AddSocket(new NodeSocket(SecondNode, "TYPE_A", "in", false));
+	LocalNodeArea->AddNode(SecondNode);
+
+	ASSERT_TRUE(LocalNodeArea->TryToConnect(FirstNode, 0, SecondNode, 0));
+	ASSERT_EQ(FirstNode->GetNodesConnectedToOutput().size(), 1);
+	ASSERT_EQ(SecondNode->GetNodesConnectedToInput().size(), 1);
+
+	// Change the input socket type to something incompatible.
+	std::string SocketID = SecondNode->GetSocketIDByIndex(0, false);
+	ASSERT_FALSE(SocketID.empty());
+
+	bool bNoDisconnections = SecondNode->SetSocketAllowedTypes(SocketID, { "TYPE_B" });
+	ASSERT_FALSE(bNoDisconnections);
+
+	// Connection should be gone.
+	ASSERT_EQ(FirstNode->GetNodesConnectedToOutput().size(), 0);
+	ASSERT_EQ(SecondNode->GetNodesConnectedToInput().size(), 0);
+	ASSERT_FALSE(LocalNodeArea->IsConnected(FirstNode, SecondNode));
+
+	NODE_SYSTEM.DeleteNodeArea(LocalNodeArea);
+}
+
+TEST(Basic, SetAllowedTypes_KeepsCompatible)
+{
+	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(LocalNodeArea, nullptr);
+
+	Node* FirstNode = new Node();
+	FirstNode->AddSocket(new NodeSocket(FirstNode, "TYPE_A", "out", true));
+	LocalNodeArea->AddNode(FirstNode);
+
+	Node* SecondNode = new Node();
+	SecondNode->AddSocket(new NodeSocket(SecondNode, "TYPE_A", "in", false));
+	LocalNodeArea->AddNode(SecondNode);
+
+	ASSERT_TRUE(LocalNodeArea->TryToConnect(FirstNode, 0, SecondNode, 0));
+
+	// Change type to a set that still includes the original type.
+	std::string SocketID = SecondNode->GetSocketIDByIndex(0, false);
+	ASSERT_FALSE(SocketID.empty());
+
+	bool bNoDisconnections = SecondNode->SetSocketAllowedTypes(SocketID, { "TYPE_A", "TYPE_B" });
+	ASSERT_TRUE(bNoDisconnections);
+
+	// Connection should survive.
+	ASSERT_EQ(FirstNode->GetNodesConnectedToOutput().size(), 1);
+	ASSERT_EQ(SecondNode->GetNodesConnectedToInput().size(), 1);
+	ASSERT_TRUE(LocalNodeArea->IsConnected(FirstNode, SecondNode));
+
+	NODE_SYSTEM.DeleteNodeArea(LocalNodeArea);
+}
+
+TEST(Basic, SetAllowedTypes_PartialDisconnect)
+{
+	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(LocalNodeArea, nullptr);
+
+	Node* NodeA = new Node();
+	NodeA->AddSocket(new NodeSocket(NodeA, "TYPE_A", "out", true));
+	LocalNodeArea->AddNode(NodeA);
+
+	Node* NodeB = new Node();
+	NodeB->AddSocket(new NodeSocket(NodeB, "TYPE_B", "out", true));
+	LocalNodeArea->AddNode(NodeB);
+
+	Node* Receiver = new Node();
+	Receiver->AddSocket(new NodeSocket(Receiver, std::vector<std::string>{"TYPE_A", "TYPE_B"}, "in", false));
+	LocalNodeArea->AddNode(Receiver);
+
+	ASSERT_TRUE(LocalNodeArea->TryToConnect(NodeA, 0, Receiver, 0));
+	ASSERT_TRUE(LocalNodeArea->TryToConnect(NodeB, 0, Receiver, 0));
+	ASSERT_EQ(Receiver->GetNodesConnectedToInput().size(), 2);
+
+	// Narrow the input socket to only TYPE_A, should disconnect NodeB but keep NodeA.
+	std::string SocketID = Receiver->GetSocketIDByIndex(0, false);
+	ASSERT_FALSE(SocketID.empty());
+
+	bool bNoDisconnections = Receiver->SetSocketAllowedTypes(SocketID, { "TYPE_A" });
+	ASSERT_FALSE(bNoDisconnections);
+
+	ASSERT_TRUE(LocalNodeArea->IsConnected(NodeA, Receiver));
+	ASSERT_FALSE(LocalNodeArea->IsConnected(NodeB, Receiver));
+	ASSERT_EQ(Receiver->GetNodesConnectedToInput().size(), 1);
+
+	NODE_SYSTEM.DeleteNodeArea(LocalNodeArea);
+}

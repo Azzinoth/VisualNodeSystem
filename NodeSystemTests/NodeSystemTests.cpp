@@ -970,3 +970,203 @@ TEST(NodeSystemTests, SaveLoad_With_Execute_And_Integer_Connections_Small)
 
 	NODE_SYSTEM.Clear();
 }
+
+TEST(NodeSystemTests, LinkAreas_SetSocketAllowedTypes_DisconnectsIncompatible)
+{
+	NodeArea* UpstreamArea = NODE_SYSTEM.CreateNodeArea();
+	std::string UpstreamAreaID = UpstreamArea->GetID();
+	UpstreamArea->SetSaveExecutedNodes(true);
+
+	Node* BeginNode = NODE_FACTORY.CreateNode("BeginNode");
+	UpstreamArea->AddNode(BeginNode);
+	UpstreamArea->SetExecutionEntryNode(BeginNode);
+
+	BoolLiteralNode* UpstreamBoolNode = new BoolLiteralNode();
+	UpstreamBoolNode->SetData(true);
+	UpstreamArea->AddNode(UpstreamBoolNode);
+
+	NodeArea* DownstreamArea = NODE_SYSTEM.CreateNodeArea();
+	std::string DownstreamAreaID = DownstreamArea->GetID();
+	DownstreamArea->SetSaveExecutedNodes(true);
+
+	BoolVariableNode* DownstreamBoolNode = new BoolVariableNode();
+	DownstreamBoolNode->SetData(false);
+	DownstreamArea->AddNode(DownstreamBoolNode);
+
+	std::pair<std::string, std::string> LinkResult;
+	ASSERT_TRUE(NODE_SYSTEM.LinkNodeAreas(UpstreamAreaID, DownstreamAreaID, &LinkResult));
+	LinkNode* UpstreamLinkNode = dynamic_cast<LinkNode*>(NODE_SYSTEM.GetNodeByID(LinkResult.first));
+	ASSERT_NE(UpstreamLinkNode, nullptr);
+	ASSERT_TRUE(UpstreamLinkNode->AddSocket({ "BOOL" }));
+
+	Node* DownstreamLinkNode = DownstreamArea->GetNodeByID(LinkResult.second);
+	ASSERT_NE(DownstreamLinkNode, nullptr);
+
+	// Wire everything up.
+	ASSERT_EQ(UpstreamArea->TryToConnect(BeginNode, 0, UpstreamLinkNode, 0), true);
+	ASSERT_EQ(UpstreamArea->TryToConnect(UpstreamBoolNode, 0, UpstreamLinkNode, 1), true);
+	ASSERT_EQ(DownstreamArea->TryToConnect(DownstreamLinkNode, 0, DownstreamBoolNode, 0), true);
+	ASSERT_EQ(DownstreamArea->TryToConnect(DownstreamLinkNode, 1, DownstreamBoolNode, 1), true);
+
+	// Verify data flows before type change.
+	EXPECT_FALSE(DownstreamBoolNode->GetData());
+	ASSERT_TRUE(UpstreamArea->ExecuteNodeNetwork());
+	EXPECT_TRUE(DownstreamBoolNode->GetData());
+
+	// Change socket type on upstream link node to something incompatible.
+	std::string SocketID = UpstreamLinkNode->GetSocketIDByIndex(1, false);
+	ASSERT_FALSE(SocketID.empty());
+
+	bool bNoDisconnections = UpstreamLinkNode->SetSocketAllowedTypes(SocketID, { "FLOAT" });
+	ASSERT_FALSE(bNoDisconnections);
+
+	// Upstream connection to the BOOL socket should be severed.
+	ASSERT_FALSE(UpstreamArea->IsConnected(UpstreamBoolNode, 0, UpstreamLinkNode, 1));
+
+	// Partner socket on downstream link node should also have changed type.
+	std::string PartnerSocketID = DownstreamLinkNode->GetSocketIDByIndex(1, true);
+	ASSERT_FALSE(PartnerSocketID.empty());
+	const NodeSocket* PartnerSocket = DownstreamLinkNode->GetSocketByID(PartnerSocketID);
+	ASSERT_NE(PartnerSocket, nullptr);
+	ASSERT_EQ(PartnerSocket->GetAllowedTypes().size(), 1);
+	ASSERT_EQ(PartnerSocket->GetAllowedTypes()[0], "FLOAT");
+
+	// Downstream connection from the BOOL socket should also be severed.
+	ASSERT_FALSE(DownstreamArea->IsConnected(DownstreamLinkNode, 1, DownstreamBoolNode, 1));
+
+	NODE_SYSTEM.DeleteNodeArea(UpstreamArea);
+	NODE_SYSTEM.DeleteNodeArea(DownstreamArea);
+}
+
+TEST(NodeSystemTests, LinkAreas_SetSocketAllowedTypes_KeepsCompatible)
+{
+	NodeArea* UpstreamArea = NODE_SYSTEM.CreateNodeArea();
+	std::string UpstreamAreaID = UpstreamArea->GetID();
+	UpstreamArea->SetSaveExecutedNodes(true);
+
+	Node* BeginNode = NODE_FACTORY.CreateNode("BeginNode");
+	UpstreamArea->AddNode(BeginNode);
+	UpstreamArea->SetExecutionEntryNode(BeginNode);
+
+	IntegerLiteralNode* UpstreamIntNode = new IntegerLiteralNode();
+	UpstreamIntNode->SetData(42);
+	UpstreamArea->AddNode(UpstreamIntNode);
+
+	NodeArea* DownstreamArea = NODE_SYSTEM.CreateNodeArea();
+	std::string DownstreamAreaID = DownstreamArea->GetID();
+	DownstreamArea->SetSaveExecutedNodes(true);
+
+	IntegerVariableNode* DownstreamIntNode = new IntegerVariableNode();
+	DownstreamIntNode->SetData(0);
+	DownstreamArea->AddNode(DownstreamIntNode);
+
+	std::pair<std::string, std::string> LinkResult;
+	ASSERT_TRUE(NODE_SYSTEM.LinkNodeAreas(UpstreamAreaID, DownstreamAreaID, &LinkResult));
+	LinkNode* UpstreamLinkNode = dynamic_cast<LinkNode*>(NODE_SYSTEM.GetNodeByID(LinkResult.first));
+	ASSERT_NE(UpstreamLinkNode, nullptr);
+	ASSERT_TRUE(UpstreamLinkNode->AddSocket({ "INT" }));
+
+	Node* DownstreamLinkNode = DownstreamArea->GetNodeByID(LinkResult.second);
+	ASSERT_NE(DownstreamLinkNode, nullptr);
+
+	ASSERT_EQ(UpstreamArea->TryToConnect(BeginNode, 0, UpstreamLinkNode, 0), true);
+	ASSERT_EQ(UpstreamArea->TryToConnect(UpstreamIntNode, 0, UpstreamLinkNode, 1), true);
+	ASSERT_EQ(DownstreamArea->TryToConnect(DownstreamLinkNode, 0, DownstreamIntNode, 0), true);
+	ASSERT_EQ(DownstreamArea->TryToConnect(DownstreamLinkNode, 1, DownstreamIntNode, 1), true);
+
+	// Widen type to include INT and FLOAT, INT connections should survive.
+	std::string SocketID = UpstreamLinkNode->GetSocketIDByIndex(1, false);
+	ASSERT_FALSE(SocketID.empty());
+
+	bool bNoDisconnections = UpstreamLinkNode->SetSocketAllowedTypes(SocketID, { "INT", "FLOAT" });
+	ASSERT_TRUE(bNoDisconnections);
+
+	// All connections should still be intact.
+	ASSERT_TRUE(UpstreamArea->IsConnected(UpstreamIntNode, 0, UpstreamLinkNode, 1));
+	ASSERT_TRUE(DownstreamArea->IsConnected(DownstreamLinkNode, 0, DownstreamIntNode, 0));
+	ASSERT_TRUE(DownstreamArea->IsConnected(DownstreamLinkNode, 1, DownstreamIntNode, 1));
+
+	// Data should still flow.
+	EXPECT_EQ(DownstreamIntNode->GetData(), 0);
+	ASSERT_TRUE(UpstreamArea->ExecuteNodeNetwork());
+	EXPECT_EQ(DownstreamIntNode->GetData(), 42);
+
+	NODE_SYSTEM.DeleteNodeArea(UpstreamArea);
+	NODE_SYSTEM.DeleteNodeArea(DownstreamArea);
+}
+
+TEST(NodeSystemTests, LinkAreas_SetSocketAllowedTypes_PartialDisconnect_MultipleSockets)
+{
+	NodeArea* UpstreamArea = NODE_SYSTEM.CreateNodeArea();
+	std::string UpstreamAreaID = UpstreamArea->GetID();
+	UpstreamArea->SetSaveExecutedNodes(true);
+
+	Node* BeginNode = NODE_FACTORY.CreateNode("BeginNode");
+	UpstreamArea->AddNode(BeginNode);
+	UpstreamArea->SetExecutionEntryNode(BeginNode);
+
+	BoolLiteralNode* UpstreamBoolNode = new BoolLiteralNode();
+	UpstreamBoolNode->SetData(true);
+	UpstreamArea->AddNode(UpstreamBoolNode);
+
+	FloatLiteralNode* UpstreamFloatNode = new FloatLiteralNode();
+	UpstreamFloatNode->SetData(3.14f);
+	UpstreamArea->AddNode(UpstreamFloatNode);
+
+	NodeArea* DownstreamArea = NODE_SYSTEM.CreateNodeArea();
+	std::string DownstreamAreaID = DownstreamArea->GetID();
+	DownstreamArea->SetSaveExecutedNodes(true);
+
+	BoolVariableNode* DownstreamBoolNode = new BoolVariableNode();
+	DownstreamBoolNode->SetData(false);
+	DownstreamArea->AddNode(DownstreamBoolNode);
+
+	FloatVariableNode* DownstreamFloatNode = new FloatVariableNode();
+	DownstreamFloatNode->SetData(0.0f);
+	DownstreamArea->AddNode(DownstreamFloatNode);
+
+	std::pair<std::string, std::string> LinkResult;
+	ASSERT_TRUE(NODE_SYSTEM.LinkNodeAreas(UpstreamAreaID, DownstreamAreaID, &LinkResult));
+	LinkNode* UpstreamLinkNode = dynamic_cast<LinkNode*>(NODE_SYSTEM.GetNodeByID(LinkResult.first));
+	ASSERT_NE(UpstreamLinkNode, nullptr);
+	ASSERT_TRUE(UpstreamLinkNode->AddSocket({ "BOOL" }));
+	ASSERT_TRUE(UpstreamLinkNode->AddSocket({ "FLOAT" }));
+
+	Node* DownstreamLinkNode = DownstreamArea->GetNodeByID(LinkResult.second);
+	ASSERT_NE(DownstreamLinkNode, nullptr);
+
+	// Wire execution.
+	ASSERT_EQ(UpstreamArea->TryToConnect(BeginNode, 0, UpstreamLinkNode, 0), true);
+	// Wire BOOL at socket index 1.
+	ASSERT_EQ(UpstreamArea->TryToConnect(UpstreamBoolNode, 0, UpstreamLinkNode, 1), true);
+	// Wire FLOAT at socket index 2.
+	ASSERT_EQ(UpstreamArea->TryToConnect(UpstreamFloatNode, 0, UpstreamLinkNode, 2), true);
+
+	ASSERT_EQ(DownstreamArea->TryToConnect(DownstreamLinkNode, 0, DownstreamBoolNode, 0), true);
+	ASSERT_EQ(DownstreamArea->TryToConnect(DownstreamLinkNode, 1, DownstreamBoolNode, 1), true);
+	ASSERT_EQ(DownstreamArea->TryToConnect(DownstreamBoolNode, 0, DownstreamFloatNode, 0), true);
+	ASSERT_EQ(DownstreamArea->TryToConnect(DownstreamLinkNode, 2, DownstreamFloatNode, 1), true);
+
+	// Verify both values flow.
+	ASSERT_TRUE(UpstreamArea->ExecuteNodeNetwork());
+	EXPECT_TRUE(DownstreamBoolNode->GetData());
+	EXPECT_EQ(DownstreamFloatNode->GetData(), 3.14f);
+
+	// Change only the BOOL socket (index 1) to INT, FLOAT socket (index 2) should be unaffected.
+	std::string BoolSocketID = UpstreamLinkNode->GetSocketIDByIndex(1, false);
+	ASSERT_FALSE(BoolSocketID.empty());
+
+	bool bNoDisconnections = UpstreamLinkNode->SetSocketAllowedTypes(BoolSocketID, { "INT" });
+	ASSERT_FALSE(bNoDisconnections);
+
+	// BOOL connections on both sides should be severed.
+	ASSERT_FALSE(UpstreamArea->IsConnected(UpstreamBoolNode, UpstreamLinkNode));
+	ASSERT_FALSE(DownstreamArea->IsConnected(DownstreamLinkNode, 1, DownstreamBoolNode, 1));
+
+	// FLOAT connections should remain intact.
+	ASSERT_TRUE(UpstreamArea->IsConnected(UpstreamFloatNode, UpstreamLinkNode));
+	ASSERT_TRUE(DownstreamArea->IsConnected(DownstreamLinkNode, 2, DownstreamFloatNode, 1));
+
+	NODE_SYSTEM.DeleteNodeArea(UpstreamArea);
+	NODE_SYSTEM.DeleteNodeArea(DownstreamArea);
+}

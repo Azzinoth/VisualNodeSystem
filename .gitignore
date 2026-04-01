@@ -20,6 +20,8 @@ CMakeCache.txt
 cmake_install.cmake
 NodeAreaTest.json
 Results.xml
+NodeSystemTests_TestSaveLoad_Small.json
+TemporaryNodeArea.json
 
 #Folders
 Debug/
