@@ -1392,3 +1392,77 @@ bool NodeSystem::DeleteSocketFromLink(const std::string& AnyNodeIDThatIsPartOfLi
 
 	return true;
 }
+
+bool NodeSystem::RevalidateSocketConnections(NodeSocket* Socket)
+{
+	if (Socket == nullptr)
+		return false;
+
+	Node* ParentNode = Socket->GetParent();
+	if (ParentNode == nullptr)
+		return false;
+
+	NodeArea* ParentArea = ParentNode->GetParentArea();
+	if (ParentArea == nullptr)
+		return false;
+
+	bool bAnyDisconnected = false;
+	std::vector<NodeSocket*> ConnectedSockets = Socket->GetConnectedSockets();
+	for (size_t i = 0; i < ConnectedSockets.size(); i++)
+	{
+		NodeSocket* OtherSocket = ConnectedSockets[i];
+		Node* OtherNode = OtherSocket->GetParent();
+		if (OtherNode == nullptr)
+			continue;
+
+		// Use the node's own CanConnect to check type compatibility, which already handles the allowed-type intersection logic.
+		if (ParentNode->CanConnect(Socket, OtherSocket))
+			continue;
+
+		// Connection is no longer valid, disconnect it.
+		if (Socket->IsOutput())
+			ParentArea->TryToDisconnect(ParentNode, Socket->GetID(), OtherNode, OtherSocket->GetID());
+		else
+			ParentArea->TryToDisconnect(OtherNode, OtherSocket->GetID(), ParentNode, Socket->GetID());
+
+		bAnyDisconnected = true;
+	}
+
+	return bAnyDisconnected;
+}
+
+bool NodeSystem::SetSocketAllowedTypesOnLink(const std::string& AnyNodeIDThatIsPartOfLink, std::string SocketID, std::vector<std::string> NewTypes)
+{
+	Node* CurrentNode = GetNodeByID(AnyNodeIDThatIsPartOfLink);
+	if (CurrentNode == nullptr || CurrentNode->GetType() != "LinkNode")
+		return false;
+
+	LinkNode* CurrentLinkNode = reinterpret_cast<LinkNode*>(CurrentNode);
+	if (CurrentLinkNode == nullptr)
+		return false;
+
+	if (CurrentLinkNode->IsDangling())
+		return false;
+
+	NodeAreaLinkRecord* Record = GetLinkDataByNodeID(CurrentLinkNode->GetID());
+	if (Record == nullptr)
+		return false;
+
+	LinkNode* PartnerNode = reinterpret_cast<LinkNode*>(CurrentLinkNode->GetPartnerNode());
+	if (PartnerNode == nullptr)
+		return false;
+
+	size_t SocketIndex = CurrentLinkNode->GetSocketIndexByID(SocketID);
+	if (SocketIndex == static_cast<size_t>(-1))
+		return false;
+
+	std::string PartnerSocketID = PartnerNode->GetSocketIDByIndex(SocketIndex, !PartnerNode->IsInputNode());
+	if (PartnerSocketID.empty())
+		return false;
+
+	// Update the partner socket types, but guard against infinite recursion.
+	if (PartnerNode->SocketIDBeingModified != PartnerSocketID)
+		PartnerNode->SetSocketAllowedTypes(PartnerSocketID, NewTypes);
+
+	return true;
+}

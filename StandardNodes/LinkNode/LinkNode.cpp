@@ -173,8 +173,7 @@ void LinkNode::Draw()
 
 		if (ImGui::ImageButton(("PlusIcon_LinkNode_ID" + ID).c_str(), PlusIconTextureID, ImVec2(16.0f, 16.0f) * Zoom, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImVec4(0, 0, 0, 0)))
 		{
-			AddSocket(new NodeSocket(this, std::vector<std::string>{ "INT" }, "TEST", bIsInputNode));
-			//NODE_SYSTEM.AddSocketToLink(ID, { "INT" }, "TEST");
+			AddSocket({ "INT" }, "TEST");
 		}
 		NODE_CORE.ShowToolTip("Add socket");
 
@@ -355,4 +354,18 @@ bool LinkNode::DeleteSocket(NodeSocket* Socket)
 
 	SocketIDBeingModified = "";
 	return true;
+}
+
+bool LinkNode::SetSocketAllowedTypes(std::string SocketID, std::vector<std::string> NewTypes)
+{
+	SocketIDBeingModified = SocketID;
+
+	// Apply locally first (this calls RevalidateSocketConnections).
+	bool bResult = Node::SetSocketAllowedTypes(SocketID, NewTypes);
+
+	// Mirror to the partner link node.
+	NODE_SYSTEM.SetSocketAllowedTypesOnLink(GetID(), SocketID, NewTypes);
+
+	SocketIDBeingModified = "";
+	return bResult;
 }

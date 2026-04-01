@@ -39,6 +39,8 @@ namespace VisNodeSys
 		std::string GetName() const;
 
 		std::vector<std::string> GetAllowedTypes() const;
+		// Returns true if change did not trigger disconnection of already connected sockets.
+		bool SetAllowedTypes(std::vector<std::string> NewTypes);
 
 		bool IsOutput() const;
 		bool IsInput() const;

@@ -99,6 +99,7 @@ namespace VisNodeSys
 		virtual bool AddSocket(NodeSocket* Socket);
 		virtual bool DeleteSocket(NodeSocket* Socket);
 		virtual bool DeleteSocket(std::string SocketID);
+		virtual bool SetSocketAllowedTypes(std::string SocketID, std::vector<std::string> NewTypes);
 
 		virtual Json::Value ToJson();
 		virtual bool FromJson(Json::Value Json);

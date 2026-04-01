@@ -1,4 +1,5 @@
 #include "VisualNodeSocket.h"
+#include "VisualNodeSystem.h"
 using namespace VisNodeSys;
 
 std::unordered_map<std::string, ImColor> NodeSocket::SocketTypeToColorAssociations;
@@ -66,6 +67,12 @@ void NodeSocket::SetFunctionToOutputData(std::function<void* ()> NewFunction)
 void* NodeSocket::GetData()
 {
 	return OutputData();
+}
+
+bool NodeSocket::SetAllowedTypes(std::vector<std::string> NewTypes)
+{
+	AllowedTypes = NewTypes;
+	return !NODE_SYSTEM.RevalidateSocketConnections(this);
 }
 
 Connection::Connection(NodeSocket* Out, NodeSocket* In)

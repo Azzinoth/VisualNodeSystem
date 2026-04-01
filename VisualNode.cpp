@@ -581,3 +581,12 @@ std::string Node::GetSocketIDByIndex(size_t SocketIndex, bool bOutput) const
 
 	return Socket->GetID();
 }
+
+bool Node::SetSocketAllowedTypes(std::string SocketID, std::vector<std::string> NewTypes)
+{
+	NodeSocket* Socket = GetSocketByIDInternal(SocketID);
+	if (Socket == nullptr)
+		return false;
+
+	return Socket->SetAllowedTypes(NewTypes);
+}

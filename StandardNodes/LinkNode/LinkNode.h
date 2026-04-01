@@ -49,6 +49,8 @@ namespace VisNodeSys
 		bool DeleteSocket(NodeSocket* Socket);
 		bool DeleteSocket(std::string SocketID);
 
+		bool SetSocketAllowedTypes(std::string SocketID, std::vector<std::string> NewTypes);
+
 		void Draw();
 	};
 }

@@ -6,6 +6,7 @@ namespace VisNodeSys
 {
 	class VISUAL_NODE_SYSTEM_API NodeSystem
 	{
+		friend class NodeSocket;
 		friend class Node;
 		friend class LinkNode;
 		friend class NodeArea;
@@ -44,9 +45,13 @@ namespace VisNodeSys
 		void OnNodeAreaFocusChanging(NodeArea* CurrentNodeArea, bool bNewFocusValue);
 
 		bool AddSocketToLink(const std::string& AnyNodeIDThatIsPartOfLink, std::vector<std::string> AllowedTypes, std::string Name);
+
 		bool DeleteSocketFromLink(const std::string& AnyNodeIDThatIsPartOfLink, size_t SocketIndex);
 		bool DeleteSocketFromLink(const std::string& AnyNodeIDThatIsPartOfLink, std::string SocketID);
 		bool DeleteSocket(const std::string& NodeID, std::string SocketID);
+
+		bool RevalidateSocketConnections(NodeSocket* Socket);
+		bool SetSocketAllowedTypesOnLink(const std::string& AnyNodeIDThatIsPartOfLink, std::string SocketID, std::vector<std::string> NewTypes);
 	public:
 		SINGLETON_PUBLIC_PART(NodeSystem)
 
@@ -106,8 +111,6 @@ namespace VisNodeSys
 
 		std::vector<NodeArea*> GetImmediateUpstreamAreas(const std::string& AreaID);
 		std::vector<NodeArea*> GetAllUpstreamAreas(const std::string& AreaID);
-
-		
 	};
 
 #ifdef VISUAL_NODE_SYSTEM_SHARED
