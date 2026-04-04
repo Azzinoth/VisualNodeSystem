@@ -1342,7 +1342,7 @@ bool NodeSystem::DeleteSocket(const std::string& NodeID, std::string SocketID)
 	if (Node == nullptr)
 		return false;
 
-	NodeSocket* SocketToDelete = Node->GetSocketByIDInternal(SocketID);
+	NodeSocket* SocketToDelete = Node->GetSocketByID(SocketID);
 	if (SocketToDelete == nullptr)
 		return false;
 
@@ -1363,6 +1363,23 @@ bool NodeSystem::DeleteSocket(const std::string& NodeID, std::string SocketID)
 	}
 
 	return false;
+}
+
+bool NodeSystem::DeleteSocket(NodeSocket* Socket)
+{
+	if (Socket == nullptr)
+		return false;
+
+	Node* ParentNode = Socket->GetParent();
+	if (ParentNode == nullptr)
+	{
+		delete Socket;
+		return true;
+	}
+	else
+	{
+		return DeleteSocket(ParentNode->GetID(), Socket->GetID());
+	}
 }
 
 bool NodeSystem::DeleteSocketFromLink(const std::string& AnyNodeIDThatIsPartOfLink, size_t SocketIndex)
@@ -1460,9 +1477,53 @@ bool NodeSystem::SetSocketAllowedTypesOnLink(const std::string& AnyNodeIDThatIsP
 	if (PartnerSocketID.empty())
 		return false;
 
+	NodeSocket* PartnerSocket = PartnerNode->GetSocketByID(PartnerSocketID);
+	if (PartnerSocket == nullptr)
+		return false;
+
 	// Update the partner socket types, but guard against infinite recursion.
-	if (PartnerNode->SocketIDBeingModified != PartnerSocketID)
-		PartnerNode->SetSocketAllowedTypes(PartnerSocketID, NewTypes);
+	if (PartnerSocket->GetAllowedTypes() != NewTypes)
+		PartnerSocket->SetAllowedTypes(NewTypes);
 
 	return true;
+}
+
+void NodeSystem::SetSocketNameOnLink(const std::string& AnyNodeIDThatIsPartOfLink, std::string SocketID, std::string NewName)
+{
+	Node* CurrentNode = GetNodeByID(AnyNodeIDThatIsPartOfLink);
+	if (CurrentNode == nullptr || CurrentNode->GetType() != "LinkNode")
+		return;
+
+	LinkNode* CurrentLinkNode = reinterpret_cast<LinkNode*>(CurrentNode);
+	if (CurrentLinkNode == nullptr)
+		return;
+
+	if (CurrentLinkNode->IsDangling())
+		return;
+
+	NodeAreaLinkRecord* Record = GetLinkDataByNodeID(CurrentLinkNode->GetID());
+	if (Record == nullptr)
+		return;
+
+	LinkNode* PartnerNode = reinterpret_cast<LinkNode*>(CurrentLinkNode->GetPartnerNode());
+	if (PartnerNode == nullptr)
+		return;
+
+	size_t SocketIndex = CurrentLinkNode->GetSocketIndexByID(SocketID);
+	if (SocketIndex == static_cast<size_t>(-1))
+		return;
+
+	std::string PartnerSocketID = PartnerNode->GetSocketIDByIndex(SocketIndex, !PartnerNode->IsInputNode());
+	if (PartnerSocketID.empty())
+		return;
+
+	NodeSocket* PartnerSocket = PartnerNode->GetSocketByID(PartnerSocketID);
+	if (PartnerSocket == nullptr)
+		return;
+
+	// Update the partner socket name, but guard against infinite recursion.
+	if (PartnerSocket->GetName() != NewName)
+		PartnerSocket->SetName(NewName);
+
+	return;
 }

@@ -26,6 +26,8 @@ namespace VisNodeSys
 		static ImTextureID PlusIconTextureID;
 		static ImTextureID EditIconTextureID;
 		static ImTextureID TrashBinIconTextureID;
+		static ImTextureID RenameIconTextureID;
+		static ImTextureID ChangeAllowedTypesIconTextureID;
 
 		std::function<void* ()> CreateCrossAreaDataGetter(int SocketIndex);
 
@@ -35,6 +37,14 @@ namespace VisNodeSys
 
 		bool AddSocketInternal(std::vector<std::string> AllowedTypes, std::string Name = "");
 		void SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSocket, NODE_SOCKET_EVENT EventType);
+
+		static bool bSettingAllowedTypes;
+		static bool bShouldOpenEditWindow;
+		static NodeSocket* SocketInEditWindow;
+		static std::string CurrentEditWindowCaption;
+		static std::string EditWindowInputBuffer;
+		static void OpenEditWindow(NodeSocket* Socket, bool bForAllowedTypes);
+		static void RenderEditWindow();
 	public:
 		bool IsInputNode() const;
 		Node* GetPartnerNode() const;
@@ -48,8 +58,6 @@ namespace VisNodeSys
 		bool AddSocket(std::vector<std::string> AllowedTypes, std::string Name = "");
 		bool DeleteSocket(NodeSocket* Socket);
 		bool DeleteSocket(std::string SocketID);
-
-		bool SetSocketAllowedTypes(std::string SocketID, std::vector<std::string> NewTypes);
 
 		void Draw();
 	};

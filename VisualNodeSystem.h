@@ -49,9 +49,11 @@ namespace VisNodeSys
 		bool DeleteSocketFromLink(const std::string& AnyNodeIDThatIsPartOfLink, size_t SocketIndex);
 		bool DeleteSocketFromLink(const std::string& AnyNodeIDThatIsPartOfLink, std::string SocketID);
 		bool DeleteSocket(const std::string& NodeID, std::string SocketID);
+		bool DeleteSocket(NodeSocket* Socket);
 
 		bool RevalidateSocketConnections(NodeSocket* Socket);
 		bool SetSocketAllowedTypesOnLink(const std::string& AnyNodeIDThatIsPartOfLink, std::string SocketID, std::vector<std::string> NewTypes);
+		void SetSocketNameOnLink(const std::string& AnyNodeIDThatIsPartOfLink, std::string SocketID, std::string NewName);
 	public:
 		SINGLETON_PUBLIC_PART(NodeSystem)
 

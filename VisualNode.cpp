@@ -119,7 +119,7 @@ bool Node::AddSocket(NodeSocket* Socket)
 
 bool Node::DeleteSocket(std::string SocketID)
 {
-	return DeleteSocket(GetSocketByIDInternal(SocketID));
+	return DeleteSocket(GetSocketByID(SocketID));
 }
 
 bool Node::DeleteSocket(NodeSocket* Socket)
@@ -513,24 +513,7 @@ bool Node::IsNodeWithIDInList(const std::string ID, const std::vector<Node*> Lis
 	return false;
 }
 
-NodeSocket* Node::GetSocketByIDInternal(std::string SocketID) const
-{
-	for (size_t i = 0; i < Input.size(); i++)
-	{
-		if (Input[i]->GetID() == SocketID)
-			return Input[i];
-	}
-
-	for (size_t i = 0; i < Output.size(); i++)
-	{
-		if (Output[i]->GetID() == SocketID)
-			return Output[i];
-	}
-
-	return nullptr;
-}
-
-const NodeSocket* Node::GetSocketByID(std::string SocketID) const
+NodeSocket* Node::GetSocketByID(std::string SocketID) const
 {
 	for (size_t i = 0; i < Input.size(); i++)
 	{
@@ -564,7 +547,7 @@ size_t Node::GetSocketIndexByID(std::string SocketID) const
 	return -1;
 }
 
-const NodeSocket* Node::GetSocketByIndex(size_t SocketIndex, bool bOutput) const
+NodeSocket* Node::GetSocketByIndex(size_t SocketIndex, bool bOutput) const
 {
 	std::vector<NodeSocket*> SocketList = bOutput ? Output : Input;
 	if (SocketIndex >= SocketList.size())
@@ -580,13 +563,4 @@ std::string Node::GetSocketIDByIndex(size_t SocketIndex, bool bOutput) const
 		return "";
 
 	return Socket->GetID();
-}
-
-bool Node::SetSocketAllowedTypes(std::string SocketID, std::vector<std::string> NewTypes)
-{
-	NodeSocket* Socket = GetSocketByIDInternal(SocketID);
-	if (Socket == nullptr)
-		return false;
-
-	return Socket->SetAllowedTypes(NewTypes);
 }

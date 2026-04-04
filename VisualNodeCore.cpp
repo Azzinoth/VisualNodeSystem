@@ -411,6 +411,10 @@ void NodeCore::SetTextureLoader(std::function<ImTextureID(const std::string&)> L
 			LoadTextureFromBase64(EditIconBase64, LinkNode::EditIconTextureID);
 		if (LinkNode::TrashBinIconTextureID == 0)
 			LoadTextureFromBase64(TrashBinIconBase64, LinkNode::TrashBinIconTextureID);
+		if (LinkNode::RenameIconTextureID == 0)
+			LoadTextureFromBase64(RenameIconBase64, LinkNode::RenameIconTextureID);
+		if (LinkNode::ChangeAllowedTypesIconTextureID == 0)
+			LoadTextureFromBase64(ChangeAllowedTypesBase64, LinkNode::ChangeAllowedTypesIconTextureID);
 	}
 }
 

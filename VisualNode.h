@@ -49,7 +49,6 @@ namespace VisNodeSys
 
 		std::vector<NodeSocket*> Input;
 		std::vector<NodeSocket*> Output;
-		NodeSocket* GetSocketByIDInternal(std::string SocketID) const;
 
 		ImVec2 LeftTop;
 		ImVec2 RightBottom;
@@ -99,15 +98,14 @@ namespace VisNodeSys
 		virtual bool AddSocket(NodeSocket* Socket);
 		virtual bool DeleteSocket(NodeSocket* Socket);
 		virtual bool DeleteSocket(std::string SocketID);
-		virtual bool SetSocketAllowedTypes(std::string SocketID, std::vector<std::string> NewTypes);
 
 		virtual Json::Value ToJson();
 		virtual bool FromJson(Json::Value Json);
 
-		const NodeSocket* GetSocketByID(std::string SocketID) const;
+		NodeSocket* GetSocketByID(std::string SocketID) const;
 		size_t GetSocketIndexByID(std::string SocketID) const;
 
-		const NodeSocket* GetSocketByIndex(size_t SocketIndex, bool bOutput) const;
+		NodeSocket* GetSocketByIndex(size_t SocketIndex, bool bOutput) const;
 		std::string GetSocketIDByIndex(size_t SocketIndex, bool bOutput) const;
 
 		size_t GetInputSocketCount() const;

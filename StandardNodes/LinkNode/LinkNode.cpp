@@ -22,6 +22,14 @@ ImTextureID LinkNode::LinkIconTextureID = 0;
 ImTextureID LinkNode::PlusIconTextureID = 0;
 ImTextureID LinkNode::EditIconTextureID = 0;
 ImTextureID LinkNode::TrashBinIconTextureID = 0;
+ImTextureID LinkNode::RenameIconTextureID = 0;
+ImTextureID LinkNode::ChangeAllowedTypesIconTextureID = 0;
+
+bool LinkNode::bSettingAllowedTypes = false;
+bool LinkNode::bShouldOpenEditWindow = false;
+NodeSocket* LinkNode::SocketInEditWindow = nullptr;
+std::string LinkNode::CurrentEditWindowCaption = "";
+std::string LinkNode::EditWindowInputBuffer = "";
 
 LinkNode::LinkNode()
 {
@@ -139,51 +147,29 @@ void LinkNode::Draw()
 	Node::Draw();
 
 	float Zoom = ParentArea->GetZoomFactor();
+	float LinkIconSize = 32.0f * Zoom;
 
 	float NodeCenterX = ImGui::GetCursorScreenPos().x + GetSize().x / 2.0f * Zoom;
 	float NodeCenterY = ImGui::GetCursorScreenPos().y + GetSize().y / 2.0f * Zoom;
-	float EditIconX = NodeCenterX + 64.0f * Zoom - (32.0f * Zoom) / 2.0f;
-	float EditIconY = NodeCenterY - (32.0f * Zoom) / 2.0f;
-
-	float XPosition = ImGui::GetCursorScreenPos().x;
+	float EditButtonX = 0.0f;
 	if (bIsInputNode)
-		XPosition += GetSize().x * Zoom - 32.0f * 1.5f * Zoom;
+		EditButtonX = NodeCenterX + 64.0f * Zoom - LinkIconSize / 2.0f;
 	else
-		XPosition += 32.0f * 0.5f * Zoom;
+		EditButtonX = NodeCenterX - 64.0f * Zoom - LinkIconSize / 2.0f;
+
+	float EditButtonY = NodeCenterY - LinkIconSize / 2.0f;
+
+	float LinkIconX = ImGui::GetCursorScreenPos().x;
+	if (bIsInputNode)
+		LinkIconX += GetSize().x * Zoom - LinkIconSize * 1.25f;
+	else
+		LinkIconX += LinkIconSize * 0.25f;
 	
-	float YPosition = ImGui::GetCursorScreenPos().y + GetSize().y / 2.0f * Zoom - 32.0f / 2.0f * Zoom;
-
-	std::vector<NodeSocket*>& SocketsToWorkWith = bIsInputNode ? Input : Output;
-
-	if (LinkNode::LinkIconTextureID != 0)
-	{
-		ImGui::SetCursorScreenPos(ImVec2(XPosition, YPosition));
-		ImGui::Image(LinkNode::LinkIconTextureID, ImVec2(32.0f, 32.0f) * Zoom);
-	}
-
-	if (LinkNode::PlusIconTextureID != 0 && bInEditMode)
-	{
-		size_t LastSocketIndex = SocketsToWorkWith.size() - 1;
-		std::string SocketID = SocketsToWorkWith[LastSocketIndex]->GetID();
-		ImVec2 SocketPosition = ParentArea->SocketToPosition(this, SocketID);
-		ImGui::SetCursorScreenPos(ImVec2(EditIconX - 48.0f * Zoom - (16.0f * Zoom) / 2.0f, SocketPosition.y - (16.0f * Zoom) / 2.0f));
-		
-		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
-		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
-
-		if (ImGui::ImageButton(("PlusIcon_LinkNode_ID" + ID).c_str(), PlusIconTextureID, ImVec2(16.0f, 16.0f) * Zoom, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImVec4(0, 0, 0, 0)))
-		{
-			AddSocket({ "INT" }, "TEST");
-		}
-		NODE_CORE.ShowToolTip("Add socket");
-
-		ImGui::PopStyleVar();
-		ImGui::PopStyleColor();
-	}
+	float LinkIconY = ImGui::GetCursorScreenPos().y + GetSize().y / 2.0f * Zoom - LinkIconSize / 2.0f;
 
 	if (LinkNode::EditIconTextureID != 0)
 	{
-		ImGui::SetCursorScreenPos(ImVec2(EditIconX, EditIconY));
+		ImGui::SetCursorScreenPos(ImVec2(EditButtonX, EditButtonY));
 
 		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
 		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
@@ -197,23 +183,107 @@ void LinkNode::Draw()
 		ImGui::PopStyleColor();
 	}
 
-	if (LinkNode::TrashBinIconTextureID != 0 && bInEditMode)
+	if (bInEditMode)
 	{
-		for (size_t i = 0; i < SocketsToWorkWith.size(); i++)
+		RenderEditWindow();
+
+		if (LinkNode::PlusIconTextureID != 0)
 		{
-			if (i > 0)
+			float PlusIconSize = 16.0f * Zoom;
+			// Horizontally: midpoint between EditIcon right edge and Link icon left edge.
+			float EditIconRightEdge = EditButtonX + 32.0f * Zoom;
+			float PlusPosX = EditIconRightEdge + (LinkIconX - EditIconRightEdge) / 2.0f - PlusIconSize / 2.0f;
+			float PlusPosY = EditButtonY + (32.0f * Zoom) / 2.0f - PlusIconSize / 2.0f;
+
+			ImGui::SetCursorScreenPos(ImVec2(PlusPosX, PlusPosY));
+
+			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
+			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+
+			if (ImGui::ImageButton(("PlusIcon_LinkNode_ID" + ID).c_str(), PlusIconTextureID, ImVec2(PlusIconSize, PlusIconSize), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImVec4(0, 0, 0, 0)))
+			{
+				AddSocket({ "INT" }, "TEST");
+			}
+			NODE_CORE.ShowToolTip("Add socket");
+
+			ImGui::PopStyleVar();
+			ImGui::PopStyleColor();
+		}
+
+		std::vector<NodeSocket*>& SocketsToWorkWith = bIsInputNode ? Input : Output;
+		if (LinkNode::RenameIconTextureID != 0)
+		{
+			float RenameIconSize = 24.0f * Zoom;
+			for (size_t i = 0; i < SocketsToWorkWith.size(); i++)
 			{
 				std::string SocketID = SocketsToWorkWith[i]->GetID();
 				ImVec2 SocketPosition = ParentArea->SocketToPosition(this, SocketID);
-				ImGui::SetCursorScreenPos(ImVec2(EditIconX - 16.0f * Zoom - (16.0f * Zoom) / 2.0f, SocketPosition.y - (16.0f * Zoom) / 2.0f));
+				float ButtonXShift = bIsInputNode ? -40.0f * Zoom : 48.0f * Zoom;
+				float IconXShift = bIsInputNode ? -RenameIconSize / 2.0f : RenameIconSize / 2.0f;
+				ImGui::SetCursorScreenPos(ImVec2(EditButtonX + ButtonXShift + IconXShift, SocketPosition.y - RenameIconSize / 2.0f));
 
 				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
 				ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
 
-				if (ImGui::ImageButton(("TrashBinIcon_LinkNode_ID" + SocketID).c_str(), TrashBinIconTextureID, ImVec2(16.0f, 16.0f) * Zoom, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImVec4(0, 0, 0, 0)))
+				if (ImGui::ImageButton(("Rename_LinkNode_ID" + SocketID).c_str(), RenameIconTextureID, ImVec2(RenameIconSize, RenameIconSize), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImVec4(0, 0, 0, 0)))
+				{
+					OpenEditWindow(SocketsToWorkWith[i], false);
+				}
+				NODE_CORE.ShowToolTip("Rename socket");
+
+				ImGui::PopStyleVar();
+				ImGui::PopStyleColor();
+			}
+		}
+
+		if (LinkNode::ChangeAllowedTypesIconTextureID != 0)
+		{
+			float ChangeTypesIconSize = 16.0f * Zoom;
+			for (size_t i = 0; i < SocketsToWorkWith.size(); i++)
+			{
+				if (i == 0)
+					continue;
+
+				std::string SocketID = SocketsToWorkWith[i]->GetID();
+				ImVec2 SocketPosition = ParentArea->SocketToPosition(this, SocketID);
+				float ButtonXShift = bIsInputNode ? -64.0f * Zoom : 82.0f * Zoom;
+				float IconXShift = bIsInputNode ? -ChangeTypesIconSize / 2.0f : ChangeTypesIconSize / 2.0f;
+				ImGui::SetCursorScreenPos(ImVec2(EditButtonX + ButtonXShift + IconXShift, SocketPosition.y - ChangeTypesIconSize / 2.0f));
+
+				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
+				ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+
+				if (ImGui::ImageButton(("ChangeAllowedTypes_LinkNode_ID" + SocketID).c_str(), ChangeAllowedTypesIconTextureID, ImVec2(ChangeTypesIconSize, ChangeTypesIconSize), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImVec4(0, 0, 0, 0)))
+				{
+					OpenEditWindow(SocketsToWorkWith[i], true);
+				}
+				NODE_CORE.ShowToolTip("Change allowed types");
+				ImGui::PopStyleVar();
+				ImGui::PopStyleColor();
+			}
+		}
+
+		if (LinkNode::TrashBinIconTextureID != 0)
+		{
+			float TrashBinIconSize = 16.0f * Zoom;
+			for (size_t i = 0; i < SocketsToWorkWith.size(); i++)
+			{
+				if (i == 0)
+					continue;
+				
+				std::string SocketID = SocketsToWorkWith[i]->GetID();
+				ImVec2 SocketPosition = ParentArea->SocketToPosition(this, SocketID);
+				float ButtonXShift = bIsInputNode ? -16.0f * Zoom : 30.0f * Zoom;
+				float IconXShift = bIsInputNode ? -TrashBinIconSize / 2.0f : TrashBinIconSize / 2.0f;
+				ImGui::SetCursorScreenPos(ImVec2(EditButtonX + ButtonXShift + IconXShift, SocketPosition.y - TrashBinIconSize / 2.0f));
+
+				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
+				ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+
+				if (ImGui::ImageButton(("TrashBinIcon_LinkNode_ID" + SocketID).c_str(), TrashBinIconTextureID, ImVec2(TrashBinIconSize, TrashBinIconSize), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImVec4(0, 0, 0, 0)))
 				{
 					DeleteSocket(SocketID);
-					
+
 					ImGui::PopStyleVar();
 					ImGui::PopStyleColor();
 					break;
@@ -224,6 +294,12 @@ void LinkNode::Draw()
 				ImGui::PopStyleColor();
 			}
 		}
+	}
+
+	if (LinkNode::LinkIconTextureID != 0)
+	{
+		ImGui::SetCursorScreenPos(ImVec2(LinkIconX, LinkIconY));
+		ImGui::Image(LinkNode::LinkIconTextureID, ImVec2(LinkIconSize, LinkIconSize));
 	}
 }
 
@@ -283,11 +359,7 @@ bool LinkNode::IsDangling() const
 bool LinkNode::AddSocket(std::vector<std::string> AllowedTypes, std::string Name)
 {
 	NodeSocket* NewSocket = new NodeSocket(this, AllowedTypes, Name, !IsInputNode());
-	bool bResult = AddSocket(NewSocket);
-	if (!bResult)
-		delete NewSocket;
-
-	return bResult;
+	return AddSocket(NewSocket);
 }
 
 bool LinkNode::AddSocket(NodeSocket* Socket)
@@ -329,7 +401,7 @@ bool LinkNode::AddSocketInternal(std::vector<std::string> AllowedTypes, std::str
 
 bool LinkNode::DeleteSocket(std::string SocketID)
 {
-	return DeleteSocket(GetSocketByIDInternal(SocketID));
+	return DeleteSocket(GetSocketByID(SocketID));
 }
 
 bool LinkNode::DeleteSocket(NodeSocket* Socket)
@@ -356,16 +428,148 @@ bool LinkNode::DeleteSocket(NodeSocket* Socket)
 	return true;
 }
 
-bool LinkNode::SetSocketAllowedTypes(std::string SocketID, std::vector<std::string> NewTypes)
+void LinkNode::OpenEditWindow(NodeSocket* Socket, bool bForAllowedTypes)
 {
-	SocketIDBeingModified = SocketID;
+	SocketInEditWindow = Socket;
+	bSettingAllowedTypes = bForAllowedTypes;
+	bShouldOpenEditWindow = true;
+}
 
-	// Apply locally first (this calls RevalidateSocketConnections).
-	bool bResult = Node::SetSocketAllowedTypes(SocketID, NewTypes);
+void LinkNode::RenderEditWindow()
+{
+	if (bShouldOpenEditWindow)
+	{
+		if (SocketInEditWindow == nullptr)
+		{
+			bShouldOpenEditWindow = false;
+			return;
+		}
 
-	// Mirror to the partner link node.
-	NODE_SYSTEM.SetSocketAllowedTypesOnLink(GetID(), SocketID, NewTypes);
+		if (bSettingAllowedTypes)
+		{
+			CurrentEditWindowCaption = "Set allowed types for \"" + SocketInEditWindow->GetName() + "\" socket";
+			EditWindowInputBuffer.clear();
+			std::vector<std::string> CurrentTypes = SocketInEditWindow->GetAllowedTypes();
+			for (size_t i = 0; i < CurrentTypes.size(); i++)
+			{
+				if (i > 0)
+					EditWindowInputBuffer += " ";
+				EditWindowInputBuffer += CurrentTypes[i];
+			}
+		}
+		else
+		{
+			CurrentEditWindowCaption = "Edit socket name for \"" + SocketInEditWindow->GetName() + "\" socket";
+			EditWindowInputBuffer = SocketInEditWindow->GetName();
+		}
+		
+		ImGui::OpenPopup(CurrentEditWindowCaption.c_str());
+		bShouldOpenEditWindow = false;
+	}
 
-	SocketIDBeingModified = "";
-	return bResult;
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 15));
+	if (ImGui::BeginPopupModal(CurrentEditWindowCaption.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+	{
+		if (SocketInEditWindow == nullptr)
+		{
+			ImGui::PopStyleVar();
+			ImGui::CloseCurrentPopup();
+			ImGui::EndPopup();
+			return;
+		}
+
+		if (bSettingAllowedTypes)
+		{
+			ImGui::Text("Enter allowed types separated by spaces:");
+			ImGui::SetNextItemWidth(300.0f);
+			ImGui::InputText("##AllowedTypes", &EditWindowInputBuffer);
+
+			// Parse current input to show preview.
+			std::vector<std::string> ParsedTypes;
+			std::istringstream StringStream(EditWindowInputBuffer);
+			std::string CurrentType;
+			while (StringStream >> CurrentType)
+				ParsedTypes.push_back(CurrentType);
+
+			if (ParsedTypes.empty())
+			{
+				ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.4f, 1.0f), "At least one type is required.");
+			}
+			else
+			{
+				ImGui::Text("Types to apply: %d", static_cast<int>(ParsedTypes.size()));
+			}
+		}
+		else
+		{
+			ImGui::Text("Enter new socket name:");
+			ImGui::SetNextItemWidth(300.0f);
+			ImGui::InputText("##SocketName", &EditWindowInputBuffer);
+
+			if (EditWindowInputBuffer.empty())
+				ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.4f, 1.0f), "Socket name cannot be empty.");
+		}
+
+		ImGui::Spacing();
+
+		// Determine if Apply should be enabled.
+		bool bCanApply = true;
+		if (bSettingAllowedTypes)
+		{
+			std::istringstream CheckStream(EditWindowInputBuffer);
+			std::string CheckType;
+			if (!(CheckStream >> CheckType))
+				bCanApply = false;
+		}
+		else
+		{
+			if (EditWindowInputBuffer.empty())
+				bCanApply = false;
+		}
+
+		ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 4.0f - 120 / 2.0f);
+
+		if (!bCanApply)
+			ImGui::BeginDisabled();
+
+		if (ImGui::Button("Apply", ImVec2(120, 0)))
+		{
+			if (SocketInEditWindow != nullptr)
+			{
+				if (bSettingAllowedTypes)
+				{
+					std::vector<std::string> NewTypes;
+					std::istringstream StringStream(EditWindowInputBuffer);
+					std::string CurrentType;
+					while (StringStream >> CurrentType)
+						NewTypes.push_back(CurrentType);
+
+					SocketInEditWindow->SetAllowedTypes(NewTypes);
+				}
+				else
+				{
+					SocketInEditWindow->SetName(EditWindowInputBuffer);
+				}
+			}
+
+			SocketInEditWindow = nullptr;
+			ImGui::CloseCurrentPopup();
+		}
+
+		if (!bCanApply)
+			ImGui::EndDisabled();
+		
+		ImGui::SetItemDefaultFocus();
+		ImGui::SameLine();
+		ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2.0f + ImGui::GetWindowWidth() / 4.0f - 120.0f / 2.0f);
+		if (ImGui::Button("Cancel", ImVec2(120, 0)))
+			ImGui::CloseCurrentPopup();
+		
+		ImGui::PopStyleVar();
+		ImGui::EndPopup();
+	}
+	else
+	{
+		ImGui::PopStyleVar();
+	}
 }

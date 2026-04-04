@@ -44,6 +44,13 @@ std::string NodeSocket::GetName() const
 	return Name;
 }
 
+void NodeSocket::SetName(std::string NewValue)
+{
+	Name = NewValue;
+	if (GetParent() != nullptr && GetParent()->GetType() == "LinkNode")
+		NODE_SYSTEM.SetSocketNameOnLink(GetParent()->GetID(), GetID(), NewValue);
+}
+
 std::vector<std::string> NodeSocket::GetAllowedTypes() const
 {
 	return AllowedTypes;
@@ -72,6 +79,9 @@ void* NodeSocket::GetData()
 bool NodeSocket::SetAllowedTypes(std::vector<std::string> NewTypes)
 {
 	AllowedTypes = NewTypes;
+	if (GetParent() != nullptr && GetParent()->GetType() == "LinkNode")
+		NODE_SYSTEM.SetSocketAllowedTypesOnLink(GetParent()->GetID(), GetID(), NewTypes);
+
 	return !NODE_SYSTEM.RevalidateSocketConnections(this);
 }
 

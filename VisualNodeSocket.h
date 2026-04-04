@@ -17,6 +17,8 @@ namespace VisNodeSys
 		friend class NodeArea;
 		friend Node;
 
+		~NodeSocket() = default;
+
 		std::string ID;
 		bool bOutput = false;
 		std::vector<std::string> AllowedTypes;
@@ -31,19 +33,21 @@ namespace VisNodeSys
 	public:
 		NodeSocket(Node* Parent, std::string Type, std::string Name, bool bOutput = false, std::function<void* ()> OutputDataFunction = []() { return nullptr; });
 		NodeSocket(Node* Parent, std::vector<std::string> Types, std::string Name, bool bOutput = false, std::function<void* ()> OutputDataFunction = []() { return nullptr; });
-
+		
 		Node* GetParent() const;
 		std::vector<NodeSocket*> GetConnectedSockets() const;
 
 		std::string GetID() const;
+
 		std::string GetName() const;
+		void SetName(std::string NewValue);
+
+		bool IsOutput() const;
+		bool IsInput() const;
 
 		std::vector<std::string> GetAllowedTypes() const;
 		// Returns true if change did not trigger disconnection of already connected sockets.
 		bool SetAllowedTypes(std::vector<std::string> NewTypes);
-
-		bool IsOutput() const;
-		bool IsInput() const;
 
 		void SetFunctionToOutputData(std::function<void* ()> NewFunction);
 		void* GetData();
