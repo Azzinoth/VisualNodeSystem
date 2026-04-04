@@ -1015,9 +1015,10 @@ TEST(NodeSystemTests, LinkAreas_SetSocketAllowedTypes_DisconnectsIncompatible)
 
 	// Change socket type on upstream link node to something incompatible.
 	std::string SocketID = UpstreamLinkNode->GetSocketIDByIndex(1, false);
-	ASSERT_FALSE(SocketID.empty());
+	NodeSocket* Socket = UpstreamLinkNode->GetSocketByID(SocketID);
+	ASSERT_NE(Socket, nullptr);
 
-	bool bNoDisconnections = UpstreamLinkNode->SetSocketAllowedTypes(SocketID, { "FLOAT" });
+	bool bNoDisconnections = Socket->SetAllowedTypes({ "FLOAT" });
 	ASSERT_FALSE(bNoDisconnections);
 
 	// Upstream connection to the BOOL socket should be severed.
@@ -1076,9 +1077,10 @@ TEST(NodeSystemTests, LinkAreas_SetSocketAllowedTypes_KeepsCompatible)
 
 	// Widen type to include INT and FLOAT, INT connections should survive.
 	std::string SocketID = UpstreamLinkNode->GetSocketIDByIndex(1, false);
-	ASSERT_FALSE(SocketID.empty());
+	NodeSocket* Socket = UpstreamLinkNode->GetSocketByID(SocketID);
+	ASSERT_NE(Socket, nullptr);
 
-	bool bNoDisconnections = UpstreamLinkNode->SetSocketAllowedTypes(SocketID, { "INT", "FLOAT" });
+	bool bNoDisconnections = Socket->SetAllowedTypes({ "INT", "FLOAT" });
 	ASSERT_TRUE(bNoDisconnections);
 
 	// All connections should still be intact.
@@ -1154,9 +1156,10 @@ TEST(NodeSystemTests, LinkAreas_SetSocketAllowedTypes_PartialDisconnect_Multiple
 
 	// Change only the BOOL socket (index 1) to INT, FLOAT socket (index 2) should be unaffected.
 	std::string BoolSocketID = UpstreamLinkNode->GetSocketIDByIndex(1, false);
-	ASSERT_FALSE(BoolSocketID.empty());
+	NodeSocket* Socket = UpstreamLinkNode->GetSocketByID(BoolSocketID);
+	ASSERT_NE(Socket, nullptr);
 
-	bool bNoDisconnections = UpstreamLinkNode->SetSocketAllowedTypes(BoolSocketID, { "INT" });
+	bool bNoDisconnections = Socket->SetAllowedTypes({ "INT" });
 	ASSERT_FALSE(bNoDisconnections);
 
 	// BOOL connections on both sides should be severed.
@@ -1166,6 +1169,55 @@ TEST(NodeSystemTests, LinkAreas_SetSocketAllowedTypes_PartialDisconnect_Multiple
 	// FLOAT connections should remain intact.
 	ASSERT_TRUE(UpstreamArea->IsConnected(UpstreamFloatNode, UpstreamLinkNode));
 	ASSERT_TRUE(DownstreamArea->IsConnected(DownstreamLinkNode, 2, DownstreamFloatNode, 1));
+
+	NODE_SYSTEM.DeleteNodeArea(UpstreamArea);
+	NODE_SYSTEM.DeleteNodeArea(DownstreamArea);
+}
+
+TEST(NodeSystemTests, LinkAreas_RenameSocket_PropagatesPartnerName)
+{
+	NodeArea* UpstreamArea = NODE_SYSTEM.CreateNodeArea();
+	std::string UpstreamAreaID = UpstreamArea->GetID();
+
+	NodeArea* DownstreamArea = NODE_SYSTEM.CreateNodeArea();
+	std::string DownstreamAreaID = DownstreamArea->GetID();
+
+	std::pair<std::string, std::string> LinkResult;
+	ASSERT_TRUE(NODE_SYSTEM.LinkNodeAreas(UpstreamAreaID, DownstreamAreaID, &LinkResult));
+	LinkNode* UpstreamLinkNode = dynamic_cast<LinkNode*>(NODE_SYSTEM.GetNodeByID(LinkResult.first));
+	ASSERT_NE(UpstreamLinkNode, nullptr);
+	ASSERT_TRUE(UpstreamLinkNode->AddSocket({ "BOOL" }));
+
+	Node* DownstreamLinkNode = DownstreamArea->GetNodeByID(LinkResult.second);
+	ASSERT_NE(DownstreamLinkNode, nullptr);
+
+	// Get the socket on the upstream link node (index 1, after the execution socket).
+	std::string UpstreamSocketID = UpstreamLinkNode->GetSocketIDByIndex(1, false);
+	NodeSocket* UpstreamSocket = UpstreamLinkNode->GetSocketByID(UpstreamSocketID);
+	ASSERT_NE(UpstreamSocket, nullptr);
+
+	// Get the partner socket on the downstream link node.
+	std::string DownstreamSocketID = DownstreamLinkNode->GetSocketIDByIndex(1, true);
+	NodeSocket* DownstreamSocket = DownstreamLinkNode->GetSocketByID(DownstreamSocketID);
+	ASSERT_NE(DownstreamSocket, nullptr);
+
+	// Both sockets should have the same initial name.
+	EXPECT_EQ(UpstreamSocket->GetName(), DownstreamSocket->GetName());
+
+	// Rename the socket on the upstream link node.
+	std::string NewName = "RenamedBoolSocket";
+	UpstreamSocket->SetName(NewName);
+
+	// The partner socket on the downstream link node should also have the new name.
+	EXPECT_EQ(UpstreamSocket->GetName(), NewName);
+	EXPECT_EQ(DownstreamSocket->GetName(), NewName);
+
+	// Rename from the downstream side to verify bidirectional propagation.
+	std::string AnotherName = "RenamedAgain";
+	DownstreamSocket->SetName(AnotherName);
+
+	EXPECT_EQ(DownstreamSocket->GetName(), AnotherName);
+	EXPECT_EQ(UpstreamSocket->GetName(), AnotherName);
 
 	NODE_SYSTEM.DeleteNodeArea(UpstreamArea);
 	NODE_SYSTEM.DeleteNodeArea(DownstreamArea);

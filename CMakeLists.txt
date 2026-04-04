@@ -48,6 +48,7 @@ endif()
 # *************** THIRD_PARTY ***************
 
 file(GLOB imgui_SRC
+	"ThirdParty/imgui/misc/cpp/imgui_stdlib.cpp"
 	"ThirdParty/imgui/imgui.cpp"
 	"ThirdParty/imgui/imgui_demo.cpp"
 	"ThirdParty/imgui/imgui_draw.cpp"

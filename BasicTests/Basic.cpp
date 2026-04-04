@@ -386,9 +386,10 @@ TEST(Basic, SetAllowedTypes_DisconnectsIncompatible)
 
 	// Change the input socket type to something incompatible.
 	std::string SocketID = SecondNode->GetSocketIDByIndex(0, false);
-	ASSERT_FALSE(SocketID.empty());
+	NodeSocket* Socket = SecondNode->GetSocketByID(SocketID);
+	ASSERT_NE(Socket, nullptr);
 
-	bool bNoDisconnections = SecondNode->SetSocketAllowedTypes(SocketID, { "TYPE_B" });
+	bool bNoDisconnections = Socket->SetAllowedTypes({ "TYPE_B" });
 	ASSERT_FALSE(bNoDisconnections);
 
 	// Connection should be gone.
@@ -416,9 +417,10 @@ TEST(Basic, SetAllowedTypes_KeepsCompatible)
 
 	// Change type to a set that still includes the original type.
 	std::string SocketID = SecondNode->GetSocketIDByIndex(0, false);
-	ASSERT_FALSE(SocketID.empty());
+	NodeSocket* Socket = SecondNode->GetSocketByID(SocketID);
+	ASSERT_NE(Socket, nullptr);
 
-	bool bNoDisconnections = SecondNode->SetSocketAllowedTypes(SocketID, { "TYPE_A", "TYPE_B" });
+	bool bNoDisconnections = Socket->SetAllowedTypes({ "TYPE_A", "TYPE_B" });
 	ASSERT_TRUE(bNoDisconnections);
 
 	// Connection should survive.
@@ -452,9 +454,10 @@ TEST(Basic, SetAllowedTypes_PartialDisconnect)
 
 	// Narrow the input socket to only TYPE_A, should disconnect NodeB but keep NodeA.
 	std::string SocketID = Receiver->GetSocketIDByIndex(0, false);
-	ASSERT_FALSE(SocketID.empty());
+	NodeSocket* Socket = Receiver->GetSocketByID(SocketID);
+	ASSERT_NE(Socket, nullptr);
 
-	bool bNoDisconnections = Receiver->SetSocketAllowedTypes(SocketID, { "TYPE_A" });
+	bool bNoDisconnections = Socket->SetAllowedTypes({ "TYPE_A" });
 	ASSERT_FALSE(bNoDisconnections);
 
 	ASSERT_TRUE(LocalNodeArea->IsConnected(NodeA, Receiver));
