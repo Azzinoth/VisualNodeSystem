@@ -107,6 +107,13 @@ file(GLOB GroupComment_SRC
 	"GroupCommentTests/GroupCommentTests.h"
 )
 
+file(GLOB BoundaryNodes_SRC
+	"BoundaryNodesTests/LinkNodeTests.cpp"
+	"BoundaryNodesTests/LinkNodeTests.h"
+	"BoundaryNodesTests/SubAreaNodeTests.cpp"
+	"BoundaryNodesTests/SubAreaNodeTests.h"
+)
+
 file(GLOB ExecutionFlowNodes_SRC
 	"ExecutionFlowNodesTests/ExecutionFlowNodesTests.cpp"
 	"ExecutionFlowNodesTests/ExecutionFlowNodesTests.h"
@@ -142,6 +149,7 @@ add_executable(Visual_Node_System_Tests
 			   ${NodeArea_EventSystem_SRC}
 			   ${NodeFactory_SRC}
 			   ${GroupComment_SRC}
+			   ${BoundaryNodes_SRC}
 			   ${ExecutionFlowNodes_SRC}
 			   # *************** THIRD_PARTY ***************
 			   ${imgui_SRC}
@@ -164,6 +172,7 @@ source_group("Source Files/NodeArea/Load" FILES ${NodeArea_Load_SRC})
 source_group("Source Files/NodeArea/EventSystem" FILES ${NodeArea_EventSystem_SRC})
 source_group("Source Files/NodeFactory" FILES ${NodeFactory_SRC})
 source_group("Source Files/GroupComment" FILES ${GroupComment_SRC})
+source_group("Source Files/BoundaryNodes" FILES ${BoundaryNodes_SRC})
 source_group("Source Files/ExecutionFlowNodes" FILES ${ExecutionFlowNodes_SRC})
 # *************** THIRD_PARTY ***************
 source_group("Source Files/ThirdParty/imgui" FILES ${imgui_SRC})

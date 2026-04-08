@@ -483,3 +483,71 @@ TEST(NodeAreaEventSystemTests, RunOnEachConnectedNode_FollowsOutputConnections)
 
 	NODE_SYSTEM.DeleteNodeArea(LocalNodeArea);
 }
+
+TEST(NodeAreaEventSystemTests, LastExecutedNodes_IsInExecutionOrder_Manual)
+{
+	std::vector<std::string> NodesIDList;
+	std::vector<std::string> GroupCommentsIDList;
+
+	NodeArea* LocalNodeArea = TEST_TOOLS.CreateTinyPopulatedNodeArea(NodesIDList, GroupCommentsIDList);
+	ASSERT_NE(LocalNodeArea, nullptr);
+	ASSERT_GE(NodesIDList.size(), 3);
+
+	LocalNodeArea->SetSaveExecutedNodes(true);
+
+	// Connect Node 0 => Node 1 => Node 2.
+	Node* FirstNode = LocalNodeArea->GetNodeByID(NodesIDList[0]);
+	Node* SecondNode = LocalNodeArea->GetNodeByID(NodesIDList[1]);
+	Node* ThirdNode = LocalNodeArea->GetNodeByID(NodesIDList[2]);
+	ASSERT_NE(FirstNode, nullptr);
+	ASSERT_NE(SecondNode, nullptr);
+	ASSERT_NE(ThirdNode, nullptr);
+
+	// Trigger execution events manually in a known order: First, Second, Third.
+	LocalNodeArea->TriggerOrphanSocketEvent(FirstNode, EXECUTE);
+	LocalNodeArea->TriggerOrphanSocketEvent(SecondNode, EXECUTE);
+	LocalNodeArea->TriggerOrphanSocketEvent(ThirdNode, EXECUTE);
+
+	std::vector<Node*> ExecutedNodes = LocalNodeArea->GetLastExecutedNodes();
+	ASSERT_EQ(ExecutedNodes.size(), 3);
+
+	// The first executed node should be first in the list.
+	EXPECT_EQ(ExecutedNodes[0]->GetID(), FirstNode->GetID());
+	EXPECT_EQ(ExecutedNodes[1]->GetID(), SecondNode->GetID());
+	EXPECT_EQ(ExecutedNodes[2]->GetID(), ThirdNode->GetID());
+
+	NODE_SYSTEM.DeleteNodeArea(LocalNodeArea);
+}
+
+TEST(NodeAreaEventSystemTests, LastExecutedNodes_IsInExecutionOrder_ThroughConnections)
+{
+	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(LocalNodeArea, nullptr);
+	LocalNodeArea->SetSaveExecutedNodes(true);
+
+	// Create 3 BoolVariableNode forming a simple chain.
+	BoolVariableNode* NodeA = new BoolVariableNode();
+	BoolVariableNode* NodeB = new BoolVariableNode();
+	BoolVariableNode* NodeC = new BoolVariableNode();
+
+	ASSERT_TRUE(LocalNodeArea->AddNode(NodeA));
+	ASSERT_TRUE(LocalNodeArea->AddNode(NodeB));
+	ASSERT_TRUE(LocalNodeArea->AddNode(NodeC));
+
+	// Connect NodeA -> NodeB -> NodeC.
+	ASSERT_TRUE(LocalNodeArea->TryToConnect(NodeA, 0, NodeB, 0));
+	ASSERT_TRUE(LocalNodeArea->TryToConnect(NodeB, 0, NodeC, 0));
+
+	ASSERT_TRUE(LocalNodeArea->SetExecutionEntryNode(NodeA));
+	ASSERT_TRUE(LocalNodeArea->ExecuteNodeNetwork());
+
+	std::vector<Node*> ExecutedNodes = LocalNodeArea->GetLastExecutedNodes();
+	ASSERT_GE(ExecutedNodes.size(), 3);
+
+	// First executed node should be first in the list.
+	EXPECT_EQ(ExecutedNodes[0]->GetID(), NodeA->GetID());
+	EXPECT_EQ(ExecutedNodes[1]->GetID(), NodeB->GetID());
+	EXPECT_EQ(ExecutedNodes[2]->GetID(), NodeC->GetID());
+
+	NODE_SYSTEM.DeleteNodeArea(LocalNodeArea);
+}

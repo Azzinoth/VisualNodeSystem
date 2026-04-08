@@ -1,4 +1,6 @@
 #pragma once
+
+#include "../CustomNodes/BeginNode.h"
 #include "../CustomNodes/CustomNode.h"
 #include "../CustomNodes/CustomNode2.h"
 #include "../CustomNodes/CustomNode3.h"
@@ -100,6 +102,8 @@ public:
 	int GetResultFromArithmeticOperator(ArithmeticOperationType Type, int A, int B);
 	float GetResultFromArithmeticOperator(ArithmeticOperationType Type, float A, float B);
 	glm::vec2 GetResultFromArithmeticOperator(ArithmeticOperationType Type, glm::vec2 A, glm::vec2 B);
+
+	void SimulateCopyPasteNodes(std::vector<VisNodeSys::Node*> NodesToCopy, VisNodeSys::NodeArea* TargetArea);
 };
 
 #define TEST_TOOLS TestTools::GetInstance()
