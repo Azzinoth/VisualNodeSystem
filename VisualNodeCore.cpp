@@ -1,5 +1,5 @@
 #include "VisualNodeCore.h"
-#include "StandardNodes/LinkNode/LinkNode.h"
+#include "StandardNodes/BoundaryNodes/LinkNode/LinkNode.h"
 using namespace VisNodeSys;
 
 #ifdef VISUAL_NODE_SYSTEM_SHARED
@@ -403,18 +403,20 @@ void NodeCore::SetTextureLoader(std::function<ImTextureID(const std::string&)> L
 	TextureLoader = Loader;
 	if (TextureLoader != nullptr)
 	{
-		if (LinkNode::LinkIconTextureID == 0)
-			LoadTextureFromBase64(LinkIconBase64, LinkNode::LinkIconTextureID);
-		if (LinkNode::PlusIconTextureID == 0)
-			LoadTextureFromBase64(PlusIconBase64, LinkNode::PlusIconTextureID);
-		if (LinkNode::EditIconTextureID == 0)
-			LoadTextureFromBase64(EditIconBase64, LinkNode::EditIconTextureID);
-		if (LinkNode::TrashBinIconTextureID == 0)
-			LoadTextureFromBase64(TrashBinIconBase64, LinkNode::TrashBinIconTextureID);
-		if (LinkNode::RenameIconTextureID == 0)
-			LoadTextureFromBase64(RenameIconBase64, LinkNode::RenameIconTextureID);
-		if (LinkNode::ChangeAllowedTypesIconTextureID == 0)
-			LoadTextureFromBase64(ChangeAllowedTypesBase64, LinkNode::ChangeAllowedTypesIconTextureID);
+		if (SocketMirrorNode::LinkIconTextureID == 0)
+			LoadTextureFromBase64(LinkIconBase64, SocketMirrorNode::LinkIconTextureID);
+		if (SocketMirrorNode::BrokenLinkIconTextureID == 0)
+			LoadTextureFromBase64(BrokenLinkIconBase64, SocketMirrorNode::BrokenLinkIconTextureID);
+		if (SocketMirrorNode::PlusIconTextureID == 0)
+			LoadTextureFromBase64(PlusIconBase64, SocketMirrorNode::PlusIconTextureID);
+		if (SocketMirrorNode::EditIconTextureID == 0)
+			LoadTextureFromBase64(EditIconBase64, SocketMirrorNode::EditIconTextureID);
+		if (SocketMirrorNode::TrashBinIconTextureID == 0)
+			LoadTextureFromBase64(TrashBinIconBase64, SocketMirrorNode::TrashBinIconTextureID);
+		if (SocketMirrorNode::RenameIconTextureID == 0)
+			LoadTextureFromBase64(RenameIconBase64, SocketMirrorNode::RenameIconTextureID);
+		if (SocketMirrorNode::ChangeAllowedTypesIconTextureID == 0)
+			LoadTextureFromBase64(ChangeAllowedTypesBase64, SocketMirrorNode::ChangeAllowedTypesIconTextureID);
 	}
 }
 

@@ -982,11 +982,12 @@ bool NodeArea::SetExecutionEntryNodeByID(std::string NewEntryNodeID)
 
 bool NodeArea::ExecuteNodeNetwork()
 {
+	LastExecutedNodes.clear();
+
 	Node* EntryNode = GetExecutionEntryNode();
 	if (EntryNode == nullptr)
 		return false;
 
-	LastExecutedNodes.clear();
 	TriggerOrphanSocketEvent(EntryNode, EXECUTE);
 	return true;
 }

@@ -1,6 +1,7 @@
 #pragma once
 #include "../../GroupComment.h"
-#include "../../StandardNodes/LinkNode/LinkNode.h"
+#include "../../StandardNodes/BoundaryNodes/LinkNode/LinkNode.h"
+#include "../../StandardNodes/BoundaryNodes/SubAreaNode/SubAreaNode.h"
 
 #ifdef VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES
 #include "../StandardNodes/ExecutionFlowNodes/BaseExecutionFlowNode.h"
@@ -288,6 +289,16 @@ namespace VisNodeSys
 		bool IsSaveExecutedNodes() const;
 		void SetSaveExecutedNodes(bool NewValue);
 #endif
+		NodeArea* GetParent() const;
+
+		bool IsChildOf(const NodeArea* PotentialParent) const;
+		bool IsParentOf(const NodeArea* PotentialChild) const;
+
+		size_t GetImediateChildrenCount() const;
+		size_t GetRecursiveChildCount() const;
+
+		std::vector<NodeArea*> GetImediateChildren() const;
+		std::vector<NodeArea*> GetRecursiveChildren() const;
 	private:
 		std::string ID;
 		std::string Name = "New Node Area";

@@ -91,7 +91,7 @@ void Node::SetSize(const ImVec2 NewValue)
 	Size = NewValue;
 }
 
-std::string Node::GetName()
+std::string Node::GetName() const
 {
 	return Name;
 }

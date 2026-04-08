@@ -31,9 +31,23 @@ endif()
 # defined projects like INSTALL.vcproj and ZERO_CHECK.vcproj
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
+file(GLOB SocketMirrorNode_SRC
+	"StandardNodes/BoundaryNodes/SocketMirrorNode.cpp"
+	"StandardNodes/BoundaryNodes/SocketMirrorNode.h"
+)
+
 file(GLOB VisualLinkNode_SRC
-	"StandardNodes/LinkNode/LinkNode.cpp"
-	"StandardNodes/LinkNode/LinkNode.h"
+	"StandardNodes/BoundaryNodes/LinkNode/LinkNode.cpp"
+	"StandardNodes/BoundaryNodes/LinkNode/LinkNode.h"
+)
+
+file(GLOB SubAreaNodes_SRC
+	"StandardNodes/BoundaryNodes/SubAreaNode/SubAreaNode.cpp"
+	"StandardNodes/BoundaryNodes/SubAreaNode/SubAreaNode.h"
+	"StandardNodes/BoundaryNodes/SubAreaNode/SubAreaInputNode.cpp"
+	"StandardNodes/BoundaryNodes/SubAreaNode/SubAreaInputNode.h"
+	"StandardNodes/BoundaryNodes/SubAreaNode/SubAreaOutputNode.cpp"
+	"StandardNodes/BoundaryNodes/SubAreaNode/SubAreaOutputNode.h"
 )
 
 file(GLOB VisualNodeArea_SRC
@@ -231,7 +245,9 @@ set(ALL_SOURCE_FILES "")
 list(APPEND ALL_SOURCE_FILES
             ${VisualNodeSystem_SRC}
 			${VisualNodeArea_SRC}
+			${SocketMirrorNode_SRC}
 			${VisualLinkNode_SRC}
+			${SubAreaNodes_SRC}
 			${BaseExecutionFlowNodes_SOURCE_FILES}
 			${LiteralsNodes_SOURCE_FILES}
 			${VariablesNodes_SOURCE_FILES}
@@ -260,7 +276,9 @@ endif()
 
 source_group("Source Files" FILES ${VisualNodeSystem_SRC})
 source_group("Source Files/SubSystems/VisualNodeArea/" FILES ${VisualNodeArea_SRC})
-source_group("Source Files/StandardNodes/LinkNode" FILES ${VisualLinkNode_SRC})
+source_group("Source Files/StandardNodes/BoundaryNodes/" FILES ${SocketMirrorNode_SRC})
+source_group("Source Files/StandardNodes/BoundaryNodes/LinkNode" FILES ${VisualLinkNode_SRC})
+source_group("Source Files/StandardNodes/BoundaryNodes/SubAreaNode" FILES ${SubAreaNodes_SRC})
 if(VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES)
 	source_group("Source Files/StandardNodes/ExecutionFlowNodes" FILES ${BaseExecutionFlowNodes_SOURCE_FILES})
 	source_group("Source Files/StandardNodes/ExecutionFlowNodes/LiteralsNodes" FILES ${LiteralsNodes_SOURCE_FILES})

@@ -568,11 +568,11 @@ bool NodeArea::TriggerSocketEvent(NodeSocket* CallerNodeSocket, NodeSocket* Trig
 	if (TriggeredNodeSocket->GetParent() == nullptr)
 		return false;
 
-	TriggeredNodeSocket->GetParent()->SocketEvent(TriggeredNodeSocket, CallerNodeSocket, EventType);
 #ifdef VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES
 	if (EventType == EXECUTE && Settings.bSaveExecutedNodes)
 		LastExecutedNodes.push_back(TriggeredNodeSocket->GetParent());
 #endif
+	TriggeredNodeSocket->GetParent()->SocketEvent(TriggeredNodeSocket, CallerNodeSocket, EventType);
 	
 	return true;
 }
@@ -585,11 +585,11 @@ bool NodeArea::TriggerOrphanSocketEvent(Node* Node, NODE_SOCKET_EVENT EventType)
 	if (EventType != EXECUTE)
 		return false;
 
-	Node->SocketEvent(nullptr, nullptr, EventType);
 #ifdef VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES
 	if (EventType == EXECUTE && Settings.bSaveExecutedNodes)
 		LastExecutedNodes.push_back(Node);
 #endif
+	Node->SocketEvent(nullptr, nullptr, EventType);
 
 	return true;
 }
@@ -958,4 +958,81 @@ bool NodeArea::DeleteByID(std::string ID)
 	}
 
 	return false;
+}
+
+NodeArea* NodeArea::GetParent() const
+{
+	NodeArea* Result = nullptr;
+
+	std::vector<SubAreaInputNode*> SubAreaInputNodes = GetNodesByType<SubAreaInputNode>();
+	if (!SubAreaInputNodes.empty())
+		Result = SubAreaInputNodes[0]->GetParentArea();
+
+	return Result;
+}
+
+bool NodeArea::IsChildOf(const NodeArea* PotentialParent) const
+{
+	if (PotentialParent == nullptr)
+		return false;
+
+	NodeArea* Parent = GetParent();
+	while (Parent != nullptr)
+	{
+		if (Parent == PotentialParent)
+			return true;
+
+		Parent = Parent->GetParent();
+	}
+
+	return false;
+}
+
+bool NodeArea::IsParentOf(const NodeArea* PotentialChild) const
+{
+	if (PotentialChild == nullptr)
+		return false;
+
+	return PotentialChild->IsChildOf(this);
+}
+
+size_t NodeArea::GetImediateChildrenCount() const
+{
+	std::vector<SubAreaNode*> SubAreaNodes = GetNodesByType<SubAreaNode>();
+	return SubAreaNodes.size();
+}
+
+size_t NodeArea::GetRecursiveChildCount() const
+{
+	std::vector<SubAreaNode*> SubAreaNodes = GetNodesByType<SubAreaNode>();
+	size_t Count = SubAreaNodes.size();
+	for (size_t i = 0; i < SubAreaNodes.size(); i++)
+		Count += SubAreaNodes[i]->GetOwnedArea()->GetRecursiveChildCount();
+
+	return Count;
+}
+
+std::vector<NodeArea*> NodeArea::GetImediateChildren() const
+{
+	std::vector<NodeArea*> Result;
+	std::vector<SubAreaNode*> SubAreaNodes = GetNodesByType<SubAreaNode>();
+	for (size_t i = 0; i < SubAreaNodes.size(); i++)
+		Result.push_back(SubAreaNodes[i]->GetOwnedArea());
+
+	return Result;
+}
+
+std::vector<NodeArea*> NodeArea::GetRecursiveChildren() const
+{
+	std::vector<NodeArea*> Result;
+	std::vector<SubAreaNode*> SubAreaNodes = GetNodesByType<SubAreaNode>();
+	for (size_t i = 0; i < SubAreaNodes.size(); i++)
+	{
+		Result.push_back(SubAreaNodes[i]->GetOwnedArea());
+		std::vector<NodeArea*> ChildAreas = SubAreaNodes[i]->GetOwnedArea()->GetRecursiveChildren();
+		for (size_t j = 0; j < ChildAreas.size(); j++)
+			Result.push_back(ChildAreas[j]);
+	}
+
+	return Result;
 }

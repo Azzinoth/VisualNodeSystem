@@ -31,6 +31,12 @@ namespace VisNodeSys
 	protected:
 		Node* Parent = nullptr;
 	public:
+		enum class Direction : uint8_t
+		{
+			Input = 0,
+			Output = 1
+		};
+
 		NodeSocket(Node* Parent, std::string Type, std::string Name, bool bOutput = false, std::function<void* ()> OutputDataFunction = []() { return nullptr; });
 		NodeSocket(Node* Parent, std::vector<std::string> Types, std::string Name, bool bOutput = false, std::function<void* ()> OutputDataFunction = []() { return nullptr; });
 		
@@ -52,6 +58,11 @@ namespace VisNodeSys
 		void SetFunctionToOutputData(std::function<void* ()> NewFunction);
 		void* GetData();
 	};
+
+	inline NodeSocket::Direction operator!(NodeSocket::Direction Direction)
+	{
+		return Direction == NodeSocket::Direction::Input ? NodeSocket::Direction::Output : NodeSocket::Direction::Input;
+	}
 
 	struct ConnectionStyle
 	{

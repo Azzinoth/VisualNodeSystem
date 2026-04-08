@@ -556,6 +556,9 @@ void NodeSystem::OnNodeDeletion(Node* DeletedNode)
 
 void NodeSystem::DeleteNodeArea(const NodeArea* NodeArea)
 {
+	if (NodeArea == nullptr)
+		return;
+
 	for (size_t i = 0; i < Areas.size(); i++)
 	{
 		if (Areas[i] == NodeArea)
@@ -775,11 +778,13 @@ bool NodeSystem::LinkNodeAreas(const std::string& UpstreamAreaID, const std::str
 	}
 
 	InNode->PartnerNodeID = OutNode->GetID();
-	InNode->bIsInputNode = true;
+	InNode->bHaveInput = true;
+	InNode->bHaveOutput = false;
 	InNode->LinkedAreaID = DownstreamArea->GetID();
 
 	OutNode->PartnerNodeID = InNode->GetID();
-	OutNode->bIsInputNode = false;
+	OutNode->bHaveInput = false;
+	OutNode->bHaveOutput = true;
 	OutNode->LinkedAreaID = UpstreamArea->GetID();
 
 	NodeAreaLinkRecord NewRecord;
@@ -1197,14 +1202,60 @@ std::vector<LinkNode*> NodeSystem::GetDanglingLinkNodes() const
 	return Result;
 }
 
-bool NodeSystem::TryToFixDanglingLinkNode(LinkNode* LinkNodeToFix)
+bool NodeSystem::TryToFixDanglingLinkNode(LinkNode* LinkNodeToFix, bool bForceRestorePartner)
 {
 	if (LinkNodeToFix->GetLinkedArea() == nullptr)
 		return false;
 
-	// Partner node is gone, rebuilding it would require guessing its original configuration, treat as unrecoverable.
+	// Partner node does not exist.
 	if (LinkNodeToFix->GetPartnerNode() == nullptr)
-		return false;
+	{
+		// if bForceRestorePartner is false we should not try to restore partner node.
+		if (!bForceRestorePartner)
+			return false;
+
+		NodeArea* PartnerNodeArea = LinkNodeToFix->GetLinkedArea();
+		if (LinkNodeToFix->GetParentArea() == PartnerNodeArea)
+			return false;
+
+		bool bIsInputNode = LinkNodeToFix->IsInputNode();
+		LinkNode* PartnerNode = CreateLinkNodeInternal(!bIsInputNode);
+		if (!PartnerNodeArea->AddNode(PartnerNode))
+		{
+			delete PartnerNode;
+			return false;
+		}
+
+		// Recreate all sockets for partner node based on the current link node.
+		std::vector<NodeSocket*>& SocketsToCopy = bIsInputNode ? LinkNodeToFix->Input : LinkNodeToFix->Output;
+		std::vector<NodeSocket*>& PartnerNodeSockets = bIsInputNode ? PartnerNode->Output : PartnerNode->Input;
+		for (size_t i = 0; i < SocketsToCopy.size(); i++)
+		{
+			if (i == 0)
+				continue;
+
+			PartnerNode->AddSocketInternal(SocketsToCopy[i]->GetAllowedTypes(), SocketsToCopy[i]->GetName(), true);
+		}
+
+		LinkNodeToFix->PartnerNodeID = PartnerNode->GetID();
+
+		PartnerNode->PartnerNodeID = LinkNodeToFix->GetID();
+		PartnerNode->LinkedAreaID = LinkNodeToFix->GetParentArea()->GetID();
+
+		Node* InNode = LinkNodeToFix->IsInputNode() ? LinkNodeToFix : PartnerNode;
+		Node* OutNode = LinkNodeToFix->IsInputNode() ? PartnerNode : LinkNodeToFix;
+
+		NodeAreaLinkRecord NewRecord;
+		NewRecord.ID = InNode->GetID() + "_" + OutNode->GetID();
+		NewRecord.InNodeID = InNode->GetID();
+		NewRecord.OutNodeID = OutNode->GetID();
+		NewRecord.InAreaID = LinkNodeToFix->IsInputNode() ? PartnerNodeArea->GetID() : LinkNodeToFix->GetParentArea()->GetID();
+		NewRecord.OutAreaID = LinkNodeToFix->IsInputNode() ? LinkNodeToFix->GetParentArea()->GetID() : PartnerNodeArea->GetID();
+
+		NodeAreaLinkRecords[NewRecord.ID] = NewRecord;
+
+		return !LinkNodeToFix->IsDangling();
+	}
 
 	if (NODE_SYSTEM.GetLinkDataByNodeID(LinkNodeToFix->GetID()) == nullptr)
 	{
@@ -1284,7 +1335,7 @@ std::vector<Node*> NodeSystem::GetNodesByStringType(const std::string& Type) con
 LinkNode* NodeSystem::CreateLinkNodeInternal(bool bIsInputNode)
 {
 	LinkNode* NewNode = new LinkNode();
-	NewNode->bIsInputNode = bIsInputNode;
+	NewNode->bHaveInput = bIsInputNode;
 
 #ifdef VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES
 	NewNode->AddSocketInternal({ "EXECUTE" });
@@ -1293,47 +1344,53 @@ LinkNode* NodeSystem::CreateLinkNodeInternal(bool bIsInputNode)
 	return NewNode;
 }
 
-bool NodeSystem::AddSocketToLink(const std::string& AnyNodeIDThatIsPartOfLink, std::vector<std::string> AllowedTypes, std::string Name)
+bool NodeSystem::AddSocketToMirrorNode(const std::string& NodeID, std::vector<std::string> AllowedTypes, std::string Name, NodeSocket::Direction SocketDirection)
 {
-	if (AllowedTypes.empty())
+	Node* CurrentNode = GetNodeByID(NodeID);
+	if (CurrentNode == nullptr)
 		return false;
 
-	Node* Node = GetNodeByID(AnyNodeIDThatIsPartOfLink);
-	if (Node == nullptr || Node->GetType() != "LinkNode")
+	SocketMirrorNode* MirrorNode = dynamic_cast<SocketMirrorNode*>(CurrentNode);
+	if (MirrorNode == nullptr)
 		return false;
 
-	LinkNode* CurrentLinkNode = reinterpret_cast<LinkNode*>(Node);
-	if (CurrentLinkNode == nullptr)
+	if (MirrorNode->IsDangling())
 		return false;
 
-	if (CurrentLinkNode->IsDangling())
-		return false;
-
-	NodeAreaLinkRecord* Record = GetLinkDataByNodeID(CurrentLinkNode->GetID());
-	if (Record == nullptr)
-		return false;
-
-	LinkNode* PartnerNode = reinterpret_cast<LinkNode*>(CurrentLinkNode->GetPartnerNode());
-	if (PartnerNode->SocketIDBeingModified.empty())
+	bool bBiDirectionalMirror = MirrorNode->bHaveInput && MirrorNode->bHaveOutput;
+	NodeSocket::Direction NeedToAddDirection = !SocketDirection;
+	std::vector<Node*> MirrorPartners = MirrorNode->GetMirrorPartners();
+	for (Node* Partner : MirrorPartners)
 	{
-		NodeSocket* PartnerNodeSocket = new NodeSocket(PartnerNode, AllowedTypes, Name, !PartnerNode->IsInputNode());
-		PartnerNode->AddSocket(AllowedTypes, Name);
+		if (Partner == nullptr)
+			continue;
+
+		SocketMirrorNode* PartnerMirrorNode = dynamic_cast<SocketMirrorNode*>(Partner);
+		if (PartnerMirrorNode == nullptr)
+			continue;
+
+		if (bBiDirectionalMirror && (PartnerMirrorNode->bHaveInput && NeedToAddDirection == NodeSocket::Direction::Output ||
+								   PartnerMirrorNode->bHaveOutput && NeedToAddDirection == NodeSocket::Direction::Input))
+			continue;
+
+		if (PartnerMirrorNode->SocketIDBeingModified.empty())
+		{
+			bool bIsOutput = false;
+			if (bBiDirectionalMirror)
+			{
+				bIsOutput = NeedToAddDirection == NodeSocket::Direction::Output;
+			}
+			else
+			{
+				bIsOutput = PartnerMirrorNode->bHaveOutput;
+			}
+
+			NodeSocket* PartnerNodeSocket = new NodeSocket(PartnerMirrorNode, AllowedTypes, Name, bIsOutput);
+			PartnerMirrorNode->AddSocket(PartnerNodeSocket);
+		}
 	}
 
 	return true;
-}
-
-bool NodeSystem::DeleteSocketFromLink(const std::string& AnyNodeIDThatIsPartOfLink, std::string SocketID)
-{
-	Node* Node = GetNodeByID(AnyNodeIDThatIsPartOfLink);
-	if (Node == nullptr || Node->GetType() != "LinkNode")
-		return false;
-
-	size_t SocketIndex = Node->GetSocketIndexByID(SocketID);
-	if (SocketIndex == static_cast<size_t>(-1))
-		return false;
-
-	return DeleteSocketFromLink(AnyNodeIDThatIsPartOfLink, SocketIndex);
 }
 
 bool NodeSystem::DeleteSocket(const std::string& NodeID, std::string SocketID)
@@ -1382,30 +1439,43 @@ bool NodeSystem::DeleteSocket(NodeSocket* Socket)
 	}
 }
 
-bool NodeSystem::DeleteSocketFromLink(const std::string& AnyNodeIDThatIsPartOfLink, size_t SocketIndex)
+bool NodeSystem::DeleteSocketFromMirrorNode(const std::string& NodeID, std::string SocketID)
 {
+	Node* CurrentNode = GetNodeByID(NodeID);
+	if (CurrentNode == nullptr)
+		return false;
+
+	SocketMirrorNode* MirrorNode = dynamic_cast<SocketMirrorNode*>(CurrentNode);
+	if (MirrorNode == nullptr)
+		return false;
+
+	if (MirrorNode->IsDangling())
+		return false;
+
+	NodeSocket* CurrentSocket = MirrorNode->GetSocketByID(SocketID);
+	size_t SocketIndex = MirrorNode->GetSocketIndexByID(SocketID);
 	if (SocketIndex == 0)
 		return false; // We should never delete execution socket.
-	
-	Node* Node = GetNodeByID(AnyNodeIDThatIsPartOfLink);
-	if (Node == nullptr || Node->GetType() != "LinkNode")
-		return false;
 
-	LinkNode* CurrentLinkNode = reinterpret_cast<LinkNode*>(Node);
-	if (CurrentLinkNode == nullptr)
-		return false;
+	std::vector<Node*> MirrorPartners = MirrorNode->GetMirrorPartners();
+	for (Node* Partner : MirrorPartners)
+	{
+		if (Partner == nullptr)
+			continue;
 
-	if (CurrentLinkNode->IsDangling())
-		return false;
+		SocketMirrorNode* PartnerMirrorNode = dynamic_cast<SocketMirrorNode*>(Partner);
+		if (PartnerMirrorNode == nullptr)
+			continue;
 
-	NodeAreaLinkRecord* Record = GetLinkDataByNodeID(CurrentLinkNode->GetID());
-	if (Record == nullptr)
-		return false;
+		NodeSocket* PartnerSocket = Partner->GetSocketByIndex(SocketIndex, PartnerMirrorNode->bHaveOutput);
+		if (PartnerSocket == nullptr)
+			continue;
 
-	LinkNode* PartnerNode = reinterpret_cast<LinkNode*>(CurrentLinkNode->GetPartnerNode());
-	std::string SocketID = PartnerNode->GetSocketIDByIndex(SocketIndex, !PartnerNode->IsInputNode());
-	if (PartnerNode->SocketIDBeingModified != SocketID)
-		PartnerNode->DeleteSocket(SocketID);
+		if (PartnerMirrorNode->SocketIDBeingModified != PartnerSocket->GetID())
+			PartnerMirrorNode->DeleteSocket(PartnerSocket->GetID());
+
+		break;
+	}
 
 	return true;
 }
@@ -1448,82 +1518,101 @@ bool NodeSystem::RevalidateSocketConnections(NodeSocket* Socket)
 	return bAnyDisconnected;
 }
 
-bool NodeSystem::SetSocketAllowedTypesOnLink(const std::string& AnyNodeIDThatIsPartOfLink, std::string SocketID, std::vector<std::string> NewTypes)
+bool NodeSystem::SyncSocketAllowedTypes(const std::string& NodeID, std::string SocketID, std::vector<std::string> NewTypes)
 {
-	Node* CurrentNode = GetNodeByID(AnyNodeIDThatIsPartOfLink);
-	if (CurrentNode == nullptr || CurrentNode->GetType() != "LinkNode")
+	Node* CurrentNode = GetNodeByID(NodeID);
+	if (CurrentNode == nullptr)
 		return false;
 
-	LinkNode* CurrentLinkNode = reinterpret_cast<LinkNode*>(CurrentNode);
-	if (CurrentLinkNode == nullptr)
+	SocketMirrorNode* MirrorNode = dynamic_cast<SocketMirrorNode*>(CurrentNode);
+	if (MirrorNode == nullptr)
 		return false;
 
-	if (CurrentLinkNode->IsDangling())
+	if (MirrorNode->IsDangling())
 		return false;
 
-	NodeAreaLinkRecord* Record = GetLinkDataByNodeID(CurrentLinkNode->GetID());
-	if (Record == nullptr)
-		return false;
+	NodeSocket* CurrentSocket = CurrentNode->GetSocketByID(SocketID);
+	size_t SocketIndex = CurrentNode->GetSocketIndexByID(SocketID);
+	std::vector<Node*> MirrorPartners = MirrorNode->GetMirrorPartners();
+	for (Node* Partner : MirrorPartners)
+	{
+		if (Partner == nullptr)
+			continue;
 
-	LinkNode* PartnerNode = reinterpret_cast<LinkNode*>(CurrentLinkNode->GetPartnerNode());
-	if (PartnerNode == nullptr)
-		return false;
+		SocketMirrorNode* PartnerMirrorNode = dynamic_cast<SocketMirrorNode*>(Partner);
+		if (PartnerMirrorNode == nullptr)
+			continue;
 
-	size_t SocketIndex = CurrentLinkNode->GetSocketIndexByID(SocketID);
-	if (SocketIndex == static_cast<size_t>(-1))
-		return false;
+		NodeSocket* PartnerSocket = Partner->GetSocketByIndex(SocketIndex, PartnerMirrorNode->bHaveOutput);
+		if (PartnerSocket == nullptr)
+			continue;
 
-	std::string PartnerSocketID = PartnerNode->GetSocketIDByIndex(SocketIndex, !PartnerNode->IsInputNode());
-	if (PartnerSocketID.empty())
-		return false;
+		if (PartnerSocket->GetAllowedTypes() != NewTypes)
+			PartnerSocket->SetAllowedTypes(NewTypes);
 
-	NodeSocket* PartnerSocket = PartnerNode->GetSocketByID(PartnerSocketID);
-	if (PartnerSocket == nullptr)
-		return false;
-
-	// Update the partner socket types, but guard against infinite recursion.
-	if (PartnerSocket->GetAllowedTypes() != NewTypes)
-		PartnerSocket->SetAllowedTypes(NewTypes);
+		break;
+	}
 
 	return true;
 }
 
-void NodeSystem::SetSocketNameOnLink(const std::string& AnyNodeIDThatIsPartOfLink, std::string SocketID, std::string NewName)
+void NodeSystem::SyncSocketName(const std::string& NodeID, std::string SocketID, std::string NewName)
 {
-	Node* CurrentNode = GetNodeByID(AnyNodeIDThatIsPartOfLink);
-	if (CurrentNode == nullptr || CurrentNode->GetType() != "LinkNode")
+	Node* CurrentNode = GetNodeByID(NodeID);
+	if (CurrentNode == nullptr)
 		return;
 
-	LinkNode* CurrentLinkNode = reinterpret_cast<LinkNode*>(CurrentNode);
-	if (CurrentLinkNode == nullptr)
+	SocketMirrorNode* MirrorNode = dynamic_cast<SocketMirrorNode*>(CurrentNode);
+	if (MirrorNode == nullptr)
 		return;
 
-	if (CurrentLinkNode->IsDangling())
-		return;
+	NodeSocket* CurrentSocket = CurrentNode->GetSocketByID(SocketID);
+	size_t SocketIndex = CurrentNode->GetSocketIndexByID(SocketID);
 
-	NodeAreaLinkRecord* Record = GetLinkDataByNodeID(CurrentLinkNode->GetID());
-	if (Record == nullptr)
-		return;
+	std::vector<Node*> MirrorPartners = MirrorNode->GetMirrorPartners();
+	for (Node* Partner : MirrorPartners)
+	{
+		if (Partner == nullptr)
+			continue;
 
-	LinkNode* PartnerNode = reinterpret_cast<LinkNode*>(CurrentLinkNode->GetPartnerNode());
-	if (PartnerNode == nullptr)
-		return;
+		SocketMirrorNode* PartnerMirrorNode = dynamic_cast<SocketMirrorNode*>(Partner);
+		if (PartnerMirrorNode == nullptr)
+			continue;
 
-	size_t SocketIndex = CurrentLinkNode->GetSocketIndexByID(SocketID);
-	if (SocketIndex == static_cast<size_t>(-1))
-		return;
+		NodeSocket* PartnerSocket = Partner->GetSocketByIndex(SocketIndex, PartnerMirrorNode->bHaveOutput);
+		if (PartnerSocket == nullptr)
+			continue;
 
-	std::string PartnerSocketID = PartnerNode->GetSocketIDByIndex(SocketIndex, !PartnerNode->IsInputNode());
-	if (PartnerSocketID.empty())
-		return;
+		if (PartnerSocket->GetName() != NewName)
+			PartnerSocket->SetName(NewName);
 
-	NodeSocket* PartnerSocket = PartnerNode->GetSocketByID(PartnerSocketID);
-	if (PartnerSocket == nullptr)
-		return;
+		break;
+	}
+}
 
-	// Update the partner socket name, but guard against infinite recursion.
-	if (PartnerSocket->GetName() != NewName)
-		PartnerSocket->SetName(NewName);
+SubAreaNode* NodeSystem::CreateSubAreaNode(const std::string& ParentAreaID)
+{
+	NodeArea* ParentArea = GetNodeAreaByID(ParentAreaID);
+	if (ParentArea == nullptr)
+		return nullptr;
 
-	return;
+	NodeArea* OwnedArea = CreateNodeArea();
+	SubAreaNode* Result = new SubAreaNode(OwnedArea);
+	Result->AddSocketInternal({ "EXECUTE" }, "", false);
+	Result->AddSocketInternal({ "EXECUTE" }, "", true);
+	ParentArea->AddNode(Result);
+
+	SubAreaInputNode* InputNode = new SubAreaInputNode();
+	InputNode->AddSocketInternal({ "EXECUTE" }, "", false);
+	InputNode->OwnerSubAreaNodeID = Result->GetID();
+	OwnedArea->AddNode(InputNode);
+	Result->SubAreaInputNodeID = InputNode->GetID();
+
+	SubAreaOutputNode* OutputNode = new SubAreaOutputNode();
+	OutputNode->AddSocketInternal({ "EXECUTE" }, "", true);
+	OutputNode->OwnerSubAreaNodeID = Result->GetID();
+	OwnedArea->AddNode(OutputNode);
+	Result->SubAreaOutputNodeID = OutputNode->GetID();
+
+	return Result;
 }

@@ -8,6 +8,7 @@ namespace VisNodeSys
 	{
 		friend class NodeSocket;
 		friend class Node;
+		friend class SocketMirrorNode;
 		friend class LinkNode;
 		friend class NodeArea;
 
@@ -44,16 +45,16 @@ namespace VisNodeSys
 #endif
 		void OnNodeAreaFocusChanging(NodeArea* CurrentNodeArea, bool bNewFocusValue);
 
-		bool AddSocketToLink(const std::string& AnyNodeIDThatIsPartOfLink, std::vector<std::string> AllowedTypes, std::string Name);
+		bool AddSocketToMirrorNode(const std::string& NodeID, std::vector<std::string> AllowedTypes, std::string Name, NodeSocket::Direction SocketDirection = NodeSocket::Direction::Input);
+		bool DeleteSocketFromMirrorNode(const std::string& NodeID, std::string SocketID);
 
-		bool DeleteSocketFromLink(const std::string& AnyNodeIDThatIsPartOfLink, size_t SocketIndex);
-		bool DeleteSocketFromLink(const std::string& AnyNodeIDThatIsPartOfLink, std::string SocketID);
 		bool DeleteSocket(const std::string& NodeID, std::string SocketID);
 		bool DeleteSocket(NodeSocket* Socket);
 
 		bool RevalidateSocketConnections(NodeSocket* Socket);
-		bool SetSocketAllowedTypesOnLink(const std::string& AnyNodeIDThatIsPartOfLink, std::string SocketID, std::vector<std::string> NewTypes);
-		void SetSocketNameOnLink(const std::string& AnyNodeIDThatIsPartOfLink, std::string SocketID, std::string NewName);
+
+		bool SyncSocketAllowedTypes(const std::string& NodeID, std::string SocketID, std::vector<std::string> NewTypes);
+		void SyncSocketName(const std::string& NodeID, std::string SocketID, std::string NewName);
 	public:
 		SINGLETON_PUBLIC_PART(NodeSystem)
 
@@ -105,7 +106,7 @@ namespace VisNodeSys
 		bool UnlinkNodeAreas(const std::string& FirstAreaID, const std::string& SecondAreaID);
 		std::vector<std::pair<std::string, std::string>> GetLinkingNodesForAreas(const std::string& FirstAreaID, const std::string& SecondAreaID) const;
 		std::vector<LinkNode*> GetDanglingLinkNodes() const;
-		bool TryToFixDanglingLinkNode(LinkNode* LinkNodeToFix);
+		bool TryToFixDanglingLinkNode(LinkNode* LinkNodeToFix, bool bForceRestorePartner = false);
 		std::vector<LinkNode*> TryToFixAllDanglingLinkNodes();
 
 		std::vector<NodeArea*> GetImmediateDownstreamAreas(const std::string& AreaID);
@@ -113,6 +114,8 @@ namespace VisNodeSys
 
 		std::vector<NodeArea*> GetImmediateUpstreamAreas(const std::string& AreaID);
 		std::vector<NodeArea*> GetAllUpstreamAreas(const std::string& AreaID);
+
+		SubAreaNode* CreateSubAreaNode(const std::string& ParentAreaID);
 	};
 
 #ifdef VISUAL_NODE_SYSTEM_SHARED
