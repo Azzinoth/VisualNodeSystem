@@ -156,7 +156,7 @@ void Node::SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSocket, NODE_
 
 }
 
-bool Node::CanConnect(NodeSocket* OwnSocket, NodeSocket* CandidateSocket, char** MsgToUser)
+bool Node::IsValidAsNewConnection(NodeSocket* OwnSocket, NodeSocket* CandidateSocket)
 {
 	// Socket can't connect to itself.
 	if (OwnSocket == CandidateSocket)
@@ -189,6 +189,19 @@ bool Node::CanConnect(NodeSocket* OwnSocket, NodeSocket* CandidateSocket, char**
 
 	if (!bFound)
 		return false;
+}
+
+bool Node::CanConnect(NodeSocket* OwnSocket, NodeSocket* CandidateSocket, char** MsgToUser)
+{
+	if (!IsValidAsNewConnection(OwnSocket, CandidateSocket))
+		return false;
+
+	// Check if the candidate socket is already connected to the own socket.
+	for (size_t i = 0; i < OwnSocket->ConnectedSockets.size(); i++)
+	{
+		if (OwnSocket->ConnectedSockets[i]->GetID() == CandidateSocket->GetID())
+			return false;
+	}
 
 	return true;
 }

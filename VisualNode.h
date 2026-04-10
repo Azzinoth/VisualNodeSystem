@@ -63,6 +63,7 @@ namespace VisNodeSys
 		bool bRenderTitleBar = true;
 
 		virtual void Draw();
+		virtual bool IsValidAsNewConnection(NodeSocket* OwnSocket, NodeSocket* CandidateSocket);
 		virtual bool CanConnect(NodeSocket* OwnSocket, NodeSocket* CandidateSocket, char** MsgToUser = nullptr);
 		virtual void SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSocket, NODE_SOCKET_EVENT EventType);
 		virtual bool OpenContextMenu();

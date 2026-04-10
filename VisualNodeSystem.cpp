@@ -1502,8 +1502,8 @@ bool NodeSystem::RevalidateSocketConnections(NodeSocket* Socket)
 		if (OtherNode == nullptr)
 			continue;
 
-		// Use the node's own CanConnect to check type compatibility, which already handles the allowed-type intersection logic.
-		if (ParentNode->CanConnect(Socket, OtherSocket))
+		// Use the nodes IsValidAsNewConnection to check type compatibility, which already handles the allowed-type intersection logic.
+		if (ParentNode->IsValidAsNewConnection(Socket, OtherSocket))
 			continue;
 
 		// Connection is no longer valid, disconnect it.

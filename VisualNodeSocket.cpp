@@ -80,8 +80,6 @@ void* NodeSocket::GetData()
 bool NodeSocket::SetAllowedTypes(std::vector<std::string> NewTypes)
 {
 	AllowedTypes = NewTypes;
-	//if (GetParent() != nullptr && GetParent()->GetType() == "LinkNode")
-	//	NODE_SYSTEM.SetSocketAllowedTypesOnLink(GetParent()->GetID(), GetID(), NewTypes);
 	SocketMirrorNode* MirrorParent = dynamic_cast<SocketMirrorNode*>(GetParent());
 	if (MirrorParent != nullptr)
 		NODE_SYSTEM.SyncSocketAllowedTypes(GetParent()->GetID(), GetID(), NewTypes);
