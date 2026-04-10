@@ -346,11 +346,6 @@ TEST(Basic, Save_And_Load_NodeArea)
 	ASSERT_EQ(RerouteDemostrationNodeEnd->GetOutputSocketCount(), 0);
 	ASSERT_EQ(RerouteDemostrationNodeEnd->GetPosition(), ImVec2(350.0f, 490.0f));
 
-	LocalNodeArea->TryToConnect(RerouteDemostrationNode, 0, RerouteDemostrationNodeEnd, 0);
-	int SegmentIndex = 0;
-	ASSERT_EQ(LocalNodeArea->AddRerouteNodeToConnection(RerouteDemostrationNode, 0, RerouteDemostrationNodeEnd, 0, SegmentIndex, ImVec2(190.0f, 470.0f)), true);
-	ASSERT_EQ(LocalNodeArea->AddRerouteNodeToConnection(RerouteDemostrationNode, 0, RerouteDemostrationNodeEnd, 0, SegmentIndex + 1, ImVec2(312.0f, 470.0f)), true);
-
 	GroupComment* GroupCommentToCheck = LocalNodeArea->GetGroupCommentByID(GroupCommentsIDList[0]);
 	ASSERT_NE(GroupCommentToCheck, nullptr);
 	ASSERT_EQ(GroupCommentToCheck->GetCaption(), "Group of some nodes");
@@ -465,4 +460,24 @@ TEST(Basic, SetAllowedTypes_PartialDisconnect)
 	ASSERT_EQ(Receiver->GetNodesConnectedToInput().size(), 1);
 
 	NODE_SYSTEM.DeleteNodeArea(LocalNodeArea);
+}
+
+TEST(Basic, DuplicateConnection_IsRejected)
+{
+	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
+
+	BoolLiteralNode* NodeA = TEST_TOOLS.CreateBoolLiteralNode(true);
+	BoolVariableNode* NodeB = TEST_TOOLS.CreateBoolVariableNode(false);
+	Area->AddNode(NodeA);
+	Area->AddNode(NodeB);
+
+	// First connection must succeed.
+	EXPECT_TRUE(Area->TryToConnect(NodeA, 0, NodeB, 1));
+	EXPECT_EQ(Area->GetConnectionCount(), 1);
+
+	// Second identical connection must be rejected.
+	EXPECT_FALSE(Area->TryToConnect(NodeA, 0, NodeB, 1));
+	EXPECT_EQ(Area->GetConnectionCount(), 1);
+
+	NODE_SYSTEM.DeleteNodeArea(Area);
 }

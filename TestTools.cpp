@@ -477,11 +477,10 @@ void TestTools::ConnectSmallLinkedNodeAreaGraph()
 	ASSERT_EQ(CurrentArea->TryToConnect(CurrentExecutionSourceNode, 0, CurrentDownstreamLinkNode, 0), true);
 
 	// 0 => 3.
-	CurrentDownstreamArea = Areas[2];
+	CurrentDownstreamArea = Areas[3];
 	DownstreamLinkingNodes = NODE_SYSTEM.GetLinkingNodesForAreas(CurrentArea->GetID(), CurrentDownstreamArea->GetID());
 	CurrentDownstreamLinkNode = reinterpret_cast<LinkNode*>(CurrentArea->GetNodeByID(DownstreamLinkingNodes[0].first));
 	ASSERT_EQ(CurrentArea->TryToConnect(CurrentExecutionSourceNode, 0, CurrentDownstreamLinkNode, 0), true);
-
 
 	// Connects the incoming upstream link node to the link node leading to the given downstream area.
 	auto ConnectFromUpstream = [&](NodeArea* CurrentArea, NodeArea* UpstreamArea, NodeArea* DownstreamArea) {

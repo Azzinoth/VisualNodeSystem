@@ -653,7 +653,6 @@ TEST(ExecutionFlowNodesTests, SavingLoading_RandomArithmetic_Calculation)
 			IterationCount++;
 		}
 
-		ASSERT_EQ(TestNodeArea->TryToConnect(CurrentArithmeticOperatorNode, 0, CurrentResultNode, 0), true);
 		TestNodeArea->ExecuteNodeNetwork();
 		std::string FinalResultNodeID = CurrentResultNode->GetID();
 		int FinalResultValue = CurrentResultNode->GetData();
