@@ -200,3 +200,58 @@ TEST(SubAreaNodeTests, Basic_AddSockets)
 
 	NODE_SYSTEM.DeleteNodeArea(ParentArea);
 }
+
+TEST(SubAreaNodeTests, DeleteSocket_OnlyRemoves_CorrespondingDirection_From_PartnerMirrorNode)
+{
+	NodeArea* ParentArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(ParentArea, nullptr);
+
+	SubAreaNode* SubArea = NODE_SYSTEM.CreateSubAreaNode(ParentArea->GetID());
+	ASSERT_NE(SubArea, nullptr);
+
+	SubAreaInputNode* InputNode = SubArea->GetSubAreaInputNode();
+	SubAreaOutputNode* OutputNode = SubArea->GetSubAreaOutputNode();
+	ASSERT_NE(InputNode, nullptr);
+	ASSERT_NE(OutputNode, nullptr);
+
+	// Start: 1 execute socket each.
+	EXPECT_EQ(SubArea->GetInputSocketCount(), 1);
+	EXPECT_EQ(SubArea->GetOutputSocketCount(), 1);
+	EXPECT_EQ(InputNode->GetOutputSocketCount(), 1);
+	EXPECT_EQ(OutputNode->GetInputSocketCount(), 1);
+
+	// Add a BOOL input socket.
+	EXPECT_TRUE(SubArea->AddSocket({ "BOOL" }, "Bool IN", NodeSocket::Direction::Input));
+	EXPECT_EQ(SubArea->GetInputSocketCount(), 2);
+	EXPECT_EQ(InputNode->GetOutputSocketCount(), 2);
+
+	// Add a BOOL output socket.
+	EXPECT_TRUE(SubArea->AddSocket({ "BOOL" }, "Bool OUT", NodeSocket::Direction::Output));
+	EXPECT_EQ(SubArea->GetOutputSocketCount(), 2);
+	EXPECT_EQ(OutputNode->GetInputSocketCount(), 2);
+
+	// Get the ID of the BOOL input socket on the SubAreaNode (index 1).
+	std::string BoolInputSocketID = SubArea->GetSocketIDByIndex(1, false);
+	ASSERT_NE(BoolInputSocketID, "");
+
+	// Delete it via SubAreaNode.
+	EXPECT_TRUE(SubArea->DeleteSocket(BoolInputSocketID));
+
+	// SubAreaNode and InputNode should both be back to 1.
+	EXPECT_EQ(SubArea->GetInputSocketCount(), 1);
+	EXPECT_EQ(InputNode->GetOutputSocketCount(), 1);
+
+	// Output side unchanged.
+	EXPECT_EQ(SubArea->GetOutputSocketCount(), 2);
+	EXPECT_EQ(OutputNode->GetInputSocketCount(), 2);
+
+	// Delete the BOOL output socket (now at index 1).
+	std::string BoolOutputSocketID = SubArea->GetSocketIDByIndex(1, true);
+	ASSERT_NE(BoolOutputSocketID, "");
+	EXPECT_TRUE(SubArea->DeleteSocket(BoolOutputSocketID));
+
+	EXPECT_EQ(SubArea->GetOutputSocketCount(), 1);
+	EXPECT_EQ(OutputNode->GetInputSocketCount(), 1);
+
+	NODE_SYSTEM.DeleteNodeArea(ParentArea);
+}

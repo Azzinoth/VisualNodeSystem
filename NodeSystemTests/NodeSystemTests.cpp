@@ -36,3 +36,60 @@ TEST(NodeSystemTests, SaveLoad_No_Connections_Small)
 
 	NODE_SYSTEM.Clear();
 }
+
+TEST(NodeSystemTests, TryToConnect_CrossArea_IsRejected)
+{
+	NodeArea* AreaA = NODE_SYSTEM.CreateNodeArea();
+	NodeArea* AreaB = NODE_SYSTEM.CreateNodeArea();
+
+	BoolLiteralNode* SourceInAreaA = new BoolLiteralNode();
+	BoolVariableNode* DestinationInAreaB = new BoolVariableNode();
+	AreaA->AddNode(SourceInAreaA);
+	AreaB->AddNode(DestinationInAreaB);
+
+	// Nodes SourceInAreaA and DestinationInAreaB belong to different areas, so connection should be rejected.
+	EXPECT_FALSE(AreaB->TryToConnect(SourceInAreaA, 0, DestinationInAreaB, 1));
+
+	// No new connection should appear in either area.
+	EXPECT_EQ(AreaA->GetConnectionCount(), 0);
+	EXPECT_EQ(AreaB->GetConnectionCount(), 0);
+
+	NODE_SYSTEM.DeleteNodeArea(AreaA);
+	NODE_SYSTEM.DeleteNodeArea(AreaB);
+}
+
+TEST(NodeSystemTests, TryToConnect_CorrectConnection_ButWrongArea_IsRejected)
+{
+	NodeArea* AreaA = NODE_SYSTEM.CreateNodeArea();
+	NodeArea* AreaB = NODE_SYSTEM.CreateNodeArea();
+
+	BoolLiteralNode* SourceInAreaA = new BoolLiteralNode();
+	BoolVariableNode* DestinationInAreaA = new BoolVariableNode();
+	AreaA->AddNode(SourceInAreaA);
+	AreaA->AddNode(DestinationInAreaA);
+
+	// Nodes SourceInAreaA and DestinationInAreaA both belong to AreaA.
+	// AreaB should reject this.
+	EXPECT_FALSE(AreaB->TryToConnect(SourceInAreaA, 0, DestinationInAreaA, 1));
+
+	// No new connection should appear in either area.
+	EXPECT_EQ(AreaA->GetConnectionCount(), 0);
+	EXPECT_EQ(AreaB->GetConnectionCount(), 0);
+
+	NODE_SYSTEM.DeleteNodeArea(AreaA);
+	NODE_SYSTEM.DeleteNodeArea(AreaB);
+}
+
+TEST(NodeSystemTests, TryToConnect_NodesWithNoParent_IsRejected)
+{
+	NodeArea* AreaA = NODE_SYSTEM.CreateNodeArea();
+	BoolLiteralNode* NodeA = new BoolLiteralNode();
+	BoolVariableNode* NodeB = new BoolVariableNode();
+
+	// Nodes NodeA and NodeB do not belong to any area, so connection should be rejected.
+	EXPECT_FALSE(AreaA->TryToConnect(NodeA, 0, NodeB, 1));
+
+	// No new connection should appear.
+	EXPECT_EQ(AreaA->GetConnectionCount(), 0);
+	NODE_SYSTEM.DeleteNodeArea(AreaA);
+}
