@@ -189,6 +189,8 @@ bool Node::IsValidAsNewConnection(NodeSocket* OwnSocket, NodeSocket* CandidateSo
 
 	if (!bFound)
 		return false;
+
+	return true;
 }
 
 bool Node::CanConnect(NodeSocket* OwnSocket, NodeSocket* CandidateSocket, char** MsgToUser)

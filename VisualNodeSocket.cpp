@@ -34,7 +34,7 @@ Node* NodeSocket::GetParent() const
 	return Parent;
 }
 
-std::vector<NodeSocket*> NodeSocket::GetConnectedSockets() const
+const std::vector<NodeSocket*>& NodeSocket::GetConnectedSockets() const
 {
 	return ConnectedSockets;
 }
@@ -52,7 +52,7 @@ void NodeSocket::SetName(std::string NewValue)
 		NODE_SYSTEM.SyncSocketName(GetParent()->GetID(), GetID(), NewValue);
 }
 
-std::vector<std::string> NodeSocket::GetAllowedTypes() const
+const std::vector<std::string>& NodeSocket::GetAllowedTypes() const
 {
 	return AllowedTypes;
 }

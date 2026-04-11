@@ -41,7 +41,7 @@ namespace VisNodeSys
 		NodeSocket(Node* Parent, std::vector<std::string> Types, std::string Name, bool bOutput = false, std::function<void* ()> OutputDataFunction = []() { return nullptr; });
 		
 		Node* GetParent() const;
-		std::vector<NodeSocket*> GetConnectedSockets() const;
+		const std::vector<NodeSocket*>& GetConnectedSockets() const;
 
 		std::string GetID() const;
 
@@ -51,7 +51,7 @@ namespace VisNodeSys
 		bool IsOutput() const;
 		bool IsInput() const;
 
-		std::vector<std::string> GetAllowedTypes() const;
+		const std::vector<std::string>& GetAllowedTypes() const;
 		// Returns true if change did not trigger disconnection of already connected sockets.
 		bool SetAllowedTypes(std::vector<std::string> NewTypes);
 

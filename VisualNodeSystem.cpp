@@ -1471,6 +1471,12 @@ bool NodeSystem::DeleteSocketFromMirrorNode(const std::string& NodeID, std::stri
 		if (PartnerSocket == nullptr)
 			continue;
 
+		// Mirror nodes synchronize deletions with their partner.
+		// The corresponding socket on the partner has the opposite direction,
+		// so skip any socket whose direction is the same.
+		if (CurrentSocket->IsOutput() == PartnerSocket->IsOutput())
+			continue;
+
 		if (PartnerMirrorNode->SocketIDBeingModified != PartnerSocket->GetID())
 			PartnerMirrorNode->DeleteSocket(PartnerSocket->GetID());
 

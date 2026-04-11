@@ -288,6 +288,15 @@ bool NodeArea::TryToConnect(const Node* OutNode, const size_t OutNodeSocketIndex
 	if (OutNode == nullptr || InNode == nullptr)
 		return false;
 
+	if (OutNode->GetParentArea() == nullptr || InNode->GetParentArea() == nullptr)
+		return false;
+
+	if (OutNode->GetParentArea() != InNode->GetParentArea())
+		return false;
+
+	if (OutNode->GetParentArea() != this && InNode->GetParentArea() != this)
+		return false;
+
 	if (OutNode->Output.size() <= OutNodeSocketIndex)
 		return false;
 
@@ -299,7 +308,6 @@ bool NodeArea::TryToConnect(const Node* OutNode, const size_t OutNodeSocketIndex
 
 	char* Message = nullptr;
 	const bool bResult = InSocket->GetParent()->CanConnect(InSocket, OutSocket, &Message);
-
 	if (bResult)
 	{
 		PropagateNodeEventsCallbacks(OutSocket->GetParent(), BEFORE_CONNECTED);
