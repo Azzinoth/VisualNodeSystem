@@ -165,3 +165,60 @@ TEST(NodeAreaGeneralTests, GetNodesByType)
 
 	NODE_SYSTEM.DeleteNodeArea(LocalNodeArea);
 }
+
+TEST(Basic, TryToDisconnect_WithNonExistentSocketIDs)
+{
+	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
+
+	Node* NodeA = new Node();
+	NodeA->AddSocket(new NodeSocket(NodeA, "TYPE_A", "out", true));
+	Area->AddNode(NodeA);
+
+	Node* NodeB = new Node();
+	NodeB->AddSocket(new NodeSocket(NodeB, "TYPE_A", "in", false));
+	Area->AddNode(NodeB);
+	ASSERT_TRUE(Area->TryToConnect(NodeA, 0, NodeB, 0));
+	ASSERT_EQ(Area->GetConnectionCount(), 1);
+
+	EXPECT_FALSE(Area->TryToDisconnect(NodeA, std::string("nonexistent_out"), NodeB, std::string("nonexistent_in")));
+	EXPECT_EQ(Area->GetConnectionCount(), 1);
+	EXPECT_TRUE(Area->IsConnected(NodeA, NodeB));
+	NODE_SYSTEM.DeleteNodeArea(Area);
+}
+
+TEST(Basic, IsConnected_WithNonExistentSocketIDs)
+{
+	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
+
+	Node* NodeA = new Node();
+	NodeA->AddSocket(new NodeSocket(NodeA, "TYPE_A", "out", true));
+	Area->AddNode(NodeA);
+
+	Node* NodeB = new Node();
+	NodeB->AddSocket(new NodeSocket(NodeB, "TYPE_A", "in", false));
+	Area->AddNode(NodeB);
+	ASSERT_TRUE(Area->TryToConnect(NodeA, 0, NodeB, 0));
+	ASSERT_EQ(Area->GetConnectionCount(), 1);
+
+	EXPECT_FALSE(Area->IsConnected(NodeA, std::string("nonexistent_out"), NodeB, std::string("nonexistent_in")));
+	NODE_SYSTEM.DeleteNodeArea(Area);
+}
+
+TEST(Basic, AddRerouteNodeToConnection_WithNonExistentSocketIDs)
+{
+	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
+
+	Node* NodeA = new Node();
+	NodeA->AddSocket(new NodeSocket(NodeA, "TYPE_A", "out", true));
+	Area->AddNode(NodeA);
+
+	Node* NodeB = new Node();
+	NodeB->AddSocket(new NodeSocket(NodeB, "TYPE_A", "in", false));
+	Area->AddNode(NodeB);
+	ASSERT_TRUE(Area->TryToConnect(NodeA, 0, NodeB, 0));
+	ASSERT_EQ(Area->GetConnectionCount(), 1);
+
+	EXPECT_FALSE(Area->AddRerouteNodeToConnection(NodeA, std::string("nonexistent_out"), NodeB, std::string("nonexistent_in"), 0, ImVec2(50.0f, 50.0f)));
+	EXPECT_EQ(Area->GetRerouteConnectionCount(), 0);
+	NODE_SYSTEM.DeleteNodeArea(Area);
+}

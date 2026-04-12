@@ -551,3 +551,123 @@ TEST(NodeAreaEventSystemTests, LastExecutedNodes_IsInExecutionOrder_ThroughConne
 
 	NODE_SYSTEM.DeleteNodeArea(LocalNodeArea);
 }
+
+TEST(NodeAreaEventSystemTests, RunOnEachConnectedNode_NullStartNode_DoesNotCrash)
+{
+	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
+
+	int Counter = 0;
+	Area->RunOnEachConnectedNode(nullptr, [&](Node*) { Counter++; });
+	EXPECT_EQ(Counter, 0);
+
+	NODE_SYSTEM.DeleteNodeArea(Area);
+}
+
+//                  A
+//          /       |       \
+//         B        C        D
+//          \      /
+//           C (shared)
+TEST(NodeAreaEventSystemTests, RunOnEachConnectedNode_SharedNode_VisitsAllNodesExactlyOnce)
+{
+	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
+
+	// NodeA: 3 outputs, 0 inputs
+	Node* NodeA = new Node();
+	NodeA->AddSocket(new NodeSocket(NodeA, "EXECUTE", "outB", true));
+	NodeA->AddSocket(new NodeSocket(NodeA, "EXECUTE", "outC", true));
+	NodeA->AddSocket(new NodeSocket(NodeA, "EXECUTE", "outD", true));
+	Area->AddNode(NodeA);
+
+	// NodeB: 1 input, 1 output  (B => C)
+	Node* NodeB = new Node();
+	NodeB->AddSocket(new NodeSocket(NodeB, "EXECUTE", "in", false));
+	NodeB->AddSocket(new NodeSocket(NodeB, "EXECUTE", "out", true));
+	Area->AddNode(NodeB);
+
+	// NodeC: 2 inputs, 0 outputs  (receives from A and from B)
+	Node* NodeC = new Node();
+	NodeC->AddSocket(new NodeSocket(NodeC, "EXECUTE", "inA", false));
+	NodeC->AddSocket(new NodeSocket(NodeC, "EXECUTE", "inB", false));
+	Area->AddNode(NodeC);
+
+	// NodeD: 1 input, 0 outputs  (receives from A only)
+	Node* NodeD = new Node();
+	NodeD->AddSocket(new NodeSocket(NodeD, "EXECUTE", "in", false));
+	Area->AddNode(NodeD);
+
+	ASSERT_TRUE(Area->TryToConnect(NodeA, 0, NodeB, 0)); // A.outB => B.in
+	ASSERT_TRUE(Area->TryToConnect(NodeA, 1, NodeC, 0)); // A.outC => C.inA
+	ASSERT_TRUE(Area->TryToConnect(NodeA, 2, NodeD, 0)); // A.outD => D.in
+	ASSERT_TRUE(Area->TryToConnect(NodeB, 0, NodeC, 1)); // B.out  => C.inB
+
+	std::vector<std::string> VisitedIDs;
+	Area->RunOnEachConnectedNode(NodeA, [&](Node* CurrentNode) {
+		VisitedIDs.push_back(CurrentNode->GetID());
+	});
+
+	auto WasVisited = [&](Node* CurrentNode) {
+		return std::find(VisitedIDs.begin(), VisitedIDs.end(), CurrentNode->GetID()) != VisitedIDs.end();
+	};
+
+	// All three downstream nodes must be visited exactly once.
+	EXPECT_EQ(VisitedIDs.size(), 3);
+	EXPECT_TRUE(WasVisited(NodeB));
+	EXPECT_TRUE(WasVisited(NodeC));
+	EXPECT_TRUE(WasVisited(NodeD));
+
+	NODE_SYSTEM.DeleteNodeArea(Area);
+}
+
+//              A
+//            /   \
+//           B     C
+//            \   /
+//              D
+//
+TEST(NodeAreaEventSystemTests, RunOnEachConnectedNode_Diamond_VisitsEachOnce)
+{
+	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
+
+	Node* NodeA = new Node();
+	NodeA->AddSocket(new NodeSocket(NodeA, "EXECUTE", "outB", true));
+	NodeA->AddSocket(new NodeSocket(NodeA, "EXECUTE", "outC", true));
+	Area->AddNode(NodeA);
+
+	Node* NodeB = new Node();
+	NodeB->AddSocket(new NodeSocket(NodeB, "EXECUTE", "in", false));
+	NodeB->AddSocket(new NodeSocket(NodeB, "EXECUTE", "out", true));
+	Area->AddNode(NodeB);
+
+	Node* NodeC = new Node();
+	NodeC->AddSocket(new NodeSocket(NodeC, "EXECUTE", "in", false));
+	NodeC->AddSocket(new NodeSocket(NodeC, "EXECUTE", "out", true));
+	Area->AddNode(NodeC);
+
+	Node* NodeD = new Node();
+	NodeD->AddSocket(new NodeSocket(NodeD, "EXECUTE", "inB", false));
+	NodeD->AddSocket(new NodeSocket(NodeD, "EXECUTE", "inC", false));
+	Area->AddNode(NodeD);
+
+	ASSERT_TRUE(Area->TryToConnect(NodeA, 0, NodeB, 0));
+	ASSERT_TRUE(Area->TryToConnect(NodeA, 1, NodeC, 0));
+	ASSERT_TRUE(Area->TryToConnect(NodeB, 0, NodeD, 0));
+	ASSERT_TRUE(Area->TryToConnect(NodeC, 0, NodeD, 1));
+
+	std::vector<std::string> VisitedIDs;
+	Area->RunOnEachConnectedNode(NodeA, [&](Node* CurrentNode) {
+		VisitedIDs.push_back(CurrentNode->GetID());
+	});
+
+	EXPECT_EQ(VisitedIDs.size(), 3);
+
+	auto WasVisited = [&](Node* CurrentNode) {
+		return std::find(VisitedIDs.begin(), VisitedIDs.end(), CurrentNode->GetID()) != VisitedIDs.end();
+	};
+
+	EXPECT_TRUE(WasVisited(NodeB));
+	EXPECT_TRUE(WasVisited(NodeC));
+	EXPECT_TRUE(WasVisited(NodeD));
+
+	NODE_SYSTEM.DeleteNodeArea(Area);
+}

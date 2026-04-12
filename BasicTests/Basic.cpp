@@ -481,3 +481,27 @@ TEST(Basic, DuplicateConnection_IsRejected)
 
 	NODE_SYSTEM.DeleteNodeArea(Area);
 }
+
+TEST(Basic, CouldBeDestroyed_RegularNode_ReturnsTrue)
+{
+	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
+
+	Node* RegularNode = new Node();
+	Area->AddNode(RegularNode);
+
+	// A plain node with no protection should report that it can be destroyed.
+	EXPECT_TRUE(RegularNode->CouldBeDestroyed());
+
+	NODE_SYSTEM.DeleteNodeArea(Area);
+}
+
+TEST(Basic, Delete_NullptrNode_DoesNotCrash)
+{
+	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
+
+	EXPECT_FALSE(Area->Delete(static_cast<Node*>(nullptr)));
+	EXPECT_FALSE(Area->Delete(static_cast<GroupComment*>(nullptr)));
+	EXPECT_FALSE(Area->Delete(static_cast<RerouteNode*>(nullptr)));
+
+	NODE_SYSTEM.DeleteNodeArea(Area);
+}
