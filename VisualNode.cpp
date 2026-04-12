@@ -514,7 +514,7 @@ NodeArea* Node::GetParentArea() const
 
 bool Node::CouldBeDestroyed() const
 {
-	return bShouldBeDestroyed;
+	return bCouldBeDestroyed;
 }
 
 bool Node::IsNodeWithIDInList(const std::string ID, const std::vector<Node*> List)

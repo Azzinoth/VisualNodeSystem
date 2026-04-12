@@ -50,6 +50,9 @@ Connection* NodeArea::GetConnection(const NodeSocket* FirstSocket, const NodeSoc
 
 void NodeArea::Delete(Connection* Connection)
 {
+	if (Connection == nullptr)
+		return;
+
 	if (HoveredConnection == Connection)
 		HoveredConnection = nullptr;
 
@@ -197,6 +200,9 @@ int NodeArea::GetNodeIndex(const Node* Node) const
 
 bool NodeArea::Delete(const Node* NodeToDelete)
 {
+	if (NodeToDelete == nullptr)
+		return false;
+
 	if (!NodeToDelete->bCouldBeDestroyed)
 		return false;
 
@@ -235,6 +241,9 @@ bool NodeArea::Delete(const Node* NodeToDelete)
 
 void NodeArea::DeleteNodeInternal(const Node* Node, int Index)
 {
+	if (Node == nullptr)
+		return;
+
 	if (!Node->bCouldBeDestroyed)
 		return;
 
@@ -355,27 +364,16 @@ bool NodeArea::TryToDisconnect(const Node* OutNode, std::string OutSocketID, con
 	if (OutNode == nullptr || InNode == nullptr)
 		return false;
 
-	size_t OutSocketIndex = 0;
-	for (size_t i = 0; i < OutNode->Output.size(); i++)
-	{
-		if (OutNode->Output[i]->GetID() == OutSocketID)
-		{
-			OutSocketIndex = i;
-			break;
-		}
-	}
+	NodeSocket* OutSocket = OutNode->GetSocketByID(OutSocketID);
+	NodeSocket* InSocket = InNode->GetSocketByID(InSocketID);
 
-	size_t InSocketIndex = 0;
-	for (size_t i = 0; i < InNode->Input.size(); i++)
-	{
-		if (InNode->Input[i]->GetID() == InSocketID)
-		{
-			InSocketIndex = i;
-			break;
-		}
-	}
+	if (OutSocket == nullptr || InSocket == nullptr)
+		return false;
 
-	return TryToDisconnect(OutNode, OutSocketIndex, InNode, InSocketIndex);
+	if (OutSocket->IsInput() == InSocket->IsInput())
+		return false;
+
+	return TryToDisconnect(OutNode, OutNode->GetSocketIndexByID(OutSocketID), InNode, InNode->GetSocketIndexByID(InSocketID));
 }
 
 bool NodeArea::TryToDisconnect(const Node* Node, std::string SocketID)
@@ -427,27 +425,16 @@ bool NodeArea::IsConnected(const Node* OutNode, std::string OutSocketID, const N
 	if (OutNode == nullptr || InNode == nullptr)
 		return false;
 
-	size_t OutSocketIndex = 0;
-	for (size_t i = 0; i < OutNode->Output.size(); i++)
-	{
-		if (OutNode->Output[i]->GetID() == OutSocketID)
-		{
-			OutSocketIndex = i;
-			break;
-		}
-	}
+	NodeSocket* OutSocket = OutNode->GetSocketByID(OutSocketID);
+	NodeSocket* InSocket = InNode->GetSocketByID(InSocketID);
 
-	size_t InSocketIndex = 0;
-	for (size_t i = 0; i < InNode->Input.size(); i++)
-	{
-		if (InNode->Input[i]->GetID() == InSocketID)
-		{
-			InSocketIndex = i;
-			break;
-		}
-	}
+	if (OutSocket == nullptr || InSocket == nullptr)
+		return false;
 
-	return IsConnected(OutNode, OutSocketIndex, InNode, InSocketIndex);
+	if (OutSocket->IsInput() == InSocket->IsInput())
+		return false;
+
+	return IsConnected(OutNode, OutNode->GetSocketIndexByID(OutSocketID), InNode, InNode->GetSocketIndexByID(InSocketID));
 }
 
 bool NodeArea::IsConnected(const Node* FirstNode, const Node* SecondNode)
@@ -486,12 +473,12 @@ void NodeArea::RunOnEachNode(const std::function<void(Node*)>& Function)
 
 void NodeArea::RunOnEachConnectedNode(Node* StartNode, const std::function<void(Node*)>& Function)
 {
-	if (Function == nullptr)
+	if (StartNode == nullptr || Function == nullptr)
 		return;
 
-	static std::unordered_map<Node*, bool> SeenNodes;
+	std::unordered_map<Node*, bool> SeenNodes;
 	SeenNodes.clear();
-	auto bWasNodeSeen = [](Node* Node) {
+	auto bWasNodeSeen = [&SeenNodes](Node* Node) {
 		if (SeenNodes.find(Node) == SeenNodes.end())
 		{
 			SeenNodes[Node] = true;
@@ -505,9 +492,10 @@ void NodeArea::RunOnEachConnectedNode(Node* StartNode, const std::function<void(
 	std::vector<Node*> NewNodes = StartNode->GetNodesConnectedToOutput();
 	for (size_t j = 0; j < NewNodes.size(); j++)
 	{
-		CurrentNodes.push_back(NewNodes[j]);
 		if (bWasNodeSeen(NewNodes[j]))
-			return;
+			continue;
+
+		CurrentNodes.push_back(NewNodes[j]);
 	}
 
 	while (!IsEmptyOrFilledByNulls(CurrentNodes))
@@ -526,9 +514,10 @@ void NodeArea::RunOnEachConnectedNode(Node* StartNode, const std::function<void(
 			std::vector<Node*> NewNodes = CurrentNodes[i]->GetNodesConnectedToOutput();
 			for (size_t j = 0; j < NewNodes.size(); j++)
 			{
-				CurrentNodes.push_back(NewNodes[j]);
 				if (bWasNodeSeen(NewNodes[j]))
-					return;
+					continue;
+
+				CurrentNodes.push_back(NewNodes[j]);
 			}
 
 			CurrentNodes.erase(CurrentNodes.begin() + i);
@@ -542,27 +531,16 @@ bool NodeArea::TryToConnect(const Node* OutNode, const std::string OutSocketID, 
 	if (OutNode == nullptr || InNode == nullptr)
 		return false;
 
-	size_t OutSocketIndex = -1;
-	for (size_t i = 0; i < OutNode->Output.size(); i++)
-	{
-		if (OutNode->Output[i]->GetID() == OutSocketID)
-		{
-			OutSocketIndex = i;
-			break;
-		}
-	}
+	NodeSocket* OutSocket = OutNode->GetSocketByID(OutSocketID);
+	NodeSocket* InSocket = InNode->GetSocketByID(InSocketID);
 
-	size_t InSocketIndex = -1;
-	for (size_t i = 0; i < InNode->Input.size(); i++)
-	{
-		if (InNode->Input[i]->GetID() == InSocketID)
-		{
-			InSocketIndex = i;
-			break;
-		}
-	}
+	if (OutSocket == nullptr || InSocket == nullptr)
+		return false;
 
-	return TryToConnect(OutNode, OutSocketIndex, InNode, InSocketIndex);
+	if (OutSocket->IsInput() == InSocket->IsInput())
+		return false;
+
+	return TryToConnect(OutNode, OutNode->GetSocketIndexByID(OutSocketID), InNode, InNode->GetSocketIndexByID(InSocketID));
 }
 
 bool NodeArea::TriggerSocketEvent(NodeSocket* CallerNodeSocket, NodeSocket* TriggeredNodeSocket, NODE_SOCKET_EVENT EventType)
@@ -692,27 +670,16 @@ std::vector<std::pair<ImVec2, ImVec2>> NodeArea::GetConnectionSegments(const Nod
 	if (OutNode == nullptr || InNode == nullptr)
 		return Result;
 
-	size_t OutSocketIndex = 0;
-	for (size_t i = 0; i < OutNode->Output.size(); i++)
-	{
-		if (OutNode->Output[i]->GetID() == OutSocketID)
-		{
-			OutSocketIndex = i;
-			break;
-		}
-	}
+	NodeSocket* OutSocket = OutNode->GetSocketByID(OutSocketID);
+	NodeSocket* InSocket = InNode->GetSocketByID(InSocketID);
 
-	size_t InSocketIndex = 0;
-	for (size_t i = 0; i < InNode->Input.size(); i++)
-	{
-		if (InNode->Input[i]->GetID() == InSocketID)
-		{
-			InSocketIndex = i;
-			break;
-		}
-	}
+	if (OutSocket == nullptr || InSocket == nullptr)
+		return Result;
 
-	return GetConnectionSegments(OutNode, OutSocketIndex, InNode, InSocketIndex);
+	if (OutSocket->IsInput() == InSocket->IsInput())
+		return Result;
+
+	return GetConnectionSegments(OutNode, OutNode->GetSocketIndexByID(OutSocketID), InNode, InNode->GetSocketIndexByID(InSocketID));
 }
 
 RerouteNode* NodeArea::GetRerouteNodeByID(std::string ID) const
@@ -753,27 +720,16 @@ bool NodeArea::AddRerouteNodeToConnection(const Node* OutNode, std::string OutSo
 	if (OutNode == nullptr || InNode == nullptr)
 		return false;
 
-	size_t OutSocketIndex = 0;
-	for (size_t i = 0; i < OutNode->Output.size(); i++)
-	{
-		if (OutNode->Output[i]->GetID() == OutSocketID)
-		{
-			OutSocketIndex = i;
-			break;
-		}
-	}
+	NodeSocket* OutSocket = OutNode->GetSocketByID(OutSocketID);
+	NodeSocket* InSocket = InNode->GetSocketByID(InSocketID);
 
-	size_t InSocketIndex = 0;
-	for (size_t i = 0; i < InNode->Input.size(); i++)
-	{
-		if (InNode->Input[i]->GetID() == InSocketID)
-		{
-			InSocketIndex = i;
-			break;
-		}
-	}
+	if (OutSocket == nullptr || InSocket == nullptr)
+		return false;
 
-	return AddRerouteNodeToConnection(OutNode, OutSocketIndex, InNode, InSocketIndex, SegmentToDivide, Position);
+	if (OutSocket->IsInput() == InSocket->IsInput())
+		return false;
+
+	return AddRerouteNodeToConnection(OutNode, OutNode->GetSocketIndexByID(OutSocketID), InNode, InNode->GetSocketIndexByID(InSocketID), SegmentToDivide, Position);
 }
 
 GroupComment* NodeArea::GetGroupCommentByID(std::string GroupCommentID) const
