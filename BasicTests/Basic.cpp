@@ -62,9 +62,9 @@ TEST(Basic, NodeSockets)
 	ASSERT_EQ(FirstNode->GetInputSocketCount(), 0);
 	ASSERT_EQ(FirstNode->GetOutputSocketCount(), 0);
 
-	FirstNode->AddSocket(new NodeSocket(FirstNode, "EXECUTE", "in", false));
+	FirstNode->AddSocket(new NodeSocket(FirstNode, "EXECUTE", "in", NodeSocket::SocketFlow::Input));
 	ASSERT_EQ(FirstNode->GetInputSocketCount(), 1);
-	FirstNode->AddSocket(new NodeSocket(FirstNode, "EXECUTE", "out", true));
+	FirstNode->AddSocket(new NodeSocket(FirstNode, "EXECUTE", "out", NodeSocket::SocketFlow::Output));
 	ASSERT_EQ(FirstNode->GetOutputSocketCount(), 1);
 
 	LocalNodeArea->AddNode(FirstNode);
@@ -75,7 +75,7 @@ TEST(Basic, NodeSockets)
 	ASSERT_EQ(SecondNode->GetInputSocketCount(), 0);
 	ASSERT_EQ(SecondNode->GetOutputSocketCount(), 0);
 
-	SecondNode->AddSocket(new NodeSocket(SecondNode, "EXECUTE", "in", false));
+	SecondNode->AddSocket(new NodeSocket(SecondNode, "EXECUTE", "in", NodeSocket::SocketFlow::Input));
 	ASSERT_EQ(SecondNode->GetInputSocketCount(), 1);
 	ASSERT_EQ(SecondNode->GetOutputSocketCount(), 0);
 
@@ -119,7 +119,7 @@ TEST(Basic, NodeSockets)
 	ASSERT_EQ(ThirdNode->GetInputSocketCount(), 0);
 	ASSERT_EQ(ThirdNode->GetOutputSocketCount(), 0);
 
-	ThirdNode->AddSocket(new NodeSocket(ThirdNode, "SOME_TYPE", "SOME_NAME", true));
+	ThirdNode->AddSocket(new NodeSocket(ThirdNode, "SOME_TYPE", "SOME_NAME", NodeSocket::SocketFlow::Output));
 	ASSERT_EQ(ThirdNode->GetInputSocketCount(), 0);
 	ASSERT_EQ(ThirdNode->GetOutputSocketCount(), 1);
 
@@ -152,9 +152,9 @@ TEST(Basic, NodeSocketDeletion)
 	ASSERT_EQ(FirstNode->GetInputSocketCount(), 0);
 	ASSERT_EQ(FirstNode->GetOutputSocketCount(), 0);
 
-	FirstNode->AddSocket(new NodeSocket(FirstNode, "EXECUTE", "in", false));
+	FirstNode->AddSocket(new NodeSocket(FirstNode, "EXECUTE", "in", NodeSocket::SocketFlow::Input));
 	ASSERT_EQ(FirstNode->GetInputSocketCount(), 1);
-	FirstNode->AddSocket(new NodeSocket(FirstNode, "EXECUTE", "out", true));
+	FirstNode->AddSocket(new NodeSocket(FirstNode, "EXECUTE", "out", NodeSocket::SocketFlow::Output));
 	ASSERT_EQ(FirstNode->GetOutputSocketCount(), 1);
 
 	LocalNodeArea->AddNode(FirstNode);
@@ -165,7 +165,7 @@ TEST(Basic, NodeSocketDeletion)
 	ASSERT_EQ(SecondNode->GetInputSocketCount(), 0);
 	ASSERT_EQ(SecondNode->GetOutputSocketCount(), 0);
 
-	SecondNode->AddSocket(new NodeSocket(SecondNode, "EXECUTE", "in", false));
+	SecondNode->AddSocket(new NodeSocket(SecondNode, "EXECUTE", "in", NodeSocket::SocketFlow::Input));
 	ASSERT_EQ(SecondNode->GetInputSocketCount(), 1);
 	ASSERT_EQ(SecondNode->GetOutputSocketCount(), 0);
 
@@ -175,7 +175,7 @@ TEST(Basic, NodeSocketDeletion)
 	ASSERT_TRUE(LocalNodeArea->TryToConnect(FirstNode, 0, SecondNode, 0));
 	
 	// Delete socket, check if connections are deleted.
-	FirstNode->DeleteSocket(FirstNode->GetSocketIDByIndex(0, true));
+	FirstNode->DeleteSocket(FirstNode->GetSocketIDByIndex(0, NodeSocket::SocketFlow::Output));
 	ASSERT_FALSE(LocalNodeArea->IsConnected(FirstNode, SecondNode));
 
 	NODE_SYSTEM.DeleteNodeArea(LocalNodeArea);
@@ -368,11 +368,11 @@ TEST(Basic, SetAllowedTypes_DisconnectsIncompatible)
 	ASSERT_NE(LocalNodeArea, nullptr);
 
 	Node* FirstNode = new Node();
-	FirstNode->AddSocket(new NodeSocket(FirstNode, "TYPE_A", "out", true));
+	FirstNode->AddSocket(new NodeSocket(FirstNode, "TYPE_A", "out", NodeSocket::SocketFlow::Output));
 	LocalNodeArea->AddNode(FirstNode);
 
 	Node* SecondNode = new Node();
-	SecondNode->AddSocket(new NodeSocket(SecondNode, "TYPE_A", "in", false));
+	SecondNode->AddSocket(new NodeSocket(SecondNode, "TYPE_A", "in", NodeSocket::SocketFlow::Input));
 	LocalNodeArea->AddNode(SecondNode);
 
 	ASSERT_TRUE(LocalNodeArea->TryToConnect(FirstNode, 0, SecondNode, 0));
@@ -380,7 +380,7 @@ TEST(Basic, SetAllowedTypes_DisconnectsIncompatible)
 	ASSERT_EQ(SecondNode->GetNodesConnectedToInput().size(), 1);
 
 	// Change the input socket type to something incompatible.
-	std::string SocketID = SecondNode->GetSocketIDByIndex(0, false);
+	std::string SocketID = SecondNode->GetSocketIDByIndex(0, NodeSocket::SocketFlow::Input);
 	NodeSocket* Socket = SecondNode->GetSocketByID(SocketID);
 	ASSERT_NE(Socket, nullptr);
 
@@ -401,17 +401,17 @@ TEST(Basic, SetAllowedTypes_KeepsCompatible)
 	ASSERT_NE(LocalNodeArea, nullptr);
 
 	Node* FirstNode = new Node();
-	FirstNode->AddSocket(new NodeSocket(FirstNode, "TYPE_A", "out", true));
+	FirstNode->AddSocket(new NodeSocket(FirstNode, "TYPE_A", "out", NodeSocket::SocketFlow::Output));
 	LocalNodeArea->AddNode(FirstNode);
 
 	Node* SecondNode = new Node();
-	SecondNode->AddSocket(new NodeSocket(SecondNode, "TYPE_A", "in", false));
+	SecondNode->AddSocket(new NodeSocket(SecondNode, "TYPE_A", "in", NodeSocket::SocketFlow::Input));
 	LocalNodeArea->AddNode(SecondNode);
 
 	ASSERT_TRUE(LocalNodeArea->TryToConnect(FirstNode, 0, SecondNode, 0));
 
 	// Change type to a set that still includes the original type.
-	std::string SocketID = SecondNode->GetSocketIDByIndex(0, false);
+	std::string SocketID = SecondNode->GetSocketIDByIndex(0, NodeSocket::SocketFlow::Input);
 	NodeSocket* Socket = SecondNode->GetSocketByID(SocketID);
 	ASSERT_NE(Socket, nullptr);
 
@@ -432,15 +432,15 @@ TEST(Basic, SetAllowedTypes_PartialDisconnect)
 	ASSERT_NE(LocalNodeArea, nullptr);
 
 	Node* NodeA = new Node();
-	NodeA->AddSocket(new NodeSocket(NodeA, "TYPE_A", "out", true));
+	NodeA->AddSocket(new NodeSocket(NodeA, "TYPE_A", "out", NodeSocket::SocketFlow::Output));
 	LocalNodeArea->AddNode(NodeA);
 
 	Node* NodeB = new Node();
-	NodeB->AddSocket(new NodeSocket(NodeB, "TYPE_B", "out", true));
+	NodeB->AddSocket(new NodeSocket(NodeB, "TYPE_B", "out", NodeSocket::SocketFlow::Output));
 	LocalNodeArea->AddNode(NodeB);
 
 	Node* Receiver = new Node();
-	Receiver->AddSocket(new NodeSocket(Receiver, std::vector<std::string>{"TYPE_A", "TYPE_B"}, "in", false));
+	Receiver->AddSocket(new NodeSocket(Receiver, std::vector<std::string>{"TYPE_A", "TYPE_B"}, "in", NodeSocket::SocketFlow::Input));
 	LocalNodeArea->AddNode(Receiver);
 
 	ASSERT_TRUE(LocalNodeArea->TryToConnect(NodeA, 0, Receiver, 0));
@@ -448,7 +448,7 @@ TEST(Basic, SetAllowedTypes_PartialDisconnect)
 	ASSERT_EQ(Receiver->GetNodesConnectedToInput().size(), 2);
 
 	// Narrow the input socket to only TYPE_A, should disconnect NodeB but keep NodeA.
-	std::string SocketID = Receiver->GetSocketIDByIndex(0, false);
+	std::string SocketID = Receiver->GetSocketIDByIndex(0, NodeSocket::SocketFlow::Input);
 	NodeSocket* Socket = Receiver->GetSocketByID(SocketID);
 	ASSERT_NE(Socket, nullptr);
 

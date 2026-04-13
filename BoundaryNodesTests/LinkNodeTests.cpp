@@ -90,7 +90,7 @@ TEST(LinkNodeTests, Basic_AddSockets)
 	ASSERT_EQ(DownstreamArea->GetLastExecutedNodes().size(), 2);
 
 	// Try to add incompatible socket type to the link, should fail.
-	EXPECT_FALSE(UpstreamLinkNode->AddSocket(new NodeSocket(UpstreamLinkNode, { std::string("FLOAT") }, "IncompatibleSocket", true)));
+	EXPECT_FALSE(UpstreamLinkNode->AddSocket(new NodeSocket(UpstreamLinkNode, { std::string("FLOAT") }, "IncompatibleSocket", NodeSocket::SocketFlow::Output)));
 
 	NODE_SYSTEM.DeleteNodeArea(UpstreamArea);
 	NODE_SYSTEM.DeleteNodeArea(DownstreamArea);
@@ -342,7 +342,7 @@ TEST(LinkNodeTests, SocketIndexRoutesDataCorrectly_AfterDeletion)
 	EXPECT_EQ(IntegerB->GetData(), 0);
 
 	// Now delete first data socket in link node.
-	std::string SocketIDToDelete = UpstreamLinkNode->GetSocketIDByIndex(1, false);
+	std::string SocketIDToDelete = UpstreamLinkNode->GetSocketIDByIndex(1, NodeSocket::SocketFlow::Input);
 	ASSERT_EQ(UpstreamLinkNode->DeleteSocket(SocketIDToDelete), true);
 	// Connection on downstream area should also be deleted since the socket was removed.
 	ASSERT_EQ(DownstreamArea->IsConnected(DownstreamLinkNode, 1, IntegerB, 1), false);
@@ -981,7 +981,7 @@ TEST(LinkNodeTests, SetSocketAllowedTypes_DisconnectsIncompatible)
 	EXPECT_TRUE(DownstreamBoolNode->GetData());
 
 	// Change socket type on upstream link node to something incompatible.
-	std::string SocketID = UpstreamLinkNode->GetSocketIDByIndex(1, false);
+	std::string SocketID = UpstreamLinkNode->GetSocketIDByIndex(1, NodeSocket::SocketFlow::Input);
 	NodeSocket* Socket = UpstreamLinkNode->GetSocketByID(SocketID);
 	ASSERT_NE(Socket, nullptr);
 
@@ -992,7 +992,7 @@ TEST(LinkNodeTests, SetSocketAllowedTypes_DisconnectsIncompatible)
 	ASSERT_FALSE(UpstreamArea->IsConnected(UpstreamBoolNode, 0, UpstreamLinkNode, 1));
 
 	// Partner socket on downstream link node should also have changed type.
-	std::string PartnerSocketID = DownstreamLinkNode->GetSocketIDByIndex(1, true);
+	std::string PartnerSocketID = DownstreamLinkNode->GetSocketIDByIndex(1, NodeSocket::SocketFlow::Output);
 	ASSERT_FALSE(PartnerSocketID.empty());
 	const NodeSocket* PartnerSocket = DownstreamLinkNode->GetSocketByID(PartnerSocketID);
 	ASSERT_NE(PartnerSocket, nullptr);
@@ -1043,7 +1043,7 @@ TEST(LinkNodeTests, SetSocketAllowedTypes_KeepsCompatible)
 	ASSERT_EQ(DownstreamArea->TryToConnect(DownstreamLinkNode, 1, DownstreamIntNode, 1), true);
 
 	// Widen type to include INT and FLOAT, INT connections should survive.
-	std::string SocketID = UpstreamLinkNode->GetSocketIDByIndex(1, false);
+	std::string SocketID = UpstreamLinkNode->GetSocketIDByIndex(1, NodeSocket::SocketFlow::Input);
 	NodeSocket* Socket = UpstreamLinkNode->GetSocketByID(SocketID);
 	ASSERT_NE(Socket, nullptr);
 
@@ -1122,7 +1122,7 @@ TEST(LinkNodeTests, SetSocketAllowedTypes_PartialDisconnect_MultipleSockets)
 	EXPECT_EQ(DownstreamFloatNode->GetData(), 3.14f);
 
 	// Change only the BOOL socket (index 1) to INT, FLOAT socket (index 2) should be unaffected.
-	std::string BoolSocketID = UpstreamLinkNode->GetSocketIDByIndex(1, false);
+	std::string BoolSocketID = UpstreamLinkNode->GetSocketIDByIndex(1, NodeSocket::SocketFlow::Input);
 	NodeSocket* Socket = UpstreamLinkNode->GetSocketByID(BoolSocketID);
 	ASSERT_NE(Socket, nullptr);
 
@@ -1159,12 +1159,12 @@ TEST(LinkNodeTests, RenameSocket_PropagatesPartnerName)
 	ASSERT_NE(DownstreamLinkNode, nullptr);
 
 	// Get the socket on the upstream link node (index 1, after the execution socket).
-	std::string UpstreamSocketID = UpstreamLinkNode->GetSocketIDByIndex(1, false);
+	std::string UpstreamSocketID = UpstreamLinkNode->GetSocketIDByIndex(1, NodeSocket::SocketFlow::Input);
 	NodeSocket* UpstreamSocket = UpstreamLinkNode->GetSocketByID(UpstreamSocketID);
 	ASSERT_NE(UpstreamSocket, nullptr);
 
 	// Get the partner socket on the downstream link node.
-	std::string DownstreamSocketID = DownstreamLinkNode->GetSocketIDByIndex(1, true);
+	std::string DownstreamSocketID = DownstreamLinkNode->GetSocketIDByIndex(1, NodeSocket::SocketFlow::Output);
 	NodeSocket* DownstreamSocket = DownstreamLinkNode->GetSocketByID(DownstreamSocketID);
 	ASSERT_NE(DownstreamSocket, nullptr);
 
@@ -1254,8 +1254,8 @@ TEST(LinkNodeTests, Copy_Paste_Dangling)
 	EXPECT_EQ(PastedLinkNode->GetOutputSocketCount(), UpstreamLinkNode->GetOutputSocketCount());
 	for (size_t i = 0; i < UpstreamLinkNode->GetInputSocketCount(); i++)
 	{
-		NodeSocket* OriginalSocket = UpstreamLinkNode->GetSocketByIndex(i, false);
-		NodeSocket* PastedSocket = PastedLinkNode->GetSocketByIndex(i, false);
+		NodeSocket* OriginalSocket = UpstreamLinkNode->GetSocketByIndex(i, NodeSocket::SocketFlow::Input);
+		NodeSocket* PastedSocket = PastedLinkNode->GetSocketByIndex(i, NodeSocket::SocketFlow::Input);
 		EXPECT_EQ(OriginalSocket->GetAllowedTypes(), PastedSocket->GetAllowedTypes());
 	}
 	EXPECT_EQ(PastedLinkNode->GetNodesConnectedToInput().size(), 0);

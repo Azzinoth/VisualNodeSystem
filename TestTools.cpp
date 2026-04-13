@@ -49,7 +49,7 @@ bool TestTools::VerifyNodeAreaSaveLoadCycle_BasicChecks(VisNodeSys::NodeArea* No
 void TestTools::AddOutputSocketsToNode(Node* NodeToAddSockets, std::string SocketType, int OutputCount)
 {
 	for (int i = 0; i < OutputCount; i++)
-		NodeToAddSockets->AddSocket(new NodeSocket(NodeToAddSockets, SocketType, "out_" + std::to_string(i), true));
+		NodeToAddSockets->AddSocket(new NodeSocket(NodeToAddSockets, SocketType, "out_" + std::to_string(i), NodeSocket::SocketFlow::Output));
 }
 
 NodeArea* TestTools::CreateTinyPopulatedNodeArea(std::vector<std::string>& NodesIDList, std::vector<std::string>& GroupCommentsIDList)
@@ -67,8 +67,8 @@ NodeArea* TestTools::CreateTinyPopulatedNodeArea(std::vector<std::string>& Nodes
 	Node* DefaultNode = new Node();
 	NodesIDList.push_back(DefaultNode->GetID());
 	DefaultNode->SetName("Default node");
-	DefaultNode->AddSocket(new NodeSocket(DefaultNode, "EXECUTE", "in", false));
-	DefaultNode->AddSocket(new NodeSocket(DefaultNode, "EXECUTE", "out", true));
+	DefaultNode->AddSocket(new NodeSocket(DefaultNode, "EXECUTE", "in", NodeSocket::SocketFlow::Input));
+	DefaultNode->AddSocket(new NodeSocket(DefaultNode, "EXECUTE", "out", NodeSocket::SocketFlow::Output));
 	DefaultNode->SetPosition(ImVec2(WindowSize.x / 2.0f - DefaultNode->GetSize().x / 2.0f, 250.0f));
 	NodeArea->AddNode(DefaultNode);
 
@@ -76,8 +76,8 @@ NodeArea* TestTools::CreateTinyPopulatedNodeArea(std::vector<std::string>& Nodes
 	NodesIDList.push_back(RoundNode->GetID());
 	RoundNode->SetStyle(CIRCLE);
 	RoundNode->SetName("Round node");
-	RoundNode->AddSocket(new NodeSocket(RoundNode, "EXECUTE", "in", false));
-	RoundNode->AddSocket(new NodeSocket(RoundNode, "EXECUTE", "out", true));
+	RoundNode->AddSocket(new NodeSocket(RoundNode, "EXECUTE", "in", NodeSocket::SocketFlow::Input));
+	RoundNode->AddSocket(new NodeSocket(RoundNode, "EXECUTE", "out", NodeSocket::SocketFlow::Output));
 	RoundNode->SetPosition(ImVec2(WindowSize.x / 2.0f - RoundNode->GetSize().x / 2.0f, 400.0f));
 	NodeArea->AddNode(RoundNode);
 
@@ -133,7 +133,7 @@ NodeArea* TestTools::CreateTinyPopulatedNodeArea(std::vector<std::string>& Nodes
 	Node* RerouteDemostrationNode = new Node();
 	NodesIDList.push_back(RerouteDemostrationNode->GetID());
 	RerouteDemostrationNode->SetName("Some node");
-	RerouteDemostrationNode->AddSocket(new NodeSocket(RerouteDemostrationNode, "EXECUTE", "out", true));
+	RerouteDemostrationNode->AddSocket(new NodeSocket(RerouteDemostrationNode, "EXECUTE", "out", NodeSocket::SocketFlow::Output));
 	RerouteDemostrationNode->SetSize(RerouteDemostrationNode->GetSize() - ImVec2(80.0f, 0.0f));
 	RerouteDemostrationNode->SetPosition(ImVec2(10.0f, 490.0f));
 	NodeArea->AddNode(RerouteDemostrationNode);
@@ -148,7 +148,7 @@ NodeArea* TestTools::CreateTinyPopulatedNodeArea(std::vector<std::string>& Nodes
 	Node* RerouteDemostrationNodeEnd = new Node();
 	NodesIDList.push_back(RerouteDemostrationNodeEnd->GetID());
 	RerouteDemostrationNodeEnd->SetName("Some node");
-	RerouteDemostrationNodeEnd->AddSocket(new NodeSocket(RerouteDemostrationNodeEnd, "EXECUTE", "in", false));
+	RerouteDemostrationNodeEnd->AddSocket(new NodeSocket(RerouteDemostrationNodeEnd, "EXECUTE", "in", NodeSocket::SocketFlow::Input));
 	RerouteDemostrationNodeEnd->SetSize(RerouteDemostrationNodeEnd->GetSize() - ImVec2(80.0f, 0.0f));
 	RerouteDemostrationNodeEnd->SetPosition(ImVec2(350.0f, 490.0f));
 	NodeArea->AddNode(RerouteDemostrationNodeEnd);
@@ -210,7 +210,7 @@ VisNodeSys::NodeArea* TestTools::CreateSmallConnectedNodeArea(std::vector<std::s
 	{
 		NewNode = new Node();
 		NewNode->SetName("Node_" + std::to_string(i));
-		NewNode->AddSocket(new NodeSocket(NewNode, "DUMMY", "in_0", false));
+		NewNode->AddSocket(new NodeSocket(NewNode, "DUMMY", "in_0", NodeSocket::SocketFlow::Input));
 		AddOutputSocketsToNode(NewNode, "DUMMY", 3);
 		LocalAddNode(NewNode);
 	}
@@ -220,7 +220,7 @@ VisNodeSys::NodeArea* TestTools::CreateSmallConnectedNodeArea(std::vector<std::s
 	{
 		NewNode = new Node();
 		NewNode->SetName("Node_" + std::to_string(i));
-		NewNode->AddSocket(new NodeSocket(NewNode, "DUMMY", "in_0", false));
+		NewNode->AddSocket(new NodeSocket(NewNode, "DUMMY", "in_0", NodeSocket::SocketFlow::Input));
 		if (i == 4 || i == 12)
 		{
 			AddOutputSocketsToNode(NewNode, "DUMMY", 2);
@@ -238,7 +238,7 @@ VisNodeSys::NodeArea* TestTools::CreateSmallConnectedNodeArea(std::vector<std::s
 	{
 		NewNode = new Node();
 		NewNode->SetName("Node_" + std::to_string(i));
-		NewNode->AddSocket(new NodeSocket(NewNode, "DUMMY", "in_0", false));
+		NewNode->AddSocket(new NodeSocket(NewNode, "DUMMY", "in_0", NodeSocket::SocketFlow::Input));
 
 		if (i == 13 || i == 15 || i == 16 || i == 18 || i >= 20)
 			AddOutputSocketsToNode(NewNode, "DUMMY", 1);
@@ -251,7 +251,7 @@ VisNodeSys::NodeArea* TestTools::CreateSmallConnectedNodeArea(std::vector<std::s
 	{
 		NewNode = new Node();
 		NewNode->SetName("Node_" + std::to_string(i));
-		NewNode->AddSocket(new NodeSocket(NewNode, "DUMMY", "in_0", false));
+		NewNode->AddSocket(new NodeSocket(NewNode, "DUMMY", "in_0", NodeSocket::SocketFlow::Input));
 		LocalAddNode(NewNode);
 	}
 

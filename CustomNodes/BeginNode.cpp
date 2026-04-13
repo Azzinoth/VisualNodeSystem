@@ -30,7 +30,7 @@ BeginNode::BeginNode() : BaseExecutionFlowNode(false)
 	TitleBackgroundColor = ImColor(31, 117, 208);
 	TitleBackgroundColorHovered = ImColor(35, 145, 255);
 	
-	AddSocket(new NodeSocket(this, "EXECUTE", "out", true));
+	AddSocket(new NodeSocket(this, "EXECUTE", "out", NodeSocket::SocketFlow::Output));
 }
 
 BeginNode::BeginNode(const BeginNode& Other) : BaseExecutionFlowNode(Other)

@@ -60,11 +60,11 @@ TEST(SubAreaNodeTests, Basic_Sockets)
 
 	// SubAreaNode should start with execution in and output.
 	EXPECT_EQ(NewNode->GetInputSocketCount(), 1);
-	NodeSocket* InputSocket = NewNode->GetSocketByIndex(0, true);
+	NodeSocket* InputSocket = NewNode->GetSocketByIndex(0, NodeSocket::SocketFlow::Input);
 	ASSERT_NE(InputSocket, nullptr);
 	EXPECT_EQ(InputSocket->GetAllowedTypes(), std::vector<std::string>{"EXECUTE"});
 	EXPECT_EQ(NewNode->GetOutputSocketCount(), 1);
-	NodeSocket* OutputSocket = NewNode->GetSocketByIndex(0, false);
+	NodeSocket* OutputSocket = NewNode->GetSocketByIndex(0, NodeSocket::SocketFlow::Output);
 	ASSERT_NE(OutputSocket, nullptr);
 	EXPECT_EQ(OutputSocket->GetAllowedTypes(), std::vector<std::string>{"EXECUTE"});
 
@@ -72,16 +72,16 @@ TEST(SubAreaNodeTests, Basic_Sockets)
 	ASSERT_NE(InputNode, nullptr);
 	EXPECT_EQ(InputNode->GetInputSocketCount(), 0);
 	EXPECT_EQ(InputNode->GetOutputSocketCount(), 1);
-	InputSocket = InputNode->GetSocketByIndex(0, true);
+	InputSocket = InputNode->GetSocketByIndex(0, NodeSocket::SocketFlow::Output);
 	ASSERT_NE(InputSocket, nullptr);
 	EXPECT_EQ(InputSocket->GetAllowedTypes(), std::vector<std::string>{"EXECUTE"});
-	EXPECT_EQ(NewNode->GetSocketByIndex(0, true)->GetAllowedTypes(), std::vector<std::string>{"EXECUTE"});
+	EXPECT_EQ(NewNode->GetSocketByIndex(0, NodeSocket::SocketFlow::Output)->GetAllowedTypes(), std::vector<std::string>{"EXECUTE"});
 
 	SubAreaOutputNode* OutputNode = NewNode->GetSubAreaOutputNode();
 	ASSERT_NE(OutputNode, nullptr);
 	EXPECT_EQ(OutputNode->GetInputSocketCount(), 1);
 	EXPECT_EQ(OutputNode->GetOutputSocketCount(), 0);
-	OutputSocket = OutputNode->GetSocketByIndex(0, false);
+	OutputSocket = OutputNode->GetSocketByIndex(0, NodeSocket::SocketFlow::Input);
 	ASSERT_NE(OutputSocket, nullptr);
 	EXPECT_EQ(OutputSocket->GetAllowedTypes(), std::vector<std::string>{"EXECUTE"});
 
@@ -123,7 +123,7 @@ TEST(SubAreaNodeTests, Basic_AddSockets)
 	ASSERT_NE(SubArea, nullptr);
 
 	// Add input BOOL data socket to the SubAreaNode.
-	EXPECT_TRUE(SubArea->AddSocket({ "BOOL" }, "Bool IN", NodeSocket::Direction::Input));
+	EXPECT_TRUE(SubArea->AddSocket({ "BOOL" }, "Bool IN", NodeSocket::SocketFlow::Input));
 	EXPECT_EQ(SubArea->GetInputSocketCount(), 2);
 	EXPECT_EQ(SubArea->GetOutputSocketCount(), 1);
 
@@ -138,7 +138,7 @@ TEST(SubAreaNodeTests, Basic_AddSockets)
 	EXPECT_EQ(OutputNode->GetInputSocketCount(), 1);
 
 	// Now add output BOOL data socket to the SubAreaNode.
-	EXPECT_TRUE(SubArea->AddSocket({ "BOOL" }, "Bool OUT", NodeSocket::Direction::Output));
+	EXPECT_TRUE(SubArea->AddSocket({ "BOOL" }, "Bool OUT", NodeSocket::SocketFlow::Output));
 	EXPECT_EQ(SubArea->GetInputSocketCount(), 2);
 	EXPECT_EQ(SubArea->GetOutputSocketCount(), 2);
 
@@ -195,8 +195,8 @@ TEST(SubAreaNodeTests, Basic_AddSockets)
 	EXPECT_FALSE(ParentBoolResult->GetData());
 
 	// Adding incompatible socket should fail.
-	EXPECT_FALSE(InputNode->AddSocket(new NodeSocket(SubArea, { std::string("FLOAT") }, "IncompatibleSocket", false)));
-	EXPECT_FALSE(OutputNode->AddSocket(new NodeSocket(SubArea, { std::string("FLOAT") }, "IncompatibleSocket", true)));
+	EXPECT_FALSE(InputNode->AddSocket(new NodeSocket(SubArea, { std::string("FLOAT") }, "IncompatibleSocket", NodeSocket::SocketFlow::Input)));
+	EXPECT_FALSE(OutputNode->AddSocket(new NodeSocket(SubArea, { std::string("FLOAT") }, "IncompatibleSocket", NodeSocket::SocketFlow::Output)));
 
 	NODE_SYSTEM.DeleteNodeArea(ParentArea);
 }
@@ -221,17 +221,17 @@ TEST(SubAreaNodeTests, DeleteSocket_OnlyRemoves_CorrespondingDirection_From_Part
 	EXPECT_EQ(OutputNode->GetInputSocketCount(), 1);
 
 	// Add a BOOL input socket.
-	EXPECT_TRUE(SubArea->AddSocket({ "BOOL" }, "Bool IN", NodeSocket::Direction::Input));
+	EXPECT_TRUE(SubArea->AddSocket({ "BOOL" }, "Bool IN", NodeSocket::SocketFlow::Input));
 	EXPECT_EQ(SubArea->GetInputSocketCount(), 2);
 	EXPECT_EQ(InputNode->GetOutputSocketCount(), 2);
 
 	// Add a BOOL output socket.
-	EXPECT_TRUE(SubArea->AddSocket({ "BOOL" }, "Bool OUT", NodeSocket::Direction::Output));
+	EXPECT_TRUE(SubArea->AddSocket({ "BOOL" }, "Bool OUT", NodeSocket::SocketFlow::Output));
 	EXPECT_EQ(SubArea->GetOutputSocketCount(), 2);
 	EXPECT_EQ(OutputNode->GetInputSocketCount(), 2);
 
 	// Get the ID of the BOOL input socket on the SubAreaNode (index 1).
-	std::string BoolInputSocketID = SubArea->GetSocketIDByIndex(1, false);
+	std::string BoolInputSocketID = SubArea->GetSocketIDByIndex(1, NodeSocket::SocketFlow::Input);
 	ASSERT_NE(BoolInputSocketID, "");
 
 	// Delete it via SubAreaNode.
@@ -246,7 +246,7 @@ TEST(SubAreaNodeTests, DeleteSocket_OnlyRemoves_CorrespondingDirection_From_Part
 	EXPECT_EQ(OutputNode->GetInputSocketCount(), 2);
 
 	// Delete the BOOL output socket (now at index 1).
-	std::string BoolOutputSocketID = SubArea->GetSocketIDByIndex(1, true);
+	std::string BoolOutputSocketID = SubArea->GetSocketIDByIndex(1, NodeSocket::SocketFlow::Output);
 	ASSERT_NE(BoolOutputSocketID, "");
 	EXPECT_TRUE(SubArea->DeleteSocket(BoolOutputSocketID));
 

@@ -171,11 +171,11 @@ TEST(Basic, TryToDisconnect_WithNonExistentSocketIDs)
 	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
 
 	Node* NodeA = new Node();
-	NodeA->AddSocket(new NodeSocket(NodeA, "TYPE_A", "out", true));
+	NodeA->AddSocket(new NodeSocket(NodeA, "TYPE_A", "out", NodeSocket::SocketFlow::Output));
 	Area->AddNode(NodeA);
 
 	Node* NodeB = new Node();
-	NodeB->AddSocket(new NodeSocket(NodeB, "TYPE_A", "in", false));
+	NodeB->AddSocket(new NodeSocket(NodeB, "TYPE_A", "in", NodeSocket::SocketFlow::Input));
 	Area->AddNode(NodeB);
 	ASSERT_TRUE(Area->TryToConnect(NodeA, 0, NodeB, 0));
 	ASSERT_EQ(Area->GetConnectionCount(), 1);
@@ -191,11 +191,11 @@ TEST(Basic, IsConnected_WithNonExistentSocketIDs)
 	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
 
 	Node* NodeA = new Node();
-	NodeA->AddSocket(new NodeSocket(NodeA, "TYPE_A", "out", true));
+	NodeA->AddSocket(new NodeSocket(NodeA, "TYPE_A", "out", NodeSocket::SocketFlow::Output));
 	Area->AddNode(NodeA);
 
 	Node* NodeB = new Node();
-	NodeB->AddSocket(new NodeSocket(NodeB, "TYPE_A", "in", false));
+	NodeB->AddSocket(new NodeSocket(NodeB, "TYPE_A", "in", NodeSocket::SocketFlow::Input));
 	Area->AddNode(NodeB);
 	ASSERT_TRUE(Area->TryToConnect(NodeA, 0, NodeB, 0));
 	ASSERT_EQ(Area->GetConnectionCount(), 1);
@@ -209,11 +209,11 @@ TEST(Basic, AddRerouteNodeToConnection_WithNonExistentSocketIDs)
 	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
 
 	Node* NodeA = new Node();
-	NodeA->AddSocket(new NodeSocket(NodeA, "TYPE_A", "out", true));
+	NodeA->AddSocket(new NodeSocket(NodeA, "TYPE_A", "out", NodeSocket::SocketFlow::Output));
 	Area->AddNode(NodeA);
 
 	Node* NodeB = new Node();
-	NodeB->AddSocket(new NodeSocket(NodeB, "TYPE_A", "in", false));
+	NodeB->AddSocket(new NodeSocket(NodeB, "TYPE_A", "in", NodeSocket::SocketFlow::Input));
 	Area->AddNode(NodeB);
 	ASSERT_TRUE(Area->TryToConnect(NodeA, 0, NodeB, 0));
 	ASSERT_EQ(Area->GetConnectionCount(), 1);

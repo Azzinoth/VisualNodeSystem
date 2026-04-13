@@ -29,8 +29,8 @@ CustomNode5::CustomNode5() : Node()
 	TitleBackgroundColor = ImColor(128, 117, 208);
 	TitleBackgroundColorHovered = ImColor(135, 145, 255);
 	
-	AddSocket(new NodeSocket(this, "FLOAT", "int", false));
-	AddSocket(new NodeSocket(this, "FLOAT", "out", true));
+	AddSocket(new NodeSocket(this, "FLOAT", "int", NodeSocket::SocketFlow::Input));
+	AddSocket(new NodeSocket(this, "FLOAT", "out", NodeSocket::SocketFlow::Output));
 }
 
 CustomNode5::CustomNode5(const CustomNode5& Src) : Node(Src)

@@ -574,26 +574,26 @@ TEST(NodeAreaEventSystemTests, RunOnEachConnectedNode_SharedNode_VisitsAllNodesE
 
 	// NodeA: 3 outputs, 0 inputs
 	Node* NodeA = new Node();
-	NodeA->AddSocket(new NodeSocket(NodeA, "EXECUTE", "outB", true));
-	NodeA->AddSocket(new NodeSocket(NodeA, "EXECUTE", "outC", true));
-	NodeA->AddSocket(new NodeSocket(NodeA, "EXECUTE", "outD", true));
+	NodeA->AddSocket(new NodeSocket(NodeA, "EXECUTE", "outB", NodeSocket::SocketFlow::Output));
+	NodeA->AddSocket(new NodeSocket(NodeA, "EXECUTE", "outC", NodeSocket::SocketFlow::Output));
+	NodeA->AddSocket(new NodeSocket(NodeA, "EXECUTE", "outD", NodeSocket::SocketFlow::Output));
 	Area->AddNode(NodeA);
 
 	// NodeB: 1 input, 1 output  (B => C)
 	Node* NodeB = new Node();
-	NodeB->AddSocket(new NodeSocket(NodeB, "EXECUTE", "in", false));
-	NodeB->AddSocket(new NodeSocket(NodeB, "EXECUTE", "out", true));
+	NodeB->AddSocket(new NodeSocket(NodeB, "EXECUTE", "in", NodeSocket::SocketFlow::Input));
+	NodeB->AddSocket(new NodeSocket(NodeB, "EXECUTE", "out", NodeSocket::SocketFlow::Output));
 	Area->AddNode(NodeB);
 
 	// NodeC: 2 inputs, 0 outputs  (receives from A and from B)
 	Node* NodeC = new Node();
-	NodeC->AddSocket(new NodeSocket(NodeC, "EXECUTE", "inA", false));
-	NodeC->AddSocket(new NodeSocket(NodeC, "EXECUTE", "inB", false));
+	NodeC->AddSocket(new NodeSocket(NodeC, "EXECUTE", "inA", NodeSocket::SocketFlow::Input));
+	NodeC->AddSocket(new NodeSocket(NodeC, "EXECUTE", "inB", NodeSocket::SocketFlow::Input));
 	Area->AddNode(NodeC);
 
 	// NodeD: 1 input, 0 outputs  (receives from A only)
 	Node* NodeD = new Node();
-	NodeD->AddSocket(new NodeSocket(NodeD, "EXECUTE", "in", false));
+	NodeD->AddSocket(new NodeSocket(NodeD, "EXECUTE", "in", NodeSocket::SocketFlow::Input));
 	Area->AddNode(NodeD);
 
 	ASSERT_TRUE(Area->TryToConnect(NodeA, 0, NodeB, 0)); // A.outB => B.in
@@ -630,23 +630,23 @@ TEST(NodeAreaEventSystemTests, RunOnEachConnectedNode_Diamond_VisitsEachOnce)
 	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
 
 	Node* NodeA = new Node();
-	NodeA->AddSocket(new NodeSocket(NodeA, "EXECUTE", "outB", true));
-	NodeA->AddSocket(new NodeSocket(NodeA, "EXECUTE", "outC", true));
+	NodeA->AddSocket(new NodeSocket(NodeA, "EXECUTE", "outB", NodeSocket::SocketFlow::Output));
+	NodeA->AddSocket(new NodeSocket(NodeA, "EXECUTE", "outC", NodeSocket::SocketFlow::Output));
 	Area->AddNode(NodeA);
 
 	Node* NodeB = new Node();
-	NodeB->AddSocket(new NodeSocket(NodeB, "EXECUTE", "in", false));
-	NodeB->AddSocket(new NodeSocket(NodeB, "EXECUTE", "out", true));
+	NodeB->AddSocket(new NodeSocket(NodeB, "EXECUTE", "in", NodeSocket::SocketFlow::Input));
+	NodeB->AddSocket(new NodeSocket(NodeB, "EXECUTE", "out", NodeSocket::SocketFlow::Output));
 	Area->AddNode(NodeB);
 
 	Node* NodeC = new Node();
-	NodeC->AddSocket(new NodeSocket(NodeC, "EXECUTE", "in", false));
-	NodeC->AddSocket(new NodeSocket(NodeC, "EXECUTE", "out", true));
+	NodeC->AddSocket(new NodeSocket(NodeC, "EXECUTE", "in", NodeSocket::SocketFlow::Input));
+	NodeC->AddSocket(new NodeSocket(NodeC, "EXECUTE", "out", NodeSocket::SocketFlow::Output));
 	Area->AddNode(NodeC);
 
 	Node* NodeD = new Node();
-	NodeD->AddSocket(new NodeSocket(NodeD, "EXECUTE", "inB", false));
-	NodeD->AddSocket(new NodeSocket(NodeD, "EXECUTE", "inC", false));
+	NodeD->AddSocket(new NodeSocket(NodeD, "EXECUTE", "inB", NodeSocket::SocketFlow::Input));
+	NodeD->AddSocket(new NodeSocket(NodeD, "EXECUTE", "inC", NodeSocket::SocketFlow::Input));
 	Area->AddNode(NodeD);
 
 	ASSERT_TRUE(Area->TryToConnect(NodeA, 0, NodeB, 0));

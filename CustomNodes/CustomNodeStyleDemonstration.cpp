@@ -34,15 +34,15 @@ CustomNodeStyleDemonstration::CustomNodeStyleDemonstration() : Node()
 	NODE_SYSTEM.AssociateSocketTypeToColor("FLOAT", ImColor(0, 225, 0));
 	NODE_SYSTEM.AssociateSocketTypeToColor("MARCHING_ANT", ImColor(0, 225, 225));
 	
-	AddSocket(new NodeSocket(this, "BOOL", "bool", false));
-	AddSocket(new NodeSocket(this, "FLOAT", "float", false));
-	AddSocket(new NodeSocket(this, "MARCHING_ANT", "ants", false));
-	AddSocket(new NodeSocket(this, "FADE_OUT", "fade", false));
+	AddSocket(new NodeSocket(this, "BOOL", "bool", NodeSocket::SocketFlow::Input));
+	AddSocket(new NodeSocket(this, "FLOAT", "float", NodeSocket::SocketFlow::Input));
+	AddSocket(new NodeSocket(this, "MARCHING_ANT", "ants", NodeSocket::SocketFlow::Input));
+	AddSocket(new NodeSocket(this, "FADE_OUT", "fade", NodeSocket::SocketFlow::Input));
 
-	AddSocket(new NodeSocket(this, "BOOL", "bool", true));
-	AddSocket(new NodeSocket(this, "FLOAT", "float", true));
-	AddSocket(new NodeSocket(this, "MARCHING_ANT", "ants", true));
-	AddSocket(new NodeSocket(this, "FADE_OUT", "fade", true));
+	AddSocket(new NodeSocket(this, "BOOL", "bool", NodeSocket::SocketFlow::Output));
+	AddSocket(new NodeSocket(this, "FLOAT", "float", NodeSocket::SocketFlow::Output));
+	AddSocket(new NodeSocket(this, "MARCHING_ANT", "ants", NodeSocket::SocketFlow::Output));
+	AddSocket(new NodeSocket(this, "FADE_OUT", "fade", NodeSocket::SocketFlow::Output));
 }
 
 CustomNodeStyleDemonstration::CustomNodeStyleDemonstration(const CustomNodeStyleDemonstration& Src) : Node(Src)
