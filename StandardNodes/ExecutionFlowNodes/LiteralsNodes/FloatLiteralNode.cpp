@@ -11,7 +11,7 @@ FloatLiteralNode::FloatLiteralNode() : VisNodeSys::Node()
 	TitleBackgroundColor = ImColor(56, 210, 0);
 	TitleBackgroundColorHovered = ImColor(144, 225, 137);
 
-	AddSocket(new NodeSocket(this, "FLOAT", "Out", true));
+	AddSocket(new NodeSocket(this, "FLOAT", "Out", NodeSocket::SocketFlow::Output));
 
 	SetSize(ImVec2(170, NODE_HEIGHT_PER_SOCKET * 2));
 	Output[0]->SetFunctionToOutputData(FloatDataGetter);

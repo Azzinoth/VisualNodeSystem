@@ -28,12 +28,11 @@ BaseComparisonOperatorNode::BaseComparisonOperatorNode() : BaseExecutionFlowNode
 	AllowedOutTypes.push_back("BVEC3");
 	AllowedOutTypes.push_back("BVEC4");
 
-	AddSocket(new NodeSocket(this, AllowedInTypes, "A", false));
-	AddSocket(new NodeSocket(this, AllowedInTypes, "B", false));
+	AddSocket(new NodeSocket(this, AllowedInTypes, "A", NodeSocket::SocketFlow::Input));
+	AddSocket(new NodeSocket(this, AllowedInTypes, "B", NodeSocket::SocketFlow::Input));
 
-	AddSocket(new NodeSocket(this, "EXECUTE", "", true));
-	AddSocket(new NodeSocket(this, AllowedOutTypes, "Out", true));
-
+	AddSocket(new NodeSocket(this, "EXECUTE", "", NodeSocket::SocketFlow::Output));
+	AddSocket(new NodeSocket(this, AllowedOutTypes, "Out", NodeSocket::SocketFlow::Output));
 	Output[1]->SetFunctionToOutputData(ComparisonGetter);
 }
 

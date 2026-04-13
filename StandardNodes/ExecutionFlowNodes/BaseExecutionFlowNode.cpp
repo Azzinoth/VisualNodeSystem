@@ -6,5 +6,5 @@ BaseExecutionFlowNode::BaseExecutionFlowNode(bool bIsInputExecuteSocketNeeded) :
 	Type = "BaseExecutionFlowNode";
 
 	if (bIsInputExecuteSocketNeeded)
-		AddSocket(new NodeSocket(this, "EXECUTE", "", false));
+		AddSocket(new NodeSocket(this, "EXECUTE", "", NodeSocket::SocketFlow::Input));
 }

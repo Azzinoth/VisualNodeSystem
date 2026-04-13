@@ -12,12 +12,12 @@ BaseLogicalOperatorNode::BaseLogicalOperatorNode(bool bNeedBInput) : BaseExecuti
 	TitleBackgroundColor = ImColor(44, 29, 51);
 	TitleBackgroundColorHovered = ImColor(90, 59, 104);
 
-	AddSocket(new NodeSocket(this, "BOOL", "A", false));
+	AddSocket(new NodeSocket(this, "BOOL", "A", NodeSocket::SocketFlow::Input));
 	if (bNeedBInput)
-		AddSocket(new NodeSocket(this, "BOOL", "B", false));
+		AddSocket(new NodeSocket(this, "BOOL", "B", NodeSocket::SocketFlow::Input));
 
-	AddSocket(new NodeSocket(this, "EXECUTE", "", true));
-	AddSocket(new NodeSocket(this, "BOOL", "Result", true));
+	AddSocket(new NodeSocket(this, "EXECUTE", "", NodeSocket::SocketFlow::Output));
+	AddSocket(new NodeSocket(this, "BOOL", "Result", NodeSocket::SocketFlow::Output));
 
 	SetSize(ImVec2(130.0f, static_cast<float>(NODE_HEIGHT_PER_SOCKET * std::max(Input.size(), Output.size()))));
 	Output[1]->SetFunctionToOutputData(DataGetter);

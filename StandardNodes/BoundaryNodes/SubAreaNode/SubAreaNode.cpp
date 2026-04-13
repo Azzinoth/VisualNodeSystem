@@ -93,9 +93,9 @@ bool SubAreaNode::AddSocket(NodeSocket* Socket)
 	return SocketMirrorNode::AddSocket(Socket);
 }
 
-bool SubAreaNode::AddSocket(std::vector<std::string> AllowedTypes, std::string Name, NodeSocket::Direction SocketDirection)
+bool SubAreaNode::AddSocket(std::vector<std::string> AllowedTypes, std::string Name, NodeSocket::SocketFlow SocketDirection)
 {
-	return SocketMirrorNode::AddSocket(AllowedTypes, Name, SocketDirection == NodeSocket::Direction::Output ? true : false);
+	return SocketMirrorNode::AddSocket(AllowedTypes, Name, SocketDirection);
 }
 
 Json::Value SubAreaNode::ToJson()
@@ -170,7 +170,7 @@ void SubAreaNode::Draw()
 
 void SubAreaNode::SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSocket, NODE_SOCKET_EVENT EventType)
 {
-	if (OwnSocket->IsOutput())
+	if (OwnSocket->GetFlowDirection() == NodeSocket::SocketFlow::Output)
 	{
 		for (size_t i = 0; i < OwnSocket->GetConnectedSockets().size(); i++)
 			ParentArea->TriggerSocketEvent(OwnSocket, OwnSocket->GetConnectedSockets()[i], EventType);

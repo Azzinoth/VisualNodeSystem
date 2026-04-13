@@ -37,12 +37,12 @@ Node::Node(const Node& Other)
 
 	for (size_t i = 0; i < Other.Input.size(); i++)
 	{
-		Input.push_back(new NodeSocket(this, Other.Input[i]->GetAllowedTypes(), Other.Input[i]->GetName(), false, Other.Input[i]->OutputData));
+		Input.push_back(new NodeSocket(this, Other.Input[i]->GetAllowedTypes(), Other.Input[i]->GetName(), NodeSocket::SocketFlow::Input, Other.Input[i]->OutputData));
 	}
 
 	for (size_t i = 0; i < Other.Output.size(); i++)
 	{
-		Output.push_back(new NodeSocket(this, Other.Output[i]->GetAllowedTypes(), Other.Output[i]->GetName(), true, Other.Output[i]->OutputData));
+		Output.push_back(new NodeSocket(this, Other.Output[i]->GetAllowedTypes(), Other.Output[i]->GetName(), NodeSocket::SocketFlow::Output, Other.Output[i]->OutputData));
 	}
 }
 
@@ -109,7 +109,7 @@ bool Node::AddSocket(NodeSocket* Socket)
 	if (Socket == nullptr)
 		return false;
 
-	if (Socket->bOutput)
+	if (Socket->GetFlowDirection() == NodeSocket::SocketFlow::Output)
 		Output.push_back(Socket);
 	else
 		Input.push_back(Socket);
@@ -133,7 +133,7 @@ bool Node::DeleteSocket(NodeSocket* Socket)
 		return true;
 	}
 
-	std::vector<NodeSocket*>& SocketList = Socket->IsOutput() ? Output : Input;
+	std::vector<NodeSocket*>& SocketList = Socket->GetFlowDirection() == NodeSocket::SocketFlow::Output ? Output : Input;
 	for (size_t i = 0; i < SocketList.size(); i++)
 	{
 		if (SocketList[i]->GetID() == Socket->GetID())
@@ -166,8 +166,8 @@ bool Node::IsValidAsNewConnection(NodeSocket* OwnSocket, NodeSocket* CandidateSo
 	if (CandidateSocket->GetParent() == this)
 		return false;
 
-	// Output can't connect to output and input can't connect to input.
-	if (OwnSocket->bOutput == CandidateSocket->bOutput)
+	// Sockets must have different flow directions (input vs output).
+	if (OwnSocket->GetFlowDirection() == CandidateSocket->GetFlowDirection())
 		return false;
 
 	// Iterate through all allowed types of the candidate socket and check if the type of the own socket is in the list.
@@ -327,7 +327,7 @@ bool Node::FromJson(Json::Value Json)
 		for (unsigned int j = 0; j < AllowedTypesArray.size(); j++)
 			AllowedTypes.push_back(AllowedTypesArray[j].asString());
 		
-		Input[i] = new NodeSocket(this, AllowedTypes, Name, false);
+		Input[i] = new NodeSocket(this, AllowedTypes, Name, NodeSocket::SocketFlow::Input);
 		Input[i]->ID = ID;
 	}
 
@@ -363,7 +363,7 @@ bool Node::FromJson(Json::Value Json)
 		for (unsigned int j = 0; j < AllowedTypesArray.size(); j++)
 			AllowedTypes.push_back(AllowedTypesArray[j].asString());
 
-		Output[i] = new NodeSocket(this, AllowedTypes, Name, true);
+		Output[i] = new NodeSocket(this, AllowedTypes, Name, NodeSocket::SocketFlow::Output);
 		Output[i]->ID = ID;
 	}
 
@@ -562,18 +562,18 @@ size_t Node::GetSocketIndexByID(std::string SocketID) const
 	return -1;
 }
 
-NodeSocket* Node::GetSocketByIndex(size_t SocketIndex, bool bOutput) const
+NodeSocket* Node::GetSocketByIndex(size_t SocketIndex, NodeSocket::SocketFlow FlowDirection) const
 {
-	std::vector<NodeSocket*> SocketList = bOutput ? Output : Input;
+	std::vector<NodeSocket*> SocketList = FlowDirection == NodeSocket::SocketFlow::Output ? Output : Input;
 	if (SocketIndex >= SocketList.size())
 		return nullptr;
 
 	return SocketList[SocketIndex];
 }
 
-std::string Node::GetSocketIDByIndex(size_t SocketIndex, bool bOutput) const
+std::string Node::GetSocketIDByIndex(size_t SocketIndex, NodeSocket::SocketFlow FlowDirection) const
 {
-	const NodeSocket* Socket = GetSocketByIndex(SocketIndex, bOutput);
+	const NodeSocket* Socket = GetSocketByIndex(SocketIndex, FlowDirection);
 	if (!Socket)
 		return "";
 

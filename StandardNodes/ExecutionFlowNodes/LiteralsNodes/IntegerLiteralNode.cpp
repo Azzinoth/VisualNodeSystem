@@ -11,7 +11,7 @@ IntegerLiteralNode::IntegerLiteralNode() : VisNodeSys::Node()
 	TitleBackgroundColor = ImColor(30, 221, 170);
 	TitleBackgroundColorHovered = ImColor(139, 235, 199);
 
-	AddSocket(new NodeSocket(this, "INT", "Out", true));
+	AddSocket(new NodeSocket(this, "INT", "Out", NodeSocket::SocketFlow::Output));
 
 	SetSize(ImVec2(170, NODE_HEIGHT_PER_SOCKET * 2));
 	Output[0]->SetFunctionToOutputData(IntDataGetter);

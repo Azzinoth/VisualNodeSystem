@@ -12,12 +12,12 @@ LoopNode::LoopNode() : BaseExecutionFlowNode()
 	TitleBackgroundColor = ImColor(31, 117, 208);
 	TitleBackgroundColorHovered = ImColor(35, 145, 255);
 
-	AddSocket(new NodeSocket(this, "INT", "Start Index", false));
-	AddSocket(new NodeSocket(this, "INT", "Last Index", false));
+	AddSocket(new NodeSocket(this, "INT", "Start Index", NodeSocket::SocketFlow::Input));
+	AddSocket(new NodeSocket(this, "INT", "Last Index", NodeSocket::SocketFlow::Input));
 
-	AddSocket(new NodeSocket(this, "EXECUTE", "Loop Body", true));
-	AddSocket(new NodeSocket(this, "INT", "Index", true));
-	AddSocket(new NodeSocket(this, "EXECUTE", "Completed", true));
+	AddSocket(new NodeSocket(this, "EXECUTE", "Loop Body", NodeSocket::SocketFlow::Output));
+	AddSocket(new NodeSocket(this, "INT", "Index", NodeSocket::SocketFlow::Output));
+	AddSocket(new NodeSocket(this, "EXECUTE", "Completed", NodeSocket::SocketFlow::Output));
 
 	SetSize(ImVec2(270.0f, static_cast<float>(NODE_HEIGHT_PER_SOCKET * std::max(Input.size(), Output.size()))));
 	Output[1]->SetFunctionToOutputData(CurrentIndexGetter);

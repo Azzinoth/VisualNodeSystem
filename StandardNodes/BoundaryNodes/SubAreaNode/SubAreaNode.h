@@ -25,8 +25,6 @@ namespace VisNodeSys
 		SubAreaNode();
 		SubAreaNode(NodeArea* OwnedArea);
 		SubAreaNode(const SubAreaNode& Other);
-		// Move constructor.
-		//SubAreaNode(SubAreaNode&& Other) noexcept;
 		~SubAreaNode();
 
 		void SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSocket, NODE_SOCKET_EVENT EventType);
@@ -41,7 +39,7 @@ namespace VisNodeSys
 		bool FromJson(Json::Value Json);
 
 		bool AddSocket(NodeSocket* Socket);
-		bool AddSocket(std::vector<std::string> AllowedTypes, std::string Name, NodeSocket::Direction SocketDirection);
+		bool AddSocket(std::vector<std::string> AllowedTypes, std::string Name, NodeSocket::SocketFlow SocketDirection);
 
 		void Draw();
 	};

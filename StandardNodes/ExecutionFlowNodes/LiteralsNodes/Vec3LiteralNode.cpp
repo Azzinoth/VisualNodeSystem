@@ -11,7 +11,7 @@ Vec3LiteralNode::Vec3LiteralNode() : VisNodeSys::Node()
 	TitleBackgroundColor = ImColor(244, 193, 34);
 	TitleBackgroundColorHovered = ImColor(255, 217, 140);
 
-	AddSocket(new NodeSocket(this, "VEC3", "Out", true));
+	AddSocket(new NodeSocket(this, "VEC3", "Out", NodeSocket::SocketFlow::Output));
 
 	SetSize(ImVec2(210, NODE_HEIGHT_PER_SOCKET * 2));
 	Output[0]->SetFunctionToOutputData(Vec3DataGetter);

@@ -26,7 +26,7 @@ SequenceNode::SequenceNode(const SequenceNode& Other) : BaseExecutionFlowNode(Ot
 
 void SequenceNode::AddSequenceOutput()
 {
-	AddSocket(new NodeSocket(this, "EXECUTE", "Then " + std::to_string(Output.size()), true));
+	AddSocket(new NodeSocket(this, "EXECUTE", "Then " + std::to_string(Output.size()), NodeSocket::SocketFlow::Output));
 	OutputCount++;
 }
 

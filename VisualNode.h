@@ -106,8 +106,8 @@ namespace VisNodeSys
 		NodeSocket* GetSocketByID(std::string SocketID) const;
 		size_t GetSocketIndexByID(std::string SocketID) const;
 
-		NodeSocket* GetSocketByIndex(size_t SocketIndex, bool bOutput) const;
-		std::string GetSocketIDByIndex(size_t SocketIndex, bool bOutput) const;
+		NodeSocket* GetSocketByIndex(size_t SocketIndex, NodeSocket::SocketFlow FlowDirection) const;
+		std::string GetSocketIDByIndex(size_t SocketIndex, NodeSocket::SocketFlow FlowDirection) const;
 
 		size_t GetInputSocketCount() const;
 		std::vector<std::pair<size_t, std::vector<std::string>>> GetInputSocketTypes() const;

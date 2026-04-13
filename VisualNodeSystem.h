@@ -45,7 +45,7 @@ namespace VisNodeSys
 #endif
 		void OnNodeAreaFocusChanging(NodeArea* CurrentNodeArea, bool bNewFocusValue);
 
-		bool AddSocketToMirrorNode(const std::string& NodeID, std::vector<std::string> AllowedTypes, std::string Name, NodeSocket::Direction SocketDirection = NodeSocket::Direction::Input);
+		bool AddSocketToMirrorNode(const std::string& NodeID, std::vector<std::string> AllowedTypes, std::string Name, NodeSocket::SocketFlow SocketDirection = NodeSocket::SocketFlow::Input);
 		bool DeleteSocketFromMirrorNode(const std::string& NodeID, std::string SocketID);
 
 		bool DeleteSocket(const std::string& NodeID, std::string SocketID);

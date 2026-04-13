@@ -113,7 +113,7 @@ void NodeArea::RenderNodeSocket(NodeSocket* Socket) const
 	const ImVec2 SocketPosition = SocketToPosition(Socket);
 	if (Socket->GetParent()->GetStyle() == DEFAULT)
 	{
-		const bool bIsInput = !Socket->bOutput;
+		const bool bIsInput = Socket->GetFlowDirection() == NodeSocket::SocketFlow::Input;
 		// Socket description.
 		const ImVec2 TextSize = ImGui::CalcTextSize(Socket->GetName().c_str());
 
@@ -582,7 +582,7 @@ ImVec2 NodeArea::SocketToPosition(Node* Node, const std::string& SocketID) const
 
 ImVec2 NodeArea::SocketToPosition(const NodeSocket* Socket) const
 {
-	const bool bIsInput = !Socket->bOutput;
+	const bool bIsInput = Socket->GetFlowDirection() == NodeSocket::SocketFlow::Input;
 	float SocketX = 0.0f;
 	float SocketY = 0.0f;
 	Node* SocketParent = Socket->GetParent();

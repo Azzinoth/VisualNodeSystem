@@ -13,6 +13,13 @@ namespace VisNodeSys
 
 	class VISUAL_NODE_SYSTEM_API NodeSocket
 	{
+	public:
+		enum class SocketFlow : uint8_t
+		{
+			Input = 0,
+			Output = 1
+		};
+	private:
 		friend class NodeSystem;
 		friend class NodeArea;
 		friend Node;
@@ -20,7 +27,7 @@ namespace VisNodeSys
 		~NodeSocket() = default;
 
 		std::string ID;
-		bool bOutput = false;
+		SocketFlow Flow;
 		std::vector<std::string> AllowedTypes;
 		std::string Name;
 		std::vector<NodeSocket*> ConnectedSockets;
@@ -31,14 +38,8 @@ namespace VisNodeSys
 	protected:
 		Node* Parent = nullptr;
 	public:
-		enum class Direction : uint8_t
-		{
-			Input = 0,
-			Output = 1
-		};
-
-		NodeSocket(Node* Parent, std::string Type, std::string Name, bool bOutput = false, std::function<void* ()> OutputDataFunction = []() { return nullptr; });
-		NodeSocket(Node* Parent, std::vector<std::string> Types, std::string Name, bool bOutput = false, std::function<void* ()> OutputDataFunction = []() { return nullptr; });
+		NodeSocket(Node* Parent, std::string Type, std::string Name, SocketFlow Flow = SocketFlow::Input, std::function<void* ()> OutputDataFunction = []() { return nullptr; });
+		NodeSocket(Node* Parent, std::vector<std::string> Types, std::string Name, SocketFlow Flow = SocketFlow::Input, std::function<void* ()> OutputDataFunction = []() { return nullptr; });
 		
 		Node* GetParent() const;
 		const std::vector<NodeSocket*>& GetConnectedSockets() const;
@@ -48,8 +49,7 @@ namespace VisNodeSys
 		std::string GetName() const;
 		void SetName(std::string NewValue);
 
-		bool IsOutput() const;
-		bool IsInput() const;
+		SocketFlow GetFlowDirection() const;
 
 		const std::vector<std::string>& GetAllowedTypes() const;
 		// Returns true if change did not trigger disconnection of already connected sockets.
@@ -59,9 +59,9 @@ namespace VisNodeSys
 		void* GetData();
 	};
 
-	inline NodeSocket::Direction operator!(NodeSocket::Direction Direction)
+	inline NodeSocket::SocketFlow operator!(NodeSocket::SocketFlow Direction)
 	{
-		return Direction == NodeSocket::Direction::Input ? NodeSocket::Direction::Output : NodeSocket::Direction::Input;
+		return Direction == NodeSocket::SocketFlow::Input ? NodeSocket::SocketFlow::Output : NodeSocket::SocketFlow::Input;
 	}
 
 	struct ConnectionStyle

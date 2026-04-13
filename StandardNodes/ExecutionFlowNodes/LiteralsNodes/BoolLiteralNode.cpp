@@ -11,7 +11,7 @@ BoolLiteralNode::BoolLiteralNode() : VisNodeSys::Node()
 	TitleBackgroundColor = ImColor(148, 0, 0);
 	TitleBackgroundColorHovered = ImColor(183, 137, 137);
 
-	AddSocket(new NodeSocket(this, "BOOL", "Out", true));
+	AddSocket(new NodeSocket(this, "BOOL", "Out", NodeSocket::SocketFlow::Output));
 
 	SetSize(ImVec2(150, NODE_HEIGHT_PER_SOCKET * 2));
 	Output[0]->SetFunctionToOutputData(BoolDataGetter);

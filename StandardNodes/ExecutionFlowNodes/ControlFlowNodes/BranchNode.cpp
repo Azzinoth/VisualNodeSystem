@@ -12,10 +12,10 @@ BranchNode::BranchNode() : BaseExecutionFlowNode()
 	TitleBackgroundColor = ImColor(31, 117, 208);
 	TitleBackgroundColorHovered = ImColor(35, 145, 255);
 
-	AddSocket(new NodeSocket(this, "BOOL", "Condition", false));
+	AddSocket(new NodeSocket(this, "BOOL", "Condition", NodeSocket::SocketFlow::Input));
 	
-	AddSocket(new NodeSocket(this, "EXECUTE", "True", true));
-	AddSocket(new NodeSocket(this, "EXECUTE", "False", true));
+	AddSocket(new NodeSocket(this, "EXECUTE", "True", NodeSocket::SocketFlow::Output));
+	AddSocket(new NodeSocket(this, "EXECUTE", "False", NodeSocket::SocketFlow::Output));
 
 	SetSize(ImVec2(190.0f, static_cast<float>(NODE_HEIGHT_PER_SOCKET * std::max(Input.size(), Output.size()))));
 }

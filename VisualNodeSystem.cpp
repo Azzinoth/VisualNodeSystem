@@ -1234,7 +1234,7 @@ bool NodeSystem::TryToFixDanglingLinkNode(LinkNode* LinkNodeToFix, bool bForceRe
 			if (i == 0)
 				continue;
 
-			PartnerNode->AddSocketInternal(SocketsToCopy[i]->GetAllowedTypes(), SocketsToCopy[i]->GetName(), true);
+			PartnerNode->AddSocketInternal(SocketsToCopy[i]->GetAllowedTypes(), SocketsToCopy[i]->GetName(), SocketsToCopy[i]->GetFlowDirection());
 		}
 
 		LinkNodeToFix->PartnerNodeID = PartnerNode->GetID();
@@ -1344,7 +1344,7 @@ LinkNode* NodeSystem::CreateLinkNodeInternal(bool bIsInputNode)
 	return NewNode;
 }
 
-bool NodeSystem::AddSocketToMirrorNode(const std::string& NodeID, std::vector<std::string> AllowedTypes, std::string Name, NodeSocket::Direction SocketDirection)
+bool NodeSystem::AddSocketToMirrorNode(const std::string& NodeID, std::vector<std::string> AllowedTypes, std::string Name, NodeSocket::SocketFlow SocketDirection)
 {
 	Node* CurrentNode = GetNodeByID(NodeID);
 	if (CurrentNode == nullptr)
@@ -1358,7 +1358,7 @@ bool NodeSystem::AddSocketToMirrorNode(const std::string& NodeID, std::vector<st
 		return false;
 
 	bool bBiDirectionalMirror = MirrorNode->bHaveInput && MirrorNode->bHaveOutput;
-	NodeSocket::Direction NeedToAddDirection = !SocketDirection;
+	NodeSocket::SocketFlow NeedToAddDirection = !SocketDirection;
 	std::vector<Node*> MirrorPartners = MirrorNode->GetMirrorPartners();
 	for (Node* Partner : MirrorPartners)
 	{
@@ -1369,23 +1369,16 @@ bool NodeSystem::AddSocketToMirrorNode(const std::string& NodeID, std::vector<st
 		if (PartnerMirrorNode == nullptr)
 			continue;
 
-		if (bBiDirectionalMirror && (PartnerMirrorNode->bHaveInput && NeedToAddDirection == NodeSocket::Direction::Output ||
-								   PartnerMirrorNode->bHaveOutput && NeedToAddDirection == NodeSocket::Direction::Input))
+		if (bBiDirectionalMirror && (PartnerMirrorNode->bHaveInput && NeedToAddDirection == NodeSocket::SocketFlow::Output ||
+								   PartnerMirrorNode->bHaveOutput && NeedToAddDirection == NodeSocket::SocketFlow::Input))
 			continue;
 
 		if (PartnerMirrorNode->SocketIDBeingModified.empty())
 		{
-			bool bIsOutput = false;
-			if (bBiDirectionalMirror)
-			{
-				bIsOutput = NeedToAddDirection == NodeSocket::Direction::Output;
-			}
-			else
-			{
-				bIsOutput = PartnerMirrorNode->bHaveOutput;
-			}
+			NodeSocket::SocketFlow PartnerFlow = bBiDirectionalMirror ? NeedToAddDirection :
+																		(PartnerMirrorNode->bHaveOutput ? NodeSocket::SocketFlow::Output : NodeSocket::SocketFlow::Input);
 
-			NodeSocket* PartnerNodeSocket = new NodeSocket(PartnerMirrorNode, AllowedTypes, Name, bIsOutput);
+			NodeSocket* PartnerNodeSocket = new NodeSocket(PartnerMirrorNode, AllowedTypes, Name, PartnerFlow);
 			PartnerMirrorNode->AddSocket(PartnerNodeSocket);
 		}
 	}
@@ -1407,7 +1400,7 @@ bool NodeSystem::DeleteSocket(const std::string& NodeID, std::string SocketID)
 	if (ParentArea != nullptr)
 		ParentArea->TryToDisconnect(Node, SocketID);
 	
-	std::vector<NodeSocket*>& SocketList = SocketToDelete->IsOutput() ? Node->Output : Node->Input;
+	std::vector<NodeSocket*>& SocketList = SocketToDelete->GetFlowDirection() == NodeSocket::SocketFlow::Output ? Node->Output : Node->Input;
 	for (size_t i = 0; i < SocketList.size(); i++)
 	{
 		if (SocketList[i]->GetID() == SocketID)
@@ -1467,14 +1460,14 @@ bool NodeSystem::DeleteSocketFromMirrorNode(const std::string& NodeID, std::stri
 		if (PartnerMirrorNode == nullptr)
 			continue;
 
-		NodeSocket* PartnerSocket = Partner->GetSocketByIndex(SocketIndex, PartnerMirrorNode->bHaveOutput);
+		NodeSocket* PartnerSocket = Partner->GetSocketByIndex(SocketIndex, PartnerMirrorNode->bHaveOutput ? NodeSocket::SocketFlow::Output : NodeSocket::SocketFlow::Input);
 		if (PartnerSocket == nullptr)
 			continue;
 
 		// Mirror nodes synchronize deletions with their partner.
 		// The corresponding socket on the partner has the opposite direction,
 		// so skip any socket whose direction is the same.
-		if (CurrentSocket->IsOutput() == PartnerSocket->IsOutput())
+		if (CurrentSocket->GetFlowDirection() == PartnerSocket->GetFlowDirection())
 			continue;
 
 		if (PartnerMirrorNode->SocketIDBeingModified != PartnerSocket->GetID())
@@ -1513,7 +1506,7 @@ bool NodeSystem::RevalidateSocketConnections(NodeSocket* Socket)
 			continue;
 
 		// Connection is no longer valid, disconnect it.
-		if (Socket->IsOutput())
+		if (Socket->GetFlowDirection() == NodeSocket::SocketFlow::Output)
 			ParentArea->TryToDisconnect(ParentNode, Socket->GetID(), OtherNode, OtherSocket->GetID());
 		else
 			ParentArea->TryToDisconnect(OtherNode, OtherSocket->GetID(), ParentNode, Socket->GetID());
@@ -1549,7 +1542,7 @@ bool NodeSystem::SyncSocketAllowedTypes(const std::string& NodeID, std::string S
 		if (PartnerMirrorNode == nullptr)
 			continue;
 
-		NodeSocket* PartnerSocket = Partner->GetSocketByIndex(SocketIndex, PartnerMirrorNode->bHaveOutput);
+		NodeSocket* PartnerSocket = Partner->GetSocketByIndex(SocketIndex, PartnerMirrorNode->bHaveOutput ? NodeSocket::SocketFlow::Output : NodeSocket::SocketFlow::Input);
 		if (PartnerSocket == nullptr)
 			continue;
 
@@ -1585,7 +1578,7 @@ void NodeSystem::SyncSocketName(const std::string& NodeID, std::string SocketID,
 		if (PartnerMirrorNode == nullptr)
 			continue;
 
-		NodeSocket* PartnerSocket = Partner->GetSocketByIndex(SocketIndex, PartnerMirrorNode->bHaveOutput);
+		NodeSocket* PartnerSocket = Partner->GetSocketByIndex(SocketIndex, PartnerMirrorNode->bHaveOutput ? NodeSocket::SocketFlow::Output : NodeSocket::SocketFlow::Input);
 		if (PartnerSocket == nullptr)
 			continue;
 
@@ -1604,18 +1597,24 @@ SubAreaNode* NodeSystem::CreateSubAreaNode(const std::string& ParentAreaID)
 
 	NodeArea* OwnedArea = CreateNodeArea();
 	SubAreaNode* Result = new SubAreaNode(OwnedArea);
-	Result->AddSocketInternal({ "EXECUTE" }, "", false);
-	Result->AddSocketInternal({ "EXECUTE" }, "", true);
+#ifdef VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES
+	Result->AddSocketInternal({ "EXECUTE" }, "", NodeSocket::SocketFlow::Input);
+	Result->AddSocketInternal({ "EXECUTE" }, "", NodeSocket::SocketFlow::Output);
+#endif
 	ParentArea->AddNode(Result);
 
 	SubAreaInputNode* InputNode = new SubAreaInputNode();
-	InputNode->AddSocketInternal({ "EXECUTE" }, "", false);
+#ifdef VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES
+	InputNode->AddSocketInternal({ "EXECUTE" }, "", NodeSocket::SocketFlow::Input);
+#endif
 	InputNode->OwnerSubAreaNodeID = Result->GetID();
 	OwnedArea->AddNode(InputNode);
 	Result->SubAreaInputNodeID = InputNode->GetID();
 
 	SubAreaOutputNode* OutputNode = new SubAreaOutputNode();
-	OutputNode->AddSocketInternal({ "EXECUTE" }, "", true);
+#ifdef VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES
+	OutputNode->AddSocketInternal({ "EXECUTE" }, "", NodeSocket::SocketFlow::Output);
+#endif
 	OutputNode->OwnerSubAreaNodeID = Result->GetID();
 	OwnedArea->AddNode(OutputNode);
 	Result->SubAreaOutputNodeID = OutputNode->GetID();

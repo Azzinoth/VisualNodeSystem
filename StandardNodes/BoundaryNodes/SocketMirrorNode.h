@@ -7,7 +7,7 @@ namespace VisNodeSys
     {
         friend class NodeSystem;
 
-        bool AddSocketInternal(std::vector<std::string> AllowedTypes, std::string Name = "", bool bOutput = false);
+        bool AddSocketInternal(std::vector<std::string> AllowedTypes, std::string Name = "", NodeSocket::SocketFlow FlowDirection = NodeSocket::SocketFlow::Input);
     protected:
         // Prevents cycle when working with socket modification, when NODE_SYSTEM will trigger modification of partner node's socket, which would trigger modification of this node's socket again.
         std::string SocketIDBeingModified = "";
@@ -49,7 +49,7 @@ namespace VisNodeSys
         void Draw();
     public:
         bool AddSocket(NodeSocket* Socket);
-        bool AddSocket(std::vector<std::string> AllowedTypes, std::string Name = "", bool bOutput = false);
+        bool AddSocket(std::vector<std::string> AllowedTypes, std::string Name = "", NodeSocket::SocketFlow FlowDirection = NodeSocket::SocketFlow::Input);
 
         bool DeleteSocket(std::string SocketID);
         bool DeleteSocket(NodeSocket* Socket);

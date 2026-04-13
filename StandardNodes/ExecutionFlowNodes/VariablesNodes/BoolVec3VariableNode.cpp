@@ -12,10 +12,10 @@ BoolVec3VariableNode::BoolVec3VariableNode() : BaseExecutionFlowNode()
 	TitleBackgroundColor = ImColor(125, 62, 11);
 	TitleBackgroundColorHovered = ImColor(196, 97, 17);
 
-	AddSocket(new NodeSocket(this, "BVEC3", "Set", false));
+	AddSocket(new NodeSocket(this, "BVEC3", "Set", NodeSocket::SocketFlow::Input));
 
-	AddSocket(new NodeSocket(this, "EXECUTE", "", true));
-	AddSocket(new NodeSocket(this, "BVEC3", "Get", true));
+	AddSocket(new NodeSocket(this, "EXECUTE", "", NodeSocket::SocketFlow::Output));
+	AddSocket(new NodeSocket(this, "BVEC3", "Get", NodeSocket::SocketFlow::Output));
 
 	SetSize(ImVec2(220.0f, static_cast<float>(NODE_HEIGHT_PER_SOCKET * std::max(Input.size(), Output.size()))));
 	Output[1]->SetFunctionToOutputData(DataGetter);

@@ -13,10 +13,10 @@ IntegerVariableNode::IntegerVariableNode() : BaseExecutionFlowNode()
 	TitleBackgroundColor = ImColor(30, 221, 170);
 	TitleBackgroundColorHovered = ImColor(139, 235, 199);
 
-	AddSocket(new NodeSocket(this, "INT", "Set", false));
+	AddSocket(new NodeSocket(this, "INT", "Set", NodeSocket::SocketFlow::Input));
 
-	AddSocket(new NodeSocket(this, "EXECUTE", "", true));
-	AddSocket(new NodeSocket(this, "INT", "Get", true));
+	AddSocket(new NodeSocket(this, "EXECUTE", "", NodeSocket::SocketFlow::Output));
+	AddSocket(new NodeSocket(this, "INT", "Get", NodeSocket::SocketFlow::Output));
 
 	SetSize(ImVec2(220.0f, static_cast<float>(NODE_HEIGHT_PER_SOCKET * std::max(Input.size(), Output.size()))));
 	Output[1]->SetFunctionToOutputData(IntDataGetter);

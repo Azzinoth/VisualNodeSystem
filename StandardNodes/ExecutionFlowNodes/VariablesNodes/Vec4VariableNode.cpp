@@ -13,10 +13,10 @@ Vec4VariableNode::Vec4VariableNode() : BaseExecutionFlowNode()
 	TitleBackgroundColor = ImColor(244, 193, 34);
 	TitleBackgroundColorHovered = ImColor(255, 217, 140);
 
-	AddSocket(new NodeSocket(this, "VEC4", "Set", false));
+	AddSocket(new NodeSocket(this, "VEC4", "Set", NodeSocket::SocketFlow::Input));
 
-	AddSocket(new NodeSocket(this, "EXECUTE", "", true));
-	AddSocket(new NodeSocket(this, "VEC4", "Get", true));
+	AddSocket(new NodeSocket(this, "EXECUTE", "", NodeSocket::SocketFlow::Output));
+	AddSocket(new NodeSocket(this, "VEC4", "Get", NodeSocket::SocketFlow::Output));
 
 	SetSize(ImVec2(220.0f, static_cast<float>(NODE_HEIGHT_PER_SOCKET * std::max(Input.size(), Output.size()))));
 	Output[1]->SetFunctionToOutputData(DataGetter);

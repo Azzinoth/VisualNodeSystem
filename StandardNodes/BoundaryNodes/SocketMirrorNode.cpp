@@ -123,12 +123,12 @@ void SocketMirrorNode::SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedS
 		if (PartnerMirrorNode == nullptr)
 			continue;
 
-		if (bBiDirectionalMirror && (PartnerMirrorNode->bHaveInput && OwnSocket->IsInput() ||
-			PartnerMirrorNode->bHaveOutput && OwnSocket->IsOutput()))
+		if (bBiDirectionalMirror && (PartnerMirrorNode->bHaveInput && OwnSocket->GetFlowDirection() == NodeSocket::SocketFlow::Input ||
+			PartnerMirrorNode->bHaveOutput && OwnSocket->GetFlowDirection() == NodeSocket::SocketFlow::Output))
 			continue;
 
 		int SocketIndex = -1;
-		std::vector<NodeSocket*>& SocketsToCheck = OwnSocket->IsInput() ? Input : Output;
+		std::vector<NodeSocket*>& SocketsToCheck = OwnSocket->GetFlowDirection() == NodeSocket::SocketFlow::Input ? Input : Output;
 		for (size_t i = 0; i < SocketsToCheck.size(); i++)
 		{
 			if (SocketsToCheck[i] == OwnSocket)
@@ -138,11 +138,11 @@ void SocketMirrorNode::SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedS
 			}
 		}
 
-		std::vector<NodeSocket*>& OutputSocketsToCheck = OwnSocket->IsInput() ? PartnerMirrorNode->Output : Output;
+		std::vector<NodeSocket*>& OutputSocketsToCheck = OwnSocket->GetFlowDirection() == NodeSocket::SocketFlow::Input ? PartnerMirrorNode->Output : Output;
 		if (SocketIndex == -1 || SocketIndex >= static_cast<int>(OutputSocketsToCheck.size()))
 			return;
 
-		if (OwnSocket->IsInput())
+		if (OwnSocket->GetFlowDirection() == NodeSocket::SocketFlow::Input)
 		{
 			NodeArea* PartnerArea = PartnerMirrorNode->GetParentArea();
 			if (PartnerArea == nullptr)
@@ -159,23 +159,24 @@ void SocketMirrorNode::SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedS
 	}
 }
 
-bool SocketMirrorNode::AddSocketInternal(std::vector<std::string> AllowedTypes, std::string Name, bool bOutput)
+bool SocketMirrorNode::AddSocketInternal(std::vector<std::string> AllowedTypes, std::string Name, NodeSocket::SocketFlow FlowDirection)
 {
-	bool bIsSocketOutput = !bHaveInput;
-	// Only if this node is both input and output mirror, we should check bOutput.
+	NodeSocket::SocketFlow NewSocketFlowDirection = bHaveInput ? NodeSocket::SocketFlow::Input : NodeSocket::SocketFlow::Output;
+	// Only if this node mirrors both directions does the caller's Flow matter.
 	if (bHaveInput && bHaveOutput)
 	{
-		if ((bOutput && !bHaveOutput) || (!bOutput && !bHaveInput))
+		if ((FlowDirection == NodeSocket::SocketFlow::Output && !bHaveOutput) ||
+			(FlowDirection == NodeSocket::SocketFlow::Input && !bHaveInput))
 			return false;
 
-		bIsSocketOutput = bOutput;
+		NewSocketFlowDirection = FlowDirection;
 	}
 
-	NodeSocket* NewSocket = new NodeSocket(this, AllowedTypes, Name, bIsSocketOutput);
+	NodeSocket* NewSocket = new NodeSocket(this, AllowedTypes, Name, NewSocketFlowDirection);
 	bool bResult = Node::AddSocket(NewSocket);
 	SetSize(ImVec2(300.0f, static_cast<float>(NODE_HEIGHT_PER_SOCKET * 0.75f * std::max(size_t(2), std::max(Input.size(), Output.size())))));
 
-	if (bIsSocketOutput)
+	if (NewSocketFlowDirection == NodeSocket::SocketFlow::Output)
 	{
 		int SocketIndex = static_cast<int>(Output.size()) - 1;
 		Output[SocketIndex]->SetFunctionToOutputData(CreateCrossAreaDataGetter(SocketIndex));
@@ -184,22 +185,22 @@ bool SocketMirrorNode::AddSocketInternal(std::vector<std::string> AllowedTypes, 
 	return bResult;
 }
 
-bool SocketMirrorNode::AddSocket(std::vector<std::string> AllowedTypes, std::string Name, bool bOutput)
+bool SocketMirrorNode::AddSocket(std::vector<std::string> AllowedTypes, std::string Name, NodeSocket::SocketFlow FlowDirection)
 {
-	if ((bOutput && !bHaveOutput) || (!bOutput && !bHaveInput))
+	if ((FlowDirection == NodeSocket::SocketFlow::Output && !bHaveOutput) || (FlowDirection == NodeSocket::SocketFlow::Input && !bHaveInput))
 		return false;
 
-	NodeSocket* NewSocket = new NodeSocket(this, AllowedTypes, Name, bOutput);
+	NodeSocket* NewSocket = new NodeSocket(this, AllowedTypes, Name, FlowDirection);
 	return AddSocket(NewSocket);
 }
 
 bool SocketMirrorNode::AddSocket(NodeSocket* Socket)
 {
-	if (Socket == nullptr || (Socket->IsInput() && !bHaveInput) || (Socket->IsOutput() && !bHaveOutput))
+	if (Socket == nullptr || (Socket->GetFlowDirection() == NodeSocket::SocketFlow::Input && !bHaveInput) || (Socket->GetFlowDirection() == NodeSocket::SocketFlow::Output && !bHaveOutput))
 		return false;
 
 	SocketIDBeingModified = Socket->GetID();
-	if (!NODE_SYSTEM.AddSocketToMirrorNode(ID, Socket->GetAllowedTypes(), Socket->GetName(), Socket->IsOutput() ? NodeSocket::Direction::Output : NodeSocket::Direction::Input))
+	if (!NODE_SYSTEM.AddSocketToMirrorNode(ID, Socket->GetAllowedTypes(), Socket->GetName(), Socket->GetFlowDirection()))
 	{
 		SocketIDBeingModified = "";
 		return false;
@@ -208,7 +209,7 @@ bool SocketMirrorNode::AddSocket(NodeSocket* Socket)
 	Node::AddSocket(Socket);
 	SetSize(ImVec2(300.0f, static_cast<float>(NODE_HEIGHT_PER_SOCKET * 0.75f * std::max(size_t(2), std::max(Input.size(), Output.size())))));
 
-	if (Socket->IsOutput() && bHaveOutput)
+	if (Socket->GetFlowDirection() == NodeSocket::SocketFlow::Output && bHaveOutput)
 	{
 		int SocketIndex = static_cast<int>(Output.size()) - 1;
 		Output[SocketIndex]->SetFunctionToOutputData(CreateCrossAreaDataGetter(SocketIndex));
@@ -228,12 +229,13 @@ bool SocketMirrorNode::DeleteSocket(NodeSocket* Socket)
 	if (Socket == nullptr)
 		return false;
 
+	NodeSocket::SocketFlow DeletedSocketFlow = Socket->GetFlowDirection();
 	SocketIDBeingModified = Socket->GetID();
 	NODE_SYSTEM.DeleteSocketFromMirrorNode(ID, Socket->GetID());
 	Node::DeleteSocket(Socket);
 	SetSize(ImVec2(300.0f, static_cast<float>(NODE_HEIGHT_PER_SOCKET * 0.75f * std::max(size_t(2), std::max(Input.size(), Output.size())))));
 
-	if (Socket->IsOutput() && bHaveOutput)
+	if (DeletedSocketFlow == NodeSocket::SocketFlow::Output && bHaveOutput)
 	{
 		// After removing the socket, We need to update the output data functions of the remaining sockets.
 		for (size_t i = 0; i < Output.size(); i++)

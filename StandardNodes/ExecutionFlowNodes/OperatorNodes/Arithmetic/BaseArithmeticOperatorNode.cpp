@@ -12,12 +12,11 @@ BaseArithmeticOperatorNode::BaseArithmeticOperatorNode(std::vector<std::string> 
 	TitleBackgroundColor = ImColor(31, 117, 208);
 	TitleBackgroundColorHovered = ImColor(35, 145, 255);
 
-	AddSocket(new NodeSocket(this, AllowedTypes, "A", false));
-	AddSocket(new NodeSocket(this, AllowedTypes, "B", false));
+	AddSocket(new NodeSocket(this, AllowedTypes, "A", NodeSocket::SocketFlow::Input));
+	AddSocket(new NodeSocket(this, AllowedTypes, "B", NodeSocket::SocketFlow::Input));
 
-	AddSocket(new NodeSocket(this, "EXECUTE", "", true));
-	AddSocket(new NodeSocket(this, AllowedTypes, "Result", true));
-
+	AddSocket(new NodeSocket(this, "EXECUTE", "", NodeSocket::SocketFlow::Output));
+	AddSocket(new NodeSocket(this, AllowedTypes, "Result", NodeSocket::SocketFlow::Output));
 	Output[1]->SetFunctionToOutputData(ResultDataGetter);
 	
 	SetSize(ImVec2(130.0f, static_cast<float>(NODE_HEIGHT_PER_SOCKET * std::max(Input.size(), Output.size()))));

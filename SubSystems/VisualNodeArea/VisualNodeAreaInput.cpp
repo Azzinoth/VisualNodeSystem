@@ -1136,7 +1136,7 @@ void NodeArea::InputUpdateSocket(NodeSocket* Socket)
 		SocketHovered = Socket;
 	}
 
-	if (SocketHovered == Socket && ImGui::GetIO().MouseClicked[0] && Socket->bOutput)
+	if (SocketHovered == Socket && ImGui::GetIO().MouseClicked[0] && Socket->GetFlowDirection() == NodeSocket::SocketFlow::Output)
 		SocketLookingForConnection = Socket;
 }
 

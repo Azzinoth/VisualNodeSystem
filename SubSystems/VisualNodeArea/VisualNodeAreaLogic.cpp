@@ -370,7 +370,7 @@ bool NodeArea::TryToDisconnect(const Node* OutNode, std::string OutSocketID, con
 	if (OutSocket == nullptr || InSocket == nullptr)
 		return false;
 
-	if (OutSocket->IsInput() == InSocket->IsInput())
+	if (OutSocket->GetFlowDirection() == InSocket->GetFlowDirection())
 		return false;
 
 	return TryToDisconnect(OutNode, OutNode->GetSocketIndexByID(OutSocketID), InNode, InNode->GetSocketIndexByID(InSocketID));
@@ -431,7 +431,7 @@ bool NodeArea::IsConnected(const Node* OutNode, std::string OutSocketID, const N
 	if (OutSocket == nullptr || InSocket == nullptr)
 		return false;
 
-	if (OutSocket->IsInput() == InSocket->IsInput())
+	if (OutSocket->GetFlowDirection() == InSocket->GetFlowDirection())
 		return false;
 
 	return IsConnected(OutNode, OutNode->GetSocketIndexByID(OutSocketID), InNode, InNode->GetSocketIndexByID(InSocketID));
@@ -537,7 +537,7 @@ bool NodeArea::TryToConnect(const Node* OutNode, const std::string OutSocketID, 
 	if (OutSocket == nullptr || InSocket == nullptr)
 		return false;
 
-	if (OutSocket->IsInput() == InSocket->IsInput())
+	if (OutSocket->GetFlowDirection() == InSocket->GetFlowDirection())
 		return false;
 
 	return TryToConnect(OutNode, OutNode->GetSocketIndexByID(OutSocketID), InNode, InNode->GetSocketIndexByID(InSocketID));
@@ -676,7 +676,7 @@ std::vector<std::pair<ImVec2, ImVec2>> NodeArea::GetConnectionSegments(const Nod
 	if (OutSocket == nullptr || InSocket == nullptr)
 		return Result;
 
-	if (OutSocket->IsInput() == InSocket->IsInput())
+	if (OutSocket->GetFlowDirection() == InSocket->GetFlowDirection())
 		return Result;
 
 	return GetConnectionSegments(OutNode, OutNode->GetSocketIndexByID(OutSocketID), InNode, InNode->GetSocketIndexByID(InSocketID));
@@ -726,7 +726,7 @@ bool NodeArea::AddRerouteNodeToConnection(const Node* OutNode, std::string OutSo
 	if (OutSocket == nullptr || InSocket == nullptr)
 		return false;
 
-	if (OutSocket->IsInput() == InSocket->IsInput())
+	if (OutSocket->GetFlowDirection() == InSocket->GetFlowDirection())
 		return false;
 
 	return AddRerouteNodeToConnection(OutNode, OutNode->GetSocketIndexByID(OutSocketID), InNode, InNode->GetSocketIndexByID(InSocketID), SegmentToDivide, Position);
