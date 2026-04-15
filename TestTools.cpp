@@ -1293,13 +1293,16 @@ glm::vec2 TestTools::GetResultFromArithmeticOperator(ArithmeticOperationType Typ
 
 void TestTools::SimulateCopyPasteNodes(std::vector<VisNodeSys::Node*> NodesToCopy, VisNodeSys::NodeArea* TargetArea)
 {
-	NodeArea* TemporaryNodeArea = NodeArea::CreateNodeArea(NodesToCopy, {});
+	if (NodesToCopy.empty() || TargetArea == nullptr)
+		return;
+
+	NodeArea* TemporaryNodeArea = NODE_SYSTEM.CreateNodeArea(NodesToCopy, {});
 	std::string Json = TemporaryNodeArea->ToJson();
 	NODE_SYSTEM.DeleteNodeArea(TemporaryNodeArea);
 	
 	TemporaryNodeArea = NODE_SYSTEM.CreateNodeArea();
 	TemporaryNodeArea->LoadFromJson(Json);
 	
-	NodeArea::CopyNodesTo(TemporaryNodeArea, TargetArea);
+	NODE_SYSTEM.CopyNodesTo(TemporaryNodeArea, TargetArea);
 	NODE_SYSTEM.DeleteNodeArea(TemporaryNodeArea);
 }

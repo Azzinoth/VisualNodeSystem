@@ -37,6 +37,24 @@ TEST(NodeSystemTests, SaveLoad_No_Connections_Small)
 	NODE_SYSTEM.Clear();
 }
 
+TEST(NodeSystemTests, LoadShouldClear)
+{
+	NODE_SYSTEM.Clear();
+
+	EXPECT_EQ(NODE_SYSTEM.GetNodeAreaCount(), 0);
+	NodeArea* AreaA = NODE_SYSTEM.CreateNodeArea();
+	EXPECT_EQ(NODE_SYSTEM.GetNodeAreaCount(), 1);
+
+	std::string JsonString = NODE_SYSTEM.ToJson();
+	NodeArea* AreaB = NODE_SYSTEM.CreateNodeArea();
+	EXPECT_EQ(NODE_SYSTEM.GetNodeAreaCount(), 2);
+
+	NODE_SYSTEM.LoadFromJson(JsonString);
+	EXPECT_EQ(NODE_SYSTEM.GetNodeAreaCount(), 1);
+
+	NODE_SYSTEM.Clear();
+}
+
 TEST(NodeSystemTests, TryToConnect_CrossArea_IsRejected)
 {
 	NodeArea* AreaA = NODE_SYSTEM.CreateNodeArea();

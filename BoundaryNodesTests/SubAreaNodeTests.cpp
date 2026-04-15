@@ -255,3 +255,261 @@ TEST(SubAreaNodeTests, DeleteSocket_OnlyRemoves_CorrespondingDirection_From_Part
 
 	NODE_SYSTEM.DeleteNodeArea(ParentArea);
 }
+
+TEST(SubAreaNodeTests, CopyPaste_CreatesIndependentOwnedArea)
+{
+	NodeArea* ParentArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(ParentArea, nullptr);
+
+	SubAreaNode* SubArea = NODE_SYSTEM.CreateSubAreaNode(ParentArea->GetID());
+	ASSERT_NE(SubArea, nullptr);
+	EXPECT_TRUE(SubArea->AddSocket({ "BOOL" }, "Bool IN", NodeSocket::SocketFlow::Input));
+
+	NodeArea* OriginalOwnedArea = SubArea->GetOwnedArea();
+	ASSERT_NE(OriginalOwnedArea, nullptr);
+	std::string OriginalOwnedAreaID = OriginalOwnedArea->GetID();
+
+	// Simulating copy-paste.
+	TEST_TOOLS.SimulateCopyPasteNodes({ SubArea }, ParentArea);
+
+	// Find the pasted SubAreaNode.
+	SubAreaNode* PastedSubArea = nullptr;
+	std::vector<SubAreaNode*> SubAreaNodes = ParentArea->GetNodesByType<SubAreaNode>();
+	for (auto* Node : SubAreaNodes)
+	{
+		if (Node->GetID() != SubArea->GetID())
+		{
+			PastedSubArea = Node;
+			break;
+		}
+	}
+	ASSERT_NE(PastedSubArea, nullptr);
+	EXPECT_NE(PastedSubArea->GetID(), SubArea->GetID());
+
+	// Sockets should match.
+	EXPECT_EQ(PastedSubArea->GetInputSocketCount(), SubArea->GetInputSocketCount());
+	EXPECT_EQ(PastedSubArea->GetOutputSocketCount(), SubArea->GetOutputSocketCount());
+
+	// Pasted node should have its own node area.
+	NodeArea* PastedOwnedArea = PastedSubArea->GetOwnedArea();
+	ASSERT_NE(PastedOwnedArea, nullptr);
+	EXPECT_NE(PastedOwnedArea->GetID(), OriginalOwnedAreaID);
+
+	// Both owned areas should be children of the parent.
+	EXPECT_TRUE(OriginalOwnedArea->IsChildOf(ParentArea));
+	EXPECT_TRUE(PastedOwnedArea->IsChildOf(ParentArea));
+
+	// Pasted owned area should have its own input/output nodes.
+	EXPECT_EQ(PastedOwnedArea->GetNodesByType<SubAreaInputNode>().size(), 1);
+	EXPECT_EQ(PastedOwnedArea->GetNodesByType<SubAreaOutputNode>().size(), 1);
+	EXPECT_NE(PastedSubArea->GetSubAreaInputNode()->GetID(), SubArea->GetSubAreaInputNode()->GetID());
+	EXPECT_NE(PastedSubArea->GetSubAreaOutputNode()->GetID(), SubArea->GetSubAreaOutputNode()->GetID());
+
+	// Input/output socket counts should match the originals.
+	EXPECT_EQ(PastedSubArea->GetSubAreaInputNode()->GetOutputSocketCount(), SubArea->GetSubAreaInputNode()->GetOutputSocketCount());
+	EXPECT_EQ(PastedSubArea->GetSubAreaOutputNode()->GetInputSocketCount(), SubArea->GetSubAreaOutputNode()->GetInputSocketCount());
+
+	// Cleanup should remove both owned areas.
+	std::string PastedOwnedAreaID = PastedOwnedArea->GetID();
+	NODE_SYSTEM.DeleteNodeArea(ParentArea);
+
+	EXPECT_EQ(NODE_SYSTEM.GetNodeAreaByID(OriginalOwnedAreaID), nullptr);
+	EXPECT_EQ(NODE_SYSTEM.GetNodeAreaByID(PastedOwnedAreaID), nullptr);
+	EXPECT_EQ(NODE_SYSTEM.GetNodeAreaCount(), 0);
+}
+
+TEST(SubAreaNodeTests, CopyPaste_CreatesIndependentCopy)
+{
+	NodeArea* ParentArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(ParentArea, nullptr);
+	ParentArea->SetSaveExecutedNodes(true);
+
+	// Set up execution entry in the parent area.
+	Node* ExecutionBeginNode = new BeginNode();
+	ASSERT_NE(ExecutionBeginNode, nullptr);
+	ParentArea->AddNode(ExecutionBeginNode);
+	ParentArea->SetExecutionEntryNode(ExecutionBeginNode);
+
+	// Parent area: a bool literal that will feed data into the SubAreaNode.
+	BoolLiteralNode* ParentBoolLiteral = new BoolLiteralNode();
+	ParentBoolLiteral->SetName("ParentBoolLiteral");
+	ParentBoolLiteral->SetData(true);
+	ParentArea->AddNode(ParentBoolLiteral);
+
+	// Bool variable that will receive data coming back out of the child area.
+	BoolVariableNode* ParentBoolResult = new BoolVariableNode();
+	ParentBoolResult->SetName("ParentBoolResult");
+	ParentArea->AddNode(ParentBoolResult);
+
+	// Create the SubAreaNode and add data sockets.
+	SubAreaNode* SubArea = NODE_SYSTEM.CreateSubAreaNode(ParentArea->GetID());
+	ASSERT_NE(SubArea, nullptr);
+	EXPECT_TRUE(SubArea->AddSocket({ "BOOL" }, "Bool IN", NodeSocket::SocketFlow::Input));
+	EXPECT_TRUE(SubArea->AddSocket({ "BOOL" }, "Bool OUT", NodeSocket::SocketFlow::Output));
+
+	SubAreaInputNode* InputNode = SubArea->GetSubAreaInputNode();
+	SubAreaOutputNode* OutputNode = SubArea->GetSubAreaOutputNode();
+	ASSERT_NE(InputNode, nullptr);
+	ASSERT_NE(OutputNode, nullptr);
+
+	// Parent area wiring.
+	ASSERT_TRUE(ParentArea->TryToConnect(ExecutionBeginNode, 0, SubArea, 0));
+	ASSERT_TRUE(ParentArea->TryToConnect(SubArea, 0, ParentBoolResult, 0));
+	ASSERT_TRUE(ParentArea->TryToConnect(ParentBoolLiteral, 0, SubArea, 1));
+	ASSERT_TRUE(ParentArea->TryToConnect(SubArea, 1, ParentBoolResult, 1));
+
+	// Set up the child area with an inner node that passes data through.
+	NodeArea* OwnedArea = SubArea->GetOwnedArea();
+	ASSERT_NE(OwnedArea, nullptr);
+	OwnedArea->SetSaveExecutedNodes(true);
+	std::string OriginalOwnedAreaID = OwnedArea->GetID();
+
+	BoolVariableNode* InnerBoolNode = new BoolVariableNode();
+	InnerBoolNode->SetName("InnerBoolNode");
+	OwnedArea->AddNode(InnerBoolNode);
+
+	ASSERT_TRUE(OwnedArea->TryToConnect(InputNode, 0, InnerBoolNode, 0));
+	ASSERT_TRUE(OwnedArea->TryToConnect(InnerBoolNode, 0, OutputNode, 0));
+	ASSERT_TRUE(OwnedArea->TryToConnect(InputNode, 1, InnerBoolNode, 1));
+	ASSERT_TRUE(OwnedArea->TryToConnect(InnerBoolNode, 1, OutputNode, 1));
+
+	// Verify original works before copy.
+	ASSERT_TRUE(ParentArea->ExecuteNodeNetwork());
+	EXPECT_TRUE(ParentBoolResult->GetData());
+
+	// Record counts before copy.
+	size_t NodeCountBefore = ParentArea->GetNodeCount();
+
+	// Simulating copy-paste.
+	TEST_TOOLS.SimulateCopyPasteNodes({ SubArea }, ParentArea);
+
+	// There should be one more node in the parent area.
+	EXPECT_EQ(ParentArea->GetNodeCount(), NodeCountBefore + 1);
+
+	// Find the pasted SubAreaNode.
+	SubAreaNode* PastedSubArea = nullptr;
+	std::vector<SubAreaNode*> SubAreaNodes = ParentArea->GetNodesByType<SubAreaNode>();
+	for (auto* Node : SubAreaNodes)
+	{
+		if (Node->GetID() != SubArea->GetID())
+		{
+			PastedSubArea = Node;
+			break;
+		}
+	}
+	ASSERT_NE(PastedSubArea, nullptr);
+
+	// Pasted node should have a different ID.
+	EXPECT_NE(PastedSubArea->GetID(), SubArea->GetID());
+
+	// Pasted node should have the same socket counts as the original.
+	EXPECT_EQ(PastedSubArea->GetInputSocketCount(), SubArea->GetInputSocketCount());
+	EXPECT_EQ(PastedSubArea->GetOutputSocketCount(), SubArea->GetOutputSocketCount());
+
+	// Verify socket types match.
+	for (size_t i = 0; i < SubArea->GetInputSocketCount(); i++)
+	{
+		NodeSocket* OriginalSocket = SubArea->GetSocketByIndex(i, NodeSocket::SocketFlow::Input);
+		NodeSocket* PastedSocket = PastedSubArea->GetSocketByIndex(i, NodeSocket::SocketFlow::Input);
+		ASSERT_NE(OriginalSocket, nullptr);
+		ASSERT_NE(PastedSocket, nullptr);
+		EXPECT_EQ(OriginalSocket->GetAllowedTypes(), PastedSocket->GetAllowedTypes());
+	}
+
+	for (size_t i = 0; i < SubArea->GetOutputSocketCount(); i++)
+	{
+		NodeSocket* OriginalSocket = SubArea->GetSocketByIndex(i, NodeSocket::SocketFlow::Output);
+		NodeSocket* PastedSocket = PastedSubArea->GetSocketByIndex(i, NodeSocket::SocketFlow::Output);
+		ASSERT_NE(OriginalSocket, nullptr);
+		ASSERT_NE(PastedSocket, nullptr);
+		EXPECT_EQ(OriginalSocket->GetAllowedTypes(), PastedSocket->GetAllowedTypes());
+	}
+
+	// Pasted node should have no connections in the parent area.
+	EXPECT_EQ(PastedSubArea->GetNodesConnectedToInput().size(), 0);
+	EXPECT_EQ(PastedSubArea->GetNodesConnectedToOutput().size(), 0);
+
+	// Verify the pasted node has its own independent owned area
+	NodeArea* PastedOwnedArea = PastedSubArea->GetOwnedArea();
+	ASSERT_NE(PastedOwnedArea, nullptr);
+
+	// Owned area should be a different instance from the original.
+	EXPECT_NE(PastedOwnedArea->GetID(), OriginalOwnedAreaID);
+
+	// Parent-child relationship should be correct.
+	EXPECT_TRUE(PastedOwnedArea->IsChildOf(ParentArea));
+	EXPECT_TRUE(ParentArea->IsParentOf(PastedOwnedArea));
+
+	// Pasted owned area should contain its own SubAreaInputNode and SubAreaOutputNode.
+	std::vector<SubAreaInputNode*> PastedInputNodes = PastedOwnedArea->GetNodesByType<SubAreaInputNode>();
+	EXPECT_EQ(PastedInputNodes.size(), 1);
+	std::vector<SubAreaOutputNode*> PastedOutputNodes = PastedOwnedArea->GetNodesByType<SubAreaOutputNode>();
+	EXPECT_EQ(PastedOutputNodes.size(), 1);
+
+	SubAreaInputNode* PastedInputNode = PastedSubArea->GetSubAreaInputNode();
+	SubAreaOutputNode* PastedOutputNode = PastedSubArea->GetSubAreaOutputNode();
+	ASSERT_NE(PastedInputNode, nullptr);
+	ASSERT_NE(PastedOutputNode, nullptr);
+
+	// They should be different instances from the originals.
+	EXPECT_NE(PastedInputNode->GetID(), InputNode->GetID());
+	EXPECT_NE(PastedOutputNode->GetID(), OutputNode->GetID());
+
+	// Pasted input/output nodes should have the same socket counts as originals.
+	EXPECT_EQ(PastedInputNode->GetOutputSocketCount(), InputNode->GetOutputSocketCount());
+	EXPECT_EQ(PastedOutputNode->GetInputSocketCount(), OutputNode->GetInputSocketCount());
+
+	// The internal nodes should have been copied too.
+	// Original owned area has: SubAreaInputNode, InnerBoolNode, SubAreaOutputNode = 3 nodes.
+	EXPECT_EQ(PastedOwnedArea->GetNodeCount(), OwnedArea->GetNodeCount());
+
+	// There should be a BoolVariableNode inside the pasted owned area.
+	std::vector<BoolVariableNode*> PastedInnerBools = PastedOwnedArea->GetNodesByType<BoolVariableNode>();
+	EXPECT_EQ(PastedInnerBools.size(), 1);
+
+	// Wire the pasted SubAreaNode into the parent execution and data flow.
+	ASSERT_TRUE(ParentArea->TryToDisconnect(ExecutionBeginNode, 0, SubArea, 0));
+	ASSERT_TRUE(ParentArea->TryToConnect(ExecutionBeginNode, 0, PastedSubArea, 0));
+	ASSERT_TRUE(ParentArea->TryToDisconnect(SubArea, 0, ParentBoolResult, 0));
+	ASSERT_TRUE(ParentArea->TryToConnect(PastedSubArea, 0, ParentBoolResult, 0));
+	ASSERT_TRUE(ParentArea->TryToDisconnect(ParentBoolLiteral, 0, SubArea, 1));
+	ASSERT_TRUE(ParentArea->TryToConnect(ParentBoolLiteral, 0, PastedSubArea, 1));
+	ASSERT_TRUE(ParentArea->TryToDisconnect(SubArea, 1, ParentBoolResult, 1));
+	ASSERT_TRUE(ParentArea->TryToConnect(PastedSubArea, 1, ParentBoolResult, 1));
+
+	// Execute through the pasted SubAreaNode and data should flow correctly only if internal connections were also copied.
+	ParentBoolResult->SetData(false);
+	PastedOwnedArea->SetSaveExecutedNodes(true);
+	ASSERT_TRUE(ParentArea->ExecuteNodeNetwork());
+	EXPECT_TRUE(ParentBoolResult->GetData());
+
+	// Verify execution traces in the pasted owned area.
+	EXPECT_EQ(PastedOwnedArea->GetLastExecutedNodes().size(), 3); // SubAreaInputNode, BoolVariableNode, SubAreaOutputNode
+
+	// Re-wire the original back in and confirm it still works.
+	ASSERT_TRUE(ParentArea->TryToDisconnect(ExecutionBeginNode, 0, PastedSubArea, 0));
+	ASSERT_TRUE(ParentArea->TryToConnect(ExecutionBeginNode, 0, SubArea, 0));
+	ASSERT_TRUE(ParentArea->TryToDisconnect(PastedSubArea, 0, ParentBoolResult, 0));
+	ASSERT_TRUE(ParentArea->TryToConnect(SubArea, 0, ParentBoolResult, 0));
+	ASSERT_TRUE(ParentArea->TryToDisconnect(ParentBoolLiteral, 0, PastedSubArea, 1));
+	ASSERT_TRUE(ParentArea->TryToConnect(ParentBoolLiteral, 0, SubArea, 1));
+	ASSERT_TRUE(ParentArea->TryToDisconnect(PastedSubArea, 1, ParentBoolResult, 1));
+	ASSERT_TRUE(ParentArea->TryToConnect(SubArea, 1, ParentBoolResult, 1));
+
+	ParentBoolResult->SetData(false);
+	ASSERT_TRUE(ParentArea->ExecuteNodeNetwork());
+	EXPECT_TRUE(ParentBoolResult->GetData());
+
+	// Test with false to confirm it is not a default.
+	ParentBoolLiteral->SetData(false);
+	ParentBoolResult->SetData(true);
+	ASSERT_TRUE(ParentArea->ExecuteNodeNetwork());
+	EXPECT_FALSE(ParentBoolResult->GetData());
+
+	std::string PastedOwnedAreaID = PastedOwnedArea->GetID();
+	NODE_SYSTEM.DeleteNodeArea(ParentArea);
+
+	EXPECT_EQ(NODE_SYSTEM.GetNodeAreaByID(OriginalOwnedAreaID), nullptr);
+	EXPECT_EQ(NODE_SYSTEM.GetNodeAreaByID(PastedOwnedAreaID), nullptr);
+	EXPECT_EQ(NODE_SYSTEM.GetNodeAreaCount(), 0);
+}

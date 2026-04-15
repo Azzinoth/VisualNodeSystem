@@ -20,7 +20,8 @@ bool BeginNode::bIsRegistered = []()
 BeginNode::BeginNode() : BaseExecutionFlowNode(false)
 {
 	Type = "BeginNode";
-	bCouldBeDestroyed = false;
+	bCouldBeDestroyedByUser = false;
+	bCouldBeCopiedByUser = false;
 
 	SetStyle(CIRCLE);
 
@@ -35,7 +36,7 @@ BeginNode::BeginNode() : BaseExecutionFlowNode(false)
 
 BeginNode::BeginNode(const BeginNode& Other) : BaseExecutionFlowNode(Other)
 {
-	bCouldBeDestroyed = false;
+	bCouldBeDestroyedByUser = false;
 	SetStyle(CIRCLE);
 }
 

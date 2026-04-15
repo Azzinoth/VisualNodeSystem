@@ -20,7 +20,7 @@ bool CustomNode::isRegistered = []()
 CustomNode::CustomNode() : Node()
 {
 	Type = "CustomNode";
-	bCouldBeDestroyed = false;
+	bCouldBeDestroyedByUser = false;
 
 	SetStyle(DEFAULT);
 
@@ -36,7 +36,7 @@ CustomNode::CustomNode() : Node()
 CustomNode::CustomNode(const CustomNode& Src) : Node(Src)
 {
 	Data = Src.Data;
-	bCouldBeDestroyed = false;
+	bCouldBeDestroyedByUser = false;
 
 	SetStyle(DEFAULT);
 }

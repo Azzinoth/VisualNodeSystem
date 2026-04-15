@@ -58,6 +58,33 @@ TEST(NodeAreaLoadTest, LoadJsonWithIncorrectNodes)
 	NODE_SYSTEM.DeleteNodeArea(NodeArea);
 }
 
+TEST(NodeAreaLoadTest, LoadShouldClear)
+{
+	std::vector<std::string> NodesIDList;
+	std::vector<std::string> GroupCommentsIDList;
+
+	NodeArea* NodeArea = TEST_TOOLS.CreateTinyPopulatedNodeArea(NodesIDList, GroupCommentsIDList);
+	ASSERT_NE(NodeArea, nullptr);
+	ASSERT_EQ(NodeArea->GetNodeCount(), 11);
+	ASSERT_EQ(NodeArea->GetConnectionCount(), 5);
+	ASSERT_EQ(NodeArea->GetRerouteConnectionCount(), 2);
+	ASSERT_EQ(NodeArea->GetGroupCommentCount(), 1);
+
+	std::string JsonString = NodeArea->ToJson();
+
+	Node* NewNode = new Node();
+	EXPECT_TRUE(NodeArea->AddNode(NewNode));
+	ASSERT_EQ(NodeArea->GetNodeCount(), 12);
+
+	NodeArea->LoadFromJson(JsonString);
+	ASSERT_EQ(NodeArea->GetNodeCount(), 11);
+	ASSERT_EQ(NodeArea->GetConnectionCount(), 5);
+	ASSERT_EQ(NodeArea->GetRerouteConnectionCount(), 2);
+	ASSERT_EQ(NodeArea->GetGroupCommentCount(), 1);
+
+	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+}
+
 TEST(NodeAreaLoadTest, LoadNodeMissingType)
 {
 	std::string JsonString = R"({ 
