@@ -786,9 +786,20 @@ void NodeArea::KeyboardInputUpdate()
 		{
 			if (!SelectedNodes.empty() || !SelectedGroupComments.empty())
 			{
-				const NodeArea* NewNodeArea = NodeArea::CreateNodeArea(SelectedNodes, SelectedGroupComments);
+				std::vector<Node*> NodesToCopy = SelectedNodes;
+				// Check selected nodes for nodes that should not be copyable.
+				for (size_t i = 0; i < NodesToCopy.size(); i++)
+				{
+					if (!NodesToCopy[i]->bCouldBeCopiedByUser)
+					{
+						NodesToCopy.erase(NodesToCopy.begin() + i);
+						i--;
+					}
+				}
+
+				const NodeArea* NewNodeArea = NODE_SYSTEM.CreateNodeArea(NodesToCopy, SelectedGroupComments);
 				NODE_CORE.SetClipboardText(NewNodeArea->ToJson());
-				delete NewNodeArea;
+				NODE_SYSTEM.DeleteNodeArea(NewNodeArea);
 			}
 		}
 		else if (ImGui::IsKeyDown(ImGuiKey_V))
@@ -835,7 +846,7 @@ void NodeArea::KeyboardInputUpdate()
 				}
 				// ***************** Place new nodes in center of a view space END *****************
 
-				NodeArea::CopyNodesTo(NewNodeArea, this);
+				NODE_SYSTEM.CopyNodesTo(NewNodeArea, this);
 
 				// Unselect all elements.
 				UnSelectAll();

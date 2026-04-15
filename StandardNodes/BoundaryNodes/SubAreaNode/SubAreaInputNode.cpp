@@ -21,7 +21,8 @@ bool SubAreaInputNode::bIsRegistered = []()
 SubAreaInputNode::SubAreaInputNode()
 {
 	Type = "SubAreaInputNode";
-	bCouldBeDestroyed = false;
+	bCouldBeDestroyedByUser = false;
+	bCouldBeCopiedByUser = false;
 
 	SetStyle(DEFAULT);
 	SetRenderTitleBar(false);
@@ -43,7 +44,7 @@ SubAreaInputNode::SubAreaInputNode()
 SubAreaInputNode::SubAreaInputNode(const SubAreaInputNode& Other) : VisNodeSys::SocketMirrorNode(Other)
 {
 	Type = "SubAreaInputNode";
-	bCouldBeDestroyed = false;
+	bCouldBeDestroyedByUser = false;
 
 	SetStyle(DEFAULT);
 	SetRenderTitleBar(false);

@@ -501,6 +501,140 @@ NodeArea* NodeSystem::CreateNodeArea()
 	return Areas.back();
 }
 
+bool NodeSystem::IsAlreadyConnected(NodeSocket* FirstSocket, NodeSocket* SecondSocket, const std::vector<Connection*>& Connections)
+{
+	for (size_t i = 0; i < Connections.size(); i++)
+	{
+		// If the node is connected to a node that is not in this list, just ignore.
+		if (Connections[i]->In == FirstSocket && Connections[i]->Out == SecondSocket)
+			return true;
+	}
+
+	return false;
+}
+
+void NodeSystem::ProcessConnections(const std::vector<NodeSocket*>& Sockets,
+									std::unordered_map<NodeSocket*, NodeSocket*>& OldToNewSocket,
+									NodeArea* TargetArea, size_t NodeShift, const std::vector<Node*>& SourceNodes)
+{
+	NodeArea* SourceArea = SourceNodes[0]->GetParentArea();
+
+	for (size_t i = 0; i < Sockets.size(); i++)
+	{
+		NodeSocket* CurrentSocket = Sockets[i];
+		for (const auto& ConnectedSocket : CurrentSocket->ConnectedSockets)
+		{
+			if (Node::IsNodeWithIDInList(ConnectedSocket->GetParent()->GetID(), SourceNodes))
+			{
+				// Check if we have already established this connection.
+				if (!IsAlreadyConnected(OldToNewSocket[CurrentSocket], OldToNewSocket[ConnectedSocket], TargetArea->Connections))
+				{
+					std::unordered_map<RerouteNode*, RerouteNode*> OldToNewRerouteNode;
+					// Get connection info from old node area.
+					Connection* OldConnection = SourceArea->GetConnection(CurrentSocket, ConnectedSocket);
+
+					if (!TargetArea->TryToConnect(OldToNewSocket[CurrentSocket]->GetParent(), OldToNewSocket[CurrentSocket]->GetID(), OldToNewSocket[ConnectedSocket]->GetParent(), OldToNewSocket[ConnectedSocket]->GetID()))
+						continue;
+
+					Connection* NewConnection = TargetArea->Connections.back();
+					// First pass to fill OldToNewRerouteNode map and other information that does not depend on OldToNewRerouteNode map.
+					for (size_t j = 0; j < OldConnection->RerouteNodes.size(); j++)
+					{
+						RerouteNode* OldReroute = OldConnection->RerouteNodes[j];
+						RerouteNode* NewReroute = new RerouteNode();
+						NewReroute->ID = NODE_CORE.GetUniqueHexID();
+						NewReroute->Parent = NewConnection;
+						NewReroute->Position = OldReroute->Position;
+
+						if (OldReroute->BeginSocket != nullptr)
+							NewReroute->BeginSocket = OldToNewSocket[OldReroute->BeginSocket];
+						if (OldReroute->EndSocket != nullptr)
+							NewReroute->EndSocket = OldToNewSocket[OldReroute->EndSocket];
+
+						// Associate old to new
+						OldToNewRerouteNode[OldConnection->RerouteNodes[j]] = NewReroute;
+
+						NewConnection->RerouteNodes.push_back(NewReroute);
+					}
+
+					// Second pass to fill all other info.
+					for (size_t j = 0; j < OldConnection->RerouteNodes.size(); j++)
+					{
+						RerouteNode* OldReroute = OldConnection->RerouteNodes[j];
+
+						if (OldReroute->BeginReroute != nullptr)
+							OldToNewRerouteNode[OldReroute]->BeginReroute = OldToNewRerouteNode[OldReroute->BeginReroute];
+						if (OldReroute->EndReroute != nullptr)
+							OldToNewRerouteNode[OldReroute]->EndReroute = OldToNewRerouteNode[OldReroute->EndReroute];
+					}
+				}
+			}
+		}
+	}
+}
+
+void NodeSystem::CopyNodesInternal(const std::vector<Node*>& SourceNodes, NodeArea* TargetArea, const size_t NodeShift)
+{
+	// Copy all nodes to new node area.
+	std::unordered_map<Node*, Node*> OldToNewNode;
+	std::unordered_map<NodeSocket*, NodeSocket*> OldToNewSocket;
+	for (size_t i = 0; i < SourceNodes.size(); i++)
+	{
+		Node* CopyOfNode = NODE_FACTORY.CopyNode(SourceNodes[i]->GetType(), *SourceNodes[i]);
+
+		if (CopyOfNode == nullptr)
+			CopyOfNode = new Node(*SourceNodes[i]);
+		CopyOfNode->ParentArea = TargetArea;
+
+		TargetArea->AddNode(CopyOfNode);
+
+		// Associate old to new
+		OldToNewNode[SourceNodes[i]] = CopyOfNode;
+
+		for (size_t j = 0; j < SourceNodes[i]->Input.size(); j++)
+		{
+			OldToNewSocket[SourceNodes[i]->Input[j]] = CopyOfNode->Input[j];
+		}
+
+		for (size_t j = 0; j < SourceNodes[i]->Output.size(); j++)
+		{
+			OldToNewSocket[SourceNodes[i]->Output[j]] = CopyOfNode->Output[j];
+		}
+	}
+
+	// Recreate all connections.
+	for (size_t i = 0; i < SourceNodes.size(); i++)
+	{
+		ProcessConnections(SourceNodes[i]->Output, OldToNewSocket, TargetArea, NodeShift + i, SourceNodes);
+	}
+}
+
+NodeArea* NodeSystem::CreateNodeArea(const std::vector<Node*> Nodes, const std::vector<GroupComment*> GroupComments)
+{
+	NodeArea* NewArea = CreateNodeArea();
+	CopyNodesInternal(Nodes, NewArea);
+
+	for (size_t i = 0; i < GroupComments.size(); i++)
+	{
+		GroupComment* CopyOfGroupComment = new GroupComment(*GroupComments[i]);
+		NewArea->AddGroupComment(CopyOfGroupComment);
+	}
+
+	return NewArea;
+}
+
+void NodeSystem::CopyNodesTo(NodeArea* SourceNodeArea, NodeArea* TargetNodeArea)
+{
+	const size_t NodeShift = TargetNodeArea->Nodes.size();
+	CopyNodesInternal(SourceNodeArea->Nodes, TargetNodeArea, NodeShift);
+
+	for (size_t i = 0; i < SourceNodeArea->GroupComments.size(); i++)
+	{
+		GroupComment* CopyOfGroupComment = new GroupComment(*SourceNodeArea->GroupComments[i]);
+		TargetNodeArea->AddGroupComment(CopyOfGroupComment);
+	}
+}
+
 NodeArea* NodeSystem::GetNodeAreaByID(const std::string& NodeAreaID) const
 {
 	for (size_t i = 0; i < Areas.size(); i++)
@@ -554,17 +688,20 @@ void NodeSystem::OnNodeDeletion(Node* DeletedNode)
 	DeleteLinkRecord(LinkID);
 }
 
-void NodeSystem::DeleteNodeArea(const NodeArea* NodeArea)
+void NodeSystem::DeleteNodeArea(const NodeArea* NodeAreaToDelete)
 {
-	if (NodeArea == nullptr)
+	if (NodeAreaToDelete == nullptr)
 		return;
 
 	for (size_t i = 0; i < Areas.size(); i++)
 	{
-		if (Areas[i] == NodeArea)
+		if (Areas[i] == NodeAreaToDelete)
 		{
-			delete Areas[i];
-			Areas.erase(Areas.begin() + i, Areas.begin() + i + 1);
+			NodeArea* AreaToDelete = Areas[i];
+			// Remove from the vector before deleting.
+			// During deletion, potential SubAreaNodes in this area will destroy their owned child areas, which modifies the Areas vector.
+			Areas.erase(Areas.begin() + i);
+			delete AreaToDelete;
 			return;
 		}
 	}
@@ -989,6 +1126,8 @@ bool NodeSystem::SaveToFile(const std::string& FilePath) const
 
 bool NodeSystem::LoadFromJson(const std::string& JsonText)
 {
+	Clear();
+
 	if (JsonText.find("{") == std::string::npos || JsonText.find("}") == std::string::npos || JsonText.find(":") == std::string::npos)
 		return false;
 
@@ -1073,6 +1212,7 @@ void NodeSystem::Clear()
 	}
 
 	NodeAreaLinkRecords.clear();
+	NodeSocket::SocketTypeToColorAssociations.clear();
 }
 
 std::vector<NodeArea*> NodeSystem::GetImmediateDownstreamAreas(const std::string& AreaID)

@@ -7,8 +7,7 @@ bool NodeArea::AddNode(Node* NewNode)
 	if (NewNode == nullptr)
 		return false;
 
-	Node* FoundNode = GetNodeByID(NewNode->GetID());
-	if (FoundNode != nullptr)
+	if (GetNodeByID(NewNode->GetID()) != nullptr)
 		return false;
 
 	if (NewNode->GetType() == "LinkNode")
@@ -203,7 +202,7 @@ bool NodeArea::Delete(const Node* NodeToDelete)
 	if (NodeToDelete == nullptr)
 		return false;
 
-	if (!NodeToDelete->bCouldBeDestroyed)
+	if (!NodeToDelete->bCouldBeDestroyedByUser)
 		return false;
 
 	int Index = GetNodeIndex(NodeToDelete);
@@ -244,7 +243,7 @@ void NodeArea::DeleteNodeInternal(const Node* Node, int Index)
 	if (Node == nullptr)
 		return;
 
-	if (!Node->bCouldBeDestroyed)
+	if (!Node->bCouldBeDestroyedByUser)
 		return;
 
 	if (Index == -1)
@@ -292,7 +291,7 @@ size_t NodeArea::GetConnectionCount() const
 	return Connections.size();
 }
 
-bool NodeArea::TryToConnect(const Node* OutNode, const size_t OutNodeSocketIndex, const Node* InNode, const size_t InNodeSocketIndex)
+bool NodeArea::IsThisAreaResponsibleFor(const Node* OutNode, const Node* InNode) const
 {
 	if (OutNode == nullptr || InNode == nullptr)
 		return false;
@@ -304,6 +303,30 @@ bool NodeArea::TryToConnect(const Node* OutNode, const size_t OutNodeSocketIndex
 		return false;
 
 	if (OutNode->GetParentArea() != this && InNode->GetParentArea() != this)
+		return false;
+
+	return true;
+}
+
+bool NodeArea::ValidateSocketPair(const Node* OutNode, const std::string& OutSocketID, const Node* InNode, const std::string& InSocketID) const
+{
+	if (OutNode == nullptr || InNode == nullptr)
+		return false;
+
+	NodeSocket* OutSocket = OutNode->GetSocketByID(OutSocketID);
+	NodeSocket* InSocket = InNode->GetSocketByID(InSocketID);
+	if (OutSocket == nullptr || InSocket == nullptr)
+		return false;
+
+	if (OutSocket->GetFlowDirection() != NodeSocket::SocketFlow::Output || InSocket->GetFlowDirection() != NodeSocket::SocketFlow::Input)
+		return false;
+
+	return true;
+}
+
+bool NodeArea::TryToConnect(const Node* OutNode, const size_t OutNodeSocketIndex, const Node* InNode, const size_t InNodeSocketIndex)
+{
+	if (!IsThisAreaResponsibleFor(OutNode, InNode))
 		return false;
 
 	if (OutNode->Output.size() <= OutNodeSocketIndex)
@@ -339,7 +362,7 @@ bool NodeArea::TryToConnect(const Node* OutNode, const size_t OutNodeSocketIndex
 
 bool NodeArea::TryToDisconnect(const Node* OutNode, size_t OutNodeSocketIndex, const Node* InNode, size_t InNodeSocketIndex)
 {
-	if (OutNode == nullptr || InNode == nullptr)
+	if (!IsThisAreaResponsibleFor(OutNode, InNode))
 		return false;
 
 	if (OutNode->Output.size() <= OutNodeSocketIndex)
@@ -361,24 +384,18 @@ bool NodeArea::TryToDisconnect(const Node* OutNode, size_t OutNodeSocketIndex, c
 
 bool NodeArea::TryToDisconnect(const Node* OutNode, std::string OutSocketID, const Node* InNode, std::string InSocketID)
 {
-	if (OutNode == nullptr || InNode == nullptr)
+	if (!IsThisAreaResponsibleFor(OutNode, InNode))
 		return false;
 
-	NodeSocket* OutSocket = OutNode->GetSocketByID(OutSocketID);
-	NodeSocket* InSocket = InNode->GetSocketByID(InSocketID);
-
-	if (OutSocket == nullptr || InSocket == nullptr)
+	if (!ValidateSocketPair(OutNode, OutSocketID, InNode, InSocketID))
 		return false;
-
-	if (OutSocket->GetFlowDirection() == InSocket->GetFlowDirection())
-		return false;
-
+	
 	return TryToDisconnect(OutNode, OutNode->GetSocketIndexByID(OutSocketID), InNode, InNode->GetSocketIndexByID(InSocketID));
 }
 
 bool NodeArea::TryToDisconnect(const Node* Node, std::string SocketID)
 {
-	if (Node == nullptr)
+	if (Node == nullptr || Node->GetParentArea() != this)
 		return false;
 
 	const NodeSocket* Socket = Node->GetSocketByID(SocketID);
@@ -395,7 +412,7 @@ bool NodeArea::TryToDisconnect(const Node* Node, std::string SocketID)
 
 bool NodeArea::IsConnected(const Node* OutNode, size_t OutNodeSocketIndex, const Node* InNode, size_t InNodeSocketIndex)
 {
-	if (OutNode == nullptr || InNode == nullptr)
+	if (!IsThisAreaResponsibleFor(OutNode, InNode))
 		return false;
 
 	if (OutNode->Output.size() <= OutNodeSocketIndex)
@@ -422,16 +439,10 @@ bool NodeArea::IsConnected(const Node* OutNode, size_t OutNodeSocketIndex, const
 
 bool NodeArea::IsConnected(const Node* OutNode, std::string OutSocketID, const Node* InNode, std::string InSocketID)
 {
-	if (OutNode == nullptr || InNode == nullptr)
+	if (!IsThisAreaResponsibleFor(OutNode, InNode))
 		return false;
 
-	NodeSocket* OutSocket = OutNode->GetSocketByID(OutSocketID);
-	NodeSocket* InSocket = InNode->GetSocketByID(InSocketID);
-
-	if (OutSocket == nullptr || InSocket == nullptr)
-		return false;
-
-	if (OutSocket->GetFlowDirection() == InSocket->GetFlowDirection())
+	if (!ValidateSocketPair(OutNode, OutSocketID, InNode, InSocketID))
 		return false;
 
 	return IsConnected(OutNode, OutNode->GetSocketIndexByID(OutSocketID), InNode, InNode->GetSocketIndexByID(InSocketID));
@@ -528,16 +539,10 @@ void NodeArea::RunOnEachConnectedNode(Node* StartNode, const std::function<void(
 
 bool NodeArea::TryToConnect(const Node* OutNode, const std::string OutSocketID, const Node* InNode, const std::string InSocketID)
 {
-	if (OutNode == nullptr || InNode == nullptr)
+	if (!IsThisAreaResponsibleFor(OutNode, InNode))
 		return false;
 
-	NodeSocket* OutSocket = OutNode->GetSocketByID(OutSocketID);
-	NodeSocket* InSocket = InNode->GetSocketByID(InSocketID);
-
-	if (OutSocket == nullptr || InSocket == nullptr)
-		return false;
-
-	if (OutSocket->GetFlowDirection() == InSocket->GetFlowDirection())
+	if (!ValidateSocketPair(OutNode, OutSocketID, InNode, InSocketID))
 		return false;
 
 	return TryToConnect(OutNode, OutNode->GetSocketIndexByID(OutSocketID), InNode, InNode->GetSocketIndexByID(InSocketID));
@@ -642,7 +647,7 @@ bool NodeArea::AddRerouteNode(Connection* Connection, size_t SegmentToDivide, Im
 std::vector<std::pair<ImVec2, ImVec2>> NodeArea::GetConnectionSegments(const Node* OutNode, size_t OutNodeSocketIndex, const Node* InNode, size_t InNodeSocketIndex) const
 {
 	std::vector<std::pair<ImVec2, ImVec2>> Result;
-	if (OutNode == nullptr || InNode == nullptr)
+	if (!IsThisAreaResponsibleFor(OutNode, InNode))
 		return Result;
 
 	if (OutNode->Output.size() <= OutNodeSocketIndex)
@@ -667,16 +672,10 @@ std::vector<std::pair<ImVec2, ImVec2>> NodeArea::GetConnectionSegments(const Nod
 std::vector<std::pair<ImVec2, ImVec2>> NodeArea::GetConnectionSegments(const Node* OutNode, std::string OutSocketID, const Node* InNode, std::string InSocketID) const
 {
 	std::vector<std::pair<ImVec2, ImVec2>> Result;
-	if (OutNode == nullptr || InNode == nullptr)
+	if (!IsThisAreaResponsibleFor(OutNode, InNode))
 		return Result;
 
-	NodeSocket* OutSocket = OutNode->GetSocketByID(OutSocketID);
-	NodeSocket* InSocket = InNode->GetSocketByID(InSocketID);
-
-	if (OutSocket == nullptr || InSocket == nullptr)
-		return Result;
-
-	if (OutSocket->GetFlowDirection() == InSocket->GetFlowDirection())
+	if (!ValidateSocketPair(OutNode, OutSocketID, InNode, InSocketID))
 		return Result;
 
 	return GetConnectionSegments(OutNode, OutNode->GetSocketIndexByID(OutSocketID), InNode, InNode->GetSocketIndexByID(InSocketID));
@@ -698,7 +697,7 @@ RerouteNode* NodeArea::GetRerouteNodeByID(std::string ID) const
 
 bool NodeArea::AddRerouteNodeToConnection(const Node* OutNode, size_t OutNodeSocketIndex, const Node* InNode, size_t InNodeSocketIndex, size_t SegmentToDivide, ImVec2 Position)
 {
-	if (OutNode == nullptr || InNode == nullptr)
+	if (!IsThisAreaResponsibleFor(OutNode, InNode))
 		return false;
 
 	if (OutNode->Output.size() <= OutNodeSocketIndex)
@@ -716,17 +715,10 @@ bool NodeArea::AddRerouteNodeToConnection(const Node* OutNode, size_t OutNodeSoc
 
 bool NodeArea::AddRerouteNodeToConnection(const Node* OutNode, std::string OutSocketID, const Node* InNode, std::string InSocketID, size_t SegmentToDivide, ImVec2 Position)
 {
-	std::vector<int> Result;
-	if (OutNode == nullptr || InNode == nullptr)
+	if (!IsThisAreaResponsibleFor(OutNode, InNode))
 		return false;
 
-	NodeSocket* OutSocket = OutNode->GetSocketByID(OutSocketID);
-	NodeSocket* InSocket = InNode->GetSocketByID(InSocketID);
-
-	if (OutSocket == nullptr || InSocket == nullptr)
-		return false;
-
-	if (OutSocket->GetFlowDirection() == InSocket->GetFlowDirection())
+	if (!ValidateSocketPair(OutNode, OutSocketID, InNode, InSocketID))
 		return false;
 
 	return AddRerouteNodeToConnection(OutNode, OutNode->GetSocketIndexByID(OutSocketID), InNode, InNode->GetSocketIndexByID(InSocketID), SegmentToDivide, Position);
@@ -755,13 +747,17 @@ std::vector<GroupComment*> NodeArea::GetGroupCommentsByName(std::string GroupCom
 	return Result;
 }
 
-void NodeArea::AddGroupComment(GroupComment* NewGroupComment)
+bool NodeArea::AddGroupComment(GroupComment* NewGroupComment)
 {
 	if (NewGroupComment == nullptr)
-		return;
+		return false;
+
+	if (GetGroupCommentByID(NewGroupComment->GetID()) != nullptr)
+		return false;
 
 	NewGroupComment->ParentArea = this;
 	GroupComments.push_back(NewGroupComment);
+	return true;
 }
 
 bool NodeArea::Delete(GroupComment* GroupComment)

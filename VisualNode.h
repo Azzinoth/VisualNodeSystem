@@ -44,8 +44,10 @@ namespace VisNodeSys
 		std::string Name;
 		std::string Type;
 		bool bShouldBeDestroyed = false;
-		bool bCouldBeDestroyed = true;
-		bool bCouldBeMoved = true;
+
+		bool bCouldBeDestroyedByUser = true;
+		bool bCouldBeCopiedByUser = true;
+		bool bCouldBeMovedByUser = true;
 
 		std::vector<NodeSocket*> Input;
 		std::vector<NodeSocket*> Output;

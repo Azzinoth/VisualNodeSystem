@@ -64,23 +64,36 @@ SubAreaNode::SubAreaNode(const SubAreaNode& Other) : VisNodeSys::SocketMirrorNod
 	SetRenderTitleBar(false);
 
 	SetName(Other.GetName());
-	OwnedAreaID = Other.OwnedAreaID;
 
-	//// After copying node would be dangling.
-	//PartnerNodeID = "";
-	//bIsInputNode = Other.IsInputNode();
-	//bIsInProcessOfBeingDestroyed = false;
-	//SocketIDBeingModified = "";
-	//bInEditMode = false;
+	bHaveInput = true;
+	bHaveOutput = true;
+
+	int R = static_cast<int>(44.0f * 1.2f);
+	int G = static_cast<int>(46.0f * 1.2f);
+	int B = static_cast<int>(44.0f * 1.2f);
+	TitleBackgroundColor = ImColor(R, G, B);
+	TitleBackgroundColorHovered = ImColor(static_cast<int>(R * 1.1f), static_cast<int>(G * 1.1f), static_cast<int>(B * 1.1f));
 
 	SetSize(ImVec2(300.0f, static_cast<float>(NODE_HEIGHT_PER_SOCKET * 0.75f * std::max(size_t(2), std::max(Input.size(), Output.size())))));
+
+	NodeArea* NewOwnedArea = NODE_SYSTEM.CreateNodeArea();
+	OwnedAreaID = NewOwnedArea->GetID();
+	NodeArea* OtherOwnedArea = Other.GetOwnedArea();
+	NODE_SYSTEM.CopyNodesTo(OtherOwnedArea, NewOwnedArea);
+
+	// Find the copied SubAreaInputNode and SubAreaOutputNode in the new area and relink IDs.
+	auto InputNodes = NewOwnedArea->GetNodesByType<SubAreaInputNode>();
+	auto OutputNodes = NewOwnedArea->GetNodesByType<SubAreaOutputNode>();
+	SubAreaInputNodeID = InputNodes[0]->GetID();
+	SubAreaOutputNodeID = OutputNodes[0]->GetID();
+	InputNodes[0]->OwnerSubAreaNodeID = GetID();
+	OutputNodes[0]->OwnerSubAreaNodeID = GetID();
 }
 
 SubAreaNode::~SubAreaNode()
 {
 	NodeArea* OwnedArea = GetOwnedArea();
 	NODE_SYSTEM.DeleteNodeArea(OwnedArea);
-	//NODE_SYSTEM.DeleteLinkRecord(ID);
 }
 
 NodeArea* SubAreaNode::GetOwnedArea() const
@@ -127,19 +140,8 @@ bool SubAreaNode::FromJson(Json::Value Json)
 	if (!Json.isMember("OwnedAreaID") || !Json["OwnedAreaID"].isString())
 		return false;
 
-	OwnedAreaID = Json["OwnedAreaID"].asString();
-
-	if (!Json.isMember("OwnedAreaData") || !Json["OwnedAreaData"].isObject())
+	if (!Json.isMember("OwnedAreaData") || !Json["OwnedAreaData"].isString())
 		return false;
-
-	//NODE_SYSTEM.crea
-	//NodeArea* OwnedArea = GetOwnedArea();
-	//if (OwnedArea == nullptr)
-	//	return false;
-
-	/*if (!OwnedArea->LoadFromJson(Json["OwnedAreaData"].toStyledString()))
-		return false;*/
-	
 
 	if (!Json.isMember("SubAreaInputNodeID") || !Json["SubAreaInputNodeID"].isString())
 		return false;
@@ -147,18 +149,17 @@ bool SubAreaNode::FromJson(Json::Value Json)
 	if (!Json.isMember("SubAreaOutputNodeID") || !Json["SubAreaOutputNodeID"].isString())
 		return false;
 
+	OwnedAreaID = Json["OwnedAreaID"].asString();
+
+	NodeArea* OwnedArea = NODE_SYSTEM.GetNodeAreaByID(OwnedAreaID);
+	if (OwnedArea == nullptr)
+	{
+		OwnedArea = NODE_SYSTEM.CreateNodeArea();
+		OwnedArea->LoadFromJson(Json["OwnedAreaData"].asString());
+	}
+
 	SubAreaInputNodeID = Json["SubAreaInputNodeID"].asString();
 	SubAreaOutputNodeID = Json["SubAreaOutputNodeID"].asString();
-
-	//// Here I am restoring the output data function.
-	//// Because the function is not serializable, I have to set it manually.
-	//for (size_t i = 0; i < Output.size(); i++)
-	//{
-	//	if (Output[i] == nullptr)
-	//		return false;
-
-	//	Output[i]->SetFunctionToOutputData(CreateCrossAreaDataGetter(static_cast<int>(i)));
-	//}
 
 	return true;
 }

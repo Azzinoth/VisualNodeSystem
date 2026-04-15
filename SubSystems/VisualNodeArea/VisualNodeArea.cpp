@@ -103,7 +103,7 @@ void NodeArea::Clear()
 	for (int i = 0; i < static_cast<int>(Nodes.size()); i++)
 	{
 		PropagateNodeEventsCallbacks(Nodes[i], DESTROYED);
-		Nodes[i]->bCouldBeDestroyed = true;
+		Nodes[i]->bCouldBeDestroyedByUser = true;
 		Delete(Nodes[i]);
 		i--;
 	}
@@ -166,7 +166,7 @@ bool NodeArea::SaveNodesToFile(std::string FilePath, std::vector<Node*> Nodes)
 	if (Nodes.empty())
 		return false;
 
-	const NodeArea* NewNodeArea = NodeArea::CreateNodeArea(Nodes, std::vector<GroupComment*>());
+	const NodeArea* NewNodeArea = NODE_SYSTEM.CreateNodeArea(Nodes, std::vector<GroupComment*>());
 	const std::string JsonFile = NewNodeArea->ToJson();
 	std::ofstream SaveFile;
 	SaveFile.open(FilePath);
@@ -175,131 +175,9 @@ bool NodeArea::SaveNodesToFile(std::string FilePath, std::vector<Node*> Nodes)
 
 	SaveFile << JsonFile;
 	SaveFile.close();
-	delete NewNodeArea;
+	NODE_SYSTEM.DeleteNodeArea(NewNodeArea);
 
 	return SaveFile.good();
-}
-
-bool NodeArea::IsAlreadyConnected(NodeSocket* FirstSocket, NodeSocket* SecondSocket, const std::vector<Connection*>& Connections)
-{
-	for (size_t i = 0; i < Connections.size(); i++)
-	{
-		// If the node is connected to a node that is not in this list, just ignore.
-		if (Connections[i]->In == FirstSocket && Connections[i]->Out == SecondSocket)
-			return true;
-	}
-
-	return false;
-}
-
-void NodeArea::ProcessConnections(const std::vector<NodeSocket*>& Sockets,
-										std::unordered_map<NodeSocket*, NodeSocket*>& OldToNewSocket,
-										NodeArea* TargetArea, size_t NodeShift, const std::vector<Node*>& SourceNodes)
-{
-	NodeArea* SourceArea = SourceNodes[0]->GetParentArea();
-
-	for (size_t i = 0; i < Sockets.size(); i++)
-	{
-		NodeSocket* CurrentSocket = Sockets[i];
-		for (const auto& ConnectedSocket : CurrentSocket->ConnectedSockets)
-		{
-			if (Node::IsNodeWithIDInList(ConnectedSocket->GetParent()->GetID(), SourceNodes))
-			{
-				// Check if we have already established this connection.
-				if (!IsAlreadyConnected(OldToNewSocket[CurrentSocket], OldToNewSocket[ConnectedSocket], TargetArea->Connections))
-				{
-					std::unordered_map<RerouteNode*, RerouteNode*> OldToNewRerouteNode;
-					// Get connection info from old node area.
-					Connection* OldConnection = SourceArea->GetConnection(CurrentSocket, ConnectedSocket);
-
-					if (!TargetArea->TryToConnect(OldToNewSocket[CurrentSocket]->GetParent(), OldToNewSocket[CurrentSocket]->GetID(), OldToNewSocket[ConnectedSocket]->GetParent(), OldToNewSocket[ConnectedSocket]->GetID()))
-						continue;
-
-					Connection* NewConnection = TargetArea->Connections.back();
-					// First pass to fill OldToNewRerouteNode map and other information that does not depend on OldToNewRerouteNode map.
-					for (size_t j = 0; j < OldConnection->RerouteNodes.size(); j++)
-					{
-						RerouteNode* OldReroute = OldConnection->RerouteNodes[j];
-						RerouteNode* NewReroute = new RerouteNode();
-						NewReroute->ID = NODE_CORE.GetUniqueHexID();
-						NewReroute->Parent = NewConnection;
-						NewReroute->Position = OldReroute->Position;
-
-						if (OldReroute->BeginSocket != nullptr)
-							NewReroute->BeginSocket = OldToNewSocket[OldReroute->BeginSocket];
-						if (OldReroute->EndSocket != nullptr)
-							NewReroute->EndSocket = OldToNewSocket[OldReroute->EndSocket];
-
-						// Associate old to new
-						OldToNewRerouteNode[OldConnection->RerouteNodes[j]] = NewReroute;
-
-						NewConnection->RerouteNodes.push_back(NewReroute);
-					}
-
-					// Second pass to fill all other info.
-					for (size_t j = 0; j < OldConnection->RerouteNodes.size(); j++)
-					{
-						RerouteNode* OldReroute = OldConnection->RerouteNodes[j];
-
-						if (OldReroute->BeginReroute != nullptr)
-							OldToNewRerouteNode[OldReroute]->BeginReroute = OldToNewRerouteNode[OldReroute->BeginReroute];
-						if (OldReroute->EndReroute != nullptr)
-							OldToNewRerouteNode[OldReroute]->EndReroute = OldToNewRerouteNode[OldReroute->EndReroute];
-					}
-				}
-			}
-		}
-	}
-}
-
-void NodeArea::CopyNodesInternal(const std::vector<Node*>& SourceNodes, NodeArea* TargetArea, const size_t NodeShift)
-{
-	// Copy all nodes to new node area.
-	std::unordered_map<Node*, Node*> OldToNewNode;
-	std::unordered_map<NodeSocket*, NodeSocket*> OldToNewSocket;
-	for (size_t i = 0; i < SourceNodes.size(); i++)
-	{
-		Node* CopyOfNode = NODE_FACTORY.CopyNode(SourceNodes[i]->GetType(), *SourceNodes[i]);
-
-		if (CopyOfNode == nullptr)
-			CopyOfNode = new Node(*SourceNodes[i]);
-		CopyOfNode->ParentArea = TargetArea;
-
-		TargetArea->AddNode(CopyOfNode);
-
-		// Associate old to new
-		OldToNewNode[SourceNodes[i]] = CopyOfNode;
-
-		for (size_t j = 0; j < SourceNodes[i]->Input.size(); j++)
-		{
-			OldToNewSocket[SourceNodes[i]->Input[j]] = CopyOfNode->Input[j];
-		}
-
-		for (size_t j = 0; j < SourceNodes[i]->Output.size(); j++)
-		{
-			OldToNewSocket[SourceNodes[i]->Output[j]] = CopyOfNode->Output[j];
-		}
-	}
-
-	// Recreate all connections.
-	for (size_t i = 0; i < SourceNodes.size(); i++)
-	{
-		ProcessConnections(SourceNodes[i]->Output, OldToNewSocket, TargetArea, NodeShift + i, SourceNodes);
-	}
-}
-
-NodeArea* NodeArea::CreateNodeArea(const std::vector<Node*> Nodes, const std::vector<GroupComment*> GroupComments)
-{
-	NodeArea* NewArea = new NodeArea();
-	CopyNodesInternal(Nodes, NewArea);
-
-	for (size_t i = 0; i < GroupComments.size(); i++)
-	{
-		GroupComment* CopyOfGroupComment = new GroupComment(*GroupComments[i]);
-		NewArea->AddGroupComment(CopyOfGroupComment);
-	}
-
-	return NewArea;
 }
 
 std::string NodeArea::ToJson() const
@@ -389,18 +267,6 @@ std::string NodeArea::ToJson() const
 	return JsonText;
 }
 
-void NodeArea::CopyNodesTo(NodeArea* SourceNodeArea, NodeArea* TargetNodeArea)
-{
-	const size_t NodeShift = TargetNodeArea->Nodes.size();
-	CopyNodesInternal(SourceNodeArea->Nodes, TargetNodeArea, NodeShift);
-
-	for (size_t i = 0; i < SourceNodeArea->GroupComments.size(); i++)
-	{
-		GroupComment* CopyOfGroupComment = new GroupComment(*SourceNodeArea->GroupComments[i]);
-		TargetNodeArea->AddGroupComment(CopyOfGroupComment);
-	}
-}
-
 std::pair<int, int> NodeArea::FindOutOfOrderConnectionPair(Json::Value& Root, std::vector<Json::String>& ConnectionList, std::unordered_map<std::string, Node*>& LoadedNodes)
 {
 	for (size_t i = 0; i < ConnectionList.size(); i++)
@@ -434,6 +300,8 @@ std::pair<int, int> NodeArea::FindOutOfOrderConnectionPair(Json::Value& Root, st
 
 bool NodeArea::LoadFromJson(std::string JsonText)
 {
+	Clear();
+
 	if (JsonText.find("{") == std::string::npos || JsonText.find("}") == std::string::npos || JsonText.find(":") == std::string::npos)
 		return false;
 

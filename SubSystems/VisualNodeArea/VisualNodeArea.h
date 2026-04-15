@@ -158,9 +158,6 @@ namespace VisNodeSys
 		std::string GetName() const;
 		void SetName(std::string NewValue);
 
-		static NodeArea* CreateNodeArea(std::vector<Node*> Nodes, const std::vector<GroupComment*> GroupComments);
-		static void CopyNodesTo(NodeArea* SourceNodeArea, NodeArea* TargetNodeArea);
-
 		std::string ToJson() const;
 		bool SaveToFile(std::string FilePath) const;
 		bool LoadFromJson(std::string JsonText);
@@ -242,7 +239,7 @@ namespace VisNodeSys
 		GroupComment* GetGroupCommentByID(std::string GroupCommentID) const;
 		std::vector<GroupComment*> GetGroupCommentsByName(std::string GroupCommentName) const;
 
-		void AddGroupComment(GroupComment* NewGroupComment);
+		bool AddGroupComment(GroupComment* NewGroupComment);
 		bool Delete(GroupComment* GroupComment);
 		size_t GetGroupCommentCount() const;
 
@@ -384,11 +381,9 @@ namespace VisNodeSys
 		Connection* GetConnection(const NodeSocket* FirstSocket, const NodeSocket* SecondSocket) const;
 		void Delete(Connection* Connection);
 
-		static bool IsAlreadyConnected(NodeSocket* FirstSocket, NodeSocket* SecondSocket, const std::vector<Connection*>& Connections);
-		static void ProcessConnections(const std::vector<NodeSocket*>& Sockets,
-									   std::unordered_map<NodeSocket*, NodeSocket*>& OldToNewSocket,
-									   NodeArea* TargetArea, size_t NodeShift, const std::vector<Node*>& SourceNodes);
-		static void CopyNodesInternal(const std::vector<Node*>& SourceNodes, NodeArea* TargetArea, const size_t NodeShift = 0);
+		bool IsThisAreaResponsibleFor(const Node* OutNode, const Node* InNode) const;
+		bool ValidateSocketPair(const Node* OutNode, const std::string& OutSocketID, const Node* InNode, const std::string& InSocketID) const;
+
 		static bool IsEmptyOrFilledByNulls(const std::vector<Node*> Vector);
 
 		void InputUpdate();

@@ -6,6 +6,7 @@ namespace VisNodeSys
 {
 	class VISUAL_NODE_SYSTEM_API SubAreaInputNode : public SocketMirrorNode
 	{
+		friend class SubAreaNode;
 		friend class NodeCore;
 		friend class NodeArea;
 		friend class NodeSystem;

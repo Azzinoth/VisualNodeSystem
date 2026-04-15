@@ -33,6 +33,12 @@ namespace VisNodeSys
 		std::vector<NodeArea*> Areas;
 		std::unordered_map<std::string, NodeAreaLinkRecord> NodeAreaLinkRecords;
 
+		bool IsAlreadyConnected(NodeSocket* FirstSocket, NodeSocket* SecondSocket, const std::vector<Connection*>& Connections);
+		void ProcessConnections(const std::vector<NodeSocket*>& Sockets,
+								std::unordered_map<NodeSocket*, NodeSocket*>& OldToNewSocket,
+								NodeArea* TargetArea, size_t NodeShift, const std::vector<Node*>& SourceNodes);
+		void CopyNodesInternal(const std::vector<Node*>& SourceNodes, NodeArea* TargetArea, const size_t NodeShift = 0);
+
 		LinkNode* CreateLinkNodeInternal(bool bIsInputNode);
 		NodeAreaLinkRecord* GetLinkDataByNodeID(const std::string& NodeID);
 		std::vector<NodeAreaLinkRecord*> GetLinkDataByAreaID(const std::string& AreaID);
@@ -74,10 +80,12 @@ namespace VisNodeSys
 		std::string GetFullVersion();
 
 		NodeArea* CreateNodeArea();
+		NodeArea* CreateNodeArea(const std::vector<Node*> Nodes, const std::vector<GroupComment*> GroupComments);
 		NodeArea* GetNodeAreaByID(const std::string& NodeAreaID) const;
 		std::vector<NodeArea*> GetNodeAreasByName(const std::string& Name) const;
-		void DeleteNodeArea(const NodeArea* NodeArea);
+		void DeleteNodeArea(const NodeArea* NodeAreaToDelete);
 		void DeleteNodeAreaByID(const std::string& NodeAreaID);
+		void CopyNodesTo(NodeArea* SourceNodeArea, NodeArea* TargetNodeArea);
 
 		size_t GetNodeAreaCount() const;
 		size_t GetTotalNodeCount(std::vector<std::string> AreaIDFilter = {}) const;

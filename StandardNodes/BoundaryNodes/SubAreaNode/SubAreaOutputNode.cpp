@@ -21,7 +21,8 @@ bool SubAreaOutputNode::bIsRegistered = []()
 SubAreaOutputNode::SubAreaOutputNode()
 {
 	Type = "SubAreaOutputNode";
-	bCouldBeDestroyed = false;
+	bCouldBeDestroyedByUser = false;
+	bCouldBeCopiedByUser = false;
 
 	SetStyle(DEFAULT);
 	SetRenderTitleBar(false);
@@ -44,7 +45,7 @@ SubAreaOutputNode::SubAreaOutputNode()
 SubAreaOutputNode::SubAreaOutputNode(const SubAreaOutputNode& Other) : VisNodeSys::SocketMirrorNode(Other)
 {
 	Type = "SubAreaOutputNode";
-	bCouldBeDestroyed = false;
+	bCouldBeDestroyedByUser = false;
 
 	SetStyle(DEFAULT);
 	SetRenderTitleBar(false);

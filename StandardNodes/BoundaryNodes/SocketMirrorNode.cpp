@@ -27,6 +27,13 @@ SocketMirrorNode::SocketMirrorNode(const SocketMirrorNode& Other) : Node(Other)
 
 	bHaveInput = Other.bHaveInput;
 	bHaveOutput = Other.bHaveOutput;
+
+	// Output data function should be updated to mirror the new node's sockets, not the original's sockets.
+	if (bHaveOutput)
+	{
+		for (size_t i = 0; i < Output.size(); i++)
+			Output[i]->SetFunctionToOutputData(CreateCrossAreaDataGetter(static_cast<int>(i)));
+	}
 }
 
 std::function<void* ()> SocketMirrorNode::CreateCrossAreaDataGetter(int SocketIndex)

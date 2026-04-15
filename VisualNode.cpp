@@ -499,12 +499,12 @@ void Node::SetIsHovered(const bool bNewValue)
 
 bool Node::CouldBeMoved() const
 {
-	return bCouldBeMoved;
+	return bCouldBeMovedByUser;
 }
 
 void Node::SetCouldBeMoved(bool bNewValue)
 {
-	bCouldBeMoved = bNewValue;
+	bCouldBeMovedByUser = bNewValue;
 }
 
 NodeArea* Node::GetParentArea() const
@@ -514,7 +514,7 @@ NodeArea* Node::GetParentArea() const
 
 bool Node::CouldBeDestroyed() const
 {
-	return bCouldBeDestroyed;
+	return bCouldBeDestroyedByUser;
 }
 
 bool Node::IsNodeWithIDInList(const std::string ID, const std::vector<Node*> List)
