@@ -1026,8 +1026,8 @@ TEST(SubAreaNodeTests, SaveLoad_RestoresInputOutputNodeRelationship)
 	EXPECT_EQ(ReloadedOutputNode->GetOwnerSubAreaNode(), ReloadedSubArea);
 
 	// GetParentArea on input/output nodes should return the parent area.
-	EXPECT_EQ(ReloadedInputNode->GetParentArea(), ReloadedParent);
-	EXPECT_EQ(ReloadedOutputNode->GetParentArea(), ReloadedParent);
+	EXPECT_EQ(ReloadedInputNode->GetOwningParentArea(), ReloadedParent);
+	EXPECT_EQ(ReloadedOutputNode->GetOwningParentArea(), ReloadedParent);
 
 	// Parent-child relationship should be restored.
 	NodeArea* ReloadedOwnedArea = ReloadedSubArea->GetOwnedArea();
