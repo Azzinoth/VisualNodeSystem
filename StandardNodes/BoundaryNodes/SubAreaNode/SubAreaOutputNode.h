@@ -13,6 +13,7 @@ namespace VisNodeSys
 
 		static bool bIsRegistered;
 
+		void Init();
 		SubAreaOutputNode();
 		SubAreaOutputNode(const SubAreaOutputNode& Other);
 		~SubAreaOutputNode();
@@ -21,15 +22,19 @@ namespace VisNodeSys
 
 		void SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSocket, NODE_SOCKET_EVENT EventType);
 
+		void SetCorrectSize();
+
 		std::vector<Node*> GetMirrorPartners() const;
 
 	public:
 		Node* GetOwnerSubAreaNode() const;
-		NodeArea* GetParentArea() const;
+		NodeArea* GetOwningParentArea() const;
 
 		Json::Value ToJson();
 		bool FromJson(Json::Value Json);
 
 		void Draw();
+
+		bool IsDangling() const;
 	};
 }

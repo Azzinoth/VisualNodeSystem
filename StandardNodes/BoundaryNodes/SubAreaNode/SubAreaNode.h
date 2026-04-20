@@ -20,12 +20,13 @@ namespace VisNodeSys
 		// deletion of its partner, which would try to delete this node again.
 		bool bIsInProcessOfBeingDestroyed = false;
 
-		std::function<void* ()> CreateCrossAreaDataGetter(int SocketIndex);
-
+		void Init();
 		SubAreaNode();
 		SubAreaNode(NodeArea* OwnedArea);
 		SubAreaNode(const SubAreaNode& Other);
 		~SubAreaNode();
+
+		void SetCorrectSize();
 
 		void SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSocket, NODE_SOCKET_EVENT EventType);
 
@@ -42,5 +43,7 @@ namespace VisNodeSys
 		bool AddSocket(std::vector<std::string> AllowedTypes, std::string Name, NodeSocket::SocketFlow SocketDirection);
 
 		void Draw();
+
+		bool IsDangling() const;
 	};
 }

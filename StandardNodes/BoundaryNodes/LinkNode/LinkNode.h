@@ -21,6 +21,8 @@ namespace VisNodeSys
 		LinkNode(const LinkNode& Other);
 		~LinkNode();
 
+		void SetCorrectSize();
+
 		void SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSocket, NODE_SOCKET_EVENT EventType);
 
 		std::vector<Node*> GetMirrorPartners() const;

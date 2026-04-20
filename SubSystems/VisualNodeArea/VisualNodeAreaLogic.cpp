@@ -59,8 +59,8 @@ void NodeArea::Delete(Connection* Connection)
 
 	for (size_t i = 0; i < Connection->RerouteNodes.size(); i++)
 	{
-		Delete(Connection->RerouteNodes[i]);
-		i--;
+		if (Delete(Connection->RerouteNodes[i]))
+			i--;
 	}
 
 	std::vector<Node*> NodesToNotify;
@@ -95,7 +95,7 @@ void NodeArea::Delete(Connection* Connection)
 		if (Connection->In->ConnectedSockets[i] == Connection->Out)
 		{
 			Connection->In->ConnectedSockets.erase(Connection->In->ConnectedSockets.begin() + i, Connection->In->ConnectedSockets.begin() + i + 1);
-			// TO-DO : Add some variation of disconnected event, like DISCONNECTED_INCOMING
+			// FE_TO_DO : Add some variation of disconnected event, like DISCONNECTED_INCOMING
 			Connection->In->Parent->SocketEvent(Connection->In, Connection->Out, bClearing ? DESTRUCTION : DISCONNECTED);
 			i--;
 		}
@@ -106,7 +106,8 @@ void NodeArea::Delete(Connection* Connection)
 		if (Connection->Out->ConnectedSockets[i] == Connection->In)
 		{
 			Connection->Out->ConnectedSockets.erase(Connection->Out->ConnectedSockets.begin() + i, Connection->Out->ConnectedSockets.begin() + i + 1);
-			// TO-DO : Add some variation of disconnected event, like DISCONNECTED_OUTGOING
+			// FE_TO_DO : Add some variation of disconnected event, like DISCONNECTED_OUTGOING
+			Connection->Out->Parent->SocketEvent(Connection->Out, Connection->In, bClearing ? DESTRUCTION : DISCONNECTED);
 			i--;
 		}
 	}
@@ -209,7 +210,12 @@ bool NodeArea::Delete(const Node* NodeToDelete)
 	if (Index == -1)
 		return false;
 
-	PropagateNodeEventsCallbacks(Nodes[Index], REMOVED);
+	UnSelect(NodeToDelete);
+	PropagateNodeEventsCallbacks(Nodes[Index], DESTROYED);
+	// After propagating the DESTROYED event, the node might be already deleted.
+	Node* CheckNode = GetNodeByID(NodeToDelete->GetID());
+	if (CheckNode == nullptr)
+		return false;
 
 	for (size_t i = 0; i < Nodes[Index]->Input.size(); i++)
 	{
@@ -291,18 +297,24 @@ size_t NodeArea::GetConnectionCount() const
 	return Connections.size();
 }
 
+bool NodeArea::IsThisAreaResponsibleFor(const Node* NodeToCheck) const
+{
+	if (NodeToCheck == nullptr)
+		return false;
+
+	if (NodeToCheck->GetParentArea() != this)
+		return false;
+
+	Node* NodeInArea = GetNodeByID(NodeToCheck->GetID());
+	if (NodeInArea == nullptr)
+		return false;
+
+	return true;
+}
+
 bool NodeArea::IsThisAreaResponsibleFor(const Node* OutNode, const Node* InNode) const
 {
-	if (OutNode == nullptr || InNode == nullptr)
-		return false;
-
-	if (OutNode->GetParentArea() == nullptr || InNode->GetParentArea() == nullptr)
-		return false;
-
-	if (OutNode->GetParentArea() != InNode->GetParentArea())
-		return false;
-
-	if (OutNode->GetParentArea() != this && InNode->GetParentArea() != this)
+	if (!IsThisAreaResponsibleFor(OutNode) || !IsThisAreaResponsibleFor(InNode))
 		return false;
 
 	return true;
@@ -926,7 +938,7 @@ NodeArea* NodeArea::GetParent() const
 
 	std::vector<SubAreaInputNode*> SubAreaInputNodes = GetNodesByType<SubAreaInputNode>();
 	if (!SubAreaInputNodes.empty())
-		Result = SubAreaInputNodes[0]->GetParentArea();
+		Result = SubAreaInputNodes[0]->GetOwningParentArea();
 
 	return Result;
 }
@@ -991,7 +1003,11 @@ std::vector<NodeArea*> NodeArea::GetRecursiveChildren() const
 		Result.push_back(SubAreaNodes[i]->GetOwnedArea());
 		std::vector<NodeArea*> ChildAreas = SubAreaNodes[i]->GetOwnedArea()->GetRecursiveChildren();
 		for (size_t j = 0; j < ChildAreas.size(); j++)
-			Result.push_back(ChildAreas[j]);
+		{
+			// Check if we have already added this area to result to avoid duplicates in case of multiple links between same areas.
+			if (!NODE_SYSTEM.IsInAListOfAreas(ChildAreas[j], Result))
+				Result.push_back(ChildAreas[j]);
+		}
 	}
 
 	return Result;

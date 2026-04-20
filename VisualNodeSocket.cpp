@@ -49,7 +49,7 @@ void NodeSocket::SetName(std::string NewValue)
 	Name = NewValue;
 	SocketMirrorNode* MirrorParent = dynamic_cast<SocketMirrorNode*>(GetParent());
 	if (MirrorParent != nullptr)
-		NODE_SYSTEM.SyncSocketName(GetParent()->GetID(), GetID(), NewValue);
+		NODE_SYSTEM.SyncMirrorNodeSocketName(MirrorParent->GetID(), GetID(), NewValue);
 }
 
 const std::vector<std::string>& NodeSocket::GetAllowedTypes() const
@@ -61,16 +61,6 @@ NodeSocket::SocketFlow NodeSocket::GetFlowDirection() const
 {
 	return Flow;
 }
-
-//bool NodeSocket::IsOutput() const
-//{ 
-//	return bOutput;
-//}
-//
-//bool NodeSocket::IsInput() const
-//{ 
-//	return !bOutput;
-//}
 
 void NodeSocket::SetFunctionToOutputData(std::function<void* ()> NewFunction)
 {
@@ -84,10 +74,19 @@ void* NodeSocket::GetData()
 
 bool NodeSocket::SetAllowedTypes(std::vector<std::string> NewTypes)
 {
-	AllowedTypes = NewTypes;
 	SocketMirrorNode* MirrorParent = dynamic_cast<SocketMirrorNode*>(GetParent());
 	if (MirrorParent != nullptr)
-		NODE_SYSTEM.SyncSocketAllowedTypes(GetParent()->GetID(), GetID(), NewTypes);
+	{
+		if (!AllowedTypes.empty() && AllowedTypes[0] == "EXECUTE" && GetParent() != nullptr && GetParent()->GetSocketIndexByID(GetID()) == 0)
+			return false; // We should never change execution socket types.
+
+		AllowedTypes = NewTypes;
+		NODE_SYSTEM.SyncMirrorNodeSocketAllowedTypes(MirrorParent->GetID(), GetID(), NewTypes);
+	}
+	else
+	{
+		AllowedTypes = NewTypes;
+	}
 
 	return !NODE_SYSTEM.RevalidateSocketConnections(this);
 }

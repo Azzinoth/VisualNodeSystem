@@ -27,7 +27,16 @@ Node::Node(const Node& Other)
 	Name = Other.Name;
 	Type = Other.Type;
 	Style = Other.Style;
-	bShouldBeDestroyed = false;
+	bRenderTitleBar = Other.bRenderTitleBar;
+	TitleBarAvailableWidth = Other.TitleBarAvailableWidth;
+	TitleBarHeight = Other.TitleBarHeight;
+
+	MaxInputLabelWidth = Other.MaxInputLabelWidth;
+	MaxOutputLabelWidth = Other.MaxOutputLabelWidth;
+
+	bCouldBeDestroyedByUser = Other.bCouldBeDestroyedByUser;
+	bCouldBeCopiedByUser = Other.bCouldBeCopiedByUser;
+	bCouldBeMovedByUser = Other.bCouldBeMovedByUser;
 
 	LeftTop = Other.LeftTop;
 	RightBottom = Other.RightBottom;
@@ -44,6 +53,8 @@ Node::Node(const Node& Other)
 	{
 		Output.push_back(new NodeSocket(this, Other.Output[i]->GetAllowedTypes(), Other.Output[i]->GetName(), NodeSocket::SocketFlow::Output, Other.Output[i]->OutputData));
 	}
+
+	bShouldBeDestroyed = false;
 }
 
 Node::~Node()
@@ -63,7 +74,7 @@ Node::~Node()
 	}
 }
 
-std::string Node::GetID()
+std::string Node::GetID() const
 {
 	return ID;
 }
@@ -96,10 +107,10 @@ std::string Node::GetName() const
 	return Name;
 }
 
-void Node::SetName(const std::string NewValue)
+void Node::SetName(std::string NewValue)
 {
-	if (NewValue.size() > NODE_NAME_MAX_LENGTH)
-		return;
+	if (NewValue.length() > NODE_NAME_MAX_LENGTH)
+		NewValue = NewValue.substr(0, NODE_NAME_MAX_LENGTH);
 
 	Name = NewValue;
 }
@@ -127,7 +138,7 @@ bool Node::DeleteSocket(NodeSocket* Socket)
 	if (Socket == nullptr)
 		return false;
 
-	if (Socket->GetParent() != nullptr)
+	if (Socket->GetParent() != nullptr && GetParentArea() != nullptr)
 	{
 		NODE_SYSTEM.DeleteSocket(GetID(), Socket->GetID());
 		return true;
@@ -236,6 +247,16 @@ Json::Value Node::ToJson()
 	Result["Size"]["Y"] = Size.y;
 	Result["Name"] = Name;
 
+	Result["bCouldBeDestroyedByUser"] = bCouldBeDestroyedByUser;
+	Result["bCouldBeCopiedByUser"] = bCouldBeCopiedByUser;
+	Result["bCouldBeMovedByUser"] = bCouldBeMovedByUser;
+	Result["bRenderTitleBar"] = bRenderTitleBar;
+	Result["TitleBarAvailableWidth"] = TitleBarAvailableWidth;
+	Result["TitleBarHeight"] = TitleBarHeight;
+
+	Result["MaxInputLabelWidth"] = MaxInputLabelWidth;
+	Result["MaxOutputLabelWidth"] = MaxOutputLabelWidth;
+
 	for (size_t i = 0; i < Input.size(); i++)
 	{
 		Result["Input"][std::to_string(i)]["ID"] = Input[i]->GetID();
@@ -292,6 +313,24 @@ bool Node::FromJson(Json::Value Json)
 	Size.x = Json["Size"]["X"].asFloat();
 	Size.y = Json["Size"]["Y"].asFloat();
 	Name = Json["Name"].asCString();
+
+	if (Json.isMember("bCouldBeDestroyedByUser") && Json["bCouldBeDestroyedByUser"].isBool())
+		bCouldBeDestroyedByUser = Json["bCouldBeDestroyedByUser"].asBool();
+	if (Json.isMember("bCouldBeCopiedByUser") && Json["bCouldBeCopiedByUser"].isBool())
+		bCouldBeCopiedByUser = Json["bCouldBeCopiedByUser"].asBool();
+	if (Json.isMember("bCouldBeMovedByUser") && Json["bCouldBeMovedByUser"].isBool())
+		bCouldBeMovedByUser = Json["bCouldBeMovedByUser"].asBool();
+	if (Json.isMember("bRenderTitleBar") && Json["bRenderTitleBar"].isBool())
+		bRenderTitleBar = Json["bRenderTitleBar"].asBool();
+	if (Json.isMember("TitleBarAvailableWidth") && Json["TitleBarAvailableWidth"].isNumeric())
+		TitleBarAvailableWidth = Json["TitleBarAvailableWidth"].asFloat();
+	if (Json.isMember("TitleBarHeight") && Json["TitleBarHeight"].isNumeric())
+		TitleBarHeight = Json["TitleBarHeight"].asFloat();
+
+	if (Json.isMember("MaxInputLabelWidth") && Json["MaxInputLabelWidth"].isNumeric())
+		MaxInputLabelWidth = Json["MaxInputLabelWidth"].asFloat();
+	if (Json.isMember("MaxOutputLabelWidth") && Json["MaxOutputLabelWidth"].isNumeric())
+		MaxOutputLabelWidth = Json["MaxOutputLabelWidth"].asFloat();
 
 	const std::vector<Json::String> InputsList = Json["Input"].getMemberNames();
 	for (size_t i = 0; i < Input.size(); i++)
@@ -578,4 +617,44 @@ std::string Node::GetSocketIDByIndex(size_t SocketIndex, NodeSocket::SocketFlow 
 		return "";
 
 	return Socket->GetID();
+}
+
+float Node::GetMaxInputLabelWidth() const
+{
+	return MaxInputLabelWidth;
+}
+
+void Node::SetMaxInputLabelWidth(float NewValue)
+{
+	MaxInputLabelWidth = NewValue;
+}
+
+float Node::GetMaxOutputLabelWidth() const
+{
+	return MaxOutputLabelWidth;
+}
+
+void Node::SetMaxOutputLabelWidth(float NewValue)
+{
+	MaxOutputLabelWidth = NewValue;
+}
+
+float Node::GetTitleBarHeight() const
+{
+	return TitleBarHeight;
+}
+
+void Node::SetTitleBarHeight(float NewValue)
+{
+	TitleBarHeight = NewValue;
+}
+
+float Node::GetTitleBarAvailableWidth() const
+{
+	return TitleBarAvailableWidth;
+}
+
+void Node::SetTitleBarAvailableWidth(float NewValue)
+{
+	TitleBarAvailableWidth = NewValue;
 }

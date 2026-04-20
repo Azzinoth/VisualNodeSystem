@@ -1,5 +1,6 @@
 #include "VisualNodeSystem.h"
 using namespace VisNodeSys;
+#include <unordered_set>
 
 #ifdef VISUAL_NODE_SYSTEM_SHARED
 extern "C" __declspec(dllexport) void* GetNodeSystem()
@@ -693,6 +694,19 @@ void NodeSystem::DeleteNodeArea(const NodeArea* NodeAreaToDelete)
 	if (NodeAreaToDelete == nullptr)
 		return;
 
+	// This area could be owned by a SubAreaNode in another area.
+	// If it is, delete the SubAreaNode that owns this area, which will also delete this area and all its child areas.
+	SubAreaNode* ParentSubAreaNode = FindOwnerSubAreaNode(NodeAreaToDelete->GetID());
+	if (ParentSubAreaNode != nullptr)
+	{
+		NodeArea* ParentArea = ParentSubAreaNode->GetParentArea();
+		if (ParentArea != nullptr)
+		{
+			ParentArea->Delete(ParentSubAreaNode);
+			return;
+		}
+	}
+
 	for (size_t i = 0; i < Areas.size(); i++)
 	{
 		if (Areas[i] == NodeAreaToDelete)
@@ -721,6 +735,9 @@ size_t NodeSystem::GetNodeAreaCount() const
 
 size_t NodeSystem::GetTotalNodeCount(std::vector<std::string> AreaIDFilter) const
 {
+	if (!AreaIDFilter.empty())
+		AreaIDFilter = DeduplicateIDList(AreaIDFilter);
+
 	size_t Result = 0;
 	if (AreaIDFilter.empty())
 	{
@@ -742,6 +759,9 @@ size_t NodeSystem::GetTotalNodeCount(std::vector<std::string> AreaIDFilter) cons
 
 size_t NodeSystem::GetTotalConnectionCount(std::vector<std::string> AreaIDFilter) const
 {
+	if (!AreaIDFilter.empty())
+		AreaIDFilter = DeduplicateIDList(AreaIDFilter);
+
 	size_t Result = 0;
 	if (AreaIDFilter.empty())
 	{
@@ -763,6 +783,9 @@ size_t NodeSystem::GetTotalConnectionCount(std::vector<std::string> AreaIDFilter
 
 size_t NodeSystem::GetGroupCommentCount(std::vector<std::string> AreaIDFilter) const
 {
+	if (!AreaIDFilter.empty())
+		AreaIDFilter = DeduplicateIDList(AreaIDFilter);
+
 	size_t Result = 0;
 	if (AreaIDFilter.empty())
 	{
@@ -784,6 +807,9 @@ size_t NodeSystem::GetGroupCommentCount(std::vector<std::string> AreaIDFilter) c
 
 size_t NodeSystem::GetRerouteConnectionCount(std::vector<std::string> AreaIDFilter) const
 {
+	if (!AreaIDFilter.empty())
+		AreaIDFilter = DeduplicateIDList(AreaIDFilter);
+
 	size_t Result = 0;
 	if (AreaIDFilter.empty())
 	{
@@ -837,10 +863,10 @@ std::unordered_map<std::string, std::vector<Node*>> NodeSystem::GetLastExecutedN
 }
 #endif
 
-void NodeSystem::MoveNodesTo(NodeArea* SourceNodeArea, NodeArea* TargetNodeArea, const bool bSelectNodesAfterMovement)
+bool NodeSystem::MoveNodesTo(NodeArea* SourceNodeArea, NodeArea* TargetNodeArea, const bool bSelectNodesAfterMovement)
 {
-	if (SourceNodeArea == nullptr || TargetNodeArea == nullptr)
-		return;
+	if (SourceNodeArea == nullptr || TargetNodeArea == nullptr || SourceNodeArea == TargetNodeArea)
+		return false;
 
 	for (size_t i = 0; i < SourceNodeArea->Nodes.size(); i++)
 		TargetNodeArea->AddNode(SourceNodeArea->Nodes[i]);
@@ -861,6 +887,8 @@ void NodeSystem::MoveNodesTo(NodeArea* SourceNodeArea, NodeArea* TargetNodeArea,
 		for (size_t i = TargetNodeArea->Nodes.size() - SourceNodeCount; i < TargetNodeArea->Nodes.size(); i++)
 			TargetNodeArea->SelectedNodes.push_back(TargetNodeArea->Nodes[i]);
 	}
+
+	return true;
 }
 
 NodeSystem::NodeAreaLinkRecord* NodeSystem::GetLinkDataByNodeID(const std::string& NodeID)
@@ -1165,6 +1193,12 @@ bool NodeSystem::LoadFromJson(const std::string& JsonText)
 	std::vector<Json::String> NodeAreaListKeys = Root["NodeAreas"].getMemberNames();
 	for (size_t i = 0; i < NodeAreaListKeys.size(); i++)
 	{
+		std::string NodeAreaID = NodeAreaListKeys[i];
+		// We should check if that node was already loaded as a part of SubAreaNode to avoid loading it twice.
+		NodeArea* AlreadyLoadedArea = GetNodeAreaByID(NodeAreaID);
+		if (AlreadyLoadedArea != nullptr)
+			continue;
+
 		NodeArea* NewNodeArea = CreateNodeArea();
 		NewNodeArea->LoadFromJson(Root["NodeAreas"][NodeAreaListKeys[i]].asCString());
 	}
@@ -1215,6 +1249,28 @@ void NodeSystem::Clear()
 	NodeSocket::SocketTypeToColorAssociations.clear();
 }
 
+bool NodeSystem::IsInAListOfAreas(const std::string& AreaID, const std::vector<std::string>& AreaIDList) const
+{
+	for (size_t i = 0; i < AreaIDList.size(); i++)
+	{
+		if (AreaIDList[i] == AreaID)
+			return true;
+	}
+
+	return false;
+}
+
+bool NodeSystem::IsInAListOfAreas(const NodeArea* Area, const std::vector<NodeArea*>& AreaIDList) const
+{
+	for (size_t i = 0; i < AreaIDList.size(); i++)
+	{
+		if (AreaIDList[i] == Area)
+			return true;
+	}
+
+	return false;
+}
+
 std::vector<NodeArea*> NodeSystem::GetImmediateDownstreamAreas(const std::string& AreaID)
 {
 	std::vector<NodeArea*> Result;
@@ -1229,7 +1285,11 @@ std::vector<NodeArea*> NodeSystem::GetImmediateDownstreamAreas(const std::string
 		{
 			NodeArea* DownstreamArea = GetNodeAreaByID(LinkRecords[i]->OutAreaID);
 			if (DownstreamArea != nullptr)
-				Result.push_back(DownstreamArea);
+			{
+				// Check if we have already added this area to result to avoid duplicates in case of multiple links between same areas.
+				if (!IsInAListOfAreas(DownstreamArea, Result))
+					Result.push_back(DownstreamArea);
+			}
 		}
 	}
 
@@ -1280,7 +1340,11 @@ std::vector<NodeArea*> NodeSystem::GetImmediateUpstreamAreas(const std::string& 
 		{
 			NodeArea* UpstreamArea = GetNodeAreaByID(LinkRecords[i]->InAreaID);
 			if (UpstreamArea != nullptr)
-				Result.push_back(UpstreamArea);
+			{
+				// Check if we have already added this area to result to avoid duplicates in case of multiple links between same areas.
+				if (!IsInAListOfAreas(UpstreamArea, Result))
+					Result.push_back(UpstreamArea);
+			}
 		}
 	}
 
@@ -1382,15 +1446,15 @@ bool NodeSystem::TryToFixDanglingLinkNode(LinkNode* LinkNodeToFix, bool bForceRe
 		PartnerNode->PartnerNodeID = LinkNodeToFix->GetID();
 		PartnerNode->LinkedAreaID = LinkNodeToFix->GetParentArea()->GetID();
 
-		Node* InNode = LinkNodeToFix->IsInputNode() ? LinkNodeToFix : PartnerNode;
-		Node* OutNode = LinkNodeToFix->IsInputNode() ? PartnerNode : LinkNodeToFix;
+		LinkNode* InNode = LinkNodeToFix->IsInputNode() ? LinkNodeToFix : PartnerNode;
+		LinkNode* OutNode = LinkNodeToFix->IsInputNode() ? PartnerNode : LinkNodeToFix;
 
 		NodeAreaLinkRecord NewRecord;
 		NewRecord.ID = InNode->GetID() + "_" + OutNode->GetID();
 		NewRecord.InNodeID = InNode->GetID();
 		NewRecord.OutNodeID = OutNode->GetID();
-		NewRecord.InAreaID = LinkNodeToFix->IsInputNode() ? PartnerNodeArea->GetID() : LinkNodeToFix->GetParentArea()->GetID();
-		NewRecord.OutAreaID = LinkNodeToFix->IsInputNode() ? LinkNodeToFix->GetParentArea()->GetID() : PartnerNodeArea->GetID();
+		NewRecord.InAreaID = InNode->GetParentArea()->GetID();
+		NewRecord.OutAreaID = OutNode->GetParentArea()->GetID();
 
 		NodeAreaLinkRecords[NewRecord.ID] = NewRecord;
 
@@ -1484,6 +1548,71 @@ LinkNode* NodeSystem::CreateLinkNodeInternal(bool bIsInputNode)
 	return NewNode;
 }
 
+SocketMirrorNode* NodeSystem::GetAppropriatePartner(SocketMirrorNode* MirrorNode, NodeSocket::SocketFlow CurrentDirection)
+{
+	if (MirrorNode == nullptr)
+		return nullptr;
+
+	bool bBiDirectionalMirror = MirrorNode->bHaveInput && MirrorNode->bHaveOutput;
+	NodeSocket::SocketFlow PartnerSocketDirection = !CurrentDirection;
+
+	std::vector<Node*> MirrorPartners = MirrorNode->GetMirrorPartners();
+	for (Node* Partner : MirrorPartners)
+	{
+		if (Partner == nullptr)
+			continue;
+
+		SocketMirrorNode* PartnerMirrorNode = dynamic_cast<SocketMirrorNode*>(Partner);
+		if (PartnerMirrorNode == nullptr)
+			continue;
+
+		bool bPartnerHasCurrentDirection = (PartnerMirrorNode->bHaveInput && PartnerSocketDirection == NodeSocket::SocketFlow::Input) ||
+										   (PartnerMirrorNode->bHaveOutput && PartnerSocketDirection == NodeSocket::SocketFlow::Output);
+		if (!bPartnerHasCurrentDirection)
+			continue;
+
+		return PartnerMirrorNode;
+	}
+
+	return nullptr;
+}
+
+std::pair<SocketMirrorNode*, NodeSocket*> NodeSystem::GetAppropriatePartnerAndSocket(SocketMirrorNode* MirrorNode, NodeSocket* CurrentNodeSocket)
+{
+	if (MirrorNode == nullptr || CurrentNodeSocket == nullptr)
+		return std::make_pair(nullptr, nullptr);
+
+	bool bBiDirectionalMirror = MirrorNode->bHaveInput && MirrorNode->bHaveOutput;
+	NodeSocket::SocketFlow CurrentNodeSocketDirection = CurrentNodeSocket->GetFlowDirection();
+	NodeSocket::SocketFlow PartnerSocketDirection = !CurrentNodeSocketDirection;
+	size_t SocketIndex = MirrorNode->GetSocketIndexByID(CurrentNodeSocket->GetID());
+
+	std::vector<Node*> MirrorPartners = MirrorNode->GetMirrorPartners();
+	for (Node* Partner : MirrorPartners)
+	{
+		if (Partner == nullptr)
+			continue;
+
+		SocketMirrorNode* PartnerMirrorNode = dynamic_cast<SocketMirrorNode*>(Partner);
+		if (PartnerMirrorNode == nullptr)
+			continue;
+
+		NodeSocket* PartnerNodeSocket = PartnerMirrorNode->GetSocketByIndex(SocketIndex, PartnerSocketDirection);
+		if (PartnerNodeSocket == nullptr)
+			continue;
+
+		// Mirror nodes synchronize deletions with their partner.
+		// The corresponding socket on the partner has the opposite direction,
+		// so skip any socket whose direction is the same.
+		if (PartnerNodeSocket->GetFlowDirection() == CurrentNodeSocketDirection)
+			continue;
+
+		return std::make_pair(PartnerMirrorNode, PartnerNodeSocket);
+	}
+
+	return std::make_pair(nullptr, nullptr);
+}
+
 bool NodeSystem::AddSocketToMirrorNode(const std::string& NodeID, std::vector<std::string> AllowedTypes, std::string Name, NodeSocket::SocketFlow SocketDirection)
 {
 	Node* CurrentNode = GetNodeByID(NodeID);
@@ -1498,28 +1627,17 @@ bool NodeSystem::AddSocketToMirrorNode(const std::string& NodeID, std::vector<st
 		return false;
 
 	bool bBiDirectionalMirror = MirrorNode->bHaveInput && MirrorNode->bHaveOutput;
-	NodeSocket::SocketFlow NeedToAddDirection = !SocketDirection;
-	std::vector<Node*> MirrorPartners = MirrorNode->GetMirrorPartners();
-	for (Node* Partner : MirrorPartners)
+	SocketMirrorNode* PartnerNode = GetAppropriatePartner(MirrorNode, SocketDirection);
+	if (PartnerNode == nullptr)
+		return false;
+
+	if (PartnerNode->SocketIDBeingModified.empty())
 	{
-		if (Partner == nullptr)
-			continue;
-
-		SocketMirrorNode* PartnerMirrorNode = dynamic_cast<SocketMirrorNode*>(Partner);
-		if (PartnerMirrorNode == nullptr)
-			continue;
-
-		if (bBiDirectionalMirror && (PartnerMirrorNode->bHaveInput && NeedToAddDirection == NodeSocket::SocketFlow::Output ||
-								   PartnerMirrorNode->bHaveOutput && NeedToAddDirection == NodeSocket::SocketFlow::Input))
-			continue;
-
-		if (PartnerMirrorNode->SocketIDBeingModified.empty())
+		NodeSocket* PartnerNodeSocket = new NodeSocket(PartnerNode, AllowedTypes, Name, !SocketDirection);
+		if (!PartnerNode->AddSocket(PartnerNodeSocket))
 		{
-			NodeSocket::SocketFlow PartnerFlow = bBiDirectionalMirror ? NeedToAddDirection :
-																		(PartnerMirrorNode->bHaveOutput ? NodeSocket::SocketFlow::Output : NodeSocket::SocketFlow::Input);
-
-			NodeSocket* PartnerNodeSocket = new NodeSocket(PartnerMirrorNode, AllowedTypes, Name, PartnerFlow);
-			PartnerMirrorNode->AddSocket(PartnerNodeSocket);
+			delete PartnerNodeSocket;
+			return false;
 		}
 	}
 
@@ -1590,31 +1708,12 @@ bool NodeSystem::DeleteSocketFromMirrorNode(const std::string& NodeID, std::stri
 	if (SocketIndex == 0)
 		return false; // We should never delete execution socket.
 
-	std::vector<Node*> MirrorPartners = MirrorNode->GetMirrorPartners();
-	for (Node* Partner : MirrorPartners)
-	{
-		if (Partner == nullptr)
-			continue;
+	std::pair<SocketMirrorNode*, NodeSocket*> PartnerData = GetAppropriatePartnerAndSocket(MirrorNode, CurrentSocket);
+	if (PartnerData.first == nullptr || PartnerData.second == nullptr)
+		return false;
 
-		SocketMirrorNode* PartnerMirrorNode = dynamic_cast<SocketMirrorNode*>(Partner);
-		if (PartnerMirrorNode == nullptr)
-			continue;
-
-		NodeSocket* PartnerSocket = Partner->GetSocketByIndex(SocketIndex, PartnerMirrorNode->bHaveOutput ? NodeSocket::SocketFlow::Output : NodeSocket::SocketFlow::Input);
-		if (PartnerSocket == nullptr)
-			continue;
-
-		// Mirror nodes synchronize deletions with their partner.
-		// The corresponding socket on the partner has the opposite direction,
-		// so skip any socket whose direction is the same.
-		if (CurrentSocket->GetFlowDirection() == PartnerSocket->GetFlowDirection())
-			continue;
-
-		if (PartnerMirrorNode->SocketIDBeingModified != PartnerSocket->GetID())
-			PartnerMirrorNode->DeleteSocket(PartnerSocket->GetID());
-
-		break;
-	}
+	if (PartnerData.first->SocketIDBeingModified != PartnerData.second->GetID())
+		PartnerData.first->DeleteSocket(PartnerData.second->GetID());
 
 	return true;
 }
@@ -1657,7 +1756,7 @@ bool NodeSystem::RevalidateSocketConnections(NodeSocket* Socket)
 	return bAnyDisconnected;
 }
 
-bool NodeSystem::SyncSocketAllowedTypes(const std::string& NodeID, std::string SocketID, std::vector<std::string> NewTypes)
+bool NodeSystem::SyncMirrorNodeSocketAllowedTypes(const std::string& NodeID, std::string SocketID, std::vector<std::string> NewTypes)
 {
 	Node* CurrentNode = GetNodeByID(NodeID);
 	if (CurrentNode == nullptr)
@@ -1672,30 +1771,20 @@ bool NodeSystem::SyncSocketAllowedTypes(const std::string& NodeID, std::string S
 
 	NodeSocket* CurrentSocket = CurrentNode->GetSocketByID(SocketID);
 	size_t SocketIndex = CurrentNode->GetSocketIndexByID(SocketID);
-	std::vector<Node*> MirrorPartners = MirrorNode->GetMirrorPartners();
-	for (Node* Partner : MirrorPartners)
-	{
-		if (Partner == nullptr)
-			continue;
+	if (SocketIndex == 0)
+		return false; // We should never change execution socket types.
 
-		SocketMirrorNode* PartnerMirrorNode = dynamic_cast<SocketMirrorNode*>(Partner);
-		if (PartnerMirrorNode == nullptr)
-			continue;
+	std::pair<SocketMirrorNode*, NodeSocket*> PartnerData = GetAppropriatePartnerAndSocket(MirrorNode, CurrentSocket);
+	if (PartnerData.first == nullptr || PartnerData.second == nullptr)
+		return false;
 
-		NodeSocket* PartnerSocket = Partner->GetSocketByIndex(SocketIndex, PartnerMirrorNode->bHaveOutput ? NodeSocket::SocketFlow::Output : NodeSocket::SocketFlow::Input);
-		if (PartnerSocket == nullptr)
-			continue;
-
-		if (PartnerSocket->GetAllowedTypes() != NewTypes)
-			PartnerSocket->SetAllowedTypes(NewTypes);
-
-		break;
-	}
+	if (PartnerData.second->GetAllowedTypes() != NewTypes)
+		PartnerData.second->SetAllowedTypes(NewTypes);
 
 	return true;
 }
 
-void NodeSystem::SyncSocketName(const std::string& NodeID, std::string SocketID, std::string NewName)
+void NodeSystem::SyncMirrorNodeSocketName(const std::string& NodeID, std::string SocketID, std::string NewName)
 {
 	Node* CurrentNode = GetNodeByID(NodeID);
 	if (CurrentNode == nullptr)
@@ -1708,25 +1797,12 @@ void NodeSystem::SyncSocketName(const std::string& NodeID, std::string SocketID,
 	NodeSocket* CurrentSocket = CurrentNode->GetSocketByID(SocketID);
 	size_t SocketIndex = CurrentNode->GetSocketIndexByID(SocketID);
 
-	std::vector<Node*> MirrorPartners = MirrorNode->GetMirrorPartners();
-	for (Node* Partner : MirrorPartners)
-	{
-		if (Partner == nullptr)
-			continue;
+	std::pair<SocketMirrorNode*, NodeSocket*> PartnerData = GetAppropriatePartnerAndSocket(MirrorNode, CurrentSocket);
+	if (PartnerData.first == nullptr || PartnerData.second == nullptr)
+		return;
 
-		SocketMirrorNode* PartnerMirrorNode = dynamic_cast<SocketMirrorNode*>(Partner);
-		if (PartnerMirrorNode == nullptr)
-			continue;
-
-		NodeSocket* PartnerSocket = Partner->GetSocketByIndex(SocketIndex, PartnerMirrorNode->bHaveOutput ? NodeSocket::SocketFlow::Output : NodeSocket::SocketFlow::Input);
-		if (PartnerSocket == nullptr)
-			continue;
-
-		if (PartnerSocket->GetName() != NewName)
-			PartnerSocket->SetName(NewName);
-
-		break;
-	}
+	if (PartnerData.second->GetName() != NewName)
+		PartnerData.second->SetName(NewName);
 }
 
 SubAreaNode* NodeSystem::CreateSubAreaNode(const std::string& ParentAreaID)
@@ -1743,11 +1819,14 @@ SubAreaNode* NodeSystem::CreateSubAreaNode(const std::string& ParentAreaID)
 #endif
 	ParentArea->AddNode(Result);
 
+	float DistanceFromInOutNodes = 100.0f;
+
 	SubAreaInputNode* InputNode = new SubAreaInputNode();
 #ifdef VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES
 	InputNode->AddSocketInternal({ "EXECUTE" }, "", NodeSocket::SocketFlow::Input);
 #endif
 	InputNode->OwnerSubAreaNodeID = Result->GetID();
+	InputNode->SetPosition(ImVec2(-DistanceFromInOutNodes / 2.0f - InputNode->GetSize().x / 2.0f, 0.0f));
 	OwnedArea->AddNode(InputNode);
 	Result->SubAreaInputNodeID = InputNode->GetID();
 
@@ -1756,8 +1835,32 @@ SubAreaNode* NodeSystem::CreateSubAreaNode(const std::string& ParentAreaID)
 	OutputNode->AddSocketInternal({ "EXECUTE" }, "", NodeSocket::SocketFlow::Output);
 #endif
 	OutputNode->OwnerSubAreaNodeID = Result->GetID();
+	OutputNode->SetPosition(ImVec2(DistanceFromInOutNodes / 2.0f + OutputNode->GetSize().x / 2.0f, 0.0f));
 	OwnedArea->AddNode(OutputNode);
 	Result->SubAreaOutputNodeID = OutputNode->GetID();
 
 	return Result;
+}
+
+SubAreaNode* NodeSystem::FindOwnerSubAreaNode(const std::string& AreaID) const
+{
+	for (size_t i = 0; i < Areas.size(); i++)
+	{
+		for (SubAreaNode* CurrentSubAreaNode : Areas[i]->GetNodesByType<SubAreaNode>())
+		{
+			if (CurrentSubAreaNode->GetOwnedArea() == nullptr)
+				continue;
+
+			if (CurrentSubAreaNode->GetOwnedArea()->GetID() == AreaID)
+				return CurrentSubAreaNode;
+		}
+	}
+
+	return nullptr;
+}
+
+std::vector<std::string> NodeSystem::DeduplicateIDList(const std::vector<std::string>& ListOfIDs) const
+{
+	std::unordered_set<std::string> SeenIDs(ListOfIDs.begin(), ListOfIDs.end());
+	return std::vector<std::string>(SeenIDs.begin(), SeenIDs.end());
 }

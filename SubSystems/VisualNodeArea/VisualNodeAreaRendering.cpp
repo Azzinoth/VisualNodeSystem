@@ -64,9 +64,10 @@ void NodeArea::RenderNode(Node* Node) const
 	{
 		if (Node->GetRenderTitleBar())
 		{
+			ImGui::PushFont(nullptr, GetNodeTitleHeight(Node) * 0.9f);
 			// Drawing caption area.
 			ImVec2 TitleArea = Node->RightBottom;
-			TitleArea.y = Node->LeftTop.y + GetNodeTitleHeight();
+			TitleArea.y = Node->LeftTop.y + GetNodeTitleHeight(Node);
 			const ImU32 NodeTitleBackgroundColor = (HoveredNode == Node || IsSelected(Node)) ? Node->TitleBackgroundColorHovered : Node->TitleBackgroundColor;
 
 			CurrentDrawList->AddRectFilled(Node->LeftTop + ImVec2(1, 1), TitleArea, NodeTitleBackgroundColor, 8.0f * Zoom);
@@ -74,15 +75,20 @@ void NodeArea::RenderNode(Node* Node) const
 
 			std::string NodeNameToRender = Node->GetName();
 			float AvailableWidth = Node->GetSize().x * Zoom;
+			if (Node->GetTitleBarAvailableWidth() != -1)
+				AvailableWidth = std::min(Node->GetTitleBarAvailableWidth() * Zoom, AvailableWidth);
 			NodeNameToRender = NODE_CORE.TruncateText(NodeNameToRender, AvailableWidth);
+			bool bWasTruncated = NodeNameToRender != Node->GetName();
 			ImVec2 TextSize = ImGui::CalcTextSize(NodeNameToRender.c_str());
 
 			ImVec2 TextPosition;
-			TextPosition.x = Node->LeftTop.x + (Node->GetSize().x * Zoom / 2) - TextSize.x / 2;
-			TextPosition.y = Node->LeftTop.y + (GetNodeTitleHeight() / 2) - TextSize.y / 2;
+			TextPosition.x = Node->LeftTop.x + (bWasTruncated ? 4.0f * Zoom : (Node->GetSize().x * Zoom / 2) - TextSize.x / 2);
+			// TextSize.y * 0.08f is small downward shift to optically compensate the fact that text usually appears slightly above its vertical center.
+			TextPosition.y = Node->LeftTop.y + (GetNodeTitleHeight(Node) / 2) - TextSize.y / 2 + TextSize.y * 0.08f;   
 
 			ImGui::SetCursorScreenPos(TextPosition);
 			ImGui::Text("%s", NodeNameToRender.c_str());
+			ImGui::PopFont();
 		}
 	}
 	else if (Node->GetStyle() == CIRCLE)
@@ -114,19 +120,59 @@ void NodeArea::RenderNodeSocket(NodeSocket* Socket) const
 	if (Socket->GetParent()->GetStyle() == DEFAULT)
 	{
 		const bool bIsInput = Socket->GetFlowDirection() == NodeSocket::SocketFlow::Input;
-		// Socket description.
-		const ImVec2 TextSize = ImGui::CalcTextSize(Socket->GetName().c_str());
+		const Node* ParentNode = Socket->GetParent();
 
-		float TextX = SocketPosition.x;
-		TextX += bIsInput ? GetNodeSocketSize() * 2.0f : -GetNodeSocketSize() * 2.0f - TextSize.x;
+		// Find the index of this socket within its own (input or output) vector,
+		// then look up the "opposite" socket on the same row, if any.
+		size_t RowIndex = 0;
+		const std::vector<NodeSocket*>& OwnList = bIsInput ? ParentNode->Input : ParentNode->Output;
+		for (size_t i = 0; i < OwnList.size(); i++)
+		{
+			if (OwnList[i] == Socket)
+			{ 
+				RowIndex = i;
+				break;
+			}
+		}
+		const std::vector<NodeSocket*>& OppositeList = bIsInput ? ParentNode->Output : ParentNode->Input;
+		NodeSocket* OppositeSocket = (RowIndex < OppositeList.size()) ? OppositeList[RowIndex] : nullptr;
 
-		ImGui::SetCursorScreenPos(ImVec2(TextX, SocketPosition.y - TextSize.y / 2.0f));
-		ImGui::Text("%s",Socket->GetName().c_str());
+		// Total horizontal space inside the node, minus the two socket circles and their text-to-socket gaps on both sides.
+		const float NodeInnerWidth = ParentNode->GetSize().x * Zoom;
+		const float SocketMargin = GetNodeSocketSize() * 2.0f;
+		const float InterLabelGap = 6.0f * Zoom;
+
+		float AvailableWidth = NodeInnerWidth - SocketMargin * 4.0f - InterLabelGap;
+		if (OppositeSocket != nullptr)
+		{
+			// Reserve space for the opposite label (untruncated measurement is the fair share).
+			const float OppositeTextWidth = ImGui::CalcTextSize(OppositeSocket->GetName().c_str()).x;
+			// Cap it at half the row so one very long name can not starve the other.
+			const float OppositeBudget = std::min(OppositeTextWidth, AvailableWidth * 0.5f);
+			AvailableWidth -= OppositeBudget;
+		}
+
+		// Apply per node, per side hard cap (local pixels => zoomed pixels).
+		const float UserCap = bIsInput ? ParentNode->GetMaxInputLabelWidth() : ParentNode->GetMaxOutputLabelWidth();
+		if (UserCap > 0.0f)
+			AvailableWidth = std::min(AvailableWidth, UserCap * Zoom);
+
+		if (AvailableWidth < 1.0f)
+			AvailableWidth = 1.0f;
+
+		std::string NameToRender = NODE_CORE.TruncateText(Socket->GetName(), AvailableWidth, bIsInput ? EllipsisPosition::End : EllipsisPosition::Start);
+		const ImVec2 TextSize = ImGui::CalcTextSize(NameToRender.c_str());
+
+		float TextXPosition = SocketPosition.x;
+		TextXPosition += bIsInput ? GetNodeSocketSize() * 2.0f : -GetNodeSocketSize() * 2.0f - TextSize.x;
+
+		ImGui::SetCursorScreenPos(ImVec2(TextXPosition, SocketPosition.y - TextSize.y / 2.0f));
+		ImGui::Text("%s", NameToRender.c_str());
 	}
 
 	ImColor SocketColor = DEFAULT_NODE_SOCKET_COLOR;
 	std::vector<std::string> SocketAllowedTypes = Socket->GetAllowedTypes();
-	// TO-DO: Add support for multiple socket types.
+	// FE_TO_DO: Add support for multiple socket types.
 	if (SocketAllowedTypes.size() == 1)
 	{
 		if (NodeSocket::SocketTypeToColorAssociations.find(SocketAllowedTypes[0]) != NodeSocket::SocketTypeToColorAssociations.end())
@@ -246,36 +292,7 @@ void NodeArea::RenderGrid(ImVec2 CurrentPosition) const
 
 void NodeArea::SelectFontSettings() const
 {
-	if (Zoom < 0.25f)
-	{
-		ImGui::PushFont(NODE_CORE.Fonts[0]);
-		ImGui::SetWindowFontScale(Zoom * 4);
-	}
-	else if (Zoom >= 0.25f && Zoom < 0.5f)
-	{
-		ImGui::PushFont(NODE_CORE.Fonts[1]);
-		ImGui::SetWindowFontScale(Zoom * 2);
-	}
-	else if (Zoom >= 1.0f && Zoom < 1.5f)
-	{
-		ImGui::PushFont(NODE_CORE.Fonts[2]);
-		ImGui::SetWindowFontScale(Zoom);
-	}
-	else if (Zoom >= 1.5f && Zoom < 3.0f)
-	{
-		ImGui::PushFont(NODE_CORE.Fonts[3]);
-		ImGui::SetWindowFontScale(Zoom / 2.0f);
-	}
-	else if (Zoom >= 3.0f)
-	{
-		ImGui::PushFont(NODE_CORE.Fonts[4]);
-		ImGui::SetWindowFontScale(Zoom / 3.0f);
-	}
-	else
-	{
-		ImGui::PushFont(NODE_CORE.Fonts[2]);
-		ImGui::SetWindowFontScale(Zoom);
-	}
+	ImGui::PushFont(NODE_CORE.Fonts[0], 16.0f * Zoom);
 }
 
 void NodeArea::Render()
@@ -615,10 +632,10 @@ ImVec2 NodeArea::SocketToPosition(const NodeSocket* Socket) const
 	{
 		SocketX = bIsInput ? SocketParent->LeftTop.x + GetNodeSocketSize() * 3 : SocketParent->RightBottom.x - GetNodeSocketSize() * 3;
 
-		const float HeightForSockets = SocketParent->GetSize().y * Zoom - (SocketParent->GetRenderTitleBar() ? GetNodeTitleHeight() : 0.0f);
+		const float HeightForSockets = SocketParent->GetSize().y * Zoom - (SocketParent->GetRenderTitleBar() ? GetNodeTitleHeight(SocketParent) : 0.0f);
 		const float SocketSpacing = HeightForSockets / (bIsInput ? SocketParent->Input.size() : SocketParent->Output.size());
 
-		SocketY = (SocketParent->LeftTop.y + (SocketParent->GetRenderTitleBar() ? GetNodeTitleHeight() : 0.0f) + SocketSpacing * (SocketIndex + 1) - SocketSpacing / 2.0f);
+		SocketY = (SocketParent->LeftTop.y + (SocketParent->GetRenderTitleBar() ? GetNodeTitleHeight(SocketParent) : 0.0f) + SocketSpacing * (SocketIndex + 1) - SocketSpacing / 2.0f);
 	}
 	else if (SocketParent->GetStyle() == CIRCLE)
 	{

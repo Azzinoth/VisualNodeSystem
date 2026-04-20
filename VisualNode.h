@@ -63,6 +63,11 @@ namespace VisNodeSys
 
 		NODE_STYLE Style = DEFAULT;
 		bool bRenderTitleBar = true;
+		// -1.0f means no override, use default value based on node style.
+		float MaxInputLabelWidth = -1.0f;
+		float MaxOutputLabelWidth = -1.0f;
+		float TitleBarAvailableWidth = -1.0f;
+		float TitleBarHeight = -1.0f;
 
 		virtual void Draw();
 		virtual bool IsValidAsNewConnection(NodeSocket* OwnSocket, NodeSocket* CandidateSocket);
@@ -79,7 +84,7 @@ namespace VisNodeSys
 		Node(std::string ID = "");
 		Node(const Node& Other);
 
-		std::string GetID();
+		std::string GetID() const;
 
 		ImVec2 GetPosition() const;
 		void SetPosition(ImVec2 NewValue);
@@ -95,6 +100,21 @@ namespace VisNodeSys
 
 		std::string GetType() const;
 		
+		NODE_STYLE GetStyle() const;
+		void SetStyle(NODE_STYLE NewValue);
+
+		float GetMaxInputLabelWidth() const;
+		void  SetMaxInputLabelWidth(float NewValue);
+
+		float GetMaxOutputLabelWidth() const;
+		void  SetMaxOutputLabelWidth(float NewValue);
+
+		float GetTitleBarHeight() const;
+		void SetTitleBarHeight(float NewValue);
+
+		float GetTitleBarAvailableWidth() const;
+		void SetTitleBarAvailableWidth(float NewValue);
+
 		bool GetRenderTitleBar() const;
 		void SetRenderTitleBar(bool bNewValue);
 
@@ -118,9 +138,6 @@ namespace VisNodeSys
 		size_t GetOutputSocketCount() const;
 		std::vector<std::pair<size_t, std::vector<std::string>>> GetOutputSocketTypes() const;
 		std::vector<Node*> GetNodesConnectedToOutput() const;
-
-		NODE_STYLE GetStyle() const;
-		void SetStyle(NODE_STYLE NewValue);
 
 		bool IsHovered() const;
 

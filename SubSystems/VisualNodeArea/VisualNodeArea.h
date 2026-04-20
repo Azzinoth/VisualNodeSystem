@@ -185,6 +185,9 @@ namespace VisNodeSys
 
 		bool AddSelected(Node* Node);
 		bool IsSelected(const Node* Node) const;
+		bool UnSelect(const Node* Node);
+		void UnSelectAllNodes();
+
 		bool AddSelected(Connection* Connection);
 		bool IsSelected(const Connection* Connection) const;
 		bool UnSelect(const Connection* Connection);
@@ -317,7 +320,14 @@ namespace VisNodeSys
 		float MIN_ZOOM_LEVEL = 0.2f;  // Min zoom 20%
 		float GetNodeSocketSize() const { return NODE_SOCKET_SIZE * Zoom; }
 		float GetRerouteNodeSize() const { return NODE_SOCKET_SIZE * Zoom * 1.5f; }
-		float GetNodeTitleHeight() const { return NODE_TITLE_HEIGHT * Zoom; }
+		float GetNodeTitleHeight(Node* NodeToRender) const
+		{
+			if (NodeToRender != nullptr && NodeToRender->TitleBarHeight > 0)
+				return NodeToRender->TitleBarHeight * Zoom;
+
+			return NODE_TITLE_HEIGHT * Zoom;
+		}
+
 		ImVec2 GetMouseDragDelta() const { return ImGui::GetMouseDragDelta(0) * Zoom; }
 		ImVec2 GetMouseDelta() const { return ImGui::GetIO().MouseDelta / Zoom; }
 		float GetConnectionThickness() const { return 3.0f * Zoom; }
@@ -381,6 +391,7 @@ namespace VisNodeSys
 		Connection* GetConnection(const NodeSocket* FirstSocket, const NodeSocket* SecondSocket) const;
 		void Delete(Connection* Connection);
 
+		bool IsThisAreaResponsibleFor(const Node* NodeToCheck) const;
 		bool IsThisAreaResponsibleFor(const Node* OutNode, const Node* InNode) const;
 		bool ValidateSocketPair(const Node* OutNode, const std::string& OutSocketID, const Node* InNode, const std::string& InSocketID) const;
 

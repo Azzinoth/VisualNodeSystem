@@ -288,7 +288,7 @@ void NodeArea::LeftMouseClickNodesUpdate()
 		}
 		else if (!bCtrlPressed)
 		{
-			SelectedNodes.clear();
+			UnSelectAllNodes();
 			return;
 		}
 	}
@@ -400,7 +400,7 @@ void NodeArea::LeftMouseClickGroupCommentsUpdate()
 void NodeArea::RightMouseClick()
 {
 	if (HoveredNode == nullptr)
-		SelectedNodes.clear();
+		UnSelectAllNodes();
 	
 	if (HoveredNode == nullptr || !GetSelected().empty())
 		bOpenMainContextMenu = true;
@@ -449,7 +449,7 @@ void NodeArea::RightMouseClickNodesUpdate()
 			if (AddSelected(HoveredNode))
 			{
 				// But if it was not selected before deselect all other nodes.
-				SelectedNodes.clear();
+				UnSelectAllNodes();
 				AddSelected(HoveredNode);
 			}
 		}
@@ -586,7 +586,7 @@ void NodeArea::MouseDraggingNodesUpdate()
 {
 	if (IsMouseRegionSelectionActive())
 	{
-		SelectedNodes.clear();
+		UnSelectAllNodes();
 		const ImVec2 RegionSize = MouseSelectRegionMax - MouseSelectRegionMin;
 
 		for (size_t i = 0; i < Nodes.size(); i++)
@@ -756,9 +756,9 @@ void NodeArea::KeyboardInputUpdate()
 	{
 		for (size_t i = 0; i < SelectedNodes.size(); i++)
 		{
-			Delete(SelectedNodes[i]);
+			if (Delete(SelectedNodes[i]))
+				i--;
 		}
-		SelectedNodes.clear();
 
 		for (size_t i = 0; i < SelectedConnections.size(); i++)
 		{
@@ -768,14 +768,14 @@ void NodeArea::KeyboardInputUpdate()
 
 		for (size_t i = 0; i < SelectedRerouteNodes.size(); i++)
 		{
-			Delete(SelectedRerouteNodes[i]);
-			i--;
+			if (Delete(SelectedRerouteNodes[i]))
+				i--;
 		}
 
 		for (size_t i = 0; i < SelectedGroupComments.size(); i++)
 		{
-			Delete(SelectedGroupComments[i]);
-			i--;
+			if (Delete(SelectedGroupComments[i]))
+				i--;
 		}
 	}
 
@@ -896,6 +896,9 @@ bool NodeArea::AddSelected(Node* Node)
 	if (Node == nullptr)
 		return false;
 
+	if (!IsThisAreaResponsibleFor(Node))
+		return false;
+
 	if (IsSelected(Node))
 		return false;
 
@@ -915,6 +918,28 @@ bool NodeArea::IsSelected(const Node* Node) const
 	}
 
 	return false;
+}
+
+bool NodeArea::UnSelect(const Node* Node)
+{
+	if (Node == nullptr)
+		return false;
+
+	for (size_t i = 0; i < SelectedNodes.size(); i++)
+	{
+		if (SelectedNodes[i] == Node)
+		{
+			SelectedNodes.erase(SelectedNodes.begin() + i);
+			return true;
+		}
+	}
+
+	return false;
+}
+
+void NodeArea::UnSelectAllNodes()
+{
+	SelectedNodes.clear();
 }
 
 bool NodeArea::AddSelected(Connection* Connection)
@@ -975,6 +1000,9 @@ void NodeArea::UnSelectAllConnections()
 bool NodeArea::AddSelected(GroupComment* GroupComment)
 {
 	if (GroupComment == nullptr)
+		return false;
+
+	if (GroupComment->GetParentArea() != this)
 		return false;
 
 	if (IsSelected(GroupComment))
@@ -1091,8 +1119,8 @@ void NodeArea::UnSelectAllRerouteNodes()
 
 void NodeArea::UnSelectAll()
 {
-	SelectedNodes.clear();
-	SelectedConnections.clear();
+	UnSelectAllNodes();
+	UnSelectAllConnections();
 	UnSelectAllRerouteNodes();
 	UnSelectAllGroupComments();
 }

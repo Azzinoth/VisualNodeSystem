@@ -77,7 +77,7 @@ void BoolVec3VariableNode::Draw()
 
 	float Zoom = ParentArea->GetZoomFactor();
 
-	bool VectorData[3] = { Data.x, Data.y };
+	bool VectorData[3] = { Data.x, Data.y, Data.z };
 	int VectorDimensions = 3;
 	float ChekboxWidth = 18.0f * Zoom;
 	float Padding = 30.0f * Zoom;

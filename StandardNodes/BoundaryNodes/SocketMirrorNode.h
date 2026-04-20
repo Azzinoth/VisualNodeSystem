@@ -37,6 +37,7 @@ namespace VisNodeSys
         static ImTextureID TrashBinIconTextureID;
         static ImTextureID RenameIconTextureID;
         static ImTextureID ChangeAllowedTypesIconTextureID;
+		static ImTextureID SubAreaIconTextureID;
 
         static bool bSettingAllowedTypes;
         static bool bShouldOpenEditWindow;
@@ -46,6 +47,7 @@ namespace VisNodeSys
         static void OpenEditWindow(NodeSocket* Socket, bool bForAllowedTypes);
         static void RenderEditWindow();
 
+        virtual void SetCorrectSize();
         void Draw();
     public:
         bool AddSocket(NodeSocket* Socket);

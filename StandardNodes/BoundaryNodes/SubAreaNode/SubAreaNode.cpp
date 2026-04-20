@@ -18,11 +18,10 @@ bool SubAreaNode::bIsRegistered = []()
 	return true;
 }();
 
-SubAreaNode::SubAreaNode()
+void SubAreaNode::Init()
 {
 	Type = "SubAreaNode";
 	SetStyle(DEFAULT);
-	SetRenderTitleBar(false);
 	SetName("SubArea");
 	
 	bHaveInput = true;
@@ -32,49 +31,33 @@ SubAreaNode::SubAreaNode()
 	int G = static_cast<int>(46.0f * 1.2f);
 	int B = static_cast<int>(44.0f * 1.2f);
 	TitleBackgroundColor = ImColor(R, G, B);
-	TitleBackgroundColorHovered = ImColor(static_cast<int>(R * 1.1f), static_cast<int>(G * 1.1f), static_cast<int>(B * 1.1f));
+	TitleBackgroundColorHovered = ImColor(static_cast<int>(R * 0.75f), static_cast<int>(G * 1.1f), static_cast<int>(B * 1.1f));
 
-	SetSize(ImVec2(300.0f, static_cast<float>(NODE_HEIGHT_PER_SOCKET * 0.75f * std::max(size_t(2), std::max(Input.size(), Output.size())))));
+	SetTitleBarHeight(54.0f);
+	SetCorrectSize();
+	SetTitleBarAvailableWidth(GetSize().x - 48.0f - 8.0f);
+}
+
+void SubAreaNode::SetCorrectSize()
+{
+	SetSize(ImVec2(400.0f, static_cast<float>(NODE_HEIGHT_PER_SOCKET * 1.75f * std::max(size_t(2), std::max(Input.size(), Output.size())))));
+}
+
+SubAreaNode::SubAreaNode()
+{
+	Init();
 }
 
 SubAreaNode::SubAreaNode(NodeArea* OwnedArea)
 {
-	Type = "SubAreaNode";
-	SetStyle(DEFAULT);
-	SetRenderTitleBar(false);
-	SetName("SubArea");
+	Init();
 	OwnedAreaID = OwnedArea->GetID();
-
-	bHaveInput = true;
-	bHaveOutput = true;
-
-	int R = static_cast<int>(44.0f * 1.2f);
-	int G = static_cast<int>(46.0f * 1.2f);
-	int B = static_cast<int>(44.0f * 1.2f);
-	TitleBackgroundColor = ImColor(R, G, B);
-	TitleBackgroundColorHovered = ImColor(static_cast<int>(R * 1.1f), static_cast<int>(G * 1.1f), static_cast<int>(B * 1.1f));
-
-	SetSize(ImVec2(300.0f, static_cast<float>(NODE_HEIGHT_PER_SOCKET * 0.75f * std::max(size_t(2), std::max(Input.size(), Output.size())))));
 }
 
 SubAreaNode::SubAreaNode(const SubAreaNode& Other) : VisNodeSys::SocketMirrorNode(Other)
 {
-	Type = "SubAreaNode";
-	SetStyle(DEFAULT);
-	SetRenderTitleBar(false);
-
+	Init();
 	SetName(Other.GetName());
-
-	bHaveInput = true;
-	bHaveOutput = true;
-
-	int R = static_cast<int>(44.0f * 1.2f);
-	int G = static_cast<int>(46.0f * 1.2f);
-	int B = static_cast<int>(44.0f * 1.2f);
-	TitleBackgroundColor = ImColor(R, G, B);
-	TitleBackgroundColorHovered = ImColor(static_cast<int>(R * 1.1f), static_cast<int>(G * 1.1f), static_cast<int>(B * 1.1f));
-
-	SetSize(ImVec2(300.0f, static_cast<float>(NODE_HEIGHT_PER_SOCKET * 0.75f * std::max(size_t(2), std::max(Input.size(), Output.size())))));
 
 	NodeArea* NewOwnedArea = NODE_SYSTEM.CreateNodeArea();
 	OwnedAreaID = NewOwnedArea->GetID();
@@ -93,6 +76,7 @@ SubAreaNode::SubAreaNode(const SubAreaNode& Other) : VisNodeSys::SocketMirrorNod
 SubAreaNode::~SubAreaNode()
 {
 	NodeArea* OwnedArea = GetOwnedArea();
+	OwnedAreaID = "";
 	NODE_SYSTEM.DeleteNodeArea(OwnedArea);
 }
 
@@ -166,7 +150,30 @@ bool SubAreaNode::FromJson(Json::Value Json)
 
 void SubAreaNode::Draw()
 {
+	float SocketWidthFactor = 0.4f;
+	if (bInEditMode)
+		SocketWidthFactor = 0.14f;
+
+	MaxInputLabelWidth = GetSize().x * SocketWidthFactor;
+	// Edit icon is not visually simetrical, it is wider on the right side, so I need to give less space for output sockets.
+	MaxOutputLabelWidth = GetSize().x * (SocketWidthFactor - (bInEditMode ? 0.03f : 0.0f));
+
+	ImVec2 PositionBeforeDraw = ImGui::GetCursorScreenPos();
+
 	SocketMirrorNode::Draw();
+
+	if (SocketMirrorNode::SubAreaIconTextureID != 0)
+	{
+		float Zoom = ParentArea->GetZoomFactor();
+		float IconSize = 48.0f * Zoom;
+
+		float NodeCenterX = PositionBeforeDraw.x + GetSize().x / 2.0f * Zoom;
+		float NodeCenterY = PositionBeforeDraw.y + GetSize().y / 2.0f * Zoom;
+
+		float EditButtonVisualAsimetryShift = 5.0f;
+		ImGui::SetCursorScreenPos(ImVec2(PositionBeforeDraw.x + (GetSize().x  - 4.0f) * Zoom - IconSize, PositionBeforeDraw.y + 4.0f * Zoom));
+		ImGui::Image(SocketMirrorNode::SubAreaIconTextureID, ImVec2(IconSize, IconSize));
+	}
 }
 
 void SubAreaNode::SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSocket, NODE_SOCKET_EVENT EventType)
@@ -185,6 +192,8 @@ void SubAreaNode::SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSocket
 std::vector<Node*> SubAreaNode::GetMirrorPartners() const
 {
 	std::vector<Node*> Result;
+	if (IsDangling())
+		return Result;
 
 	Node* InputNode = NODE_SYSTEM.GetNodeByID(SubAreaInputNodeID);
 	Result.push_back(InputNode);
@@ -213,4 +222,12 @@ SubAreaOutputNode* SubAreaNode::GetSubAreaOutputNode() const
 		return nullptr;
 
 	return static_cast<SubAreaOutputNode*>(Node);
+}
+
+bool SubAreaNode::IsDangling() const
+{
+	Node* InputNode = NODE_SYSTEM.GetNodeByID(SubAreaInputNodeID);
+	Node* OutputNode = NODE_SYSTEM.GetNodeByID(SubAreaOutputNodeID);
+
+	return InputNode == nullptr || OutputNode == nullptr;
 }

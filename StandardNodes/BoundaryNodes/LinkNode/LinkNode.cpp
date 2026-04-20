@@ -22,7 +22,6 @@ LinkNode::LinkNode()
 {
 	Type = "LinkNode";
 	SetStyle(DEFAULT);
-	SetRenderTitleBar(false);
 	SetName("Link");
 
 	int R = static_cast<int>(44.0f * 1.2f);
@@ -31,15 +30,13 @@ LinkNode::LinkNode()
 	TitleBackgroundColor = ImColor(R, G, B);
 	TitleBackgroundColorHovered = ImColor(static_cast<int>(R * 1.1f), static_cast<int>(G * 1.1f), static_cast<int>(B * 1.1f));
 
-	SetSize(ImVec2(300.0f, static_cast<float>(NODE_HEIGHT_PER_SOCKET * 0.75f * std::max(size_t(2), std::max(Input.size(), Output.size())))));
+	SetTitleBarHeight(54.0f);
+	SetCorrectSize();
+	SetTitleBarAvailableWidth(GetSize().x - 48.0f - 8.0f);
 }
 
 LinkNode::LinkNode(const LinkNode& Other) : VisNodeSys::SocketMirrorNode(Other)
 {
-	Type = "LinkNode";
-	SetStyle(DEFAULT);
-	SetRenderTitleBar(false);
-
 	SetName(Other.GetName());
 	LinkedAreaID = Other.LinkedAreaID;
 
@@ -49,12 +46,19 @@ LinkNode::LinkNode(const LinkNode& Other) : VisNodeSys::SocketMirrorNode(Other)
 	SocketIDBeingModified = "";
 	bInEditMode = false;
 
-	SetSize(ImVec2(300.0f, static_cast<float>(NODE_HEIGHT_PER_SOCKET * 0.75f * std::max(size_t(2), std::max(Input.size(), Output.size())))));
+	SetTitleBarHeight(54.0f);
+	SetCorrectSize();
+	SetTitleBarAvailableWidth(GetSize().x - 48.0f - 8.0f);
 }
 
 LinkNode::~LinkNode()
 {
 	NODE_SYSTEM.DeleteLinkRecord(ID);
+}
+
+void LinkNode::SetCorrectSize()
+{
+	SetSize(ImVec2(300.0f, static_cast<float>(NODE_HEIGHT_PER_SOCKET * 1.75f * std::max(size_t(2), std::max(Input.size(), Output.size())))));
 }
 
 NodeArea* LinkNode::GetLinkedArea() const
@@ -106,7 +110,30 @@ bool LinkNode::FromJson(Json::Value Json)
 
 void LinkNode::Draw()
 {
+	float SocketWidthFactor = 0.78f;
+	if (bInEditMode)
+		SocketWidthFactor = 0.42f;
+
+	MaxInputLabelWidth = GetSize().x * SocketWidthFactor;
+	MaxOutputLabelWidth = MaxInputLabelWidth;
+	ImVec2 PositionBeforeDraw = ImGui::GetCursorScreenPos();
+
 	SocketMirrorNode::Draw();
+
+	if (SocketMirrorNode::LinkIconTextureID != 0 && SocketMirrorNode::BrokenLinkIconTextureID != 0)
+	{
+		float Zoom = ParentArea->GetZoomFactor();
+		float IconSize = 48.0f * Zoom;
+
+		float NodeCenterX = PositionBeforeDraw.x + GetSize().x / 2.0f * Zoom;
+		float NodeCenterY = PositionBeforeDraw.y + GetSize().y / 2.0f * Zoom;
+
+		float EditButtonVisualAsimetryShift = 5.0f;
+		ImGui::SetCursorScreenPos(ImVec2(PositionBeforeDraw.x + (GetSize().x - 4.0f) * Zoom - IconSize, PositionBeforeDraw.y + 4.0f * Zoom));
+		ImGui::Image(IsDangling() ? SocketMirrorNode::BrokenLinkIconTextureID : SocketMirrorNode::LinkIconTextureID, ImVec2(IconSize, IconSize));
+		if (IsDangling())
+			NODE_CORE.ShowToolTip("This link node is dangling.\nIt means that it is not properly connected to another link node.");
+	}
 }
 
 void LinkNode::SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSocket, NODE_SOCKET_EVENT EventType)

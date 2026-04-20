@@ -110,6 +110,9 @@ NodeArea* GroupComment::GetParentArea() const
 
 void GroupComment::SetCaption(std::string NewValue)
 {
+	if (NewValue.length() > GROUP_COMMENT_CAPTION_MAX_LENGTH)
+		NewValue = NewValue.substr(0, GROUP_COMMENT_CAPTION_MAX_LENGTH);
+
 	Caption = NewValue;
 }
 

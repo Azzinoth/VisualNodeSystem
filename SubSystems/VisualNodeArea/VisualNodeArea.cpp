@@ -94,18 +94,25 @@ void NodeArea::Clear()
 
 	for (int i = 0; i < static_cast<int>(GroupComments.size()); i++)
 	{
-		Delete(GroupComments[i]);
-		i--;
+		if (Delete(GroupComments[i]))
+			i--;
 	}
 	GroupComments.clear();
 	SelectedGroupComments.clear();
 
-	for (int i = 0; i < static_cast<int>(Nodes.size()); i++)
+	std::vector<std::string> NodesIDsToDelete;
+	for (size_t i = 0; i < Nodes.size(); i++)
+		NodesIDsToDelete.push_back(Nodes[i]->GetID());
+
+	for (size_t i = 0; i < NodesIDsToDelete.size(); i++)
 	{
-		PropagateNodeEventsCallbacks(Nodes[i], DESTROYED);
-		Nodes[i]->bCouldBeDestroyedByUser = true;
-		Delete(Nodes[i]);
-		i--;
+		Node* NodeToDelete = GetNodeByID(NodesIDsToDelete[i]);
+		if (NodeToDelete != nullptr)
+		{
+			NodeToDelete->bCouldBeDestroyedByUser = true;
+			if (NodeToDelete != nullptr)
+				Delete(NodeToDelete);
+		}
 	}
 	Nodes.clear();
 	SelectedNodes.clear();
@@ -851,6 +858,10 @@ bool NodeArea::SetExecutionEntryNodeByID(std::string NewEntryNodeID)
 bool NodeArea::ExecuteNodeNetwork()
 {
 	LastExecutedNodes.clear();
+
+	// Clear all children.
+	for (NodeArea* CurrentChildren : GetRecursiveChildren())
+		CurrentChildren->LastExecutedNodes.clear();
 
 	Node* EntryNode = GetExecutionEntryNode();
 	if (EntryNode == nullptr)

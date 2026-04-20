@@ -51,16 +51,20 @@ namespace VisNodeSys
 #endif
 		void OnNodeAreaFocusChanging(NodeArea* CurrentNodeArea, bool bNewFocusValue);
 
+		bool DeleteSocket(const std::string& NodeID, std::string SocketID);
+		bool DeleteSocket(NodeSocket* Socket);
+		bool RevalidateSocketConnections(NodeSocket* Socket);
+
+		SocketMirrorNode* GetAppropriatePartner(SocketMirrorNode* MirrorNode, NodeSocket::SocketFlow CurrentDirection);
+		std::pair<SocketMirrorNode*, NodeSocket*> GetAppropriatePartnerAndSocket(SocketMirrorNode* MirrorNode, NodeSocket* CurrentNodeSocket);
+
 		bool AddSocketToMirrorNode(const std::string& NodeID, std::vector<std::string> AllowedTypes, std::string Name, NodeSocket::SocketFlow SocketDirection = NodeSocket::SocketFlow::Input);
 		bool DeleteSocketFromMirrorNode(const std::string& NodeID, std::string SocketID);
 
-		bool DeleteSocket(const std::string& NodeID, std::string SocketID);
-		bool DeleteSocket(NodeSocket* Socket);
+		bool SyncMirrorNodeSocketAllowedTypes(const std::string& NodeID, std::string SocketID, std::vector<std::string> NewTypes);
+		void SyncMirrorNodeSocketName(const std::string& NodeID, std::string SocketID, std::string NewName);
 
-		bool RevalidateSocketConnections(NodeSocket* Socket);
-
-		bool SyncSocketAllowedTypes(const std::string& NodeID, std::string SocketID, std::vector<std::string> NewTypes);
-		void SyncSocketName(const std::string& NodeID, std::string SocketID, std::string NewName);
+		std::vector<std::string> DeduplicateIDList(const std::vector<std::string>& ListOfIDs) const;
 	public:
 		SINGLETON_PUBLIC_PART(NodeSystem)
 
@@ -98,7 +102,7 @@ namespace VisNodeSys
 		std::unordered_map<std::string, std::vector<Node*>> GetLastExecutedNodes(std::string StartingAreaID = "") const;
 #endif
 
-		void MoveNodesTo(NodeArea* SourceNodeArea, NodeArea* TargetNodeArea, bool bSelectNodesAfterMovement = false);
+		bool MoveNodesTo(NodeArea* SourceNodeArea, NodeArea* TargetNodeArea, bool bSelectNodesAfterMovement = false);
 
 		Node* GetNodeByID(const std::string& NodeID) const;
 		std::vector<Node*> GetNodesByName(const std::string& Name) const;
@@ -106,6 +110,9 @@ namespace VisNodeSys
 
 		std::vector<std::pair<std::string, ImColor>> GetAssociationsOfSocketTypeToColor(std::string SocketType, ImColor Color);
 		void AssociateSocketTypeToColor(std::string SocketType, ImColor Color);
+
+		bool IsInAListOfAreas(const std::string& AreaID, const std::vector<std::string>& AreaIDList) const;
+		bool IsInAListOfAreas(const NodeArea* Area, const std::vector<NodeArea*>& AreaIDList) const;
 
 		bool LinkNodeAreas(const std::string& UpstreamAreaID,
 						   const std::string& DownstreamAreaID,
@@ -124,6 +131,7 @@ namespace VisNodeSys
 		std::vector<NodeArea*> GetAllUpstreamAreas(const std::string& AreaID);
 
 		SubAreaNode* CreateSubAreaNode(const std::string& ParentAreaID);
+		SubAreaNode* FindOwnerSubAreaNode(const std::string& AreaID) const;
 	};
 
 #ifdef VISUAL_NODE_SYSTEM_SHARED

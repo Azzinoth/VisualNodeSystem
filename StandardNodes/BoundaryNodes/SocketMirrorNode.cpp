@@ -9,6 +9,7 @@ ImTextureID SocketMirrorNode::EditIconTextureID = 0;
 ImTextureID SocketMirrorNode::TrashBinIconTextureID = 0;
 ImTextureID SocketMirrorNode::RenameIconTextureID = 0;
 ImTextureID SocketMirrorNode::ChangeAllowedTypesIconTextureID = 0;
+ImTextureID SocketMirrorNode::SubAreaIconTextureID = 0;
 
 bool SocketMirrorNode::bSettingAllowedTypes = false;
 bool SocketMirrorNode::bShouldOpenEditWindow = false;
@@ -44,20 +45,19 @@ std::function<void* ()> SocketMirrorNode::CreateCrossAreaDataGetter(int SocketIn
 			return nullptr;
 		
 		SocketMirrorNode* Partner = nullptr;
-		if (MirrorPartners.size() == 1)
+		for (size_t i = 0; i < MirrorPartners.size(); i++)
 		{
-			Partner = dynamic_cast<SocketMirrorNode*>(MirrorPartners[0]);
-		}
-		else
-		{
-			for (size_t i = 0; i < MirrorPartners.size(); i++)
+			if (MirrorPartners[i] == nullptr)
+				continue;
+
+			SocketMirrorNode* LocalCast = dynamic_cast<SocketMirrorNode*>(MirrorPartners[i]);
+			if (LocalCast == nullptr)
+				continue;
+
+			if (LocalCast->bHaveInput)
 			{
-				SocketMirrorNode* LocalCast = dynamic_cast<SocketMirrorNode*>(MirrorPartners[i]);
-				if (LocalCast->bHaveInput)
-				{
-					Partner = LocalCast;
-					break;
-				}
+				Partner = LocalCast;
+				break;
 			}
 		}
 
@@ -110,6 +110,11 @@ bool SocketMirrorNode::FromJson(Json::Value Json)
 	return true;
 }
 
+void SocketMirrorNode::SetCorrectSize()
+{
+	SetSize(ImVec2(300.0f, static_cast<float>(NODE_HEIGHT_PER_SOCKET * 0.75f * std::max(size_t(2), std::max(Input.size(), Output.size())))));
+}
+
 bool SocketMirrorNode::IsDangling() const
 {
 	return false;
@@ -119,50 +124,35 @@ void SocketMirrorNode::SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedS
 {
 	Node::SocketEvent(OwnSocket, ConnectedSocket, EventType);
 
-	bool bBiDirectionalMirror = bHaveInput && bHaveOutput;
-	std::vector<Node*> MirrorPartners = GetMirrorPartners();
-	for (Node* Partner : MirrorPartners)
+	int SocketIndex = -1;
+	if (OwnSocket->GetFlowDirection() == NodeSocket::SocketFlow::Input)
 	{
-		if (Partner == nullptr)
-			continue;
+		std::pair<SocketMirrorNode*, NodeSocket*> PartnerData = NODE_SYSTEM.GetAppropriatePartnerAndSocket(this, OwnSocket);
+		if (PartnerData.first == nullptr || PartnerData.second == nullptr)
+			return;
 
-		SocketMirrorNode* PartnerMirrorNode = dynamic_cast<SocketMirrorNode*>(Partner);
-		if (PartnerMirrorNode == nullptr)
-			continue;
+		NodeArea* PartnerArea = PartnerData.first->GetParentArea();
+		if (PartnerArea == nullptr)
+			return;
 
-		if (bBiDirectionalMirror && (PartnerMirrorNode->bHaveInput && OwnSocket->GetFlowDirection() == NodeSocket::SocketFlow::Input ||
-			PartnerMirrorNode->bHaveOutput && OwnSocket->GetFlowDirection() == NodeSocket::SocketFlow::Output))
-			continue;
-
-		int SocketIndex = -1;
-		std::vector<NodeSocket*>& SocketsToCheck = OwnSocket->GetFlowDirection() == NodeSocket::SocketFlow::Input ? Input : Output;
-		for (size_t i = 0; i < SocketsToCheck.size(); i++)
+		PartnerArea->TriggerSocketEvent(OwnSocket, PartnerData.second, EventType);
+	}
+	else
+	{
+		for (size_t i = 0; i < Output.size(); i++)
 		{
-			if (SocketsToCheck[i] == OwnSocket)
+			if (Output[i] == OwnSocket)
 			{
 				SocketIndex = static_cast<int>(i);
 				break;
 			}
 		}
 
-		std::vector<NodeSocket*>& OutputSocketsToCheck = OwnSocket->GetFlowDirection() == NodeSocket::SocketFlow::Input ? PartnerMirrorNode->Output : Output;
-		if (SocketIndex == -1 || SocketIndex >= static_cast<int>(OutputSocketsToCheck.size()))
+		if (SocketIndex == -1 || SocketIndex >= static_cast<int>(Output.size()))
 			return;
 
-		if (OwnSocket->GetFlowDirection() == NodeSocket::SocketFlow::Input)
-		{
-			NodeArea* PartnerArea = PartnerMirrorNode->GetParentArea();
-			if (PartnerArea == nullptr)
-				return;
-
-			NodeSocket* PartnerOutSocket = PartnerMirrorNode->Output[SocketIndex];
-			PartnerArea->TriggerSocketEvent(OwnSocket, PartnerOutSocket, EventType);
-		}
-		else
-		{
-			for (size_t i = 0; i < Output[SocketIndex]->GetConnectedSockets().size(); i++)
-				ParentArea->TriggerSocketEvent(Output[SocketIndex], Output[SocketIndex]->GetConnectedSockets()[i], EventType);
-		}
+		for (size_t i = 0; i < Output[SocketIndex]->GetConnectedSockets().size(); i++)
+			ParentArea->TriggerSocketEvent(Output[SocketIndex], Output[SocketIndex]->GetConnectedSockets()[i], EventType);
 	}
 }
 
@@ -181,7 +171,7 @@ bool SocketMirrorNode::AddSocketInternal(std::vector<std::string> AllowedTypes, 
 
 	NodeSocket* NewSocket = new NodeSocket(this, AllowedTypes, Name, NewSocketFlowDirection);
 	bool bResult = Node::AddSocket(NewSocket);
-	SetSize(ImVec2(300.0f, static_cast<float>(NODE_HEIGHT_PER_SOCKET * 0.75f * std::max(size_t(2), std::max(Input.size(), Output.size())))));
+	SetCorrectSize();
 
 	if (NewSocketFlowDirection == NodeSocket::SocketFlow::Output)
 	{
@@ -214,7 +204,7 @@ bool SocketMirrorNode::AddSocket(NodeSocket* Socket)
 	}
 
 	Node::AddSocket(Socket);
-	SetSize(ImVec2(300.0f, static_cast<float>(NODE_HEIGHT_PER_SOCKET * 0.75f * std::max(size_t(2), std::max(Input.size(), Output.size())))));
+	SetCorrectSize();
 
 	if (Socket->GetFlowDirection() == NodeSocket::SocketFlow::Output && bHaveOutput)
 	{
@@ -236,11 +226,14 @@ bool SocketMirrorNode::DeleteSocket(NodeSocket* Socket)
 	if (Socket == nullptr)
 		return false;
 
+	if (!Socket->GetAllowedTypes().empty() && Socket->GetAllowedTypes()[0] == "EXECUTE" && GetSocketIndexByID(Socket->GetID()) == 0)
+		return false; // We should never change execution socket types.
+
 	NodeSocket::SocketFlow DeletedSocketFlow = Socket->GetFlowDirection();
 	SocketIDBeingModified = Socket->GetID();
 	NODE_SYSTEM.DeleteSocketFromMirrorNode(ID, Socket->GetID());
 	Node::DeleteSocket(Socket);
-	SetSize(ImVec2(300.0f, static_cast<float>(NODE_HEIGHT_PER_SOCKET * 0.75f * std::max(size_t(2), std::max(Input.size(), Output.size())))));
+	SetCorrectSize();
 
 	if (DeletedSocketFlow == NodeSocket::SocketFlow::Output && bHaveOutput)
 	{
@@ -404,82 +397,144 @@ void SocketMirrorNode::Draw()
 	Node::Draw();
 
 	float Zoom = ParentArea->GetZoomFactor();
-	float LinkIconSize = 32.0f * Zoom;
+	float ButtonGap = 8.0f * Zoom;
+	float SpacingAroundEditButton = 8.0f * Zoom;
 
+	float EditButtonSize = 32.0f * Zoom;
+	float PlusIconSize = 16.0f * Zoom;
+	float RenameIconSize = 24.0f * Zoom;
+	float ChangeTypesIconSize = 16.0f * Zoom;
+	float TrashBinIconSize = 16.0f * Zoom;
+
+	// Each value is: distance from edit button center to THIS icon's center.
+	float RenameShiftMag = SpacingAroundEditButton * 2.3f + PlusIconSize / 2.0f + PlusIconSize / 2.0f + ButtonGap + 24.0f * Zoom / 2.0f;
+	float TypesShiftMag = RenameShiftMag + 24.0f * Zoom / 2.0f + ButtonGap + 16.0f * Zoom / 2.0f;
+	float TrashShiftMag = TypesShiftMag + 16.0f * Zoom / 2.0f + ButtonGap + 16.0f * Zoom / 2.0f;
+
+	float EditButtonVisualAsimetryShift = 5.0f; // Because the edit icon is not visually symmetrical, we need to shift it a bit to make it look better.
+
+	float TitleBarHeight = GetTitleBarHeight();
+	TitleBarHeight = TitleBarHeight == -1 ? 0.0f : TitleBarHeight * Zoom;
 	float NodeCenterX = ImGui::GetCursorScreenPos().x + GetSize().x / 2.0f * Zoom;
-	float NodeCenterY = ImGui::GetCursorScreenPos().y + GetSize().y / 2.0f * Zoom;
+	float NodeCenterY = ImGui::GetCursorScreenPos().y + (GetSize().y - TitleBarHeight / Zoom) / 2.0f * Zoom + TitleBarHeight;
 	float EditButtonX = 0.0f;
 
-	bool bIsInputNode = !Input.empty() && Output.empty();
-	if (bIsInputNode)
-		EditButtonX = NodeCenterX + 64.0f * Zoom - LinkIconSize / 2.0f;
-	else
-		EditButtonX = NodeCenterX - 64.0f * Zoom - LinkIconSize / 2.0f;
+	int FlowMode = 0; // 1 for input, 2 for output, 3 for both.
+	FlowMode = (bHaveInput ? 1 : 0) + (bHaveOutput ? 2 : 0);
+	bool bShouldEditInput = (FlowMode == 1 || FlowMode == 3) && (Input.size() > 0);
 
-	float EditButtonY = NodeCenterY - LinkIconSize / 2.0f;
-
-	float LinkIconX = ImGui::GetCursorScreenPos().x;
-	if (bIsInputNode)
-		LinkIconX += GetSize().x * Zoom - LinkIconSize * 1.25f;
-	else
-		LinkIconX += LinkIconSize * 0.25f;
-	
-	float LinkIconY = ImGui::GetCursorScreenPos().y + GetSize().y / 2.0f * Zoom - LinkIconSize / 2.0f;
-
-	if (SocketMirrorNode::EditIconTextureID != 0)
+	if (FlowMode == 1)
 	{
-		ImGui::SetCursorScreenPos(ImVec2(EditButtonX, EditButtonY));
-
-		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
-		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
-
-		if (ImGui::ImageButton(("EditIcon_LinkNode_ID" + ID).c_str(), EditIconTextureID, ImVec2(32.0f, 32.0f) * Zoom, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImVec4(0, 0, 0, 0)))
-			bInEditMode = !bInEditMode;
-		NODE_CORE.ShowToolTip("Edit node");
-
-		ImGui::PopStyleVar();
-		ImGui::PopStyleColor();
+		EditButtonX = ImGui::GetCursorScreenPos().x + GetSize().x * Zoom - EditButtonSize - 8.0f * Zoom;
 	}
-
-	if (bInEditMode)
+	else if (FlowMode == 2)
 	{
-		RenderEditWindow();
+		EditButtonX = ImGui::GetCursorScreenPos().x + 8.0f * Zoom;
+	}
+	else
+	{
+		EditButtonX = NodeCenterX - EditButtonSize / 2.0f + EditButtonSize / 4.0f;
+	}
+	float EditButtonY = NodeCenterY - EditButtonSize / 2.0f - EditButtonVisualAsimetryShift / 2.0f * Zoom;
 
+	auto GetEditButtonCenter = [&](bool bInputFlowSide) -> glm::vec2 {
+		float EditButtonCenterX = (EditButtonX + EditButtonSize / 2.0f) + (bInputFlowSide ? -(EditButtonSize / 3.25f) : (EditButtonSize / 3.25f));
+		float EditButtonCenterY = EditButtonY + EditButtonSize / 2.0f;
+		glm::vec2 Result = glm::vec2(EditButtonCenterX, EditButtonCenterY);
+		// Icon is not visually centered, so I need to shift it a bit to make it look better.
+		Result.x -= EditButtonVisualAsimetryShift / 2.0f * Zoom;
+		Result.y += EditButtonVisualAsimetryShift / 2.0f * Zoom;
+
+		return Result;
+	};
+
+	auto DrawGlobalButtonsBackground = [&]() {
+		float Padding = 6.0f * Zoom;
+
+		glm::vec2 EditButtonCenter = GetEditButtonCenter(true);
+		// Edit button edges (use the raw EditButtonX, not the visually-shifted center).
+		float EditLeft = EditButtonX;
+		float EditRight = EditButtonX + EditButtonSize;
+
+		float InputPlusShift = -(16.0f * Zoom + SpacingAroundEditButton);
+		float InputPlusCenterX = EditButtonCenter.x + InputPlusShift;
+		float InputPlusLeft = InputPlusCenterX - PlusIconSize / 2.0f;
+		float InputPlusRight = InputPlusCenterX + PlusIconSize / 2.0f;
+		
+		EditButtonCenter = GetEditButtonCenter(false);
+		float OutputPlusShift = 16.0f * Zoom + SpacingAroundEditButton;
+		float OutputPlusCenterX = EditButtonCenter.x + OutputPlusShift;
+		float OutputPlusRight = OutputPlusCenterX + PlusIconSize / 2.0f;
+
+		float MinX = 0.0f;
+		float MaxX = 0.0f;
+
+		if (FlowMode == 1)
+		{
+			MinX = InputPlusLeft - Padding;
+			MaxX = EditRight + Padding;
+		}
+		else if(FlowMode == 2)
+		{
+			MinX = EditLeft - Padding;
+			MaxX = OutputPlusRight + Padding;
+		}
+		else
+		{
+			MinX = InputPlusLeft - Padding;
+			MaxX = OutputPlusRight + Padding;
+		}
+
+		float MinY = EditButtonY - Padding;
+		float MaxY = EditButtonY + EditButtonSize + EditButtonVisualAsimetryShift * Zoom + Padding;
+
+		ImU32 FillColor = IM_COL32(255, 255, 255, 18);
+		ImU32 OutlineColor = IM_COL32(255, 255, 255, 40);
+
+		ImDrawList* DrawList = ImGui::GetWindowDrawList();
+		DrawList->AddRectFilled(ImVec2(MinX, MinY), ImVec2(MaxX, MaxY), FillColor, 6.0f * Zoom);
+		DrawList->AddRect(ImVec2(MinX, MinY), ImVec2(MaxX, MaxY), OutlineColor, 6.0f * Zoom, 0, 1.0f);
+	};
+
+	auto DrawAddSocketButton = [&](bool bInputFlowSide) {
 		if (SocketMirrorNode::PlusIconTextureID != 0)
 		{
-			float PlusIconSize = 16.0f * Zoom;
-			// Horizontally: midpoint between EditIcon right edge and Link icon left edge.
-			float EditIconRightEdge = EditButtonX + 32.0f * Zoom;
-			float PlusPosX = EditIconRightEdge + (LinkIconX - EditIconRightEdge) / 2.0f - PlusIconSize / 2.0f;
-			float PlusPosY = EditButtonY + (32.0f * Zoom) / 2.0f - PlusIconSize / 2.0f;
+			glm::vec2 EditButtonCenter = GetEditButtonCenter(bInputFlowSide);
+			float ShiftFromEditIcon = (bInputFlowSide ? -1 : 1) * (16.0f * Zoom + SpacingAroundEditButton);
+			float ButtonPositionX = EditButtonCenter.x + ShiftFromEditIcon - PlusIconSize / 2.0f;
+			float ButtonPositionY = EditButtonCenter.y - PlusIconSize / 2.0f;
 
-			ImGui::SetCursorScreenPos(ImVec2(PlusPosX, PlusPosY));
+			ImGui::SetCursorScreenPos(ImVec2(ButtonPositionX, ButtonPositionY));
 
 			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
 			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
 
-			if (ImGui::ImageButton(("PlusIcon_LinkNode_ID" + ID).c_str(), PlusIconTextureID, ImVec2(PlusIconSize, PlusIconSize), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImVec4(0, 0, 0, 0)))
+			if (ImGui::ImageButton(("PlusIcon_LinkNode_ID" + ID + (bInputFlowSide ? "_Input" : "_Output")).c_str(), PlusIconTextureID, ImVec2(PlusIconSize, PlusIconSize), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImVec4(0, 0, 0, 0)))
 			{
-				AddSocket({ "INT" }, "TEST");
+				AddSocket({ "INT" }, "TEST", bInputFlowSide ? NodeSocket::SocketFlow::Input : NodeSocket::SocketFlow::Output);
 			}
 			NODE_CORE.ShowToolTip("Add socket");
 
 			ImGui::PopStyleVar();
 			ImGui::PopStyleColor();
 		}
-
-		std::vector<NodeSocket*>& SocketsToWorkWith = bIsInputNode ? Input : Output;
+	};
+	
+	auto DrawRenameSocketButton = [&](bool bInputFlowSide) {
 		if (SocketMirrorNode::RenameIconTextureID != 0)
 		{
-			float RenameIconSize = 24.0f * Zoom;
+			std::vector<NodeSocket*>& SocketsToWorkWith = bInputFlowSide ? Input : Output;
 			for (size_t i = 0; i < SocketsToWorkWith.size(); i++)
 			{
 				std::string SocketID = SocketsToWorkWith[i]->GetID();
 				ImVec2 SocketPosition = ParentArea->SocketToPosition(this, SocketID);
-				float ButtonXShift = bIsInputNode ? -40.0f * Zoom : 48.0f * Zoom;
-				float IconXShift = bIsInputNode ? -RenameIconSize / 2.0f : RenameIconSize / 2.0f;
-				ImGui::SetCursorScreenPos(ImVec2(EditButtonX + ButtonXShift + IconXShift, SocketPosition.y - RenameIconSize / 2.0f));
 
+				glm::vec2 EditButtonCenter = GetEditButtonCenter(bInputFlowSide);
+				float ShiftFromEditIcon = (bInputFlowSide ? -1 : 1) * RenameShiftMag;
+				float ButtonPositionX = EditButtonCenter.x + ShiftFromEditIcon - RenameIconSize / 2.0f;
+				float ButtonPositionY = SocketPosition.y - RenameIconSize / 2.0f;
+
+				ImGui::SetCursorScreenPos(ImVec2(ButtonPositionX, ButtonPositionY));
 				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
 				ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
 
@@ -493,10 +548,12 @@ void SocketMirrorNode::Draw()
 				ImGui::PopStyleColor();
 			}
 		}
+	};
 
+	auto DrawChangeAllowedTypesSocketButton = [&](bool bInputFlowSide) {
 		if (SocketMirrorNode::ChangeAllowedTypesIconTextureID != 0)
 		{
-			float ChangeTypesIconSize = 16.0f * Zoom;
+			std::vector<NodeSocket*>& SocketsToWorkWith = bInputFlowSide ? Input : Output;
 			for (size_t i = 0; i < SocketsToWorkWith.size(); i++)
 			{
 				if (i == 0)
@@ -504,9 +561,13 @@ void SocketMirrorNode::Draw()
 
 				std::string SocketID = SocketsToWorkWith[i]->GetID();
 				ImVec2 SocketPosition = ParentArea->SocketToPosition(this, SocketID);
-				float ButtonXShift = bIsInputNode ? -64.0f * Zoom : 82.0f * Zoom;
-				float IconXShift = bIsInputNode ? -ChangeTypesIconSize / 2.0f : ChangeTypesIconSize / 2.0f;
-				ImGui::SetCursorScreenPos(ImVec2(EditButtonX + ButtonXShift + IconXShift, SocketPosition.y - ChangeTypesIconSize / 2.0f));
+
+				glm::vec2 EditButtonCenter = GetEditButtonCenter(bInputFlowSide);
+				float ShiftFromEditIcon = (bInputFlowSide ? -1 : 1) * TypesShiftMag;
+				float ButtonPositionX = EditButtonCenter.x + ShiftFromEditIcon - ChangeTypesIconSize / 2.0f;
+				float ButtonPositionY = SocketPosition.y - ChangeTypesIconSize / 2.0f;
+
+				ImGui::SetCursorScreenPos(ImVec2(ButtonPositionX, ButtonPositionY));
 
 				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
 				ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
@@ -520,20 +581,26 @@ void SocketMirrorNode::Draw()
 				ImGui::PopStyleColor();
 			}
 		}
+	};
 
+	auto DrawDeleteSocketButton = [&](bool bInputFlowSide) {
 		if (SocketMirrorNode::TrashBinIconTextureID != 0)
 		{
-			float TrashBinIconSize = 16.0f * Zoom;
+			std::vector<NodeSocket*>& SocketsToWorkWith = bInputFlowSide ? Input : Output;
 			for (size_t i = 0; i < SocketsToWorkWith.size(); i++)
 			{
 				if (i == 0)
 					continue;
-				
+
 				std::string SocketID = SocketsToWorkWith[i]->GetID();
 				ImVec2 SocketPosition = ParentArea->SocketToPosition(this, SocketID);
-				float ButtonXShift = bIsInputNode ? -16.0f * Zoom : 30.0f * Zoom;
-				float IconXShift = bIsInputNode ? -TrashBinIconSize / 2.0f : TrashBinIconSize / 2.0f;
-				ImGui::SetCursorScreenPos(ImVec2(EditButtonX + ButtonXShift + IconXShift, SocketPosition.y - TrashBinIconSize / 2.0f));
+
+				glm::vec2 EditButtonCenter = GetEditButtonCenter(bInputFlowSide);
+				float ShiftFromEditIcon = (bInputFlowSide ? -1 : 1) * TrashShiftMag;
+				float ButtonPositionX = EditButtonCenter.x + ShiftFromEditIcon - TrashBinIconSize / 2.0f;
+				float ButtonPositionY = SocketPosition.y - TrashBinIconSize / 2.0f;
+
+				ImGui::SetCursorScreenPos(ImVec2(ButtonPositionX, ButtonPositionY));
 
 				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
 				ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
@@ -552,13 +619,48 @@ void SocketMirrorNode::Draw()
 				ImGui::PopStyleColor();
 			}
 		}
+	};
+
+	if (SocketMirrorNode::EditIconTextureID != 0)
+	{
+		ImGui::SetCursorScreenPos(ImVec2(EditButtonX, EditButtonY));
+
+		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
+		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+
+		if (ImGui::ImageButton(("EditIcon_LinkNode_ID" + ID).c_str(), EditIconTextureID, ImVec2(32.0f, 32.0f) * Zoom, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImVec4(0, 0, 0, 0)))
+			bInEditMode = !bInEditMode;
+		NODE_CORE.ShowToolTip("Edit node");
+
+		ImGui::PopStyleVar();
+		ImGui::PopStyleColor();
 	}
 
-	if (SocketMirrorNode::LinkIconTextureID != 0 && SocketMirrorNode::BrokenLinkIconTextureID != 0)
+	if (bInEditMode)
 	{
-		ImGui::SetCursorScreenPos(ImVec2(LinkIconX, LinkIconY));
-		ImGui::Image(IsDangling() ? SocketMirrorNode::BrokenLinkIconTextureID : SocketMirrorNode::LinkIconTextureID, ImVec2(LinkIconSize, LinkIconSize));
-		if (IsDangling())
-			NODE_CORE.ShowToolTip("This link node is dangling. It means that it is not properly connected to another link node.");
+		DrawGlobalButtonsBackground();
+		RenderEditWindow();
+
+		if (FlowMode == 3)
+		{
+			DrawAddSocketButton(true);
+			DrawAddSocketButton(false);
+
+			DrawRenameSocketButton(true);
+			DrawRenameSocketButton(false);
+
+			DrawChangeAllowedTypesSocketButton(true);
+			DrawChangeAllowedTypesSocketButton(false);
+
+			DrawDeleteSocketButton(true);
+			DrawDeleteSocketButton(false);
+		}
+		else
+		{
+			DrawAddSocketButton(FlowMode == 1);
+			DrawRenameSocketButton(FlowMode == 1);
+			DrawChangeAllowedTypesSocketButton(FlowMode == 1);
+			DrawDeleteSocketButton(FlowMode == 1);
+		}
 	}
 }
