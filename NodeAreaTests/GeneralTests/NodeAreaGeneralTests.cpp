@@ -323,3 +323,77 @@ TEST(NodeAreaGeneralTests, AddObjects_Twice_IsRejected)
 
 	NODE_SYSTEM.DeleteNodeArea(Area);
 }
+
+TEST(NodeAreaGeneralTests, AddSelected_Reject_InAppropriateNode)
+{
+	NodeArea* AreaA = NODE_SYSTEM.CreateNodeArea();
+	NodeArea* AreaB = NODE_SYSTEM.CreateNodeArea();
+
+	Node* NodeA = new Node();
+	AreaA->AddNode(NodeA);
+
+	EXPECT_FALSE(AreaB->AddSelected(NodeA));
+	EXPECT_EQ(AreaB->GetSelected().size(), 0);
+
+	Node* NodeB = new Node();
+	EXPECT_FALSE(AreaB->AddSelected(NodeB));
+	EXPECT_EQ(AreaB->GetSelected().size(), 0);
+	
+	// Destructor is private, so we need to add nodes to an area to be able to delete them.
+	AreaB->AddNode(NodeB);
+
+	NODE_SYSTEM.DeleteNodeArea(AreaA);
+	NODE_SYSTEM.DeleteNodeArea(AreaB);
+}
+
+TEST(NodeAreaGeneralTests, Delete_SelectedNode_IsRemovedFromSelection)
+{
+	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
+	Node* NodeA = new Node();
+	Area->AddNode(NodeA);
+
+	ASSERT_TRUE(Area->AddSelected(NodeA));
+	ASSERT_EQ(Area->GetSelected().size(), 1);
+
+	Area->Delete(NodeA);
+	EXPECT_EQ(Area->GetSelected().size(), 0);
+
+	NODE_SYSTEM.DeleteNodeArea(Area);
+}
+
+TEST(NodeAreaGeneralTests, AddSelected_Reject_InAppropriateGroupComment)
+{
+	NodeArea* AreaA = NODE_SYSTEM.CreateNodeArea();
+	NodeArea* AreaB = NODE_SYSTEM.CreateNodeArea();
+
+	GroupComment* NewGroupComment = new GroupComment();
+	AreaA->AddGroupComment(NewGroupComment);
+	ASSERT_EQ(AreaA->GetGroupCommentCount(), 1);
+	ASSERT_EQ(AreaB->GetGroupCommentCount(), 0);
+
+	EXPECT_FALSE(AreaB->AddSelected(NewGroupComment));
+	EXPECT_FALSE(AreaB->IsSelected(NewGroupComment));
+
+	GroupComment* AnotherNewGroupComment = new GroupComment();
+	EXPECT_FALSE(AreaA->AddSelected(AnotherNewGroupComment));
+	EXPECT_FALSE(AreaB->IsSelected(AnotherNewGroupComment));
+
+	delete AnotherNewGroupComment;
+	NODE_SYSTEM.DeleteNodeArea(AreaA);
+	NODE_SYSTEM.DeleteNodeArea(AreaB);
+}
+
+TEST(NodeAreaGeneralTests, Delete_GroupComment_IsRemovedFromSelection)
+{
+	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
+	GroupComment* NewGroupComment = new GroupComment();
+	Area->AddGroupComment(NewGroupComment);
+
+	ASSERT_TRUE(Area->AddSelected(NewGroupComment));
+	EXPECT_TRUE(Area->IsSelected(NewGroupComment));
+
+	Area->Delete(NewGroupComment);
+	EXPECT_FALSE(Area->IsSelected(NewGroupComment));
+
+	NODE_SYSTEM.DeleteNodeArea(Area);
+}

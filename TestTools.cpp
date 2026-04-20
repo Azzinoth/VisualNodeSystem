@@ -861,6 +861,311 @@ bool TestTools::VerifyLinksInSmallNodeAreaGraph()
 	return true;
 }
 
+std::vector<NodeArea*> TestTools::CreateSmallSubAreaNodeGraph()
+{
+	// Same 5-level tree as CreateSmallLinkedNodeAreaGraph, but using SubAreaNode containment.
+	//
+	//                  0  (top-level NodeArea)
+	//          /       |       \
+    //         1        2        3       (SubAreaNodes inside area 0)
+	//       / | \    / | \    / | \
+    //      4  5  6  7  8  9  10 11 12
+	//     /\  |     |  |  |   |  |  |\
+    //   13 14 15   16 17 18  19 20 21 22
+	//   |     |     |     |      |  |  \
+    //  23    24    25    26      27 28  29
+
+	// Parent index for each node index 1..29. Index 0 is the root (no parent).
+	static const int ParentOf[30] = {
+		-1,  // 0 root
+		 0,  0,  0,                   // 1,2,3 => 0
+		 1,  1,  1,                   // 4,5,6 => 1
+		 2,  2,  2,                   // 7,8,9 => 2
+		 3,  3,  3,                   // 10,11,12 => 3
+		 4,  4,  5,                   // 13,14 => 4; 15 => 5
+		 7,  8,  9,                   // 16 => 7; 17 => 8; 18 => 9
+		10, 11, 12, 12,               // 19 => 10; 20 => 11; 21,22 => 12
+		13, 15, 16, 18, 20, 21, 22    // 23 => 13; 24 => 15; 25 => 16; 26 => 18; 27 => 20; 28 => 21; 29 => 22
+	};
+
+	std::vector<NodeArea*> Areas(30, nullptr);
+
+	// Area 0 is a normal top-level NodeArea.
+	Areas[0] = NODE_SYSTEM.CreateNodeArea();
+	Areas[0]->SetName("0");
+
+	// For each remaining index, create a SubAreaNode inside its parent's area and record its owned area.
+	for (int i = 1; i < 30; i++)
+	{
+		NodeArea* ParentArea = Areas[ParentOf[i]];
+		SubAreaNode* SubArea = NODE_SYSTEM.CreateSubAreaNode(ParentArea->GetID());
+		if (SubArea == nullptr)
+			return Areas;
+
+		NodeArea* OwnedArea = SubArea->GetOwnedArea();
+		if (OwnedArea == nullptr)
+			return Areas;
+
+		OwnedArea->SetName(std::to_string(i));
+		// Also give the SubAreaNode a recognizable name for debugging.
+		SubArea->SetName("SubArea_" + std::to_string(i));
+
+		Areas[i] = OwnedArea;
+	}
+
+	return Areas;
+}
+
+std::vector<NodeArea*> TestTools::GetOrderedAreasFromSmallSubAreaNodeGraph()
+{
+	std::vector<NodeArea*> Result(30, nullptr);
+	std::vector<std::string> AreaIDs = NODE_SYSTEM.GetNodeAreaIDList();
+	if (AreaIDs.size() != 30)
+		return Result;
+
+	// We can not rely on order of areas in the list, so we need to find them by names
+	// (which we set to be the same as their index in the hierarchy).
+	for (const std::string& AreaID : AreaIDs)
+	{
+		NodeArea* Area = NODE_SYSTEM.GetNodeAreaByID(AreaID);
+		if (Area == nullptr)
+			return Result;
+
+		int Index = -1;
+		try
+		{
+			Index = std::stoi(Area->GetName());
+		}
+		catch (...)
+		{
+			return Result;
+		}
+
+		if (Index < 0 || Index >= 30)
+			return Result;
+
+		Result[Index] = Area;
+	}
+
+	return Result;
+}
+
+bool TestTools::VerifyParentChildInSmallSubAreaNodeGraph()
+{
+	std::vector<NodeArea*> Areas = GetOrderedAreasFromSmallSubAreaNodeGraph();
+	for (size_t i = 0; i < Areas.size(); i++)
+	{
+		if (Areas[i] == nullptr)
+			return false;
+	}
+
+	if (Areas.size() != 30)
+		return false;
+
+	// Expected immediate children for each area.
+	std::vector<std::vector<int>> ImmediateChildren(30);
+	ImmediateChildren[0] = { 1, 2, 3 };
+	ImmediateChildren[1] = { 4, 5, 6 };
+	ImmediateChildren[2] = { 7, 8, 9 };
+	ImmediateChildren[3] = { 10, 11, 12 };
+	ImmediateChildren[4] = { 13, 14 };
+	ImmediateChildren[5] = { 15 };
+	ImmediateChildren[6] = { };
+	ImmediateChildren[7] = { 16 };
+	ImmediateChildren[8] = { 17 };
+	ImmediateChildren[9] = { 18 };
+	ImmediateChildren[10] = { 19 };
+	ImmediateChildren[11] = { 20 };
+	ImmediateChildren[12] = { 21, 22 };
+	ImmediateChildren[13] = { 23 };
+	ImmediateChildren[14] = { };
+	ImmediateChildren[15] = { 24 };
+	ImmediateChildren[16] = { 25 };
+	ImmediateChildren[17] = { };
+	ImmediateChildren[18] = { 26 };
+	ImmediateChildren[19] = { };
+	ImmediateChildren[20] = { 27 };
+	ImmediateChildren[21] = { 28 };
+	ImmediateChildren[22] = { 29 };
+	// 23..29 are leaves.
+	for (int i = 23; i < 30; i++)
+		ImmediateChildren[i] = { };
+
+	// Expected parent index for each area (-1 for root).
+	std::vector<int> ParentOf(30, -1);
+	for (int ParentIndex = 0; ParentIndex < 30; ParentIndex++)
+	{
+		for (int ChildIndex : ImmediateChildren[ParentIndex])
+			ParentOf[ChildIndex] = ParentIndex;
+	}
+
+	// Helper: recursively collect all descendant indices of a given index.
+	std::function<void(int, std::vector<int>&)> CollectDescendants = [&](int AreaIndex, std::vector<int>& OutDescendantIndices) {
+		for (int ChildIndex : ImmediateChildren[AreaIndex])
+		{
+			OutDescendantIndices.push_back(ChildIndex);
+			CollectDescendants(ChildIndex, OutDescendantIndices);
+		}
+	};
+
+	// Helper: order-independent comparison of two NodeArea* vectors.
+	auto SameSet = [](std::vector<NodeArea*> FirstSet, std::vector<NodeArea*> SecondSet) -> bool {
+		if (FirstSet.size() != SecondSet.size())
+			return false;
+		std::sort(FirstSet.begin(), FirstSet.end());
+		std::sort(SecondSet.begin(), SecondSet.end());
+		return FirstSet == SecondSet;
+	};
+
+	for (int i = 0; i < 30; i++)
+	{
+		NodeArea* Area = Areas[i];
+
+		// Parent checks.
+		if (ParentOf[i] == -1)
+		{
+			if (Area->GetParent() != nullptr)
+				return false;
+		}
+		else
+		{
+			NodeArea* ExpectedParent = Areas[ParentOf[i]];
+			if (Area->GetParent() != ExpectedParent)
+				return false;
+			if (!Area->IsChildOf(ExpectedParent))
+				return false;
+			if (!ExpectedParent->IsParentOf(Area))
+				return false;
+		}
+
+		// Area should not be a child of itself or unrelated areas.
+		if (Area->IsChildOf(Area))
+			return false;
+
+		// Immediate children checks.
+		std::vector<NodeArea*> ExpectedImmediate;
+		for (int ChildIndex : ImmediateChildren[i])
+			ExpectedImmediate.push_back(Areas[ChildIndex]);
+
+		if (Area->GetImediateChildrenCount() != ExpectedImmediate.size())
+			return false;
+
+		std::vector<NodeArea*> ActualImmediate = Area->GetImediateChildren();
+		if (!SameSet(ActualImmediate, ExpectedImmediate))
+			return false;
+
+		// Verify IsParentOf for each expected immediate child.
+		for (NodeArea* ExpectedChild : ExpectedImmediate)
+		{
+			if (!Area->IsParentOf(ExpectedChild))
+				return false;
+		}
+
+		// Recursive children checks.
+		std::vector<int> DescendantIndices;
+		CollectDescendants(i, DescendantIndices);
+
+		std::vector<NodeArea*> ExpectedRecursive;
+		for (int DescIndex : DescendantIndices)
+			ExpectedRecursive.push_back(Areas[DescIndex]);
+
+		if (Area->GetRecursiveChildCount() != ExpectedRecursive.size())
+			return false;
+
+		std::vector<NodeArea*> ActualRecursive = Area->GetRecursiveChildren();
+		if (!SameSet(ActualRecursive, ExpectedRecursive))
+			return false;
+	}
+
+	return true;
+}
+
+void TestTools::ConnectSmallSubAreaNodeGraph()
+{
+	std::vector<NodeArea*> Areas = GetOrderedAreasFromSmallSubAreaNodeGraph();
+	for (size_t i = 0; i < Areas.size(); i++)
+	{
+		if (Areas[i] == nullptr)
+			return;
+	}
+
+	if (Areas.size() != 30)
+		return;
+
+	// Same topology as CreateSmallLinkedNodeAreaGraph.
+	std::vector<std::vector<int>> ImmediateChildren(30);
+	ImmediateChildren[0] = { 1, 2, 3 };
+	ImmediateChildren[1] = { 4, 5, 6 };
+	ImmediateChildren[2] = { 7, 8, 9 };
+	ImmediateChildren[3] = { 10, 11, 12 };
+	ImmediateChildren[4] = { 13, 14 };
+	ImmediateChildren[5] = { 15 };
+	ImmediateChildren[7] = { 16 };
+	ImmediateChildren[8] = { 17 };
+	ImmediateChildren[9] = { 18 };
+	ImmediateChildren[10] = { 19 };
+	ImmediateChildren[11] = { 20 };
+	ImmediateChildren[12] = { 21, 22 };
+	ImmediateChildren[13] = { 23 };
+	ImmediateChildren[15] = { 24 };
+	ImmediateChildren[16] = { 25 };
+	ImmediateChildren[18] = { 26 };
+	ImmediateChildren[20] = { 27 };
+	ImmediateChildren[21] = { 28 };
+	ImmediateChildren[22] = { 29 };
+
+	// Helper: find the SubAreaNode in ParentArea whose owned area is ChildArea.
+	auto FindSubAreaNodeForChild = [](NodeArea* ParentArea, NodeArea* ChildArea) -> SubAreaNode* {
+		std::vector<SubAreaNode*> SubAreaNodes = ParentArea->GetNodesByType<SubAreaNode>();
+		for (SubAreaNode* CurrentSubAreaNode : SubAreaNodes)
+		{
+			if (CurrentSubAreaNode->GetOwnedArea() == ChildArea)
+				return CurrentSubAreaNode;
+		}
+		return nullptr;
+	};
+
+	// Place BeginNode in the root area (area 0) and mark it as execution entry.
+	Node* BeginNode = NODE_FACTORY.CreateNode("BeginNode");
+	ASSERT_NE(BeginNode, nullptr);
+	Areas[0]->AddNode(BeginNode);
+	Areas[0]->SetExecutionEntryNode(BeginNode);
+
+	// For area 0: wire BeginNode exec out => each child's SubAreaNode exec in (socket 0).
+	for (int ChildIndex : ImmediateChildren[0])
+	{
+		SubAreaNode* ChildSubArea = FindSubAreaNodeForChild(Areas[0], Areas[ChildIndex]);
+		ASSERT_NE(ChildSubArea, nullptr);
+		ASSERT_EQ(Areas[0]->TryToConnect(BeginNode, 0, ChildSubArea, 0), true);
+	}
+
+	// For every non-leaf area i > 0:
+	// Inside Areas[i], wire SubAreaInputNode exec out (socket 0) => each child SubAreaNode exec in (socket 0).
+	for (int i = 1; i < 30; i++)
+	{
+		if (ImmediateChildren[i].empty())
+			continue;
+
+		NodeArea* OwnedArea = Areas[i];
+
+		// The SubAreaInputNode lives inside OwnedArea. It belongs to the SubAreaNode in the parent area.
+		NodeArea* ParentArea = OwnedArea->GetParent();
+		ASSERT_NE(ParentArea, nullptr);
+		SubAreaNode* OwnerSubAreaNode = FindSubAreaNodeForChild(ParentArea, OwnedArea);
+		ASSERT_NE(OwnerSubAreaNode, nullptr);
+
+		SubAreaInputNode* InputNode = OwnerSubAreaNode->GetSubAreaInputNode();
+		ASSERT_NE(InputNode, nullptr);
+
+		for (int ChildIndex : ImmediateChildren[i])
+		{
+			SubAreaNode* ChildSubArea = FindSubAreaNodeForChild(OwnedArea, Areas[ChildIndex]);
+			ASSERT_NE(ChildSubArea, nullptr);
+			ASSERT_EQ(OwnedArea->TryToConnect(InputNode, 0, ChildSubArea, 0), true);
+		}
+	}
+}
+
 // ************************ Execution flow test tools ************************
 
 NodeVariableSupportedType TestTools::GetRandomNodeVariableType()

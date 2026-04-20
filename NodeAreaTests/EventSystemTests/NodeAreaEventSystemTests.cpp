@@ -1,5 +1,6 @@
 #include "NodeAreaEventSystemTests.h"
 using namespace VisNodeSys;
+#include "../CustomNodes/EventCountingNode.h"
 
 TEST(NodeAreaEventSystemTests, Node_Events)
 {
@@ -17,7 +18,7 @@ TEST(NodeAreaEventSystemTests, Node_Events)
 	ASSERT_NE(NodeToDelete, nullptr);
 	bool bNodeRemovedEventCalled = false;
 	LocalNodeArea->AddNodeEventCallback([&](Node* Node, NODE_EVENT EventType) {
-		if (EventType == NODE_EVENT::REMOVED)
+		if (EventType == NODE_EVENT::DESTROYED)
 		{
 			if (bFirstRemoveCall)
 			{
@@ -668,6 +669,77 @@ TEST(NodeAreaEventSystemTests, RunOnEachConnectedNode_Diamond_VisitsEachOnce)
 	EXPECT_TRUE(WasVisited(NodeB));
 	EXPECT_TRUE(WasVisited(NodeC));
 	EXPECT_TRUE(WasVisited(NodeD));
+
+	NODE_SYSTEM.DeleteNodeArea(Area);
+}
+
+TEST(NodeAreaEventSystemTests, Delete_Connection_OutSocketNodeReceivesDisconnectedEvent)
+{
+	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
+
+	EventCountingNode* OutNode = new EventCountingNode();
+	OutNode->AddSocket(new NodeSocket(OutNode, "T", "out", NodeSocket::SocketFlow::Output));
+
+	EventCountingNode* InNode = new EventCountingNode();
+	InNode->AddSocket(new NodeSocket(InNode, "T", "in", NodeSocket::SocketFlow::Input));
+
+	Area->AddNode(OutNode);
+	Area->AddNode(InNode);
+	ASSERT_TRUE(Area->TryToConnect(OutNode, 0, InNode, 0));
+	ASSERT_EQ(Area->GetConnectionCount(), 1u);
+
+	// Both nodes should have received CONNECTED on the connect.
+	EXPECT_EQ(InNode->GetConnectedCount(), 1);
+	EXPECT_EQ(OutNode->GetConnectedCount(), 1);
+
+	std::string OutSocketID = OutNode->GetSocketIDByIndex(0, NodeSocket::SocketFlow::Output);
+	ASSERT_TRUE(Area->TryToDisconnect(OutNode, OutSocketID));
+
+	// In socket's parent gets the event.
+	EXPECT_EQ(InNode->GetDisconnectedCount(), 1);
+
+	// Out socket's parent should also receive DISCONNECTED.
+	EXPECT_EQ(OutNode->GetDisconnectedCount(), 1);
+
+	NODE_SYSTEM.DeleteNodeArea(Area);
+}
+
+TEST(NodeAreaEventSystemTests, Clear_EveryNodeReceivesDestroyed_EvenWhenCallbackDeletesOthers)
+{
+	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(Area, nullptr);
+
+	Node* NodeA = new Node();
+	Node* NodeB = new Node();
+	Node* NodeC = new Node();
+	ASSERT_TRUE(Area->AddNode(NodeA));
+	ASSERT_TRUE(Area->AddNode(NodeB));
+	ASSERT_TRUE(Area->AddNode(NodeC));
+
+	std::string NodeAID = NodeA->GetID();
+	std::string NodeBID = NodeB->GetID();
+	std::string NodeCID = NodeC->GetID();
+
+	std::vector<std::string> DestroyedIDs;
+	Area->AddNodeEventCallback([&](Node* Node, NODE_EVENT EventType) {
+		if (EventType == NODE_EVENT::DESTROYED)
+		{
+			DestroyedIDs.push_back(Node->GetID());
+
+			// When the first node is being destroyed, simulate a listener that
+			// deletes another node in the area.
+			if (Node->GetID() == NodeAID && Area->GetNodeByID(NodeBID) != nullptr)
+				Area->Delete(Area->GetNodeByID(NodeBID));
+		}
+	});
+
+	Area->Clear();
+
+	// All three nodes were in the area when Clear() started, so all three should have received DESTROYED.
+	EXPECT_EQ(DestroyedIDs.size(), 3u);
+	EXPECT_NE(std::find(DestroyedIDs.begin(), DestroyedIDs.end(), NodeAID), DestroyedIDs.end());
+	EXPECT_NE(std::find(DestroyedIDs.begin(), DestroyedIDs.end(), NodeBID), DestroyedIDs.end());
+	EXPECT_NE(std::find(DestroyedIDs.begin(), DestroyedIDs.end(), NodeCID), DestroyedIDs.end());
 
 	NODE_SYSTEM.DeleteNodeArea(Area);
 }

@@ -340,3 +340,15 @@ TEST(NodeAreaGroupComment, MoveWithElements)
 
 	NODE_SYSTEM.DeleteNodeArea(NodeArea);
 }
+
+TEST(GroupComment, SetCaption_RejectsStringLongerThanMaxLength)
+{
+	// Build a string that is exactly one character over the limit.
+	const std::string OversizedCaption(GROUP_COMMENT_CAPTION_MAX_LENGTH + 1, 'X');
+
+	GroupComment* NewGroupComment = new GroupComment();
+	NewGroupComment->SetCaption(OversizedCaption);
+	EXPECT_LE(NewGroupComment->GetCaption().size(), static_cast<size_t>(GROUP_COMMENT_CAPTION_MAX_LENGTH));
+
+	delete NewGroupComment;
+}

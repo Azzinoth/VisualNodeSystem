@@ -505,3 +505,227 @@ TEST(Basic, Delete_NullptrNode_DoesNotCrash)
 
 	NODE_SYSTEM.DeleteNodeArea(Area);
 }
+
+TEST(Basic, NodeCopyConstructor_GeneratesNewID)
+{
+	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(LocalNodeArea, nullptr);
+
+	Node* Original = new Node();
+	LocalNodeArea->AddNode(Original);
+
+	Node* Copy = new Node(*Original);
+	LocalNodeArea->AddNode(Copy);
+
+	ASSERT_NE(Copy->GetID(), Original->GetID());
+	ASSERT_FALSE(Copy->GetID().empty());
+
+	NODE_SYSTEM.DeleteNodeArea(LocalNodeArea);
+}
+
+TEST(Basic, NodeCopyConstructor_CopiesGeometry)
+{
+	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(LocalNodeArea, nullptr);
+
+	Node* Original = new Node();
+	Original->SetPosition(ImVec2(123.0f, 456.0f));
+	Original->SetSize(ImVec2(321.0f, 654.0f));
+	LocalNodeArea->AddNode(Original);
+
+	Node* Copy = new Node(*Original);
+	LocalNodeArea->AddNode(Copy);
+
+	ASSERT_EQ(Copy->GetPosition(), ImVec2(123.0f, 456.0f));
+	ASSERT_EQ(Copy->GetSize(), ImVec2(321.0f, 654.0f));
+
+	NODE_SYSTEM.DeleteNodeArea(LocalNodeArea);
+}
+
+TEST(Basic, NodeCopyConstructor_CopiesNameAndType)
+{
+	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(LocalNodeArea, nullptr);
+
+	CustomNode2* Original = new CustomNode2();
+	Original->SetName("MyCustomName");
+	const std::string OriginalType = Original->GetType();
+	LocalNodeArea->AddNode(Original);
+
+	CustomNode2* Copy = new CustomNode2(*Original);
+	LocalNodeArea->AddNode(Copy);
+
+	ASSERT_EQ(Copy->GetName(), "MyCustomName");
+	ASSERT_EQ(Copy->GetType(), OriginalType);
+
+	NODE_SYSTEM.DeleteNodeArea(LocalNodeArea);
+}
+
+TEST(Basic, NodeCopyConstructor_CopiesStyle)
+{
+	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(LocalNodeArea, nullptr);
+
+	Node* Original = new Node();
+	Original->SetStyle(CIRCLE);
+	ASSERT_EQ(Original->GetStyle(), CIRCLE);
+	LocalNodeArea->AddNode(Original);
+
+	Node* Copy = new Node(*Original);
+	LocalNodeArea->AddNode(Copy);
+
+	ASSERT_EQ(Copy->GetStyle(), CIRCLE);
+
+	NODE_SYSTEM.DeleteNodeArea(LocalNodeArea);
+}
+
+TEST(Basic, NodeCopyConstructor_PreservesCouldBeMovedFlag)
+{
+	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(LocalNodeArea, nullptr);
+
+	Node* Original = new Node();
+	Original->SetCouldBeMoved(false);
+	ASSERT_FALSE(Original->CouldBeMoved());
+	LocalNodeArea->AddNode(Original);
+
+	Node* Copy = new Node(*Original);
+	LocalNodeArea->AddNode(Copy);
+
+	ASSERT_FALSE(Copy->CouldBeMoved());
+
+	NODE_SYSTEM.DeleteNodeArea(LocalNodeArea);
+}
+
+TEST(Basic, NodeCopyConstructor_PreservesRenderTitleBarFlag)
+{
+	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(LocalNodeArea, nullptr);
+
+	Node* Original = new Node();
+	Original->SetRenderTitleBar(false);
+	ASSERT_FALSE(Original->GetRenderTitleBar());
+	LocalNodeArea->AddNode(Original);
+
+	Node* Copy = new Node(*Original);
+	LocalNodeArea->AddNode(Copy);
+
+	ASSERT_FALSE(Copy->GetRenderTitleBar());
+
+	NODE_SYSTEM.DeleteNodeArea(LocalNodeArea);
+}
+
+TEST(Basic, NodeCopyConstructor_PreservesCouldBeDestroyedFlag)
+{
+	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(LocalNodeArea, nullptr);
+
+	BeginNode* Original = new BeginNode();
+	ASSERT_FALSE(Original->CouldBeDestroyed());
+	LocalNodeArea->AddNode(Original);
+
+	BeginNode* Copy = new BeginNode(*Original);
+	LocalNodeArea->AddNode(Copy);
+
+	ASSERT_EQ(Copy->CouldBeDestroyed(), Original->CouldBeDestroyed());
+
+	NODE_SYSTEM.DeleteNodeArea(LocalNodeArea);
+}
+
+TEST(Basic, NodeCopyConstructor_DeepCopiesSockets)
+{
+	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(LocalNodeArea, nullptr);
+
+	Node* Original = new Node();
+	NodeSocket* InSocket = new NodeSocket(Original, "FLOAT", "MyInput", NodeSocket::SocketFlow::Input);
+	NodeSocket* OutSocket = new NodeSocket(Original, std::vector<std::string>{"FLOAT", "INT"}, "MyOutput", NodeSocket::SocketFlow::Output);
+	Original->AddSocket(InSocket);
+	Original->AddSocket(OutSocket);
+	ASSERT_EQ(Original->GetInputSocketCount(), 1);
+	ASSERT_EQ(Original->GetOutputSocketCount(), 1);
+	LocalNodeArea->AddNode(Original);
+
+	Node* Copy = new Node(*Original);
+	LocalNodeArea->AddNode(Copy);
+
+	ASSERT_EQ(Copy->GetInputSocketCount(), 1);
+	ASSERT_EQ(Copy->GetOutputSocketCount(), 1);
+
+	NodeSocket* CopiedIn = Copy->GetSocketByIndex(0, NodeSocket::SocketFlow::Input);
+	NodeSocket* CopiedOut = Copy->GetSocketByIndex(0, NodeSocket::SocketFlow::Output);
+	ASSERT_NE(CopiedIn, nullptr);
+	ASSERT_NE(CopiedOut, nullptr);
+
+	// Deep copy: different objects.
+	ASSERT_NE(CopiedIn, InSocket);
+	ASSERT_NE(CopiedOut, OutSocket);
+
+	// Deep copy: different IDs (sockets get fresh IDs via NODE_CORE).
+	ASSERT_NE(CopiedIn->GetID(), InSocket->GetID());
+	ASSERT_NE(CopiedOut->GetID(), OutSocket->GetID());
+
+	// Same payload.
+	ASSERT_EQ(CopiedIn->GetName(), "MyInput");
+	ASSERT_EQ(CopiedOut->GetName(), "MyOutput");
+	ASSERT_EQ(CopiedIn->GetFlowDirection(), NodeSocket::SocketFlow::Input);
+	ASSERT_EQ(CopiedOut->GetFlowDirection(), NodeSocket::SocketFlow::Output);
+	ASSERT_EQ(CopiedIn->GetAllowedTypes(), (std::vector<std::string>{"FLOAT"}));
+	ASSERT_EQ(CopiedOut->GetAllowedTypes(), (std::vector<std::string>{"FLOAT", "INT"}));
+
+	// Parent rewired to the copy, not the source.
+	ASSERT_EQ(CopiedIn->GetParent(), Copy);
+	ASSERT_EQ(CopiedOut->GetParent(), Copy);
+
+	// Source's sockets still point at the source.
+	ASSERT_EQ(InSocket->GetParent(), Original);
+	ASSERT_EQ(OutSocket->GetParent(), Original);
+
+	NODE_SYSTEM.DeleteNodeArea(LocalNodeArea);
+}
+
+TEST(Basic, NodeCopyConstructor_CopiesZeroSocketsCleanly)
+{
+	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(LocalNodeArea, nullptr);
+
+	Node* Original = new Node();
+	LocalNodeArea->AddNode(Original);
+
+	Node* Copy = new Node(*Original);
+	LocalNodeArea->AddNode(Copy);
+
+	ASSERT_EQ(Copy->GetInputSocketCount(), 0);
+	ASSERT_EQ(Copy->GetOutputSocketCount(), 0);
+
+	NODE_SYSTEM.DeleteNodeArea(LocalNodeArea);
+}
+
+TEST(Basic, DeleteSocket_OnOrphanNode)
+{
+	Node* NewNode = new Node();
+	NewNode->AddSocket(new NodeSocket(NewNode, "TEST", "test", NodeSocket::SocketFlow::Input));
+	ASSERT_EQ(NewNode->GetInputSocketCount(), 1);
+
+	std::string SocketID = NewNode->GetSocketIDByIndex(0, NodeSocket::SocketFlow::Input);
+	NewNode->DeleteSocket(SocketID);
+	EXPECT_EQ(NewNode->GetInputSocketCount(), 0);
+
+	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
+	LocalNodeArea->AddNode(NewNode);
+	NODE_SYSTEM.DeleteNodeArea(LocalNodeArea);
+}
+
+TEST(Basic, SetCaption_RejectsStringLongerThanMaxLength)
+{
+	// Build a string that is exactly one character over the limit.
+	const std::string OversizedCaption(NODE_NAME_MAX_LENGTH + 1, 'X');
+
+	Node* NewNode = new Node();
+	NewNode->SetName(OversizedCaption);
+	EXPECT_LE(NewNode->GetName().size(), static_cast<size_t>(NODE_NAME_MAX_LENGTH));
+
+	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
+	LocalNodeArea->AddNode(NewNode);
+	NODE_SYSTEM.DeleteNodeArea(LocalNodeArea);
+}

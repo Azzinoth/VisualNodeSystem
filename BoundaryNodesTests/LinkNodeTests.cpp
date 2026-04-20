@@ -872,6 +872,19 @@ TEST(LinkNodeTests, SaveLoad_With_Execute_Connections_Small)
 
 	ASSERT_EQ(TotalConnections, AfterLoadTotalConnections);
 
+	// Reset every leaf's ResultNode to 0 so the post-load ASSERT_EQ proves that
+	// execution actually recomputed the values, not that save/load preserved them.
+	for (auto ExpectedResult : ExpectedResults)
+	{
+		if (ExpectedResult.second == -1)
+			continue;
+
+		Node* ResultNode = Areas[ExpectedResult.first]->GetNodesByName("ResultNode_" + std::to_string(ExpectedResult.first))[0];
+		IntegerVariableNode* CastedResultNode = reinterpret_cast<IntegerVariableNode*>(ResultNode);
+		CastedResultNode->SetData(0);
+		ASSERT_EQ(CastedResultNode->GetData(), 0); // sanity check
+	}
+
 	Areas[0]->ExecuteNodeNetwork();
 
 	std::unordered_map<std::string, std::vector<Node*>> AfterLoadExecutedNodes = NODE_SYSTEM.GetLastExecutedNodes(Areas[0]->GetID());
@@ -1360,4 +1373,23 @@ TEST(LinkNodeTests, Copy_Paste_Dangling)
 
 	NODE_SYSTEM.DeleteNodeArea(UpstreamArea);
 	NODE_SYSTEM.DeleteNodeArea(DownstreamArea);
+}
+
+TEST(LinkNodeTests, GetImmediateDownstreamAreas_Deduplicates_DuplicateLinks)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* UpstreamArea = NODE_SYSTEM.CreateNodeArea();
+	NodeArea* DownstreamArea = NODE_SYSTEM.CreateNodeArea();
+	const std::string UpstreamID = UpstreamArea->GetID();
+	const std::string DownstreamID = DownstreamArea->GetID();
+
+	ASSERT_TRUE(NODE_SYSTEM.LinkNodeAreas(UpstreamID, DownstreamID));
+	ASSERT_TRUE(NODE_SYSTEM.LinkNodeAreas(UpstreamID, DownstreamID));
+
+	// Two distinct link records exist, but the conceptual downstream set is just one.
+	std::vector<NodeArea*> Downstream = NODE_SYSTEM.GetImmediateDownstreamAreas(UpstreamID);
+	EXPECT_EQ(Downstream.size(), 1);
+
+	NODE_SYSTEM.Clear();
 }

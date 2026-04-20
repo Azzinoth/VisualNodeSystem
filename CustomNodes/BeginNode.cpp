@@ -36,8 +36,7 @@ BeginNode::BeginNode() : BaseExecutionFlowNode(false)
 
 BeginNode::BeginNode(const BeginNode& Other) : BaseExecutionFlowNode(Other)
 {
-	bCouldBeDestroyedByUser = false;
-	SetStyle(CIRCLE);
+
 }
 
 void BeginNode::Draw()

@@ -111,3 +111,110 @@ TEST(NodeSystemTests, TryToConnect_NodesWithNoParent_IsRejected)
 	EXPECT_EQ(AreaA->GetConnectionCount(), 0);
 	NODE_SYSTEM.DeleteNodeArea(AreaA);
 }
+
+TEST(NodeSystemTests, MoveNodesTo_SameSourceAndTarget_Will_Do_Nothing)
+{
+	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(Area, nullptr);
+
+	Node* NodeA = new Node();
+	Node* NodeB = new Node();
+	Area->AddNode(NodeA);
+	Area->AddNode(NodeB);
+
+	ASSERT_EQ(Area->GetNodeCount(), 2);
+	EXPECT_FALSE(NODE_SYSTEM.MoveNodesTo(Area, Area));
+	EXPECT_EQ(Area->GetNodeCount(), 2);
+
+	NODE_SYSTEM.DeleteNodeArea(Area);
+}
+
+TEST(NodeSystemTests, GetTotalNodeCount_DuplicateAreaIDInFilter_DoesNotDoubleCount)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(Area, nullptr);
+
+	BoolVariableNode* NodeA = new BoolVariableNode();
+	BoolVariableNode* NodeB = new BoolVariableNode();
+	Area->AddNode(NodeA);
+	Area->AddNode(NodeB);
+	ASSERT_EQ(Area->GetNodeCount(), 2);
+
+	const std::string ID = Area->GetID();
+
+	// Pass the same area ID twice, but it should not double count the nodes in that area.
+	EXPECT_EQ(NODE_SYSTEM.GetTotalNodeCount({ ID, ID }), 2);
+
+	ASSERT_TRUE(Area->TryToConnect(NodeA, 0, NodeB, 0));
+	ASSERT_EQ(Area->GetConnectionCount(), 1);
+	// Check that connections are also not double counted when passing duplicate area IDs.
+	EXPECT_EQ(NODE_SYSTEM.GetTotalConnectionCount({ ID, ID }), 1);
+
+	GroupComment* Comment = new GroupComment();
+	Area->AddGroupComment(Comment);
+	EXPECT_EQ(NODE_SYSTEM.GetGroupCommentCount({ ID, ID }), 1);
+
+	NODE_SYSTEM.Clear();
+}
+
+TEST(NodeSystemTests, TryToFixDanglingLinkNode_WithForceRestorePartner_RestoresCorrectAreaDirection)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* AreaA = NODE_SYSTEM.CreateNodeArea();
+	NodeArea* AreaB = NODE_SYSTEM.CreateNodeArea();
+	const std::string AreaAID = AreaA->GetID();
+	const std::string AreaBID = AreaB->GetID();
+
+	// Create a normal A=>B link. InNode lives in A, OutNode lives in B.
+	ASSERT_TRUE(NODE_SYSTEM.LinkNodeAreas(AreaAID, AreaBID));
+	ASSERT_EQ(NODE_SYSTEM.GetDanglingLinkNodes().size(), 0);
+
+	// Sanity check direction before any repair.
+	ASSERT_EQ(NODE_SYSTEM.GetImmediateDownstreamAreas(AreaAID).size(), 1);
+	ASSERT_EQ(NODE_SYSTEM.GetImmediateDownstreamAreas(AreaAID)[0]->GetID(), AreaBID);
+
+	auto ParseJson = [](const std::string& Text, Json::Value& OutRoot) -> bool {
+		Json::CharReaderBuilder Builder;
+		JSONCPP_STRING Error;
+		const std::unique_ptr<Json::CharReader> Reader(Builder.newCharReader());
+		return Reader->parse(Text.c_str(), Text.c_str() + Text.size(), &OutRoot, &Error);
+	};
+
+	Json::StreamWriterBuilder WriterBuilder;
+	Json::Value Root;
+	ASSERT_TRUE(ParseJson(NODE_SYSTEM.ToJson(), Root));
+
+	Json::Value AreaBRoot;
+	ASSERT_TRUE(ParseJson(Root["NodeAreas"][AreaBID].asString(), AreaBRoot));
+	// Clear all nodes from area B, leaving no partner node for the A=>B link.
+	AreaBRoot["Nodes"] = Json::Value(Json::objectValue);
+	Root["NodeAreas"][AreaBID] = Json::writeString(WriterBuilder, AreaBRoot);
+
+	ASSERT_TRUE(NODE_SYSTEM.LoadFromJson(Json::writeString(WriterBuilder, Root)));
+	ASSERT_EQ(NODE_SYSTEM.GetNodeAreaCount(), 2);
+
+	// After loading, InNode (in A) is dangling, area B exists but has no partner node.
+	std::vector<LinkNode*> Dangling = NODE_SYSTEM.GetDanglingLinkNodes();
+	ASSERT_EQ(Dangling.size(), 1);
+	LinkNode* DanglingInNode = Dangling[0];
+	ASSERT_TRUE(DanglingInNode->IsInputNode());
+
+	// Force-recreate the missing partner OutNode in B.
+	// This exercises the buggy InAreaID/OutAreaID swap.
+	ASSERT_TRUE(NODE_SYSTEM.TryToFixDanglingLinkNode(DanglingInNode, true));
+	ASSERT_EQ(NODE_SYSTEM.GetDanglingLinkNodes().size(), 0);
+
+	// The A=>B direction must be preserved: A is upstream, B is downstream.
+	const std::vector<NodeArea*> Downstream = NODE_SYSTEM.GetImmediateDownstreamAreas(AreaAID);
+	EXPECT_EQ(Downstream.size(), 1);
+	EXPECT_EQ(Downstream.empty() ? "" : Downstream[0]->GetID(), AreaBID);
+
+	const std::vector<NodeArea*> Upstream = NODE_SYSTEM.GetImmediateUpstreamAreas(AreaBID);
+	EXPECT_EQ(Upstream.size(), 1);
+	EXPECT_EQ(Upstream.empty() ? "" : Upstream[0]->GetID(), AreaAID);
+
+	NODE_SYSTEM.Clear();
+}

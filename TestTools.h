@@ -64,6 +64,20 @@ public:
 	// Given existing NodeAreas produced by CreateSmallLinkedNodeAreaGraph() establishes connection bettween begin node in 0th node and link execute in others.
 	void ConnectSmallLinkedNodeAreaGraph();
 
+	// Creates 30 NodeAreas arranged in the same 5-level tree hierarchy as CreateSmallLinkedNodeAreaGraph,
+	// but using SubAreaNode containment instead of LinkNode peering.
+	// Areas[0] is a top-level NodeArea created with CreateNodeArea().
+	// Areas[1..29] are owned areas of SubAreaNodes; each SubAreaNode is placed inside its parent's area
+	// according to the tree. Area names are set to their index ("0".."29") for lookup.
+	std::vector<VisNodeSys::NodeArea*> CreateSmallSubAreaNodeGraph();
+	std::vector<VisNodeSys::NodeArea*> GetOrderedAreasFromSmallSubAreaNodeGraph();
+	bool VerifyParentChildInSmallSubAreaNodeGraph();
+
+	// Given existing areas produced by CreateSmallSubAreaNodeGraph(), establishes execution connections:
+	// places a BeginNode in Areas[0] and wires BeginNode -> SubAreaNode exec in for each child.
+	// Inside each owned area, wires SubAreaInputNode exec out -> each child SubAreaNode exec in.
+	void ConnectSmallSubAreaNodeGraph();
+
 	// ************************ Execution flow test tools ************************
 	NodeVariableSupportedType GetRandomNodeVariableType();
 
