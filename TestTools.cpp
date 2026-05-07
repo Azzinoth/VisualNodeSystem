@@ -907,8 +907,6 @@ std::vector<NodeArea*> TestTools::CreateSmallSubAreaNodeGraph()
 			return Areas;
 
 		OwnedArea->SetName(std::to_string(i));
-		// Also give the SubAreaNode a recognizable name for debugging.
-		SubArea->SetName("SubArea_" + std::to_string(i));
 
 		Areas[i] = OwnedArea;
 	}

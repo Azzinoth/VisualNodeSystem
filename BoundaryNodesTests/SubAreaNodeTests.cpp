@@ -1707,7 +1707,9 @@ TEST(SubAreaNodeTests, SaveLoad_With_Execute_Connections_Small)
 		if (ExpectedResult.second == -1)
 			continue;
 
-		Node* ResultNode = Areas[ExpectedResult.first]->GetNodesByName("ResultNode_" + std::to_string(ExpectedResult.first))[0];
+		std::vector<Node*> FoundNodes = Areas[ExpectedResult.first]->GetNodesByName("ResultNode_" + std::to_string(ExpectedResult.first));
+		ASSERT_EQ(FoundNodes.size(), 1);
+		Node* ResultNode = FoundNodes[0];
 		IntegerVariableNode* CastedResultNode = reinterpret_cast<IntegerVariableNode*>(ResultNode);
 		int ResultValue = CastedResultNode->GetData();
 		int ExpectedValue = ExpectedResult.second;
@@ -1722,7 +1724,10 @@ TEST(SubAreaNodeTests, SaveLoad_With_Execute_Connections_Small)
 	EXPECT_TRUE(TEST_TOOLS.VerifyParentChildInSmallSubAreaNodeGraph());
 	Areas = TEST_TOOLS.GetOrderedAreasFromSmallSubAreaNodeGraph();
 	for (auto Area : Areas)
+	{
+		ASSERT_NE(Area, nullptr);
 		Area->SetSaveExecutedNodes(true);
+	}	
 
 	size_t AfterLoadTotalConnections = NODE_SYSTEM.GetTotalConnectionCount();
 	for (int i = 0; i < PerAreaConnectionCounts.size(); i++)
@@ -1933,4 +1938,310 @@ TEST(SubAreaNodeTests, OwnedAreaCleared_GetDataReturnsNull_SubAreaNode_BecomesDa
 	EXPECT_TRUE(SubArea->IsDangling());
 
 	NODE_SYSTEM.DeleteNodeArea(ParentArea);
+}
+
+TEST(SubAreaNodeTests, SetName_OnSubAreaNode_PropagatesTo_OwnedArea_AndIONodes)
+{
+	NodeArea* ParentArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(ParentArea, nullptr);
+
+	SubAreaNode* SubArea = NODE_SYSTEM.CreateSubAreaNode(ParentArea->GetID());
+	ASSERT_NE(SubArea, nullptr);
+
+	NodeArea* OwnedArea = SubArea->GetOwnedArea();
+	ASSERT_NE(OwnedArea, nullptr);
+	SubAreaInputNode* InputNode = SubArea->GetSubAreaInputNode();
+	SubAreaOutputNode* OutputNode = SubArea->GetSubAreaOutputNode();
+	ASSERT_NE(InputNode, nullptr);
+	ASSERT_NE(OutputNode, nullptr);
+
+	const std::string NewName = "NewName";
+	SubArea->SetName(NewName);
+
+	EXPECT_EQ(SubArea->GetName(), NewName);
+	EXPECT_EQ(OwnedArea->GetName(), NewName);
+	EXPECT_EQ(InputNode->GetName(), NewName + " Input");
+	EXPECT_EQ(OutputNode->GetName(), NewName + " Output");
+
+	// Renaming again should overwrite all four consistently.
+	const std::string SecondName = "Renamed";
+	SubArea->SetName(SecondName);
+	EXPECT_EQ(SubArea->GetName(), SecondName);
+	EXPECT_EQ(OwnedArea->GetName(), SecondName);
+	EXPECT_EQ(InputNode->GetName(), SecondName + " Input");
+	EXPECT_EQ(OutputNode->GetName(), SecondName + " Output");
+
+	NODE_SYSTEM.DeleteNodeArea(ParentArea);
+}
+
+TEST(SubAreaNodeTests, SetName_OnOwnedArea_PropagatesTo_SubAreaNode_AndIONodes)
+{
+	NodeArea* ParentArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(ParentArea, nullptr);
+
+	SubAreaNode* SubArea = NODE_SYSTEM.CreateSubAreaNode(ParentArea->GetID());
+	ASSERT_NE(SubArea, nullptr);
+
+	NodeArea* OwnedArea = SubArea->GetOwnedArea();
+	ASSERT_NE(OwnedArea, nullptr);
+	SubAreaInputNode* InputNode = SubArea->GetSubAreaInputNode();
+	SubAreaOutputNode* OutputNode = SubArea->GetSubAreaOutputNode();
+	ASSERT_NE(InputNode, nullptr);
+	ASSERT_NE(OutputNode, nullptr);
+
+	const std::string NewName = "NewName";
+	OwnedArea->SetName(NewName);
+
+	EXPECT_EQ(OwnedArea->GetName(), NewName);
+	EXPECT_EQ(SubArea->GetName(), NewName);
+	EXPECT_EQ(InputNode->GetName(), NewName + " Input");
+	EXPECT_EQ(OutputNode->GetName(), NewName + " Output");
+
+	NODE_SYSTEM.DeleteNodeArea(ParentArea);
+}
+
+TEST(SubAreaNodeTests, SetName_OnInputOrOutputNode_DoesNotPropagateUpward)
+{
+	NodeArea* ParentArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(ParentArea, nullptr);
+
+	SubAreaNode* SubArea = NODE_SYSTEM.CreateSubAreaNode(ParentArea->GetID());
+	ASSERT_NE(SubArea, nullptr);
+
+	NodeArea* OwnedArea = SubArea->GetOwnedArea();
+	SubAreaInputNode* InputNode = SubArea->GetSubAreaInputNode();
+	SubAreaOutputNode* OutputNode = SubArea->GetSubAreaOutputNode();
+	ASSERT_NE(OwnedArea, nullptr);
+	ASSERT_NE(InputNode, nullptr);
+	ASSERT_NE(OutputNode, nullptr);
+
+	SubArea->SetName("Anchor");
+	const std::string SubAreaNameBefore = SubArea->GetName();
+	const std::string OwnedAreaNameBefore = OwnedArea->GetName();
+
+	InputNode->SetName("CustomInputName");
+	EXPECT_EQ(InputNode->GetName(), "CustomInputName");
+	EXPECT_EQ(SubArea->GetName(), SubAreaNameBefore);
+	EXPECT_EQ(OwnedArea->GetName(), OwnedAreaNameBefore);
+	// The OutputNode should not have been renamed by touching the InputNode.
+	EXPECT_EQ(OutputNode->GetName(), SubAreaNameBefore + " Output");
+
+	OutputNode->SetName("CustomOutputName");
+	EXPECT_EQ(OutputNode->GetName(), "CustomOutputName");
+	EXPECT_EQ(SubArea->GetName(), SubAreaNameBefore);
+	EXPECT_EQ(OwnedArea->GetName(), OwnedAreaNameBefore);
+	EXPECT_EQ(InputNode->GetName(), "CustomInputName");
+
+	NODE_SYSTEM.DeleteNodeArea(ParentArea);
+}
+
+TEST(SubAreaNodeTests, SetName_OnTopLevelArea_DoesNotAffectUnrelatedSubAreaNode)
+{
+	NodeArea* ParentArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(ParentArea, nullptr);
+
+	SubAreaNode* SubArea = NODE_SYSTEM.CreateSubAreaNode(ParentArea->GetID());
+	ASSERT_NE(SubArea, nullptr);
+	SubArea->SetName("KeepThisName");
+
+	const std::string SubAreaNameBefore = SubArea->GetName();
+	const std::string InputNameBefore = SubArea->GetSubAreaInputNode()->GetName();
+	const std::string OutputNameBefore = SubArea->GetSubAreaOutputNode()->GetName();
+	const std::string OwnedNameBefore = SubArea->GetOwnedArea()->GetName();
+
+	// ParentArea is not owned by any SubAreaNode; renaming it should not affect the SubAreaNode or its owned area or I/O nodes.
+	ParentArea->SetName("RenamedParent");
+	EXPECT_EQ(ParentArea->GetName(), "RenamedParent");
+	EXPECT_EQ(SubArea->GetName(), SubAreaNameBefore);
+	EXPECT_EQ(SubArea->GetSubAreaInputNode()->GetName(), InputNameBefore);
+	EXPECT_EQ(SubArea->GetSubAreaOutputNode()->GetName(), OutputNameBefore);
+	EXPECT_EQ(SubArea->GetOwnedArea()->GetName(), OwnedNameBefore);
+
+	NODE_SYSTEM.DeleteNodeArea(ParentArea);
+}
+
+TEST(SubAreaNodeTests, SetName_MultipleSubAreasInParent_NamesAreIndependent)
+{
+	NodeArea* ParentArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(ParentArea, nullptr);
+
+	SubAreaNode* SubA = NODE_SYSTEM.CreateSubAreaNode(ParentArea->GetID());
+	SubAreaNode* SubB = NODE_SYSTEM.CreateSubAreaNode(ParentArea->GetID());
+	ASSERT_NE(SubA, nullptr);
+	ASSERT_NE(SubB, nullptr);
+	ASSERT_NE(SubA->GetID(), SubB->GetID());
+
+	SubA->SetName("Alpha");
+	SubB->SetName("Beta");
+
+	EXPECT_EQ(SubA->GetName(), "Alpha");
+	EXPECT_EQ(SubA->GetOwnedArea()->GetName(), "Alpha");
+	EXPECT_EQ(SubA->GetSubAreaInputNode()->GetName(), "Alpha Input");
+	EXPECT_EQ(SubA->GetSubAreaOutputNode()->GetName(), "Alpha Output");
+
+	EXPECT_EQ(SubB->GetName(), "Beta");
+	EXPECT_EQ(SubB->GetOwnedArea()->GetName(), "Beta");
+	EXPECT_EQ(SubB->GetSubAreaInputNode()->GetName(), "Beta Input");
+	EXPECT_EQ(SubB->GetSubAreaOutputNode()->GetName(), "Beta Output");
+
+	// Renaming one through the area side must not touch the other.
+	SubA->GetOwnedArea()->SetName("AlphaPrime");
+	EXPECT_EQ(SubA->GetName(), "AlphaPrime");
+	EXPECT_EQ(SubA->GetSubAreaInputNode()->GetName(), "AlphaPrime Input");
+	EXPECT_EQ(SubA->GetSubAreaOutputNode()->GetName(), "AlphaPrime Output");
+
+	EXPECT_EQ(SubB->GetName(), "Beta");
+	EXPECT_EQ(SubB->GetOwnedArea()->GetName(), "Beta");
+	EXPECT_EQ(SubB->GetSubAreaInputNode()->GetName(), "Beta Input");
+	EXPECT_EQ(SubB->GetSubAreaOutputNode()->GetName(), "Beta Output");
+
+	NODE_SYSTEM.DeleteNodeArea(ParentArea);
+}
+
+TEST(SubAreaNodeTests, SetName_NestedSubAreas_NamesPropagateIndependently)
+{
+	NodeArea* ParentArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(ParentArea, nullptr);
+
+	SubAreaNode* OuterSubArea = NODE_SYSTEM.CreateSubAreaNode(ParentArea->GetID());
+	ASSERT_NE(OuterSubArea, nullptr);
+	NodeArea* OuterOwned = OuterSubArea->GetOwnedArea();
+	ASSERT_NE(OuterOwned, nullptr);
+
+	SubAreaNode* InnerSubArea = NODE_SYSTEM.CreateSubAreaNode(OuterOwned->GetID());
+	ASSERT_NE(InnerSubArea, nullptr);
+	NodeArea* InnerOwned = InnerSubArea->GetOwnedArea();
+	ASSERT_NE(InnerOwned, nullptr);
+
+	OuterSubArea->SetName("Outer");
+	InnerSubArea->SetName("Inner");
+
+	// Outer naming.
+	EXPECT_EQ(OuterSubArea->GetName(), "Outer");
+	EXPECT_EQ(OuterOwned->GetName(), "Outer");
+	EXPECT_EQ(OuterSubArea->GetSubAreaInputNode()->GetName(), "Outer Input");
+	EXPECT_EQ(OuterSubArea->GetSubAreaOutputNode()->GetName(), "Outer Output");
+
+	// Inner naming, untouched by outer.
+	EXPECT_EQ(InnerSubArea->GetName(), "Inner");
+	EXPECT_EQ(InnerOwned->GetName(), "Inner");
+	EXPECT_EQ(InnerSubArea->GetSubAreaInputNode()->GetName(), "Inner Input");
+	EXPECT_EQ(InnerSubArea->GetSubAreaOutputNode()->GetName(), "Inner Output");
+
+	// Renaming the outer must NOT affect the inner.
+	OuterSubArea->SetName("OuterRenamed");
+	EXPECT_EQ(OuterSubArea->GetName(), "OuterRenamed");
+	EXPECT_EQ(OuterOwned->GetName(), "OuterRenamed");
+	EXPECT_EQ(OuterSubArea->GetSubAreaInputNode()->GetName(), "OuterRenamed Input");
+	EXPECT_EQ(OuterSubArea->GetSubAreaOutputNode()->GetName(), "OuterRenamed Output");
+
+	EXPECT_EQ(InnerSubArea->GetName(), "Inner");
+	EXPECT_EQ(InnerOwned->GetName(), "Inner");
+	EXPECT_EQ(InnerSubArea->GetSubAreaInputNode()->GetName(), "Inner Input");
+	EXPECT_EQ(InnerSubArea->GetSubAreaOutputNode()->GetName(), "Inner Output");
+
+	NODE_SYSTEM.DeleteNodeArea(ParentArea);
+}
+
+TEST(SubAreaNodeTests, CopyPaste_PreservesPropagatedNames)
+{
+	NodeArea* ParentArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(ParentArea, nullptr);
+
+	SubAreaNode* SubArea = NODE_SYSTEM.CreateSubAreaNode(ParentArea->GetID());
+	ASSERT_NE(SubArea, nullptr);
+	SubArea->SetName("Original");
+
+	TEST_TOOLS.SimulateCopyPasteNodes({ SubArea }, ParentArea);
+
+	SubAreaNode* PastedSubArea = nullptr;
+	for (SubAreaNode* Node : ParentArea->GetNodesByType<SubAreaNode>())
+	{
+		if (Node->GetID() != SubArea->GetID())
+		{
+			PastedSubArea = Node;
+			break;
+		}
+	}
+	ASSERT_NE(PastedSubArea, nullptr);
+
+	// The pasted SubAreaNode keeps the source name and the propagated names.
+	EXPECT_EQ(PastedSubArea->GetName(), "Original");
+	NodeArea* PastedOwned = PastedSubArea->GetOwnedArea();
+	ASSERT_NE(PastedOwned, nullptr);
+	EXPECT_EQ(PastedOwned->GetName(), "Original");
+	ASSERT_NE(PastedSubArea->GetSubAreaInputNode(), nullptr);
+	ASSERT_NE(PastedSubArea->GetSubAreaOutputNode(), nullptr);
+	EXPECT_EQ(PastedSubArea->GetSubAreaInputNode()->GetName(), "Original Input");
+	EXPECT_EQ(PastedSubArea->GetSubAreaOutputNode()->GetName(), "Original Output");
+
+	// Renaming the pasted node must not change the original.
+	PastedSubArea->SetName("Clone");
+	EXPECT_EQ(PastedSubArea->GetName(), "Clone");
+	EXPECT_EQ(PastedOwned->GetName(), "Clone");
+	EXPECT_EQ(PastedSubArea->GetSubAreaInputNode()->GetName(), "Clone Input");
+	EXPECT_EQ(PastedSubArea->GetSubAreaOutputNode()->GetName(), "Clone Output");
+
+	EXPECT_EQ(SubArea->GetName(), "Original");
+	EXPECT_EQ(SubArea->GetOwnedArea()->GetName(), "Original");
+	EXPECT_EQ(SubArea->GetSubAreaInputNode()->GetName(), "Original Input");
+	EXPECT_EQ(SubArea->GetSubAreaOutputNode()->GetName(), "Original Output");
+
+	NODE_SYSTEM.DeleteNodeArea(ParentArea);
+}
+
+TEST(SubAreaNodeTests, SetName_Propagation_SurvivesSaveLoad)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* ParentArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(ParentArea, nullptr);
+
+	SubAreaNode* SubArea = NODE_SYSTEM.CreateSubAreaNode(ParentArea->GetID());
+	ASSERT_NE(SubArea, nullptr);
+	SubArea->SetName("Persisted");
+
+	const std::string ParentAreaID = ParentArea->GetID();
+	const std::string SubAreaID = SubArea->GetID();
+
+	NODE_SYSTEM.SaveToFile("SubAreaNodeTests_SetName_Propagation.json");
+	NODE_SYSTEM.Clear();
+	NODE_SYSTEM.LoadFromFile("SubAreaNodeTests_SetName_Propagation.json");
+
+	NodeArea* ReloadedParent = NODE_SYSTEM.GetNodeAreaByID(ParentAreaID);
+	ASSERT_NE(ReloadedParent, nullptr);
+
+	std::vector<SubAreaNode*> SubAreaNodes = ReloadedParent->GetNodesByType<SubAreaNode>();
+	ASSERT_EQ(SubAreaNodes.size(), 1);
+	SubAreaNode* ReloadedSubArea = SubAreaNodes[0];
+	EXPECT_EQ(ReloadedSubArea->GetID(), SubAreaID);
+
+	NodeArea* ReloadedOwned = ReloadedSubArea->GetOwnedArea();
+	ASSERT_NE(ReloadedOwned, nullptr);
+	SubAreaInputNode* ReloadedInput = ReloadedSubArea->GetSubAreaInputNode();
+	SubAreaOutputNode* ReloadedOutput = ReloadedSubArea->GetSubAreaOutputNode();
+	ASSERT_NE(ReloadedInput, nullptr);
+	ASSERT_NE(ReloadedOutput, nullptr);
+
+	// All four names should have been preserved.
+	EXPECT_EQ(ReloadedSubArea->GetName(), "Persisted");
+	EXPECT_EQ(ReloadedOwned->GetName(), "Persisted");
+	EXPECT_EQ(ReloadedInput->GetName(), "Persisted Input");
+	EXPECT_EQ(ReloadedOutput->GetName(), "Persisted Output");
+
+	// Relationship must still be live after load: rename via the SubAreaNode
+	// and via the OwnedArea, both must propagate.
+	ReloadedSubArea->SetName("AfterLoadFromNode");
+	EXPECT_EQ(ReloadedSubArea->GetName(), "AfterLoadFromNode");
+	EXPECT_EQ(ReloadedOwned->GetName(), "AfterLoadFromNode");
+	EXPECT_EQ(ReloadedInput->GetName(), "AfterLoadFromNode Input");
+	EXPECT_EQ(ReloadedOutput->GetName(), "AfterLoadFromNode Output");
+
+	ReloadedOwned->SetName("AfterLoadFromArea");
+	EXPECT_EQ(ReloadedSubArea->GetName(), "AfterLoadFromArea");
+	EXPECT_EQ(ReloadedOwned->GetName(), "AfterLoadFromArea");
+	EXPECT_EQ(ReloadedInput->GetName(), "AfterLoadFromArea Input");
+	EXPECT_EQ(ReloadedOutput->GetName(), "AfterLoadFromArea Output");
+
+	NODE_SYSTEM.Clear();
 }
