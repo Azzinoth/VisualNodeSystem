@@ -1134,6 +1134,9 @@ std::string NodeSystem::ToJson() const
 	Root["NodeAreas"] = NodeAreasJson;
 
 	Json::StreamWriterBuilder Builder;
+	// Tweak the builder settings for a more compact JSON output.
+	Builder.settings_["indentation"] = "";
+	Builder.settings_["commentStyle"] = "None";
 	const std::string JsonText = Json::writeString(Builder, Root);
 
 	return JsonText;

@@ -36,6 +36,31 @@ std::vector<Connection*> NodeArea::GetAllConnections(const NodeSocket* Socket) c
 	return Result;
 }
 
+std::vector<Connection*> NodeArea::GetAllConnections(const Node* Node) const
+{
+	std::vector<Connection*> Result;
+	if (Node == nullptr)
+		return Result;
+
+	for (size_t i = 0; i < Connections.size(); i++)
+	{
+		if (Connections[i] == nullptr)
+			continue;
+
+		bool bTouchesNode = false;
+		if (Connections[i]->In != nullptr && Connections[i]->In->GetParent() == Node)
+			bTouchesNode = true;
+
+		else if (Connections[i]->Out != nullptr && Connections[i]->Out->GetParent() == Node)
+			bTouchesNode = true;
+
+		if (bTouchesNode)
+			Result.push_back(Connections[i]);
+	}
+
+	return Result;
+}
+
 Connection* NodeArea::GetConnection(const NodeSocket* FirstSocket, const NodeSocket* SecondSocket) const
 {
 	for (size_t i = 0; i < Connections.size(); i++)

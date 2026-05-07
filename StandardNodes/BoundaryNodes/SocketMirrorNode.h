@@ -39,14 +39,6 @@ namespace VisNodeSys
         static ImTextureID ChangeAllowedTypesIconTextureID;
 		static ImTextureID SubAreaIconTextureID;
 
-        static bool bSettingAllowedTypes;
-        static bool bShouldOpenEditWindow;
-        static NodeSocket* SocketInEditWindow;
-        static std::string CurrentEditWindowCaption;
-        static std::string EditWindowInputBuffer;
-        static void OpenEditWindow(NodeSocket* Socket, bool bForAllowedTypes);
-        static void RenderEditWindow();
-
         virtual void SetCorrectSize();
         void Draw();
     public:

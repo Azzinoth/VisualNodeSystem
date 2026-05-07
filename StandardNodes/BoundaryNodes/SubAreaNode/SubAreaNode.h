@@ -31,6 +31,8 @@ namespace VisNodeSys
 		void SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSocket, NODE_SOCKET_EVENT EventType);
 
 		std::vector<Node*> GetMirrorPartners() const;
+
+		void SetNameInternal(std::string NewValue);
 	public:
 		SubAreaInputNode* GetSubAreaInputNode() const;
 		SubAreaOutputNode* GetSubAreaOutputNode() const;
@@ -38,6 +40,8 @@ namespace VisNodeSys
 
 		Json::Value ToJson();
 		bool FromJson(Json::Value Json);
+
+		void SetName(std::string NewValue);
 
 		bool AddSocket(NodeSocket* Socket);
 		bool AddSocket(std::vector<std::string> AllowedTypes, std::string Name, NodeSocket::SocketFlow SocketDirection);

@@ -7,6 +7,7 @@ void NodeAreaContextMenuOpenState::Reset()
 	MousePositionRecorded = ImVec2(0, 0);
 	NodeID = "";
 	GroupCommentID = "";
+	SocketID = "";
 }
 
 void NodeAreaContextMenuOpenState::CaptureState(NodeArea* ParentNodeArea)
@@ -26,14 +27,22 @@ void NodeAreaContextMenuOpenState::CaptureState(NodeArea* ParentNodeArea)
 	{
 		if (ParentNodeArea->GetHovered() != nullptr)
 			NodeID = ParentNodeArea->GetHovered()->GetID();
-		
+
 		if (ParentNodeArea->GetHoveredGroupComment() != nullptr)
 			GroupCommentID = ParentNodeArea->GetHoveredGroupComment()->GetID();
+
+		if (ParentNodeArea->GetHoveredSocket() != nullptr)
+		{
+			SocketID = ParentNodeArea->GetHoveredSocket()->GetID();
+			if (NodeID.empty() && ParentNodeArea->GetHoveredSocket()->GetParent() != nullptr)
+				NodeID = ParentNodeArea->GetHoveredSocket()->GetParent()->GetID();
+		}
 	}
 	else
 	{
 		NodeID = "";
 		GroupCommentID = "";
+		SocketID = "";
 	}
 }
 
@@ -45,6 +54,11 @@ std::string NodeAreaContextMenuOpenState::GetNodeID() const
 std::string NodeAreaContextMenuOpenState::GetGroupCommentID() const
 {
 	return GroupCommentID;
+}
+
+std::string NodeAreaContextMenuOpenState::GetSocketID() const
+{
+	return SocketID;
 }
 
 Node* NodeAreaContextMenuOpenState::GetNode()
@@ -69,6 +83,18 @@ GroupComment* NodeAreaContextMenuOpenState::GetGroupComment()
 		return nullptr;
 
 	return ParentNodeArea->GetGroupCommentByID(GroupCommentID);
+}
+
+NodeSocket* NodeAreaContextMenuOpenState::GetSocket()
+{
+	if (SocketID.empty())
+		return nullptr;
+
+	Node* ParentNode = GetNode();
+	if (ParentNode == nullptr)
+		return nullptr;
+
+	return ParentNode->GetSocketByID(SocketID);
 }
 
 bool NodeArea::IsFocused() const
@@ -401,10 +427,10 @@ void NodeArea::RightMouseClick()
 {
 	if (HoveredNode == nullptr)
 		UnSelectAllNodes();
-	
+
 	if (HoveredNode == nullptr || !GetSelected().empty())
 		bOpenMainContextMenu = true;
-	
+
 	RightMouseClickNodesUpdate();
 	RightMouseClickConnectionsUpdate();
 	RightMouseClickRerouteUpdate();
@@ -422,36 +448,24 @@ void NodeArea::RightMouseClickNodesUpdate()
 {
 	if (HoveredNode != nullptr)
 	{
-		// Should we disconnect sockets
-		if (SocketHovered != nullptr && !SocketHovered->ConnectedSockets.empty())
+		if (SelectedNodes.size() <= 1)
 		{
-			std::vector<Connection*> ImpactedConnections = GetAllConnections(SocketHovered);
-			for (size_t i = 0; i < ImpactedConnections.size(); i++)
+			if (!HoveredNode->OpenContextMenu())
 			{
-				Delete(ImpactedConnections[i]);
+				bOpenMainContextMenu = true;
 			}
 		}
 		else
 		{
-			if (SelectedNodes.size() <= 1)
-			{
-				if (!HoveredNode->OpenContextMenu())
-				{
-					bOpenMainContextMenu = true;
-				}
-			}
-			else
-			{
-				bOpenMainContextMenu = true;
-			}
+			bOpenMainContextMenu = true;
+		}
 
-			// If hovered node was already selected do nothing
-			if (AddSelected(HoveredNode))
-			{
-				// But if it was not selected before deselect all other nodes.
-				UnSelectAllNodes();
-				AddSelected(HoveredNode);
-			}
+		// If hovered node was already selected do nothing
+		if (AddSelected(HoveredNode))
+		{
+			// But if it was not selected before deselect all other nodes.
+			UnSelectAllNodes();
+			AddSelected(HoveredNode);
 		}
 	}
 }
@@ -884,6 +898,11 @@ void NodeArea::KeyboardInputUpdate()
 Node* NodeArea::GetHovered() const
 {
 	return HoveredNode;
+}
+
+NodeSocket* NodeArea::GetHoveredSocket() const
+{
+	return SocketHovered;
 }
 
 std::vector<Node*> NodeArea::GetSelected()

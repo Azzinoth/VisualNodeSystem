@@ -57,8 +57,7 @@ SubAreaNode::SubAreaNode(NodeArea* OwnedArea)
 SubAreaNode::SubAreaNode(const SubAreaNode& Other) : VisNodeSys::SocketMirrorNode(Other)
 {
 	Init();
-	SetName(Other.GetName());
-
+	
 	NodeArea* NewOwnedArea = NODE_SYSTEM.CreateNodeArea();
 	OwnedAreaID = NewOwnedArea->GetID();
 	NodeArea* OtherOwnedArea = Other.GetOwnedArea();
@@ -71,6 +70,8 @@ SubAreaNode::SubAreaNode(const SubAreaNode& Other) : VisNodeSys::SocketMirrorNod
 	SubAreaOutputNodeID = OutputNodes[0]->GetID();
 	InputNodes[0]->OwnerSubAreaNodeID = GetID();
 	OutputNodes[0]->OwnerSubAreaNodeID = GetID();
+
+	SetName(Other.GetName());
 }
 
 SubAreaNode::~SubAreaNode()
@@ -207,6 +208,9 @@ std::vector<Node*> SubAreaNode::GetMirrorPartners() const
 SubAreaInputNode* SubAreaNode::GetSubAreaInputNode() const
 {
 	NodeArea* OwnedArea = GetOwnedArea();
+	if (OwnedArea == nullptr)
+		return nullptr;
+
 	Node* Node = OwnedArea->GetNodeByID(SubAreaInputNodeID);
 	if (Node == nullptr || Node->GetType() != "SubAreaInputNode")
 		return nullptr;
@@ -217,6 +221,9 @@ SubAreaInputNode* SubAreaNode::GetSubAreaInputNode() const
 SubAreaOutputNode* SubAreaNode::GetSubAreaOutputNode() const
 {
 	NodeArea* OwnedArea = GetOwnedArea();
+	if (OwnedArea == nullptr)
+		return nullptr;
+
 	Node* Node = OwnedArea->GetNodeByID(SubAreaOutputNodeID);
 	if (Node == nullptr || Node->GetType() != "SubAreaOutputNode")
 		return nullptr;
@@ -230,4 +237,34 @@ bool SubAreaNode::IsDangling() const
 	Node* OutputNode = NODE_SYSTEM.GetNodeByID(SubAreaOutputNodeID);
 
 	return InputNode == nullptr || OutputNode == nullptr;
+}
+
+void SubAreaNode::SetNameInternal(std::string NewValue)
+{
+	Node::SetName(NewValue);
+
+	SubAreaInputNode* InputNode = GetSubAreaInputNode();
+	if (InputNode != nullptr)
+		InputNode->SetName(NewValue + " Input");
+
+	SubAreaOutputNode* OutputNode = GetSubAreaOutputNode();
+	if (OutputNode != nullptr)
+		OutputNode->SetName(NewValue + " Output");
+}
+
+void SubAreaNode::SetName(std::string NewValue)
+{
+	SetNameInternal(NewValue);
+	if (GetOwnedArea() == nullptr)
+		return;
+
+	GetOwnedArea()->SetName(NewValue);
+
+	SubAreaInputNode* InputNode = GetSubAreaInputNode();
+	if (InputNode != nullptr)
+		InputNode->SetName(NewValue + " Input");
+
+	SubAreaOutputNode* OutputNode = GetSubAreaOutputNode();
+	if (OutputNode != nullptr)
+		OutputNode->SetName(NewValue + " Output");
 }

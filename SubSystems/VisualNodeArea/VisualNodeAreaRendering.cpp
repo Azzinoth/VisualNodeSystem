@@ -397,6 +397,8 @@ void NodeArea::Render()
 	ImGui::PopStyleVar();
 	// ************************* RENDER CONTEXT MENU END *************************
 
+	TEXT_INPUT_POPUP.Render();
+
 	if (bShowGroupCommentColorPicker)
 	{
 		bShowGroupCommentColorPicker = false;
@@ -733,6 +735,35 @@ ImVec2 NodeArea::GetRenderedViewCenter() const
 	}
 }
 
+bool NodeArea::CenterViewOnAllElements()
+{
+	// Need a rendered window to know its size. If the area has never been rendered, we can not compute a valid offset.
+	if (NodeAreaWindow == nullptr)
+		return false;
+
+	if (Nodes.empty() && GroupComments.empty())
+		return false;
+
+	ImVec2 Min, Max;
+	GetAllElementsAABB(Min, Max);
+
+	// GetAllElementsAABB bakes RenderOffset in, strip it for pure local coords.
+	ImVec2 AABBCenterLocal = ImVec2((Min.x + Max.x) * 0.5f,
+	                                (Min.y + Max.y) * 0.5f) - RenderOffset;
+
+	ImVec2 NewOffset = NodeAreaWindow->Size * 0.5f - AABBCenterLocal * Zoom;
+
+	// SetRenderOffset silently clamps to GRID_SIZE.
+	// If our target lies outside that range, we should return false.
+	const float Limit = Settings.Style.Grid.GRID_SIZE;
+	if (NewOffset.x <= -Limit || NewOffset.x >= Limit ||
+	    NewOffset.y <= -Limit || NewOffset.y >= Limit)
+		return false;
+
+	SetRenderOffset(NewOffset);
+	return true;
+}
+
 bool NodeArea::IsFillingWindow()
 {
 	return bFillWindow;
@@ -947,7 +978,70 @@ void NodeArea::RenderGroupComment(GroupComment* GroupComment)
 
 void NodeArea::RenderDefaultMainContextMenu()
 {
-	if (ContextMenuOpenState.GetGroupComment() != nullptr)
+	// A hovered socket wins over the rest.
+	if (ContextMenuOpenState.GetSocket() != nullptr)
+	{
+		NodeSocket* HoveredSocket = ContextMenuOpenState.GetSocket();
+
+		ImGui::Separator();
+		if (ImGui::MenuItem("Rename socket"))
+		{
+			std::string TargetNodeID = ContextMenuOpenState.GetNodeID();
+			std::string TargetSocketID = HoveredSocket->GetID();
+
+			TEXT_INPUT_POPUP.Show(
+				"Rename socket",
+				"Enter new socket name:",
+				HoveredSocket->GetName(),
+				[](const std::string& Input, std::string& OutError) -> bool {
+					if (Input.empty())
+					{
+						OutError = "Socket name cannot be empty.";
+						return false;
+					}
+					return true;
+				},
+				[this, TargetNodeID, TargetSocketID](const std::string& Input) {
+					Node* TargetNode = GetNodeByID(TargetNodeID);
+					if (TargetNode == nullptr)
+						return;
+					for (size_t i = 0; i < TargetNode->Input.size(); i++)
+					{
+						if (TargetNode->Input[i] != nullptr && TargetNode->Input[i]->GetID() == TargetSocketID)
+						{
+							TargetNode->Input[i]->SetName(Input);
+							return;
+						}
+					}
+					for (size_t i = 0; i < TargetNode->Output.size(); i++)
+					{
+						if (TargetNode->Output[i] != nullptr && TargetNode->Output[i]->GetID() == TargetSocketID)
+						{
+							TargetNode->Output[i]->SetName(Input);
+							return;
+						}
+					}
+				}
+			);
+		}
+
+		bool bBreakAllConnectionsDisabled = HoveredSocket->GetConnectedSockets().empty();
+		if (bBreakAllConnectionsDisabled)
+			ImGui::BeginDisabled();
+		
+		if (ImGui::MenuItem("Break socket connections"))
+		{
+			std::vector<Connection*> ImpactedConnections = GetAllConnections(HoveredSocket);
+			for (size_t i = 0; i < ImpactedConnections.size(); i++)
+				Delete(ImpactedConnections[i]);
+		}
+
+		if (bBreakAllConnectionsDisabled)
+			ImGui::EndDisabled();
+
+		ImGui::Separator();
+	}
+	else if (ContextMenuOpenState.GetGroupComment() != nullptr)
 	{
 		GroupComment* CurrentGroupComment = ContextMenuOpenState.GetGroupComment();
 		if (ImGui::MenuItem("Change background color..."))
@@ -993,6 +1087,46 @@ void NodeArea::RenderDefaultMainContextMenu()
 	}
 	else if (ContextMenuOpenState.GetNode() != nullptr && GetSelected().size() == 1)
 	{
+		if (ImGui::MenuItem("Rename Node"))
+		{
+			std::string TargetNodeID = ContextMenuOpenState.GetNodeID();
+			TEXT_INPUT_POPUP.Show(
+				"Rename node",
+				"Enter new node name:",
+				ContextMenuOpenState.GetNode()->GetName(),
+				[](const std::string& Input, std::string& OutError) -> bool {
+					if (Input.empty())
+					{
+						OutError = "Node name cannot be empty.";
+						return false;
+					}
+					return true;
+				},
+				[this, TargetNodeID](const std::string& Input) {
+					Node* TargetNode = GetNodeByID(TargetNodeID);
+					if (TargetNode != nullptr)
+						TargetNode->SetName(Input);
+				}
+			);
+		}
+
+		Node* TargetNode = GetNodeByID(ContextMenuOpenState.GetNodeID());
+		size_t ConnectionCount = TargetNode->GetNodesConnectedToInput().size() + TargetNode->GetNodesConnectedToOutput().size();
+
+		bool bBreakAllConnectionsDisabled = ConnectionCount == 0;
+		if (bBreakAllConnectionsDisabled)
+			ImGui::BeginDisabled();
+
+		if (ImGui::MenuItem("Break all connections to/from node"))
+		{
+			std::vector<Connection*> ImpactedConnections = GetAllConnections(TargetNode);
+			for (size_t i = 0; i < ImpactedConnections.size(); i++)
+				Delete(ImpactedConnections[i]);
+		}
+
+		if (bBreakAllConnectionsDisabled)
+			ImGui::EndDisabled();
+
 		if (ImGui::MenuItem("Delete Node"))
 		{
 			Delete(ContextMenuOpenState.GetNode());

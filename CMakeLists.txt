@@ -75,6 +75,11 @@ file(GLOB VisualNodeSystem_SRC
 	"VisualNodeSystemAPI.h"
 )
 
+file(GLOB TextInputPopup_SRC
+	"SubSystems/TextInputPopup.cpp"
+	"SubSystems/TextInputPopup.h"
+)
+
 # *************** THIRD_PARTY ***************
 
 file(GLOB jsoncpp_SRC
@@ -248,6 +253,7 @@ list(APPEND ALL_SOURCE_FILES
 			${SocketMirrorNode_SRC}
 			${VisualLinkNode_SRC}
 			${SubAreaNodes_SRC}
+			${TextInputPopup_SRC}
 			${BaseExecutionFlowNodes_SOURCE_FILES}
 			${LiteralsNodes_SOURCE_FILES}
 			${VariablesNodes_SOURCE_FILES}
@@ -276,6 +282,7 @@ endif()
 
 source_group("Source Files" FILES ${VisualNodeSystem_SRC})
 source_group("Source Files/SubSystems/VisualNodeArea/" FILES ${VisualNodeArea_SRC})
+source_group("Source Files/SubSystems/TextInputPopup/" FILES ${TextInputPopup_SRC})
 source_group("Source Files/StandardNodes/BoundaryNodes/" FILES ${SocketMirrorNode_SRC})
 source_group("Source Files/StandardNodes/BoundaryNodes/LinkNode" FILES ${VisualLinkNode_SRC})
 source_group("Source Files/StandardNodes/BoundaryNodes/SubAreaNode" FILES ${SubAreaNodes_SRC})

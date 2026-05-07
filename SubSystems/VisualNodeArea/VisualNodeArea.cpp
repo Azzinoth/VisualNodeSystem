@@ -36,6 +36,12 @@ std::string NodeArea::GetName() const
 void NodeArea::SetName(std::string NewValue)
 {
 	Name = NewValue;
+
+	// This area could be owned by a SubAreaNode in another area.
+	// If it is, we need to update its name as well.
+	SubAreaNode* ParentSubAreaNode = NODE_SYSTEM.FindOwnerSubAreaNode(GetID());
+	if (ParentSubAreaNode != nullptr)
+		ParentSubAreaNode->SetNameInternal(NewValue);
 }
 
 ImVec2 NodeArea::GetSize() const
@@ -269,6 +275,9 @@ std::string NodeArea::ToJson() const
 	Root["RenderOffset"]["Y"] = RenderOffset.y;
 
 	Json::StreamWriterBuilder Builder;
+	// Tweak the builder settings for a more compact JSON output.
+	Builder.settings_["indentation"] = "";
+	Builder.settings_["commentStyle"] = "None";
 	const std::string JsonText = Json::writeString(Builder, Root);
 
 	return JsonText;

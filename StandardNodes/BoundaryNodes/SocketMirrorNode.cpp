@@ -11,12 +11,6 @@ ImTextureID SocketMirrorNode::RenameIconTextureID = 0;
 ImTextureID SocketMirrorNode::ChangeAllowedTypesIconTextureID = 0;
 ImTextureID SocketMirrorNode::SubAreaIconTextureID = 0;
 
-bool SocketMirrorNode::bSettingAllowedTypes = false;
-bool SocketMirrorNode::bShouldOpenEditWindow = false;
-NodeSocket* SocketMirrorNode::SocketInEditWindow = nullptr;
-std::string SocketMirrorNode::CurrentEditWindowCaption = "";
-std::string SocketMirrorNode::EditWindowInputBuffer = "";
-
 SocketMirrorNode::SocketMirrorNode(const std::string ID) : Node(ID)
 {
 	
@@ -246,152 +240,6 @@ bool SocketMirrorNode::DeleteSocket(NodeSocket* Socket)
 	return true;
 }
 
-void SocketMirrorNode::OpenEditWindow(NodeSocket* Socket, bool bForAllowedTypes)
-{
-	SocketInEditWindow = Socket;
-	bSettingAllowedTypes = bForAllowedTypes;
-	bShouldOpenEditWindow = true;
-}
-
-void SocketMirrorNode::RenderEditWindow()
-{
-	if (bShouldOpenEditWindow)
-	{
-		if (SocketInEditWindow == nullptr)
-		{
-			bShouldOpenEditWindow = false;
-			return;
-		}
-
-		if (bSettingAllowedTypes)
-		{
-			CurrentEditWindowCaption = "Set allowed types for \"" + SocketInEditWindow->GetName() + "\" socket";
-			EditWindowInputBuffer.clear();
-			std::vector<std::string> CurrentTypes = SocketInEditWindow->GetAllowedTypes();
-			for (size_t i = 0; i < CurrentTypes.size(); i++)
-			{
-				if (i > 0)
-					EditWindowInputBuffer += " ";
-				EditWindowInputBuffer += CurrentTypes[i];
-			}
-		}
-		else
-		{
-			CurrentEditWindowCaption = "Edit socket name for \"" + SocketInEditWindow->GetName() + "\" socket";
-			EditWindowInputBuffer = SocketInEditWindow->GetName();
-		}
-
-		ImGui::OpenPopup(CurrentEditWindowCaption.c_str());
-		bShouldOpenEditWindow = false;
-	}
-
-	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 15));
-	if (ImGui::BeginPopupModal(CurrentEditWindowCaption.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize))
-	{
-		if (SocketInEditWindow == nullptr)
-		{
-			ImGui::PopStyleVar();
-			ImGui::CloseCurrentPopup();
-			ImGui::EndPopup();
-			return;
-		}
-
-		if (bSettingAllowedTypes)
-		{
-			ImGui::Text("Enter allowed types separated by spaces:");
-			ImGui::SetNextItemWidth(300.0f);
-			ImGui::InputText("##AllowedTypes", &EditWindowInputBuffer);
-
-			// Parse current input to show preview.
-			std::vector<std::string> ParsedTypes;
-			std::istringstream StringStream(EditWindowInputBuffer);
-			std::string CurrentType;
-			while (StringStream >> CurrentType)
-				ParsedTypes.push_back(CurrentType);
-
-			if (ParsedTypes.empty())
-			{
-				ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.4f, 1.0f), "At least one type is required.");
-			}
-			else
-			{
-				ImGui::Text("Types to apply: %d", static_cast<int>(ParsedTypes.size()));
-			}
-		}
-		else
-		{
-			ImGui::Text("Enter new socket name:");
-			ImGui::SetNextItemWidth(300.0f);
-			ImGui::InputText("##SocketName", &EditWindowInputBuffer);
-
-			if (EditWindowInputBuffer.empty())
-				ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.4f, 1.0f), "Socket name cannot be empty.");
-		}
-
-		ImGui::Spacing();
-
-		// Determine if Apply should be enabled.
-		bool bCanApply = true;
-		if (bSettingAllowedTypes)
-		{
-			std::istringstream CheckStream(EditWindowInputBuffer);
-			std::string CheckType;
-			if (!(CheckStream >> CheckType))
-				bCanApply = false;
-		}
-		else
-		{
-			if (EditWindowInputBuffer.empty())
-				bCanApply = false;
-		}
-
-		ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 4.0f - 120 / 2.0f);
-
-		if (!bCanApply)
-			ImGui::BeginDisabled();
-
-		if (ImGui::Button("Apply", ImVec2(120, 0)))
-		{
-			if (SocketInEditWindow != nullptr)
-			{
-				if (bSettingAllowedTypes)
-				{
-					std::vector<std::string> NewTypes;
-					std::istringstream StringStream(EditWindowInputBuffer);
-					std::string CurrentType;
-					while (StringStream >> CurrentType)
-						NewTypes.push_back(CurrentType);
-
-					SocketInEditWindow->SetAllowedTypes(NewTypes);
-				}
-				else
-				{
-					SocketInEditWindow->SetName(EditWindowInputBuffer);
-				}
-			}
-
-			SocketInEditWindow = nullptr;
-			ImGui::CloseCurrentPopup();
-		}
-
-		if (!bCanApply)
-			ImGui::EndDisabled();
-
-		ImGui::SetItemDefaultFocus();
-		ImGui::SameLine();
-		ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2.0f + ImGui::GetWindowWidth() / 4.0f - 120.0f / 2.0f);
-		if (ImGui::Button("Cancel", ImVec2(120, 0)))
-			ImGui::CloseCurrentPopup();
-
-		ImGui::PopStyleVar();
-		ImGui::EndPopup();
-	}
-	else
-	{
-		ImGui::PopStyleVar();
-	}
-}
-
 void SocketMirrorNode::Draw()
 {
 	Node::Draw();
@@ -540,7 +388,29 @@ void SocketMirrorNode::Draw()
 
 				if (ImGui::ImageButton(("Rename_LinkNode_ID" + SocketID).c_str(), RenameIconTextureID, ImVec2(RenameIconSize, RenameIconSize), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImVec4(0, 0, 0, 0)))
 				{
-					OpenEditWindow(SocketsToWorkWith[i], false);
+					std::string ParentNodeID = GetID();
+					std::string TargetSocketID = SocketID;
+
+					TEXT_INPUT_POPUP.Show(
+						"Rename socket",
+						"Enter new socket name:",
+						SocketsToWorkWith[i]->GetName(),
+						[](const std::string& Input, std::string& OutError) -> bool {
+							if (Input.empty())
+							{
+								OutError = "Socket name cannot be empty.";
+								return false;
+							}
+							return true;
+						},
+						[ParentNodeID, TargetSocketID](const std::string& Input) {
+							Node* TargetNode = NODE_SYSTEM.GetNodeByID(ParentNodeID);
+							if (TargetNode == nullptr)
+								return;
+							NodeSocket* TargetSocket = TargetNode->GetSocketByID(TargetSocketID);
+							TargetSocket->SetName(Input);
+						}
+					);
 				}
 				NODE_CORE.ShowToolTip("Rename socket");
 
@@ -574,7 +444,50 @@ void SocketMirrorNode::Draw()
 
 				if (ImGui::ImageButton(("ChangeAllowedTypes_LinkNode_ID" + SocketID).c_str(), ChangeAllowedTypesIconTextureID, ImVec2(ChangeTypesIconSize, ChangeTypesIconSize), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImVec4(0, 0, 0, 0)))
 				{
-					OpenEditWindow(SocketsToWorkWith[i], true);
+					std::string ParentNodeID = GetID();
+					std::string TargetSocketID = SocketID;
+
+					std::vector<std::string> CurrentTypes = SocketsToWorkWith[i]->GetAllowedTypes();
+					std::string InitialText;
+					for (size_t j = 0; j < CurrentTypes.size(); j++)
+					{
+						if (j > 0)
+							InitialText += " ";
+						InitialText += CurrentTypes[j];
+					}
+
+					TEXT_INPUT_POPUP.Show(
+						"Change allowed types",
+						"Enter allowed types separated by spaces:",
+						InitialText,
+						[](const std::string& Input, std::string& OutError) -> bool {
+							std::istringstream Stream(Input);
+							std::string Token;
+							if (!(Stream >> Token))
+							{
+								OutError = "At least one type is required.";
+								return false;
+							}
+							return true;
+						},
+						[ParentNodeID, TargetSocketID](const std::string& Input) {
+							Node* TargetNode = NODE_SYSTEM.GetNodeByID(ParentNodeID);
+							if (TargetNode == nullptr)
+								return;
+
+							NodeSocket* TargetSocket = TargetNode->GetSocketByID(TargetSocketID);
+							if (TargetSocket == nullptr)
+								return;
+
+							std::vector<std::string> NewTypes;
+							std::istringstream Stream(Input);
+							std::string Token;
+							while (Stream >> Token)
+								NewTypes.push_back(Token);
+
+							TargetSocket->SetAllowedTypes(NewTypes);
+						}
+					);
 				}
 				NODE_CORE.ShowToolTip("Change allowed types");
 				ImGui::PopStyleVar();
@@ -639,7 +552,6 @@ void SocketMirrorNode::Draw()
 	if (bInEditMode)
 	{
 		DrawGlobalButtonsBackground();
-		RenderEditWindow();
 
 		if (FlowMode == 3)
 		{

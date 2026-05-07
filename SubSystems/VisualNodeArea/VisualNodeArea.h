@@ -2,6 +2,7 @@
 #include "../../GroupComment.h"
 #include "../../StandardNodes/BoundaryNodes/LinkNode/LinkNode.h"
 #include "../../StandardNodes/BoundaryNodes/SubAreaNode/SubAreaNode.h"
+#include "../TextInputPopup.h"
 
 #ifdef VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES
 #include "../StandardNodes/ExecutionFlowNodes/BaseExecutionFlowNode.h"
@@ -135,14 +136,17 @@ namespace VisNodeSys
 
 		std::string GetNodeID() const;
 		std::string GetGroupCommentID() const;
+		std::string GetSocketID() const;
 
 		Node* GetNode();
 		GroupComment* GetGroupComment();
+		NodeSocket* GetSocket();
 	private:
 		std::string NodeAreaID;
 
 		std::string NodeID;
 		std::string GroupCommentID;
+		std::string SocketID;
 	};
 
 	class VISUAL_NODE_SYSTEM_API NodeArea
@@ -177,6 +181,7 @@ namespace VisNodeSys
 		void SetZoomFactor(float NewValue);
 
 		Node* GetHovered() const;
+		NodeSocket* GetHoveredSocket() const;
 		std::vector<Node*> GetSelected();
 		void UnSelectAll();
 
@@ -217,6 +222,8 @@ namespace VisNodeSys
 		void GetAllElementsAABB(ImVec2& Min, ImVec2& Max) const;
 		ImVec2 GetAllElementsAABBCenter() const;
 		ImVec2 GetRenderedViewCenter() const;
+
+		bool CenterViewOnAllElements();
 
 		bool DeleteByID(std::string ID);
 
@@ -380,6 +387,7 @@ namespace VisNodeSys
 		ImVec2 RenderOffset = ImVec2(0.0, 0.0);
 		std::function<void()> MainContextMenuFunction = nullptr;
 		void RenderDefaultMainContextMenu();
+
 		std::vector<std::function<void(Node*, NODE_EVENT)>> NodeEventsCallbacks;
 		std::queue<SocketEvent> SocketEventQueue;
 
@@ -388,6 +396,7 @@ namespace VisNodeSys
 		void PropagateNodeEventsCallbacks(Node* Node, NODE_EVENT EventToPropagate) const;
 		ImVec2 SocketToPosition(const NodeSocket* Socket) const;
 		std::vector<Connection*> GetAllConnections(const NodeSocket* Socket) const;
+		std::vector<Connection*> GetAllConnections(const Node* Node) const;
 		Connection* GetConnection(const NodeSocket* FirstSocket, const NodeSocket* SecondSocket) const;
 		void Delete(Connection* Connection);
 

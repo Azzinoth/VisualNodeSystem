@@ -95,8 +95,8 @@ namespace VisNodeSys
 		ImVec2 GetClientRegionSize();
 		ImVec2 GetClientRegionPosition();
 
-		std::string GetName() const;
-		void SetName(std::string NewValue);
+		virtual std::string GetName() const;
+		virtual void SetName(std::string NewValue);
 
 		std::string GetType() const;
 		
