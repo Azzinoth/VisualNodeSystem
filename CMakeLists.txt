@@ -97,6 +97,8 @@ file(GLOB NodeArea_Load_SRC
 file(GLOB NodeArea_EventSystem_SRC
 	"NodeAreaTests/EventSystemTests/NodeAreaEventSystemTests.cpp"
 	"NodeAreaTests/EventSystemTests/NodeAreaEventSystemTests.h"
+	"NodeAreaTests/EventSystemTests/ExecutionEntryPointTests.cpp"
+	"NodeAreaTests/EventSystemTests/ExecutionEntryPointTests.h"
 )
 
 file(GLOB NodeFactory_SRC
