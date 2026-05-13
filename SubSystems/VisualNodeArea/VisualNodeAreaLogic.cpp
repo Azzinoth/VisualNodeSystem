@@ -617,8 +617,67 @@ bool NodeArea::TriggerOrphanSocketEvent(Node* Node, NODE_SOCKET_EVENT EventType)
 	if (EventType == EXECUTE && Settings.bSaveExecutedNodes)
 		LastExecutedNodes.push_back(Node);
 #endif
-	Node->SocketEvent(nullptr, nullptr, EventType);
 
+	// Synthesise an OwnSocket for SocketEvent dispatch.
+	// Prevents crash if SocketEvent implementation accesses the connected socket.
+	NodeSocket* SimulatedSourceSocket = nullptr;
+
+	// First try to find an EXECUTE input socket.
+	size_t InputCount = Node->GetInputSocketCount();
+	for (size_t i = 0; i < InputCount; i++)
+	{
+		NodeSocket* CurrentSocket = Node->GetSocketByIndex(static_cast<int>(i), NodeSocket::SocketFlow::Input);
+		if (CurrentSocket == nullptr)
+			continue;
+
+		const std::vector<std::string>& AllowedTypes = CurrentSocket->GetAllowedTypes();
+		bool bIsExecute = false;
+		for (size_t j = 0; j < AllowedTypes.size(); j++)
+		{
+			if (AllowedTypes[j] == "EXECUTE")
+			{
+				bIsExecute = true;
+				break;
+			}
+		}
+
+		if (bIsExecute)
+		{
+			SimulatedSourceSocket = CurrentSocket;
+			break;
+		}
+	}
+
+	// If no EXECUTE input socket was found, try to find an EXECUTE output socket.
+	if (SimulatedSourceSocket == nullptr)
+	{
+		size_t OutputCount = Node->GetOutputSocketCount();
+		for (size_t i = 0; i < OutputCount; i++)
+		{
+			NodeSocket* CurrentSocket = Node->GetSocketByIndex(static_cast<int>(i), NodeSocket::SocketFlow::Output);
+			if (CurrentSocket == nullptr)
+				continue;
+
+			const std::vector<std::string>& AllowedTypes = CurrentSocket->GetAllowedTypes();
+			bool bIsExecute = false;
+			for (size_t j = 0; j < AllowedTypes.size(); j++)
+			{
+				if (AllowedTypes[j] == "EXECUTE")
+				{
+					bIsExecute = true;
+					break;
+				}
+			}
+
+			if (bIsExecute)
+			{
+				SimulatedSourceSocket = CurrentSocket;
+				break;
+			}
+		}
+	}
+
+	Node->SocketEvent(SimulatedSourceSocket, nullptr, EventType);
 	return true;
 }
 
