@@ -729,3 +729,313 @@ TEST(Basic, SetCaption_RejectsStringLongerThanMaxLength)
 	LocalNodeArea->AddNode(NewNode);
 	NODE_SYSTEM.DeleteNodeArea(LocalNodeArea);
 }
+
+TEST(Basic, SetFunctionToOutputData_EmptyFunction_GetDataReturnsNullptr)
+{
+	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
+
+	Node* SomeNode = new Node();
+	SomeNode->AddSocket(new NodeSocket(SomeNode, "INT", "out", NodeSocket::SocketFlow::Output));
+	Area->AddNode(SomeNode);
+
+	NodeSocket* Socket = SomeNode->GetSocketByIndex(0, NodeSocket::SocketFlow::Output);
+	ASSERT_NE(Socket, nullptr);
+
+	Socket->SetFunctionToOutputData(std::function<void* ()>{});
+
+	EXPECT_EQ(Socket->GetData(), nullptr);
+
+	NODE_SYSTEM.DeleteNodeArea(Area);
+}
+
+TEST(Basic, UnsetFunction_GetData_ReturnsNullptr)
+{
+	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
+
+	Node* SomeNode = new Node();
+	SomeNode->AddSocket(new NodeSocket(SomeNode, "INT", "out", NodeSocket::SocketFlow::Output));
+	Area->AddNode(SomeNode);
+
+	NodeSocket* Socket = SomeNode->GetSocketByIndex(0, NodeSocket::SocketFlow::Output);
+	ASSERT_NE(Socket, nullptr);
+
+	EXPECT_EQ(Socket->GetData(), nullptr);
+
+	NODE_SYSTEM.DeleteNodeArea(Area);
+}
+
+TEST(Basic, SetThenEmpty_GetData_ReturnsNullptr)
+{
+	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
+
+	Node* SomeNode = new Node();
+	SomeNode->AddSocket(new NodeSocket(SomeNode, "INT", "out", NodeSocket::SocketFlow::Output));
+	Area->AddNode(SomeNode);
+
+	NodeSocket* Socket = SomeNode->GetSocketByIndex(0, NodeSocket::SocketFlow::Output);
+	ASSERT_NE(Socket, nullptr);
+
+	int Value = 42;
+	Socket->SetFunctionToOutputData([&Value]() -> void* { return &Value; });
+	ASSERT_EQ(Socket->GetData(), &Value);
+
+	Socket->SetFunctionToOutputData(std::function<void* ()>{});
+
+	EXPECT_EQ(Socket->GetData(), nullptr);
+
+	NODE_SYSTEM.DeleteNodeArea(Area);
+}
+
+TEST(Basic, OverwriteFunction_GetData_ReturnsLatest)
+{
+	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
+
+	Node* SomeNode = new Node();
+	SomeNode->AddSocket(new NodeSocket(SomeNode, "INT", "out", NodeSocket::SocketFlow::Output));
+	Area->AddNode(SomeNode);
+
+	NodeSocket* Socket = SomeNode->GetSocketByIndex(0, NodeSocket::SocketFlow::Output);
+	ASSERT_NE(Socket, nullptr);
+
+	int FirstValue = 1;
+	int SecondValue = 2;
+
+	Socket->SetFunctionToOutputData([&FirstValue]() -> void* { return &FirstValue; });
+	ASSERT_EQ(Socket->GetData(), &FirstValue);
+
+	Socket->SetFunctionToOutputData([&SecondValue]() -> void* { return &SecondValue; });
+
+	EXPECT_EQ(Socket->GetData(), &SecondValue);
+
+	NODE_SYSTEM.DeleteNodeArea(Area);
+}
+
+#define EXPECT_NO_EMPTY_STRING_IN_TYPES(socket) \
+	do { \
+		const auto& Types = (socket)->GetAllowedTypes(); \
+		for (size_t TypeIndex = 0; TypeIndex < Types.size(); ++TypeIndex) \
+			EXPECT_FALSE(Types[TypeIndex].empty()) \
+				<< "AllowedTypes[" << TypeIndex << "] is the empty string."; \
+	} while (0)
+
+TEST(Basic, NodeSocketConstructor_EmptyType_StripsEmpty)
+{
+	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
+
+	Node* Owner = new Node();
+	NodeSocket* Socket = new NodeSocket(Owner, "", "x", NodeSocket::SocketFlow::Input);
+	Owner->AddSocket(Socket);
+	Area->AddNode(Owner);
+
+	EXPECT_NO_EMPTY_STRING_IN_TYPES(Socket);
+
+	NODE_SYSTEM.DeleteNodeArea(Area);
+}
+
+TEST(Basic, NodeSocketConstructor_VectorOnlyEmpty_StripsAll)
+{
+	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
+
+	Node* Owner = new Node();
+	NodeSocket* Socket = new NodeSocket(Owner, std::vector<std::string>{ "" }, "x", NodeSocket::SocketFlow::Input);
+	Owner->AddSocket(Socket);
+	Area->AddNode(Owner);
+
+	EXPECT_NO_EMPTY_STRING_IN_TYPES(Socket);
+
+	NODE_SYSTEM.DeleteNodeArea(Area);
+}
+
+TEST(Basic, NodeSocketConstructor_VectorWithEmpty_StripsEmpty)
+{
+	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
+
+	Node* Owner = new Node();
+	NodeSocket* Socket = new NodeSocket(Owner, std::vector<std::string>{ "INT", "", "FLOAT" }, "x", NodeSocket::SocketFlow::Input);
+	Owner->AddSocket(Socket);
+	Area->AddNode(Owner);
+
+	EXPECT_NO_EMPTY_STRING_IN_TYPES(Socket);
+
+	NODE_SYSTEM.DeleteNodeArea(Area);
+}
+
+TEST(Basic, SetAllowedTypes_OnlyEmpty_StripsAll)
+{
+	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
+
+	Node* Owner = new Node();
+	Owner->AddSocket(new NodeSocket(Owner, "INT", "x", NodeSocket::SocketFlow::Input));
+	Area->AddNode(Owner);
+
+	NodeSocket* Socket = Owner->GetSocketByIndex(0, NodeSocket::SocketFlow::Input);
+	Socket->SetAllowedTypes({ "" });
+
+	EXPECT_NO_EMPTY_STRING_IN_TYPES(Socket);
+
+	NODE_SYSTEM.DeleteNodeArea(Area);
+}
+
+TEST(Basic, SetAllowedTypes_WithEmpty_StripsEmpty)
+{
+	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
+
+	Node* Owner = new Node();
+	Owner->AddSocket(new NodeSocket(Owner, "INT", "x", NodeSocket::SocketFlow::Input));
+	Area->AddNode(Owner);
+
+	NodeSocket* Socket = Owner->GetSocketByIndex(0, NodeSocket::SocketFlow::Input);
+	Socket->SetAllowedTypes({ "FLOAT", "", "BOOL", "" });
+
+	EXPECT_NO_EMPTY_STRING_IN_TYPES(Socket);
+
+	NODE_SYSTEM.DeleteNodeArea(Area);
+}
+
+TEST(Basic, SubAreaNode_AddSocketWithEmpty_StripsEmpty)
+{
+	NodeArea* Parent = NODE_SYSTEM.CreateNodeArea();
+	SubAreaNode* SubArea = NODE_SYSTEM.CreateSubAreaNode(Parent->GetID());
+	ASSERT_NE(SubArea, nullptr);
+
+	SubArea->AddSocket(std::vector<std::string>{ "INT", "" }, "BadSocket", NodeSocket::SocketFlow::Input);
+
+	for (size_t i = 0; i < SubArea->GetInputSocketCount(); i++)
+		EXPECT_NO_EMPTY_STRING_IN_TYPES(SubArea->GetSocketByIndex(i, NodeSocket::SocketFlow::Input));
+
+	for (size_t i = 0; i < SubArea->GetOutputSocketCount(); i++)
+		EXPECT_NO_EMPTY_STRING_IN_TYPES(SubArea->GetSocketByIndex(i, NodeSocket::SocketFlow::Output));
+
+	SubAreaInputNode* InputNode = SubArea->GetSubAreaInputNode();
+	if (InputNode != nullptr)
+	{
+		for (size_t i = 0; i < InputNode->GetOutputSocketCount(); i++)
+			EXPECT_NO_EMPTY_STRING_IN_TYPES(InputNode->GetSocketByIndex(i, NodeSocket::SocketFlow::Output));
+	}
+
+	NODE_SYSTEM.DeleteNodeArea(Parent);
+}
+
+TEST(Basic, Node_AddSocketWithTaintedTypes_StripsEmpty)
+{
+	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
+
+	Node* Owner = new Node();
+	NodeSocket* TaintedSocket = new NodeSocket(Owner, std::vector<std::string>{ "" }, "x", NodeSocket::SocketFlow::Input);
+	Owner->AddSocket(TaintedSocket);
+	Area->AddNode(Owner);
+
+	for (size_t i = 0; i < Owner->GetInputSocketCount(); i++)
+		EXPECT_NO_EMPTY_STRING_IN_TYPES(Owner->GetSocketByIndex(i, NodeSocket::SocketFlow::Input));
+
+	for (size_t i = 0; i < Owner->GetOutputSocketCount(); i++)
+		EXPECT_NO_EMPTY_STRING_IN_TYPES(Owner->GetSocketByIndex(i, NodeSocket::SocketFlow::Output));
+
+	NODE_SYSTEM.DeleteNodeArea(Area);
+}
+
+TEST(Basic, LoadFromJson_EmptyTypeInPayload_StripsEmpty)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
+	const std::string AreaID = Area->GetID();
+	Node* Owner = new Node();
+	Owner->AddSocket(new NodeSocket(Owner, "INT", "x", NodeSocket::SocketFlow::Input));
+	Area->AddNode(Owner);
+	const std::string NodeID = Owner->GetID();
+
+	const std::string FilePath = "EmptyStringRejection_Load.json";
+	NODE_SYSTEM.SaveToFile(FilePath);
+	NODE_SYSTEM.Clear();
+
+	std::ifstream Reader(FilePath);
+	std::string Json((std::istreambuf_iterator<char>(Reader)), std::istreambuf_iterator<char>());
+	Reader.close();
+	const std::string Needle = "[\\\"INT\\\"]";
+	const std::string Replacement = "[\\\"INT\\\",\\\"\\\"]";
+	const size_t Pos = Json.find(Needle);
+	ASSERT_NE(Pos, std::string::npos);
+	Json.replace(Pos, Needle.size(), Replacement);
+	std::ofstream Writer(FilePath);
+	Writer << Json;
+	Writer.close();
+
+	ASSERT_TRUE(NODE_SYSTEM.LoadFromFile(FilePath));
+	NodeArea* Reloaded = NODE_SYSTEM.GetNodeAreaByID(AreaID);
+	ASSERT_NE(Reloaded, nullptr);
+	Node* ReloadedOwner = Reloaded->GetNodeByID(NodeID);
+	ASSERT_NE(ReloadedOwner, nullptr);
+	NodeSocket* ReloadedSocket = ReloadedOwner->GetSocketByIndex(0, NodeSocket::SocketFlow::Input);
+	ASSERT_NE(ReloadedSocket, nullptr);
+
+	EXPECT_NO_EMPTY_STRING_IN_TYPES(ReloadedSocket);
+
+	NODE_SYSTEM.Clear();
+}
+
+TEST(Basic, SubAreaInputNode_AddSocketWithEmpty_PartnerAlsoStripped)
+{
+	NodeArea* Parent = NODE_SYSTEM.CreateNodeArea();
+	SubAreaNode* SubArea = NODE_SYSTEM.CreateSubAreaNode(Parent->GetID());
+	ASSERT_NE(SubArea, nullptr);
+
+	SubAreaInputNode* InputNode = SubArea->GetSubAreaInputNode();
+	ASSERT_NE(InputNode, nullptr);
+	InputNode->AddSocket(std::vector<std::string>{ "INT", "" }, "FromInputSide", NodeSocket::SocketFlow::Output);
+
+	for (size_t i = 0; i < InputNode->GetOutputSocketCount(); i++)
+		EXPECT_NO_EMPTY_STRING_IN_TYPES(InputNode->GetSocketByIndex(i, NodeSocket::SocketFlow::Output));
+
+	for (size_t i = 0; i < SubArea->GetInputSocketCount(); i++)
+		EXPECT_NO_EMPTY_STRING_IN_TYPES(SubArea->GetSocketByIndex(i, NodeSocket::SocketFlow::Input));
+
+	NODE_SYSTEM.DeleteNodeArea(Parent);
+}
+
+TEST(Basic, SetAllowedTypes_OnMirrorSocket_PartnerAlsoStripped)
+{
+	NodeArea* Parent = NODE_SYSTEM.CreateNodeArea();
+	SubAreaNode* SubArea = NODE_SYSTEM.CreateSubAreaNode(Parent->GetID());
+	ASSERT_NE(SubArea, nullptr);
+	ASSERT_TRUE(SubArea->AddSocket({ "INT" }, "DataIn", NodeSocket::SocketFlow::Input));
+
+	NodeSocket* SubAreaDataSocket = SubArea->GetSocketByIndex(1, NodeSocket::SocketFlow::Input);
+	ASSERT_NE(SubAreaDataSocket, nullptr);
+
+	SubAreaDataSocket->SetAllowedTypes({ "INT", "" });
+
+	EXPECT_NO_EMPTY_STRING_IN_TYPES(SubAreaDataSocket);
+
+	SubAreaInputNode* InputNode = SubArea->GetSubAreaInputNode();
+	ASSERT_NE(InputNode, nullptr);
+	NodeSocket* InputMirrorSocket = InputNode->GetSocketByIndex(1, NodeSocket::SocketFlow::Output);
+	ASSERT_NE(InputMirrorSocket, nullptr);
+	EXPECT_NO_EMPTY_STRING_IN_TYPES(InputMirrorSocket);
+
+	NODE_SYSTEM.DeleteNodeArea(Parent);
+}
+
+TEST(Basic, CopyPaste_TaintedSource_CopyStripsEmpty)
+{
+	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
+
+	Node* TaintedSource = new Node();
+	TaintedSource->AddSocket(new NodeSocket(TaintedSource, std::vector<std::string>{ "INT", "" }, "x", NodeSocket::SocketFlow::Input));
+	Area->AddNode(TaintedSource);
+
+	TEST_TOOLS.SimulateCopyPasteNodes({ TaintedSource }, Area);
+
+	std::vector<Node*> AllNodes = Area->GetNodesByType<Node>();
+	for (Node* AnyNode : AllNodes)
+	{
+		ASSERT_NE(AnyNode, nullptr);
+		for (size_t i = 0; i < AnyNode->GetInputSocketCount(); i++)
+			EXPECT_NO_EMPTY_STRING_IN_TYPES(AnyNode->GetSocketByIndex(i, NodeSocket::SocketFlow::Input));
+
+		for (size_t i = 0; i < AnyNode->GetOutputSocketCount(); i++)
+			EXPECT_NO_EMPTY_STRING_IN_TYPES(AnyNode->GetSocketByIndex(i, NodeSocket::SocketFlow::Output));
+	}
+
+	NODE_SYSTEM.DeleteNodeArea(Area);
+}

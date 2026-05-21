@@ -397,3 +397,76 @@ TEST(NodeAreaGeneralTests, Delete_GroupComment_IsRemovedFromSelection)
 
 	NODE_SYSTEM.DeleteNodeArea(Area);
 }
+
+TEST(NodeAreaGeneralTests, AddNode_RejectNode_AlreadyInAnotherArea)
+{
+	NodeArea* AreaA = NODE_SYSTEM.CreateNodeArea();
+	NodeArea* AreaB = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(AreaA, nullptr);
+	ASSERT_NE(AreaB, nullptr);
+
+	Node* TestNode = new Node();
+	AreaA->AddNode(TestNode);
+	ASSERT_EQ(AreaA->GetNodeCount(), 1);
+	ASSERT_EQ(AreaB->GetNodeCount(), 0);
+	ASSERT_EQ(TestNode->GetParentArea(), AreaA);
+
+	EXPECT_FALSE(AreaB->AddNode(TestNode));
+
+	ASSERT_EQ(AreaA->GetNodeByID(TestNode->GetID()), TestNode);
+	ASSERT_EQ(AreaB->GetNodeByID(TestNode->GetID()), nullptr);
+
+	ASSERT_EQ(TestNode->GetParentArea(), AreaA);
+
+	NODE_SYSTEM.Clear();
+}
+
+TEST(NodeAreaGeneralTests, AddGroupComment_RejectGroupComment_AlreadyInAnotherArea)
+{
+	NodeArea* AreaA = NODE_SYSTEM.CreateNodeArea();
+	NodeArea* AreaB = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(AreaA, nullptr);
+	ASSERT_NE(AreaB, nullptr);
+
+	GroupComment* TestGroupComment = new GroupComment();
+	AreaA->AddGroupComment(TestGroupComment);
+	ASSERT_EQ(AreaA->GetGroupCommentCount(), 1);
+	ASSERT_EQ(AreaB->GetGroupCommentCount(), 0);
+	ASSERT_EQ(TestGroupComment->GetParentArea(), AreaA);
+
+	EXPECT_FALSE(AreaB->AddGroupComment(TestGroupComment));
+
+	ASSERT_EQ(AreaA->GetGroupCommentByID(TestGroupComment->GetID()), TestGroupComment);
+	ASSERT_EQ(AreaB->GetGroupCommentByID(TestGroupComment->GetID()), nullptr);
+
+	ASSERT_EQ(TestGroupComment->GetParentArea(), AreaA);
+
+	NODE_SYSTEM.Clear();
+}
+
+TEST(NodeAreaGeneralTests, AddSelected_Reject_InAppropriateRerouteNode)
+{
+	NodeArea* AreaA = NODE_SYSTEM.CreateNodeArea();
+	NodeArea* AreaB = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(AreaA, nullptr);
+	ASSERT_NE(AreaB, nullptr);
+
+	Node* NodeA = new Node();
+	NodeA->AddSocket(new NodeSocket(NodeA, "TYPE_A", "out", NodeSocket::SocketFlow::Output));
+	AreaA->AddNode(NodeA);
+
+	Node* NodeB = new Node();
+	NodeB->AddSocket(new NodeSocket(NodeB, "TYPE_A", "in", NodeSocket::SocketFlow::Input));
+	AreaA->AddNode(NodeB);
+
+	ASSERT_TRUE(AreaA->TryToConnect(NodeA, 0, NodeB, 0));
+	RerouteNode* CrossAreaRerouteNode = AreaA->AddRerouteNodeToConnection(NodeA, 0, NodeB, 0, 0, ImVec2(100.0f, 100.0f));
+	ASSERT_NE(CrossAreaRerouteNode, nullptr);
+	ASSERT_EQ(AreaA->GetRerouteConnectionCount(), 1);
+
+	EXPECT_FALSE(AreaB->AddSelected(CrossAreaRerouteNode));
+	EXPECT_FALSE(AreaB->IsSelected(CrossAreaRerouteNode));
+	EXPECT_FALSE(AreaA->IsSelected(CrossAreaRerouteNode));
+
+	NODE_SYSTEM.Clear();
+}
