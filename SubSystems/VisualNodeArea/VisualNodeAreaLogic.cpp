@@ -7,6 +7,9 @@ bool NodeArea::AddNode(Node* NewNode)
 	if (NewNode == nullptr)
 		return false;
 
+	if (NewNode->GetParentArea() != nullptr)
+		return false;
+
 	if (GetNodeByID(NewNode->GetID()) != nullptr)
 		return false;
 
@@ -681,10 +684,10 @@ bool NodeArea::TriggerOrphanSocketEvent(Node* Node, NODE_SOCKET_EVENT EventType)
 	return true;
 }
 
-bool NodeArea::AddRerouteNode(Connection* Connection, size_t SegmentToDivide, ImVec2 Position)
+RerouteNode* NodeArea::AddRerouteNode(Connection* Connection, size_t SegmentToDivide, ImVec2 Position)
 {
 	if (Connection == nullptr)
-		return false;
+		return nullptr;
 
 	RerouteNode* NewReroute = new RerouteNode();
 	NewReroute->ID = NODE_CORE.GetUniqueHexID();
@@ -697,13 +700,16 @@ bool NodeArea::AddRerouteNode(Connection* Connection, size_t SegmentToDivide, Im
 		NewReroute->EndSocket = Connection->In;
 
 		Connection->RerouteNodes.push_back(NewReroute);
-		return true;
+		return NewReroute;
 	}
 	else
 	{
 		std::vector<ConnectionSegment> ConnectionSegments = GetConnectionSegments(Connection);
 		if (SegmentToDivide < 0 || SegmentToDivide >= ConnectionSegments.size())
-			return false;
+		{
+			delete NewReroute;
+			return nullptr;
+		}
 
 		for (size_t i = 0; i < ConnectionSegments.size(); i++)
 		{
@@ -730,13 +736,13 @@ bool NodeArea::AddRerouteNode(Connection* Connection, size_t SegmentToDivide, Im
 				NewReroute->EndReroute = ConnectionSegments[i].EndReroute;
 
 				Connection->RerouteNodes.insert(Connection->RerouteNodes.begin() + i, NewReroute);
-				return true;
+				return NewReroute;
 			}
 		}
 	}
 
 	delete NewReroute;
-	return false;
+	return nullptr;
 }
 
 
@@ -791,31 +797,31 @@ RerouteNode* NodeArea::GetRerouteNodeByID(std::string ID) const
 	return nullptr;
 }
 
-bool NodeArea::AddRerouteNodeToConnection(const Node* OutNode, size_t OutNodeSocketIndex, const Node* InNode, size_t InNodeSocketIndex, size_t SegmentToDivide, ImVec2 Position)
+RerouteNode* NodeArea::AddRerouteNodeToConnection(const Node* OutNode, size_t OutNodeSocketIndex, const Node* InNode, size_t InNodeSocketIndex, size_t SegmentToDivide, ImVec2 Position)
 {
 	if (!IsThisAreaResponsibleFor(OutNode, InNode))
-		return false;
+		return nullptr;
 
 	if (OutNode->Output.size() <= OutNodeSocketIndex)
-		return false;
+		return nullptr;
 
 	if (InNode->Input.size() <= InNodeSocketIndex)
-		return false;
+		return nullptr;
 
 	Connection* Connection = GetConnection(OutNode->Output[OutNodeSocketIndex], InNode->Input[InNodeSocketIndex]);
 	if (Connection == nullptr)
-		return false;
+		return nullptr;
 
 	return AddRerouteNode(Connection, SegmentToDivide, Position);
 }
 
-bool NodeArea::AddRerouteNodeToConnection(const Node* OutNode, std::string OutSocketID, const Node* InNode, std::string InSocketID, size_t SegmentToDivide, ImVec2 Position)
+RerouteNode* NodeArea::AddRerouteNodeToConnection(const Node* OutNode, std::string OutSocketID, const Node* InNode, std::string InSocketID, size_t SegmentToDivide, ImVec2 Position)
 {
 	if (!IsThisAreaResponsibleFor(OutNode, InNode))
-		return false;
+		return nullptr;
 
 	if (!ValidateSocketPair(OutNode, OutSocketID, InNode, InSocketID))
-		return false;
+		return nullptr;
 
 	return AddRerouteNodeToConnection(OutNode, OutNode->GetSocketIndexByID(OutSocketID), InNode, InNode->GetSocketIndexByID(InSocketID), SegmentToDivide, Position);
 }
@@ -846,6 +852,9 @@ std::vector<GroupComment*> NodeArea::GetGroupCommentsByName(std::string GroupCom
 bool NodeArea::AddGroupComment(GroupComment* NewGroupComment)
 {
 	if (NewGroupComment == nullptr)
+		return false;
+
+	if (NewGroupComment->GetParentArea() != nullptr)
 		return false;
 
 	if (GetGroupCommentByID(NewGroupComment->GetID()) != nullptr)

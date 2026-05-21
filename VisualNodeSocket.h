@@ -35,6 +35,8 @@ namespace VisNodeSys
 		static std::unordered_map<std::string, ImColor> SocketTypeToColorAssociations;
 
 		std::function<void* ()> OutputData = []() { return nullptr; };
+
+		static void StripEmptyTypes(std::vector<std::string>& Types);
 	protected:
 		Node* Parent = nullptr;
 	public:
@@ -102,6 +104,8 @@ namespace VisNodeSys
 		bool bSelected = false;
 
 		RerouteNode() {};
+	public:
+		std::string GetID() const { return ID; }
 	};
 
 	struct ConnectionSegment

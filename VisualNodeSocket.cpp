@@ -8,6 +8,7 @@ NodeSocket::NodeSocket(Node* Parent, const std::string Type, const std::string N
 {
 	this->Parent = Parent;
 	this->AllowedTypes.push_back(Type);
+	StripEmptyTypes(this->AllowedTypes);
 	this->Name = Name;
 	this->ID = NODE_CORE.GetUniqueHexID();
 	this->Flow = Flow;
@@ -18,10 +19,23 @@ NodeSocket::NodeSocket(Node* Parent, const std::vector<std::string> Types, const
 {
 	this->Parent = Parent;
 	this->AllowedTypes = Types;
+	StripEmptyTypes(this->AllowedTypes);
 	this->Name = Name;
 	this->ID = NODE_CORE.GetUniqueHexID();
 	this->Flow = Flow;
 	this->OutputData = OutputDataFunction;
+}
+
+void NodeSocket::StripEmptyTypes(std::vector<std::string>& Types)
+{
+	for (int i = 0; i < static_cast<int>(Types.size()); i++)
+	{
+		if (Types[i].empty())
+		{
+			Types.erase(Types.begin() + i, Types.begin() + i + 1);
+			i--;
+		}
+	}
 }
 
 std::string NodeSocket::GetID() const
@@ -64,7 +78,14 @@ NodeSocket::SocketFlow NodeSocket::GetFlowDirection() const
 
 void NodeSocket::SetFunctionToOutputData(std::function<void* ()> NewFunction)
 {
-	OutputData = NewFunction;
+	if (!NewFunction)
+	{
+		OutputData = []() { return nullptr; };
+	}
+	else
+	{
+		OutputData = NewFunction;
+	}
 }
 
 void* NodeSocket::GetData()
@@ -74,6 +95,8 @@ void* NodeSocket::GetData()
 
 bool NodeSocket::SetAllowedTypes(std::vector<std::string> NewTypes)
 {
+	StripEmptyTypes(NewTypes);
+
 	SocketMirrorNode* MirrorParent = dynamic_cast<SocketMirrorNode*>(GetParent());
 	if (MirrorParent != nullptr)
 	{

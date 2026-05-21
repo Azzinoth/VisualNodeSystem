@@ -966,6 +966,10 @@ bool NodeArea::AddSelected(Connection* Connection)
 	if (Connection == nullptr)
 		return false;
 
+	// Check if the connection belongs to this node area.
+	if (GetConnection(Connection->Out, Connection->In) != Connection)
+		return false;
+
 	if (IsSelected(Connection))
 		return false;
 
@@ -1084,6 +1088,13 @@ void NodeArea::UnSelectAllGroupComments()
 bool NodeArea::AddSelected(RerouteNode* RerouteNode)
 {
 	if (RerouteNode == nullptr)
+		return false;
+
+	if (RerouteNode->Parent == nullptr)
+		return false;
+
+	// Check if the reroute node belongs to this node area.
+	if (GetConnection(RerouteNode->Parent->Out, RerouteNode->Parent->In) != RerouteNode->Parent)
 		return false;
 
 	if (IsSelected(RerouteNode))

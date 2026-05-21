@@ -585,7 +585,6 @@ void NodeSystem::CopyNodesInternal(const std::vector<Node*>& SourceNodes, NodeAr
 
 		if (CopyOfNode == nullptr)
 			CopyOfNode = new Node(*SourceNodes[i]);
-		CopyOfNode->ParentArea = TargetArea;
 
 		TargetArea->AddNode(CopyOfNode);
 

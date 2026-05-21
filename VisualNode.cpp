@@ -16,7 +16,7 @@ Node::Node(const std::string ID)
 
 Node::Node(const Node& Other)
 {
-	ParentArea = Other.ParentArea;
+	ParentArea = nullptr;
 	ID = NODE_CORE.GetUniqueHexID();
 	Position = Other.Position;
 	Size = Other.Size;

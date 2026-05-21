@@ -274,8 +274,8 @@ namespace VisNodeSys
 
 		std::vector<std::pair<ImVec2, ImVec2>> GetConnectionSegments(const Node* OutNode, size_t OutNodeSocketIndex, const Node* InNode, size_t InNodeSocketIndex) const;
 		std::vector<std::pair<ImVec2, ImVec2>> GetConnectionSegments(const Node* OutNode, std::string OutSocketID, const Node* InNode, std::string InSocketID) const;
-		bool AddRerouteNodeToConnection(const Node* OutNode, size_t OutNodeSocketIndex, const Node* InNode, size_t InNodeSocketIndex, size_t SegmentToDivide, ImVec2 Position);
-		bool AddRerouteNodeToConnection(const Node* OutNode, std::string OutSocketID, const Node* InNode, std::string InSocketID, size_t SegmentToDivide, ImVec2 Position);
+		RerouteNode* AddRerouteNodeToConnection(const Node* OutNode, size_t OutNodeSocketIndex, const Node* InNode, size_t InNodeSocketIndex, size_t SegmentToDivide, ImVec2 Position);
+		RerouteNode* AddRerouteNodeToConnection(const Node* OutNode, std::string OutSocketID, const Node* InNode, std::string InSocketID, size_t SegmentToDivide, ImVec2 Position);
 		RerouteNode* GetRerouteNodeByID(std::string ID) const;
 		bool Delete(RerouteNode* RerouteNode);
 
@@ -447,7 +447,7 @@ namespace VisNodeSys
 
 		void ConnectionsDoubleMouseClick();
 		std::vector<ConnectionSegment> GetConnectionSegments(const Connection* Connection) const;
-		bool AddRerouteNode(Connection* Connection, size_t SegmentToDivide, ImVec2 Position);
+		RerouteNode* AddRerouteNode(Connection* Connection, size_t SegmentToDivide, ImVec2 Position);
 		bool IsRerouteNodeValid(const RerouteNode* RerouteNode);
 		bool IsMouseOverConnection(Connection* Connection, const int Steps, const float MaxDistance, ImVec2* CollisionPoint = nullptr);
 		bool IsMouseOverSegment(ImVec2 Begin, ImVec2 End, const int Steps, const float MaxDistance, ImVec2* CollisionPoint = nullptr);
