@@ -29,6 +29,9 @@ class TestTools
 public:
 	SINGLETON_PUBLIC_PART(TestTools)
 
+	// Minimal well formed NodeSystem JSON representation.
+	std::string MakeMinimalSystemJson();
+
 	// Will delete original NodeArea and create a new one from the saved file, then compare some of the properties of the new NodeArea to the original one.
 	bool VerifyNodeAreaSaveLoadCycle_BasicChecks(VisNodeSys::NodeArea* NodeArea);
 

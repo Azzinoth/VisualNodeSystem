@@ -128,6 +128,11 @@ file(GLOB NodeSystem_SRC
 	"NodeSystemTests/NodeSystemTests.h"
 )
 
+file(GLOB NodeSystem_Load_SRC
+	"NodeSystemTests/LoadTests/NodeSystemLoadTests.cpp"
+	"NodeSystemTests/LoadTests/NodeSystemLoadTests.h"
+)
+
 file(GLOB source_SRC
 	"Core.h"
 	"TestTools.cpp"
@@ -148,6 +153,7 @@ add_executable(Visual_Node_System_Tests
 			   ${CustomNodes_SRC}
 			   ${Basic_SRC}
 			   ${NodeSystem_SRC}
+			   ${NodeSystem_Load_SRC}
 			   ${NodeArea_General_SRC}
 			   ${NodeArea_Load_SRC}
 			   ${NodeArea_EventSystem_SRC}
@@ -171,6 +177,7 @@ source_group("Source Files" FILES ${source_SRC})
 source_group("Source Files/CustomNodes" FILES ${CustomNodes_SRC})
 source_group("Source Files/Basic" FILES ${Basic_SRC})
 source_group("Source Files/NodeSystem" FILES ${NodeSystem_SRC})
+source_group("Source Files/NodeSystem/Load" FILES ${NodeSystem_Load_SRC})
 source_group("Source Files/NodeArea/General" FILES ${NodeArea_General_SRC})
 source_group("Source Files/NodeArea/Load" FILES ${NodeArea_Load_SRC})
 source_group("Source Files/NodeArea/EventSystem" FILES ${NodeArea_EventSystem_SRC})

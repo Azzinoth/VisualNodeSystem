@@ -4,6 +4,11 @@ using namespace VisNodeSys;
 TestTools::TestTools() {}
 TestTools::~TestTools() {}
 
+std::string TestTools::MakeMinimalSystemJson()
+{
+	return R"({"SocketTypeToColorAssociations":{},"NodeAreas":{}})";
+}
+
 bool TestTools::VerifyNodeAreaSaveLoadCycle_BasicChecks(VisNodeSys::NodeArea* NodeArea)
 {
 	if (NodeArea == nullptr)
