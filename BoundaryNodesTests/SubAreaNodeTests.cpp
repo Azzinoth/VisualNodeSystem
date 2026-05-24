@@ -2245,3 +2245,21 @@ TEST(SubAreaNodeTests, SetName_Propagation_SurvivesSaveLoad)
 
 	NODE_SYSTEM.Clear();
 }
+
+TEST(SubAreaNodeTests, AddNode_DefaultConstructedSubAreaNode_IsRejected)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(Area, nullptr);
+
+	// NODE_FACTORY uses the parameter-less SubAreaNode constructor, which leaves OwnedAreaID empty.
+	Node* DefaultConstructedSubAreaNode = NODE_FACTORY.CreateNode("SubAreaNode");
+	ASSERT_NE(DefaultConstructedSubAreaNode, nullptr);
+
+	// Adding a default constructed SubAreaNode should fail since it has no owned area, and it should not be added to the area.
+	EXPECT_FALSE(Area->AddNode(DefaultConstructedSubAreaNode));
+	EXPECT_EQ(Area->GetNodesByType<SubAreaNode>().size(), 0);
+
+	NODE_SYSTEM.Clear();
+}

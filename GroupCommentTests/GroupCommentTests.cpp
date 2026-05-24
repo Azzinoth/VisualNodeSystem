@@ -352,3 +352,36 @@ TEST(GroupComment, SetCaption_RejectsStringLongerThanMaxLength)
 
 	delete NewGroupComment;
 }
+
+TEST(GroupComment, FromJson_EmptyObject_Returns_False)
+{
+	GroupComment* Comment = new GroupComment();
+
+	Json::Value EmptyJson(Json::objectValue);
+	EXPECT_FALSE(Comment->FromJson(EmptyJson));
+
+	delete Comment;
+}
+
+TEST(GroupComment, FromJson_MissingPositionField_Returns_False)
+{
+	GroupComment* Comment = new GroupComment();
+
+	Json::Value PartialJson(Json::objectValue);
+	PartialJson["ID"] = "some_id";
+	EXPECT_FALSE(Comment->FromJson(PartialJson));
+
+	delete Comment;
+}
+
+TEST(GroupComment, FromJson_PositionFieldWrongType_Returns_False)
+{
+	GroupComment* Comment = new GroupComment();
+
+	Json::Value JsonWithBadPosition(Json::objectValue);
+	JsonWithBadPosition["ID"] = "some_id";
+	JsonWithBadPosition["Position"] = "not_an_object";
+	EXPECT_FALSE(Comment->FromJson(JsonWithBadPosition));
+
+	delete Comment;
+}

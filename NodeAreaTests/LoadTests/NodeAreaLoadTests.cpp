@@ -1167,3 +1167,122 @@ TEST(NodeAreaLoadTest, ConnectionOrderingTest)
 		NODE_SYSTEM.DeleteNodeArea(TestNodeArea);
 	}
 }
+
+TEST(NodeAreaLoadTest, LoadNodeNodeStyleNotNumeric)
+{
+	std::string JsonString = R"({
+		"Nodes": {
+			"0": {
+				"ID": "6621620F42545B420C103443",
+				"NodeType": "VisualNode",
+				"NodeStyle": "not_an_int",
+				"Position": {"X": 0, "Y": 0},
+				"Size": {"X": 100, "Y": 50},
+				"Name": "Test"
+			}
+		}
+	})";
+
+	NodeArea* NodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(NodeArea, nullptr);
+
+	ASSERT_EQ(NodeArea->LoadFromJson(JsonString), true);
+	ASSERT_EQ(NodeArea->GetNodeCount(), 1);
+
+	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+}
+
+TEST(NodeAreaLoadTest, LoadNodeInputFieldIsString)
+{
+	std::string JsonString = R"({
+		"Nodes": {
+			"0": {
+				"ID": "6621620F42545B420C103443",
+				"NodeType": "VisualNode",
+				"Position": {"X": 0, "Y": 0},
+				"Size": {"X": 100, "Y": 50},
+				"Name": "Test",
+				"Input": "not_an_object"
+			}
+		}
+	})";
+
+	NodeArea* NodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(NodeArea, nullptr);
+
+	ASSERT_EQ(NodeArea->LoadFromJson(JsonString), true);
+	ASSERT_EQ(NodeArea->GetNodeCount(), 0);
+
+	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+}
+
+TEST(NodeAreaLoadTest, LoadNodeOutputFieldIsArray)
+{
+	std::string JsonString = R"({
+		"Nodes": {
+			"0": {
+				"ID": "6621620F42545B420C103443",
+				"NodeType": "VisualNode",
+				"Position": {"X": 0, "Y": 0},
+				"Size": {"X": 100, "Y": 50},
+				"Name": "Test",
+				"Output": [1, 2, 3]
+			}
+		}
+	})";
+
+	NodeArea* NodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(NodeArea, nullptr);
+
+	ASSERT_EQ(NodeArea->LoadFromJson(JsonString), true);
+	ASSERT_EQ(NodeArea->GetNodeCount(), 0);
+
+	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+}
+
+TEST(NodeAreaLoadTest, LoadNodeAllowedTypesContainsNonString)
+{
+	std::string JsonString = R"({
+		"Nodes": {
+			"0": {
+				"ID": "6621620F42545B420C103443",
+				"NodeType": "VisualNode",
+				"Position": {"X": 0, "Y": 0},
+				"Size": {"X": 100, "Y": 50},
+				"Name": "Test",
+				"Input": {
+					"0": {
+						"ID": "231D2D4F1D033A39393A157C",
+						"Name": "In",
+						"AllowedTypes": [42, true, null]
+					}
+				}
+			}
+		}
+	})";
+
+	NodeArea* NodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(NodeArea, nullptr);
+
+	ASSERT_EQ(NodeArea->LoadFromJson(JsonString), true);
+	ASSERT_EQ(NodeArea->GetNodeCount(), 0);
+
+	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+}
+
+TEST(NodeAreaLoadTest, LoadNodeEntryNotObject)
+{
+	std::string JsonString = R"({
+		"Nodes": {
+			"0": "this_is_a_string_not_an_object"
+		}
+	})";
+
+	NodeArea* NodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(NodeArea, nullptr);
+
+	ASSERT_EQ(NodeArea->LoadFromJson(JsonString), true);
+	ASSERT_EQ(NodeArea->GetNodeCount(), 0);
+
+	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+}

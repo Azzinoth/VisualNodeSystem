@@ -218,3 +218,49 @@ TEST(NodeSystemTests, TryToFixDanglingLinkNode_WithForceRestorePartner_RestoresC
 
 	NODE_SYSTEM.Clear();
 }
+
+TEST(NodeSystemTests, CreateNodeArea_NullEntryInNodesVector_Is_Skipped)
+{
+	NODE_SYSTEM.Clear();
+
+	std::vector<Node*> NodesWithNull = { nullptr };
+	NodeArea* NewArea = NODE_SYSTEM.CreateNodeArea(NodesWithNull, {});
+
+	ASSERT_NE(NewArea, nullptr);
+	EXPECT_EQ(NewArea->GetNodeCount(), 0);
+
+	NODE_SYSTEM.Clear();
+}
+
+TEST(NodeSystemTests, CreateNodeArea_NullEntryInGroupCommentsVector_Is_Skipped)
+{
+	NODE_SYSTEM.Clear();
+
+	std::vector<GroupComment*> GroupCommentsWithNull = { nullptr };
+	NodeArea* NewArea = NODE_SYSTEM.CreateNodeArea({}, GroupCommentsWithNull);
+
+	ASSERT_NE(NewArea, nullptr);
+	EXPECT_EQ(NewArea->GetGroupCommentCount(), 0);
+
+	NODE_SYSTEM.Clear();
+}
+
+TEST(NodeSystemTests, CopyNodesTo_CopiesGroupComments_To_Target)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* SourceArea = NODE_SYSTEM.CreateNodeArea();
+	NodeArea* TargetArea = NODE_SYSTEM.CreateNodeArea();
+
+	GroupComment* Original = new GroupComment();
+	Original->SetCaption("source comment");
+	ASSERT_TRUE(SourceArea->AddGroupComment(Original));
+	ASSERT_EQ(SourceArea->GetGroupCommentCount(), 1);
+
+	NODE_SYSTEM.CopyNodesTo(SourceArea, TargetArea);
+
+	EXPECT_EQ(SourceArea->GetGroupCommentCount(), 1);
+	EXPECT_EQ(TargetArea->GetGroupCommentCount(), 1);
+
+	NODE_SYSTEM.Clear();
+}
