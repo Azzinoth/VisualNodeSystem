@@ -379,8 +379,14 @@ bool NodeArea::LoadFromJson(std::string JsonText)
 
 		if (NewNode != nullptr)
 		{
-			LoadedNodes[NewNode->GetID()] = NewNode;
-			AddNode(NewNode);
+			if (AddNode(NewNode))
+			{
+				LoadedNodes[NewNode->GetID()] = NewNode;
+			}
+			else
+			{
+				delete NewNode;
+			}
 		}
 	}
 

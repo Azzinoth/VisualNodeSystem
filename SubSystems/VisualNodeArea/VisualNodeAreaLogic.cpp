@@ -20,6 +20,18 @@ bool NodeArea::AddNode(Node* NewNode)
 			return false;
 	}
 
+	// A SubAreaNode cannot own the area it lives in.
+	if (NewNode->GetType() == "SubAreaNode")
+	{
+		SubAreaNode* AsSubArea = static_cast<SubAreaNode*>(NewNode);
+		if (AsSubArea->OwnedAreaID == GetID())
+		{
+			// Clear the OwnedAreaID before rejecting.
+			AsSubArea->OwnedAreaID = "";
+			return false;
+		}
+	}
+
 	NewNode->ParentArea = this;
 	Nodes.push_back(NewNode);
 

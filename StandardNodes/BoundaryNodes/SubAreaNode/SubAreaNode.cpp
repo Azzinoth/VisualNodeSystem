@@ -134,7 +134,13 @@ bool SubAreaNode::FromJson(Json::Value Json)
 	if (!Json.isMember("SubAreaOutputNodeID") || !Json["SubAreaOutputNodeID"].isString())
 		return false;
 
-	OwnedAreaID = Json["OwnedAreaID"].asString();
+	std::string CandidateOwnedAreaID = Json["OwnedAreaID"].asString();
+
+	// Refuse to adopt an area that some other SubAreaNode already owns.
+	if (NODE_SYSTEM.FindOwnerSubAreaNode(CandidateOwnedAreaID) != nullptr)
+		return false;
+
+	OwnedAreaID = CandidateOwnedAreaID;
 
 	NodeArea* OwnedArea = NODE_SYSTEM.GetNodeAreaByID(OwnedAreaID);
 	if (OwnedArea == nullptr)

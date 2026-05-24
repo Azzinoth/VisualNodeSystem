@@ -65,6 +65,9 @@ namespace VisNodeSys
 		void SyncMirrorNodeSocketName(const std::string& NodeID, std::string SocketID, std::string NewName);
 
 		std::vector<std::string> DeduplicateIDList(const std::vector<std::string>& ListOfIDs) const;
+
+		// Walks the SubAreaNode ownership graph and get rid of cycles.
+		void BreakSubAreaOwnershipCycles();
 	public:
 		SINGLETON_PUBLIC_PART(NodeSystem)
 

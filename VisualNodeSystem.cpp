@@ -1112,7 +1112,7 @@ std::string NodeSystem::ToJson() const
 	Json::Value Root;
 
 	// Socket type to color associations.
-	Json::Value SocketTypeToColorAssociationsJson;
+	Json::Value SocketTypeToColorAssociationsJson(Json::objectValue);
 	auto SocketTypeToColorIterator = NodeSocket::SocketTypeToColorAssociations.begin();
 	while (SocketTypeToColorIterator != NodeSocket::SocketTypeToColorAssociations.end())
 	{
@@ -1127,7 +1127,7 @@ std::string NodeSystem::ToJson() const
 	Root["SocketTypeToColorAssociations"] = SocketTypeToColorAssociationsJson;
 
 	// Finally we need to save all node areas.
-	Json::Value NodeAreasJson;
+	Json::Value NodeAreasJson(Json::objectValue);
 	for (size_t i = 0; i < Areas.size(); i++)
 		NodeAreasJson[Areas[i]->GetID()] = Areas[i]->ToJson();
 	Root["NodeAreas"] = NodeAreasJson;
@@ -1169,7 +1169,13 @@ bool NodeSystem::LoadFromJson(const std::string& JsonText)
 	if (!Reader->parse(JsonText.c_str(), JsonText.c_str() + JsonText.size(), &Root, &Error))
 		return false;
 
-	if (!Root.isMember("SocketTypeToColorAssociations") || !Root.isMember("NodeAreas") || !Root["NodeAreas"].isObject())
+	if (!Root.isMember("SocketTypeToColorAssociations") || !Root.isMember("NodeAreas"))
+		return false;
+
+	if (!Root["NodeAreas"].isNull() && !Root["NodeAreas"].isObject())
+		return false;
+
+	if (!Root["SocketTypeToColorAssociations"].isNull() && !Root["SocketTypeToColorAssociations"].isObject())
 		return false;
 
 	// Socket type to color associations.
@@ -1181,6 +1187,10 @@ bool NodeSystem::LoadFromJson(const std::string& JsonText)
 
 		const Json::Value& ColorJson = Root["SocketTypeToColorAssociations"][SocketTypeToColorAssociationList[i]];
 		if (!ColorJson.isMember("R") || !ColorJson.isMember("G") || !ColorJson.isMember("B") || !ColorJson.isMember("A"))
+			continue;
+
+		if (!ColorJson["R"].isNumeric() || !ColorJson["G"].isNumeric() ||
+			!ColorJson["B"].isNumeric() || !ColorJson["A"].isNumeric())
 			continue;
 
 		std::string SocketType = SocketTypeToColorAssociationList[i];
@@ -1201,9 +1211,17 @@ bool NodeSystem::LoadFromJson(const std::string& JsonText)
 		if (AlreadyLoadedArea != nullptr)
 			continue;
 
+		const Json::Value& AreaValue = Root["NodeAreas"][NodeAreaListKeys[i]];
+		if (!AreaValue.isString())
+			continue;
+
 		NodeArea* NewNodeArea = CreateNodeArea();
-		NewNodeArea->LoadFromJson(Root["NodeAreas"][NodeAreaListKeys[i]].asCString());
+		if (!NewNodeArea->LoadFromJson(AreaValue.asCString()))
+			DeleteNodeArea(NewNodeArea);
 	}
+
+	// Breaking any cycles in sub-area ownership.
+	BreakSubAreaOwnershipCycles();
 
 	std::vector<LinkNode*> DanglingLinkNodes = GetDanglingLinkNodes();
 	std::vector<LinkNode*> RecoveredDanglingLinkNodes = TryToFixAllDanglingLinkNodes();
@@ -1842,6 +1860,74 @@ SubAreaNode* NodeSystem::CreateSubAreaNode(const std::string& ParentAreaID)
 	Result->SubAreaOutputNodeID = OutputNode->GetID();
 
 	return Result;
+}
+
+void NodeSystem::BreakSubAreaOwnershipCycles()
+{
+	std::unordered_set<std::string> FullyVisited;
+	std::unordered_set<std::string> OnCurrentPath;
+	std::vector<SubAreaNode*> NodesToBreak;
+
+	std::function<void(const std::string&)> DepthFirstSearch = [&](const std::string& AreaID) {
+		if (FullyVisited.count(AreaID))
+			return;
+		// Should not happen when called from the top of the loop below, but guards against re-entry through a malformed graph.
+		if (OnCurrentPath.count(AreaID))
+			return;
+
+		OnCurrentPath.insert(AreaID);
+
+		NodeArea* Area = GetNodeAreaByID(AreaID);
+		if (Area != nullptr)
+		{
+			// Snapshot the SubAreaNode list, we may push entries into NodesToBreak, but we do not mutate the area's node vector during the walk.
+			std::vector<SubAreaNode*> SubAreaNodesInArea = Area->GetNodesByType<SubAreaNode>();
+			for (SubAreaNode* CurrentSubAreaNode : SubAreaNodesInArea)
+			{
+				const std::string& OwnedID = CurrentSubAreaNode->OwnedAreaID;
+				if (OwnedID.empty())
+					continue;
+
+				// A SubAreaNode pointing at a non-existent area is dangling, not a cycle, do nothing.
+				if (GetNodeAreaByID(OwnedID) == nullptr)
+					continue;
+
+				if (OnCurrentPath.count(OwnedID))
+				{
+					// This SubAreaNode closes a cycle. Mark it for removal, do not descend further along this edge.
+					NodesToBreak.push_back(CurrentSubAreaNode);
+					continue;
+				}
+
+				DepthFirstSearch(OwnedID);
+			}
+		}
+
+		OnCurrentPath.erase(AreaID);
+		FullyVisited.insert(AreaID);
+	};
+
+	// Snapshot the area list as well, since deletes below mutate Areas.
+	std::vector<std::string> AreaIDsToVisit;
+	AreaIDsToVisit.reserve(Areas.size());
+	for (NodeArea* Area : Areas)
+		AreaIDsToVisit.push_back(Area->GetID());
+
+	for (const std::string& AreaID : AreaIDsToVisit)
+		DepthFirstSearch(AreaID);
+
+	for (SubAreaNode* CurrentSubAreaNode : NodesToBreak)
+	{
+		// Clear OwnedAreaID first.
+		CurrentSubAreaNode->OwnedAreaID = "";
+
+		NodeArea* Parent = CurrentSubAreaNode->GetParentArea();
+		if (Parent != nullptr)
+		{
+			CurrentSubAreaNode->bCouldBeDestroyedByUser = true;
+			Parent->Delete(CurrentSubAreaNode);
+		}
+	}
 }
 
 SubAreaNode* NodeSystem::FindOwnerSubAreaNode(const std::string& AreaID) const
