@@ -14,7 +14,11 @@ IntegerLiteralNode::IntegerLiteralNode() : VisNodeSys::Node()
 	AddSocket(new NodeSocket(this, "INT", "Out", NodeSocket::SocketFlow::Output));
 
 	SetSize(ImVec2(170, NODE_HEIGHT_PER_SOCKET * 2));
-	Output[0]->SetFunctionToOutputData(IntDataGetter);
+	if (!Output.empty())
+	{
+		Output[0]->SetFunctionToOutputData(IntDataGetter);
+		Output[0]->SetCanBeDeletedByUser(false);
+	}
 }
 
 IntegerLiteralNode::IntegerLiteralNode(const IntegerLiteralNode& Other) : VisNodeSys::Node(Other)
@@ -24,7 +28,8 @@ IntegerLiteralNode::IntegerLiteralNode(const IntegerLiteralNode& Other) : VisNod
 
 	// Here I am restoring the output data function.
 	// Because the function is not serializable, I have to set it manually.
-	Output[0]->SetFunctionToOutputData(IntDataGetter);
+	if (!Output.empty())
+		Output[0]->SetFunctionToOutputData(IntDataGetter);
 }
 
 Json::Value IntegerLiteralNode::ToJson()

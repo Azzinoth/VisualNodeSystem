@@ -14,7 +14,11 @@ BoolVec3LiteralNode::BoolVec3LiteralNode() : VisNodeSys::Node()
 	AddSocket(new NodeSocket(this, "BVEC3", "Out", NodeSocket::SocketFlow::Output));
 
 	SetSize(ImVec2(210, NODE_HEIGHT_PER_SOCKET * 2));
-	Output[0]->SetFunctionToOutputData(DataGetter);
+	if (!Output.empty())
+	{
+		Output[0]->SetFunctionToOutputData(DataGetter);
+		Output[0]->SetCanBeDeletedByUser(false);
+	}
 }
 
 BoolVec3LiteralNode::BoolVec3LiteralNode(const BoolVec3LiteralNode& Other) : VisNodeSys::Node(Other)
@@ -24,7 +28,8 @@ BoolVec3LiteralNode::BoolVec3LiteralNode(const BoolVec3LiteralNode& Other) : Vis
 
 	// Here I am restoring the output data function.
 	// Because the function is not serializable, I have to set it manually.
-	Output[0]->SetFunctionToOutputData(DataGetter);
+	if (!Output.empty())
+		Output[0]->SetFunctionToOutputData(DataGetter);
 }
 
 Json::Value BoolVec3LiteralNode::ToJson()

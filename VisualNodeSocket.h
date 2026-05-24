@@ -36,6 +36,8 @@ namespace VisNodeSys
 
 		std::function<void* ()> OutputData = []() { return nullptr; };
 
+		bool bCanBeDeletedByUser = true;
+
 		static void StripEmptyTypes(std::vector<std::string>& Types);
 	protected:
 		Node* Parent = nullptr;
@@ -59,6 +61,9 @@ namespace VisNodeSys
 
 		void SetFunctionToOutputData(std::function<void* ()> NewFunction);
 		void* GetData();
+
+		bool CanBeDeletedByUser() const;
+		void SetCanBeDeletedByUser(bool NewValue);
 	};
 
 	inline NodeSocket::SocketFlow operator!(NodeSocket::SocketFlow Direction)

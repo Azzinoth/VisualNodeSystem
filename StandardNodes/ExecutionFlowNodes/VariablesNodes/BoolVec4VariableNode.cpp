@@ -18,7 +18,15 @@ BoolVec4VariableNode::BoolVec4VariableNode() : BaseExecutionFlowNode()
 	AddSocket(new NodeSocket(this, "BVEC4", "Get", NodeSocket::SocketFlow::Output));
 
 	SetSize(ImVec2(220.0f, static_cast<float>(NODE_HEIGHT_PER_SOCKET * std::max(Input.size(), Output.size()))));
-	Output[1]->SetFunctionToOutputData(DataGetter);
+	if (Output.size() > 1)
+		Output[1]->SetFunctionToOutputData(DataGetter);
+
+	if (!Input.empty())
+		Input[0]->SetCanBeDeletedByUser(false);
+	if (!Output.empty())
+		Output[0]->SetCanBeDeletedByUser(false);
+	if (Output.size() > 1)
+		Output[1]->SetCanBeDeletedByUser(false);
 }
 
 BoolVec4VariableNode::BoolVec4VariableNode(const BoolVec4VariableNode& Other) : BaseExecutionFlowNode(Other)
@@ -28,7 +36,8 @@ BoolVec4VariableNode::BoolVec4VariableNode(const BoolVec4VariableNode& Other) : 
 
 	// Here I am restoring the output data function.
 	// Because the function is not serializable, I have to set it manually.
-	Output[1]->SetFunctionToOutputData(DataGetter);
+	if (Output.size() > 1)
+		Output[1]->SetFunctionToOutputData(DataGetter);
 }
 
 Json::Value BoolVec4VariableNode::ToJson()

@@ -833,7 +833,11 @@ void NodeArea::KeyboardInputUpdate()
 					return;
 
 				NodeArea* NewNodeArea = new NodeArea();
-				NewNodeArea->LoadFromJson(NodesToImport);
+				if (!NewNodeArea->LoadFromJson(NodesToImport))
+				{
+					delete NewNodeArea;
+					return;
+				}
 
 				// ***************** Place new nodes in center of a view space *****************
 				const ImVec2 ViewCenter = GetRenderedViewCenter();
@@ -860,19 +864,24 @@ void NodeArea::KeyboardInputUpdate()
 				}
 				// ***************** Place new nodes in center of a view space END *****************
 
+				// Snapshot target sizes before the copy. If not we can get size_t(-1).
+				const size_t NodeCountBefore         = Nodes.size();
+				const size_t ConnectionCountBefore   = Connections.size();
+				const size_t GroupCommentCountBefore = GroupComments.size();
+
 				NODE_SYSTEM.CopyNodesTo(NewNodeArea, this);
 
 				// Unselect all elements.
 				UnSelectAll();
 
 				// Select all pasted nodes.
-				for (size_t i = Nodes.size() - NewNodeArea->Nodes.size(); i < Nodes.size(); i++)
+				for (size_t i = NodeCountBefore; i < Nodes.size(); i++)
 				{
 					SelectedNodes.push_back(Nodes[i]);
 				}
 
 				// Select all pasted reroute nodes.
-				for (size_t i = Connections.size() - NewNodeArea->Connections.size(); i < Connections.size(); i++)
+				for (size_t i = ConnectionCountBefore; i < Connections.size(); i++)
 				{
 					for (size_t j = 0; j < Connections[i]->RerouteNodes.size(); j++)
 					{
@@ -881,7 +890,7 @@ void NodeArea::KeyboardInputUpdate()
 				}
 
 				// Select all pasted group comments.
-				for (size_t i = GroupComments.size() - NewNodeArea->GroupComments.size(); i < GroupComments.size(); i++)
+				for (size_t i = GroupCommentCountBefore; i < GroupComments.size(); i++)
 				{
 					AddSelected(GroupComments[i]);
 				}

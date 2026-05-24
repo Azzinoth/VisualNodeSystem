@@ -19,7 +19,15 @@ IntegerVariableNode::IntegerVariableNode() : BaseExecutionFlowNode()
 	AddSocket(new NodeSocket(this, "INT", "Get", NodeSocket::SocketFlow::Output));
 
 	SetSize(ImVec2(220.0f, static_cast<float>(NODE_HEIGHT_PER_SOCKET * std::max(Input.size(), Output.size()))));
-	Output[1]->SetFunctionToOutputData(IntDataGetter);
+	if (Output.size() > 1)
+		Output[1]->SetFunctionToOutputData(IntDataGetter);
+
+	if (!Input.empty())
+		Input[0]->SetCanBeDeletedByUser(false);
+	if (!Output.empty())
+		Output[0]->SetCanBeDeletedByUser(false);
+	if (Output.size() > 1)
+		Output[1]->SetCanBeDeletedByUser(false);
 }
 
 IntegerVariableNode::IntegerVariableNode(const IntegerVariableNode& Other) : BaseExecutionFlowNode(Other)
@@ -29,7 +37,8 @@ IntegerVariableNode::IntegerVariableNode(const IntegerVariableNode& Other) : Bas
 
 	// Here I am restoring the output data function.
 	// Because the function is not serializable, I have to set it manually.
-	Output[1]->SetFunctionToOutputData(IntDataGetter);
+	if (Output.size() > 1)
+		Output[1]->SetFunctionToOutputData(IntDataGetter);
 }
 
 Json::Value IntegerVariableNode::ToJson()

@@ -19,7 +19,15 @@ Vec2VariableNode::Vec2VariableNode() : BaseExecutionFlowNode()
 	AddSocket(new NodeSocket(this, "VEC2", "Get", NodeSocket::SocketFlow::Output));
 
 	SetSize(ImVec2(220.0f, static_cast<float>(NODE_HEIGHT_PER_SOCKET * std::max(Input.size(), Output.size()))));
-	Output[1]->SetFunctionToOutputData(DataGetter);
+	if (Output.size() > 1)
+		Output[1]->SetFunctionToOutputData(DataGetter);
+
+	if (!Input.empty())
+		Input[0]->SetCanBeDeletedByUser(false);
+	if (!Output.empty())
+		Output[0]->SetCanBeDeletedByUser(false);
+	if (Output.size() > 1)
+		Output[1]->SetCanBeDeletedByUser(false);
 }
 
 Vec2VariableNode::Vec2VariableNode(const Vec2VariableNode& Other) : BaseExecutionFlowNode(Other)
@@ -29,7 +37,8 @@ Vec2VariableNode::Vec2VariableNode(const Vec2VariableNode& Other) : BaseExecutio
 
 	// Here I am restoring the output data function.
 	// Because the function is not serializable, I have to set it manually.
-	Output[1]->SetFunctionToOutputData(DataGetter);
+	if (Output.size() > 1)
+		Output[1]->SetFunctionToOutputData(DataGetter);
 }
 
 Json::Value Vec2VariableNode::ToJson()

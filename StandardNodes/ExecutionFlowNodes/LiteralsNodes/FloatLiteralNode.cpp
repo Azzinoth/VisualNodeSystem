@@ -14,7 +14,11 @@ FloatLiteralNode::FloatLiteralNode() : VisNodeSys::Node()
 	AddSocket(new NodeSocket(this, "FLOAT", "Out", NodeSocket::SocketFlow::Output));
 
 	SetSize(ImVec2(170, NODE_HEIGHT_PER_SOCKET * 2));
-	Output[0]->SetFunctionToOutputData(FloatDataGetter);
+	if (!Output.empty())
+	{
+		Output[0]->SetFunctionToOutputData(FloatDataGetter);
+		Output[0]->SetCanBeDeletedByUser(false);
+	}
 }
 
 FloatLiteralNode::FloatLiteralNode(const FloatLiteralNode& Other) : VisNodeSys::Node(Other)
@@ -24,7 +28,8 @@ FloatLiteralNode::FloatLiteralNode(const FloatLiteralNode& Other) : VisNodeSys::
 
 	// Here I am restoring the output data function.
 	// Because the function is not serializable, I have to set it manually.
-	Output[0]->SetFunctionToOutputData(FloatDataGetter);
+	if (!Output.empty())
+		Output[0]->SetFunctionToOutputData(FloatDataGetter);
 }
 
 Json::Value FloatLiteralNode::ToJson()
@@ -40,7 +45,7 @@ bool FloatLiteralNode::FromJson(Json::Value Json)
 	if (!bResult)
 		return false;
 
-	if (!Json.isMember("Value"))
+	if (!Json.isMember("Value") || !Json["Value"].isNumeric())
 		return false;
 
 	Data = Json["Value"].asFloat();

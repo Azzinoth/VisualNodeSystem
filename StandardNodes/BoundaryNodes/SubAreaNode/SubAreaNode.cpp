@@ -57,19 +57,34 @@ SubAreaNode::SubAreaNode(NodeArea* OwnedArea)
 SubAreaNode::SubAreaNode(const SubAreaNode& Other) : VisNodeSys::SocketMirrorNode(Other)
 {
 	Init();
-	
+
+	// If the source has no owned area (e.g. default-constructed via factory), leave the copy in the same dangling state.
+	NodeArea* OtherOwnedArea = Other.GetOwnedArea();
+	if (OtherOwnedArea == nullptr)
+	{
+		OwnedAreaID = "";
+		SetName(Other.GetName());
+		return;
+	}
+
 	NodeArea* NewOwnedArea = NODE_SYSTEM.CreateNodeArea();
 	OwnedAreaID = NewOwnedArea->GetID();
-	NodeArea* OtherOwnedArea = Other.GetOwnedArea();
 	NODE_SYSTEM.CopyNodesTo(OtherOwnedArea, NewOwnedArea);
 
 	// Find the copied SubAreaInputNode and SubAreaOutputNode in the new area and relink IDs.
 	auto InputNodes = NewOwnedArea->GetNodesByType<SubAreaInputNode>();
 	auto OutputNodes = NewOwnedArea->GetNodesByType<SubAreaOutputNode>();
-	SubAreaInputNodeID = InputNodes[0]->GetID();
-	SubAreaOutputNodeID = OutputNodes[0]->GetID();
-	InputNodes[0]->OwnerSubAreaNodeID = GetID();
-	OutputNodes[0]->OwnerSubAreaNodeID = GetID();
+	if (!InputNodes.empty())
+	{
+		SubAreaInputNodeID = InputNodes[0]->GetID();
+		InputNodes[0]->OwnerSubAreaNodeID = GetID();
+	}
+
+	if (!OutputNodes.empty())
+	{
+		SubAreaOutputNodeID = OutputNodes[0]->GetID();
+		OutputNodes[0]->OwnerSubAreaNodeID = GetID();
+	}
 
 	SetName(Other.GetName());
 }

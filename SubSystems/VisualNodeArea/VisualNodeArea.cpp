@@ -329,18 +329,20 @@ bool NodeArea::LoadFromJson(std::string JsonText)
 	if (!Reader->parse(JsonText.c_str(), JsonText.c_str() + JsonText.size(), &Root, &Error))
 		return false;
 
+	if (!Root.isObject())
+		return false;
+
 	if (!Root.isMember("Nodes"))
 		return false;
 
 	if (!Root["Nodes"].isObject())
 		return false;
 
-	// Compatibility check, older versions did not have ID field.
-	if (Root.isMember("ID"))
+	if (Root.isMember("ID") && Root["ID"].isString())
 		ID = Root["ID"].asCString();
-	
+
 	// Compatibility check, older versions did not have Name field.
-	if (Root.isMember("Name"))
+	if (Root.isMember("Name") && Root["Name"].isString())
 		Name = Root["Name"].asCString();
 
 	std::unordered_map<std::string, Node*> LoadedNodes;
@@ -482,7 +484,7 @@ bool NodeArea::LoadFromJson(std::string JsonText)
 		for (size_t i = 0; i < GroupCommentsList.size(); i++)
 		{
 			if (!Root["GroupComments"][std::to_string(i)].isObject())
-				return false;
+				continue;
 
 			GroupComment* NewGroupComment = new GroupComment();
 			if (!NewGroupComment->FromJson(Root["GroupComments"][std::to_string(i)]))
@@ -490,18 +492,19 @@ bool NodeArea::LoadFromJson(std::string JsonText)
 				delete NewGroupComment;
 				continue;
 			}
+
 			AddGroupComment(NewGroupComment);
 		}
 	}
 
 	if (Root.isMember("RenderOffset"))
 	{
-		if (!Root["RenderOffset"].isMember("X") || !Root["RenderOffset"].isMember("Y"))
-			return false;
-
-		float OffsetX = Root["RenderOffset"]["X"].asFloat();
-		float OffsetY = Root["RenderOffset"]["Y"].asFloat();
-		SetRenderOffset(ImVec2(OffsetX, OffsetY));
+		const Json::Value& Offset = Root["RenderOffset"];
+		if (Offset.isObject() && Offset.isMember("X") && Offset["X"].isNumeric()
+							  && Offset.isMember("Y") && Offset["Y"].isNumeric())
+		{
+			SetRenderOffset(ImVec2(Offset["X"].asFloat(), Offset["Y"].asFloat()));
+		}
 	}
 
 	return true;
@@ -525,11 +528,18 @@ bool NodeArea::WorkOnLoadedConnection(Json::Value& Root, const Json::Value& Conn
 	if (!ConnectionData.isMember("RerouteConnections"))
 		return true;
 
+	if (!ConnectionData["RerouteConnections"].isObject())
+		return true;
+
 	// First pass to fill information that does not depend on other reroutes.
 	std::vector<Json::String> RerouteList = ConnectionData["RerouteConnections"].getMemberNames();
+	std::unordered_map<size_t, RerouteNode*> JsonIndexToRerouteNode;
 	for (size_t j = 0; j < RerouteList.size(); j++)
 	{
 		const Json::Value& CurrentReroute = ConnectionData["RerouteConnections"][std::to_string(j)];
+		if (!CurrentReroute.isObject())
+			continue;
+
 		if (!CurrentReroute.isMember("RerouteID") || !CurrentReroute.isMember("PositionX") || !CurrentReroute.isMember("PositionY"))
 			continue;
 
@@ -544,12 +554,21 @@ bool NodeArea::WorkOnLoadedConnection(Json::Value& Root, const Json::Value& Conn
 		NewReroute->Position.y = CurrentReroute["PositionY"].asFloat();
 
 		NewConnection->RerouteNodes.push_back(NewReroute);
+		JsonIndexToRerouteNode[j] = NewReroute;
 	}
 
-	// Second pass to fill pointers.
+	// Second pass to fill pointers. Only entries that survived the first pass have a RerouteNode to write to.
 	for (size_t j = 0; j < RerouteList.size(); j++)
 	{
+		auto MappingIterator = JsonIndexToRerouteNode.find(j);
+		if (MappingIterator == JsonIndexToRerouteNode.end())
+			continue;
+
+		RerouteNode* CurrentRerouteNode = MappingIterator->second;
 		const Json::Value& CurrentReroute = ConnectionData["RerouteConnections"][std::to_string(j)];
+		if (!CurrentReroute.isObject())
+			continue;
+
 		if (!CurrentReroute.isMember("BeginSocketID") || !CurrentReroute.isMember("EndSocketID") || !CurrentReroute.isMember("BeginRerouteID") || !CurrentReroute.isMember("EndRerouteID"))
 			continue;
 
@@ -561,7 +580,7 @@ bool NodeArea::WorkOnLoadedConnection(Json::Value& Root, const Json::Value& Conn
 		{
 			NodeSocket* BeginSocket = NewConnection->Out;
 			if (BeginSocketID == BeginSocket->GetID())
-				NewConnection->RerouteNodes[j]->BeginSocket = BeginSocket;
+				CurrentRerouteNode->BeginSocket = BeginSocket;
 		}
 
 		std::string EndSocketID = CurrentReroute["EndSocketID"].asCString();
@@ -569,7 +588,7 @@ bool NodeArea::WorkOnLoadedConnection(Json::Value& Root, const Json::Value& Conn
 		{
 			NodeSocket* EndSocket = NewConnection->In;
 			if (EndSocketID == EndSocket->GetID())
-				NewConnection->RerouteNodes[j]->EndSocket = EndSocket;
+				CurrentRerouteNode->EndSocket = EndSocket;
 		}
 
 		std::string BeginRerouteID = CurrentReroute["BeginRerouteID"].asCString();
@@ -583,7 +602,7 @@ bool NodeArea::WorkOnLoadedConnection(Json::Value& Root, const Json::Value& Conn
 			}
 
 			if (BeginReroute != nullptr)
-				NewConnection->RerouteNodes[j]->BeginReroute = BeginReroute;
+				CurrentRerouteNode->BeginReroute = BeginReroute;
 		}
 
 		std::string EndRerouteID = CurrentReroute["EndRerouteID"].asCString();
@@ -597,7 +616,7 @@ bool NodeArea::WorkOnLoadedConnection(Json::Value& Root, const Json::Value& Conn
 			}
 
 			if (EndReroute != nullptr)
-				NewConnection->RerouteNodes[j]->EndReroute = EndReroute;
+				CurrentRerouteNode->EndReroute = EndReroute;
 		}
 	}
 

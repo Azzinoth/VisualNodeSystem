@@ -1181,6 +1181,9 @@ bool NodeSystem::LoadFromJson(const std::string& JsonText)
 	if (!Reader->parse(JsonText.c_str(), JsonText.c_str() + JsonText.size(), &Root, &Error))
 		return false;
 
+	if (!Root.isObject())
+		return false;
+
 	if (!Root.isMember("SocketTypeToColorAssociations") || !Root.isMember("NodeAreas"))
 		return false;
 

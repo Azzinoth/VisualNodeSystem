@@ -12,7 +12,14 @@ NodeSocket::NodeSocket(Node* Parent, const std::string Type, const std::string N
 	this->Name = Name;
 	this->ID = NODE_CORE.GetUniqueHexID();
 	this->Flow = Flow;
-	this->OutputData = OutputDataFunction;
+	if (!OutputDataFunction)
+	{
+		this->OutputData = []() { return nullptr; };
+	}
+	else
+	{
+		this->OutputData = OutputDataFunction;
+	}
 }
 
 NodeSocket::NodeSocket(Node* Parent, const std::vector<std::string> Types, const std::string Name, SocketFlow Flow, std::function<void* ()> OutputDataFunction)
@@ -23,7 +30,14 @@ NodeSocket::NodeSocket(Node* Parent, const std::vector<std::string> Types, const
 	this->Name = Name;
 	this->ID = NODE_CORE.GetUniqueHexID();
 	this->Flow = Flow;
-	this->OutputData = OutputDataFunction;
+	if (!OutputDataFunction)
+	{
+		this->OutputData = []() { return nullptr; };
+	}
+	else
+	{
+		this->OutputData = OutputDataFunction;
+	}
 }
 
 void NodeSocket::StripEmptyTypes(std::vector<std::string>& Types)
@@ -91,6 +105,16 @@ void NodeSocket::SetFunctionToOutputData(std::function<void* ()> NewFunction)
 void* NodeSocket::GetData()
 {
 	return OutputData();
+}
+
+bool NodeSocket::CanBeDeletedByUser() const
+{
+	return bCanBeDeletedByUser;
+}
+
+void NodeSocket::SetCanBeDeletedByUser(bool NewValue)
+{
+	bCanBeDeletedByUser = NewValue;
 }
 
 bool NodeSocket::SetAllowedTypes(std::vector<std::string> NewTypes)

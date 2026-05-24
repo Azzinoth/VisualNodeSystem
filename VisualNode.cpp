@@ -47,11 +47,13 @@ Node::Node(const Node& Other)
 	for (size_t i = 0; i < Other.Input.size(); i++)
 	{
 		Input.push_back(new NodeSocket(this, Other.Input[i]->GetAllowedTypes(), Other.Input[i]->GetName(), NodeSocket::SocketFlow::Input, Other.Input[i]->OutputData));
+		Input.back()->SetCanBeDeletedByUser(Other.Input[i]->CanBeDeletedByUser());
 	}
 
 	for (size_t i = 0; i < Other.Output.size(); i++)
 	{
 		Output.push_back(new NodeSocket(this, Other.Output[i]->GetAllowedTypes(), Other.Output[i]->GetName(), NodeSocket::SocketFlow::Output, Other.Output[i]->OutputData));
+		Output.back()->SetCanBeDeletedByUser(Other.Output[i]->CanBeDeletedByUser());
 	}
 
 	bShouldBeDestroyed = false;
@@ -136,6 +138,9 @@ bool Node::DeleteSocket(std::string SocketID)
 bool Node::DeleteSocket(NodeSocket* Socket)
 {
 	if (Socket == nullptr)
+		return false;
+
+	if (!Socket->CanBeDeletedByUser())
 		return false;
 
 	if (Socket->GetParent() != nullptr && GetParentArea() != nullptr)
@@ -261,6 +266,7 @@ Json::Value Node::ToJson()
 	{
 		Result["Input"][std::to_string(i)]["ID"] = Input[i]->GetID();
 		Result["Input"][std::to_string(i)]["Name"] = Input[i]->GetName();
+		Result["Input"][std::to_string(i)]["CanBeDeletedByUser"] = Input[i]->CanBeDeletedByUser();
 		for (size_t j = 0; j < Input[i]->GetAllowedTypes().size(); j++)
 			Result["Input"][std::to_string(i)]["AllowedTypes"].append(Input[i]->GetAllowedTypes()[j]);
 	}
@@ -269,6 +275,7 @@ Json::Value Node::ToJson()
 	{
 		Result["Output"][std::to_string(i)]["ID"] = Output[i]->GetID();
 		Result["Output"][std::to_string(i)]["Name"] = Output[i]->GetName();
+		Result["Output"][std::to_string(i)]["CanBeDeletedByUser"] = Output[i]->CanBeDeletedByUser();
 		for (size_t j = 0; j < Output[i]->GetAllowedTypes().size(); j++)
 			Result["Output"][std::to_string(i)]["AllowedTypes"].append(Output[i]->GetAllowedTypes()[j]);
 	}
@@ -396,6 +403,9 @@ bool Node::FromJson(Json::Value Json)
 
 		Input[i] = new NodeSocket(this, AllowedTypes, Name, NodeSocket::SocketFlow::Input);
 		Input[i]->ID = ID;
+
+		if (Json["Input"][Key].isMember("CanBeDeletedByUser") && Json["Input"][Key]["CanBeDeletedByUser"].isBool())
+			Input[i]->SetCanBeDeletedByUser(Json["Input"][Key]["CanBeDeletedByUser"].asBool());
 	}
 
 	if (!Json["Output"].isNull() && !Json["Output"].isObject())
@@ -446,6 +456,9 @@ bool Node::FromJson(Json::Value Json)
 
 		Output[i] = new NodeSocket(this, AllowedTypes, Name, NodeSocket::SocketFlow::Output);
 		Output[i]->ID = ID;
+
+		if (Json["Output"][Key].isMember("CanBeDeletedByUser") && Json["Output"][Key]["CanBeDeletedByUser"].isBool())
+			Output[i]->SetCanBeDeletedByUser(Json["Output"][Key]["CanBeDeletedByUser"].asBool());
 	}
 
 	return true;
