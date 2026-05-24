@@ -60,7 +60,7 @@ namespace VisNodeSys
 		NodeArea* GetParentArea() const;
 
 		Json::Value ToJson();
-		void FromJson(Json::Value Json);
+		bool FromJson(Json::Value Json);
 
 		bool IsHovered() const;
 		bool IsSelected() const;

@@ -145,6 +145,9 @@ void SocketMirrorNode::SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedS
 		if (SocketIndex == -1 || SocketIndex >= static_cast<int>(Output.size()))
 			return;
 
+		if (ParentArea == nullptr)
+			return;
+
 		for (size_t i = 0; i < Output[SocketIndex]->GetConnectedSockets().size(); i++)
 			ParentArea->TriggerSocketEvent(Output[SocketIndex], Output[SocketIndex]->GetConnectedSockets()[i], EventType);
 	}

@@ -278,6 +278,14 @@ Json::Value Node::ToJson()
 
 void Node::SetToDefaultState()
 {
+	for (NodeSocket* Socket : Input)
+		delete Socket;
+	Input.clear();
+
+	for (NodeSocket* Socket : Output)
+		delete Socket;
+	Output.clear();
+
 	Node* NewNode = new Node();
 	std::string CurrentID = ID;
 	*this = *NewNode;
@@ -289,6 +297,12 @@ void Node::SetToDefaultState()
 
 bool Node::FromJson(Json::Value Json)
 {
+	if (!Json.isObject())
+	{
+		SetToDefaultState();
+		return false;
+	}
+
 	if (!Json.isMember("ID") || !Json["ID"].isString() ||
 		!Json.isMember("NodeType") || !Json["NodeType"].isString() ||
 		!Json.isMember("Position") || !Json["Position"].isObject() ||
@@ -306,7 +320,7 @@ bool Node::FromJson(Json::Value Json)
 
 	ID = Json["ID"].asCString();
 	Type = Json["NodeType"].asCString();
-	if (Json.isMember("NodeStyle"))
+	if (Json.isMember("NodeStyle") && Json["NodeStyle"].isNumeric())
 		Style = NODE_STYLE(Json["NodeStyle"].asInt());
 	Position.x = Json["Position"]["X"].asFloat();
 	Position.y = Json["Position"]["Y"].asFloat();
@@ -331,6 +345,12 @@ bool Node::FromJson(Json::Value Json)
 		MaxInputLabelWidth = Json["MaxInputLabelWidth"].asFloat();
 	if (Json.isMember("MaxOutputLabelWidth") && Json["MaxOutputLabelWidth"].isNumeric())
 		MaxOutputLabelWidth = Json["MaxOutputLabelWidth"].asFloat();
+
+	if (!Json["Input"].isNull() && !Json["Input"].isObject())
+	{
+		SetToDefaultState();
+		return false;
+	}
 
 	const std::vector<Json::String> InputsList = Json["Input"].getMemberNames();
 	for (size_t i = 0; i < Input.size(); i++)
@@ -364,10 +384,24 @@ bool Node::FromJson(Json::Value Json)
 		Json::Value AllowedTypesArray = Json["Input"][Key]["AllowedTypes"];
 		std::vector<std::string> AllowedTypes;
 		for (unsigned int j = 0; j < AllowedTypesArray.size(); j++)
+		{
+			if (!AllowedTypesArray[j].isString())
+			{
+				SetToDefaultState();
+				return false;
+			}
+
 			AllowedTypes.push_back(AllowedTypesArray[j].asString());
-		
+		}
+
 		Input[i] = new NodeSocket(this, AllowedTypes, Name, NodeSocket::SocketFlow::Input);
 		Input[i]->ID = ID;
+	}
+
+	if (!Json["Output"].isNull() && !Json["Output"].isObject())
+	{
+		SetToDefaultState();
+		return false;
 	}
 
 	const std::vector<Json::String> OutputsList = Json["Output"].getMemberNames();
@@ -400,7 +434,15 @@ bool Node::FromJson(Json::Value Json)
 		Json::Value AllowedTypesArray = Json["Output"][Key]["AllowedTypes"];
 		std::vector<std::string> AllowedTypes;
 		for (unsigned int j = 0; j < AllowedTypesArray.size(); j++)
+		{
+			if (!AllowedTypesArray[j].isString())
+			{
+				SetToDefaultState();
+				return false;
+			}
+
 			AllowedTypes.push_back(AllowedTypesArray[j].asString());
+		}
 
 		Output[i] = new NodeSocket(this, AllowedTypes, Name, NodeSocket::SocketFlow::Output);
 		Output[i]->ID = ID;

@@ -30,6 +30,10 @@ bool NodeArea::AddNode(Node* NewNode)
 			AsSubArea->OwnedAreaID = "";
 			return false;
 		}
+
+		// A SubAreaNode without an owned area considered broken, and we should not allow adding it to the area.
+		if (AsSubArea->OwnedAreaID.empty())
+			return false;
 	}
 
 	NewNode->ParentArea = this;

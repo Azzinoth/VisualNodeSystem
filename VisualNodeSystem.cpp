@@ -581,6 +581,9 @@ void NodeSystem::CopyNodesInternal(const std::vector<Node*>& SourceNodes, NodeAr
 	std::unordered_map<NodeSocket*, NodeSocket*> OldToNewSocket;
 	for (size_t i = 0; i < SourceNodes.size(); i++)
 	{
+		if (SourceNodes[i] == nullptr)
+			continue;
+
 		Node* CopyOfNode = NODE_FACTORY.CopyNode(SourceNodes[i]->GetType(), *SourceNodes[i]);
 
 		if (CopyOfNode == nullptr)
@@ -605,6 +608,9 @@ void NodeSystem::CopyNodesInternal(const std::vector<Node*>& SourceNodes, NodeAr
 	// Recreate all connections.
 	for (size_t i = 0; i < SourceNodes.size(); i++)
 	{
+		if (SourceNodes[i] == nullptr)
+			continue;
+
 		ProcessConnections(SourceNodes[i]->Output, OldToNewSocket, TargetArea, NodeShift + i, SourceNodes);
 	}
 }
@@ -616,6 +622,9 @@ NodeArea* NodeSystem::CreateNodeArea(const std::vector<Node*> Nodes, const std::
 
 	for (size_t i = 0; i < GroupComments.size(); i++)
 	{
+		if (GroupComments[i] == nullptr)
+			continue;
+
 		GroupComment* CopyOfGroupComment = new GroupComment(*GroupComments[i]);
 		NewArea->AddGroupComment(CopyOfGroupComment);
 	}
@@ -625,6 +634,9 @@ NodeArea* NodeSystem::CreateNodeArea(const std::vector<Node*> Nodes, const std::
 
 void NodeSystem::CopyNodesTo(NodeArea* SourceNodeArea, NodeArea* TargetNodeArea)
 {
+	if (SourceNodeArea == nullptr || TargetNodeArea == nullptr)
+		return;
+
 	const size_t NodeShift = TargetNodeArea->Nodes.size();
 	CopyNodesInternal(SourceNodeArea->Nodes, TargetNodeArea, NodeShift);
 
@@ -1428,6 +1440,9 @@ std::vector<LinkNode*> NodeSystem::GetDanglingLinkNodes() const
 
 bool NodeSystem::TryToFixDanglingLinkNode(LinkNode* LinkNodeToFix, bool bForceRestorePartner)
 {
+	if (LinkNodeToFix == nullptr)
+		return false;
+
 	if (LinkNodeToFix->GetLinkedArea() == nullptr)
 		return false;
 

@@ -15,7 +15,7 @@ GroupComment::GroupComment(const std::string ID)
 
 GroupComment::GroupComment(const GroupComment& Other)
 {
-	ParentArea = Other.ParentArea;
+	ParentArea = nullptr;
 	ID = NODE_CORE.GetUniqueHexID();
 	Position = Other.Position;
 	Size = Other.Size;
@@ -78,8 +78,37 @@ Json::Value GroupComment::ToJson()
 	return Result;
 }
 
-void GroupComment::FromJson(Json::Value Json)
+bool GroupComment::FromJson(Json::Value Json)
 {
+	if (!Json.isObject())
+		return false;
+
+	if (!Json.isMember("ID") || !Json["ID"].isString())
+		return false;
+
+	if (!Json.isMember("Position") || !Json["Position"].isObject() ||
+		!Json["Position"].isMember("X") || !Json["Position"]["X"].isNumeric() ||
+		!Json["Position"].isMember("Y") || !Json["Position"]["Y"].isNumeric())
+		return false;
+
+	if (!Json.isMember("Size") || !Json["Size"].isObject() ||
+		!Json["Size"].isMember("X") || !Json["Size"]["X"].isNumeric() ||
+		!Json["Size"].isMember("Y") || !Json["Size"]["Y"].isNumeric())
+		return false;
+
+	if (!Json.isMember("Caption") || !Json["Caption"].isString())
+		return false;
+
+	if (!Json.isMember("bMoveElementsWithComment") || !Json["bMoveElementsWithComment"].isBool())
+		return false;
+
+	if (!Json.isMember("BackgroundColor") || !Json["BackgroundColor"].isObject() ||
+		!Json["BackgroundColor"].isMember("X") || !Json["BackgroundColor"]["X"].isNumeric() ||
+		!Json["BackgroundColor"].isMember("Y") || !Json["BackgroundColor"]["Y"].isNumeric() ||
+		!Json["BackgroundColor"].isMember("Z") || !Json["BackgroundColor"]["Z"].isNumeric() ||
+		!Json["BackgroundColor"].isMember("W") || !Json["BackgroundColor"]["W"].isNumeric())
+		return false;
+
 	ID = Json["ID"].asCString();
 	Position.x = Json["Position"]["X"].asFloat();
 	Position.y = Json["Position"]["Y"].asFloat();
@@ -91,6 +120,8 @@ void GroupComment::FromJson(Json::Value Json)
 	BackgroundColor.y = Json["BackgroundColor"]["Y"].asFloat();
 	BackgroundColor.z = Json["BackgroundColor"]["Z"].asFloat();
 	BackgroundColor.w = Json["BackgroundColor"]["W"].asFloat();
+
+	return true;
 }
 
 bool GroupComment::IsHovered() const

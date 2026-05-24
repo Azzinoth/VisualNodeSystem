@@ -348,6 +348,9 @@ bool NodeArea::LoadFromJson(std::string JsonText)
 	for (size_t i = 0; i < NodesList.size(); i++)
 	{
 		std::string NodeKey = std::to_string(i);
+		if (!Root["Nodes"][NodeKey].isObject())
+			continue;
+
 		if (!Root["Nodes"][NodeKey].isMember("NodeType"))
 			continue;
 
@@ -482,7 +485,11 @@ bool NodeArea::LoadFromJson(std::string JsonText)
 				return false;
 
 			GroupComment* NewGroupComment = new GroupComment();
-			NewGroupComment->FromJson(Root["GroupComments"][std::to_string(i)]);
+			if (!NewGroupComment->FromJson(Root["GroupComments"][std::to_string(i)]))
+			{
+				delete NewGroupComment;
+				continue;
+			}
 			AddGroupComment(NewGroupComment);
 		}
 	}
