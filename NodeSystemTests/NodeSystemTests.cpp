@@ -264,3 +264,32 @@ TEST(NodeSystemTests, CopyNodesTo_CopiesGroupComments_To_Target)
 
 	NODE_SYSTEM.Clear();
 }
+
+TEST(NodeSystemTests, Paste_AllNodesRejectedByTarget_TargetNeverShrinksBelowSource)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* TargetArea = NODE_SYSTEM.CreateNodeArea();
+
+	// Snapshot a LinkNode pointing at TargetArea, then cascade-empty the target.
+	NodeArea* DonorArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_TRUE(NODE_SYSTEM.LinkNodeAreas(DonorArea->GetID(), TargetArea->GetID()));
+	std::string DonorJson = DonorArea->ToJson();
+	NODE_SYSTEM.DeleteNodeArea(DonorArea);
+	ASSERT_EQ(TargetArea->GetNodeCount(), 0);
+
+	// Mirror the paste path's clipboard-like load.
+	NodeArea* NewNodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_TRUE(NewNodeArea->LoadFromJson(DonorJson));
+	ASSERT_EQ(NewNodeArea->GetNodeCount(), 1);
+
+	// LinkedAreaID matches TargetArea, so AddNode rejects the copy.
+	const size_t TargetNodeCountBefore = TargetArea->GetNodeCount();
+	NODE_SYSTEM.CopyNodesTo(NewNodeArea, TargetArea);
+	EXPECT_EQ(TargetArea->GetNodeCount(), TargetNodeCountBefore);
+	EXPECT_EQ(NewNodeArea->GetNodeCount(), 1);
+
+	EXPECT_GE(TargetArea->GetNodeCount(), TargetNodeCountBefore);
+
+	NODE_SYSTEM.Clear();
+}

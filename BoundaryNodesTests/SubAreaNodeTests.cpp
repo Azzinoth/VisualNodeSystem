@@ -2263,3 +2263,21 @@ TEST(SubAreaNodeTests, AddNode_DefaultConstructedSubAreaNode_IsRejected)
 
 	NODE_SYSTEM.Clear();
 }
+
+TEST(SubAreaNodeTests, CopyNode_DefaultConstructedSubAreaNode_Is_Not_Crashing)
+{
+	NODE_SYSTEM.Clear();
+
+	Node* DefaultConstructedSubAreaNode = NODE_FACTORY.CreateNode("SubAreaNode");
+	ASSERT_NE(DefaultConstructedSubAreaNode, nullptr);
+
+	Node* Copy = NODE_FACTORY.CopyNode("SubAreaNode", *DefaultConstructedSubAreaNode);
+	ASSERT_NE(Copy, nullptr);
+
+	// The copy inherits the broken state and should be rejected by AddNode.
+	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
+	EXPECT_FALSE(Area->AddNode(Copy));
+	EXPECT_EQ(Area->GetNodesByType<SubAreaNode>().size(), 0);
+
+	NODE_SYSTEM.Clear();
+}

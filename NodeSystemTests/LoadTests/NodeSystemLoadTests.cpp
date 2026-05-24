@@ -372,3 +372,13 @@ TEST(NodeSystemLoadTest, Load_SubAreaNode_OwnsItsOwnParentArea_Do_Not_Add_Node)
 
 	NODE_SYSTEM.Clear();
 }
+
+TEST(NodeSystemLoadTest, LoadRootIsArray)
+{
+	NODE_SYSTEM.Clear();
+
+	EXPECT_FALSE(NODE_SYSTEM.LoadFromJson(R"([{"a":"b"}])"));
+	EXPECT_EQ(NODE_SYSTEM.GetNodeAreaCount(), 0);
+
+	NODE_SYSTEM.Clear();
+}

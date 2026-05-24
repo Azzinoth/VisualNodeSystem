@@ -1039,3 +1039,172 @@ TEST(Basic, CopyPaste_TaintedSource_CopyStripsEmpty)
 
 	NODE_SYSTEM.DeleteNodeArea(Area);
 }
+
+TEST(Basic, NodeSocket_NullOutputDataFunction)
+{
+	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(Area, nullptr);
+
+	Node* OwnerNode = new Node();
+	ASSERT_TRUE(Area->AddNode(OwnerNode));
+
+	NodeSocket* Socket = new NodeSocket(OwnerNode, "FLOAT", "out",
+		NodeSocket::SocketFlow::Output, std::function<void*()>(nullptr));
+	ASSERT_TRUE(OwnerNode->AddSocket(Socket));
+
+	EXPECT_EQ(Socket->GetData(), nullptr);
+
+	NODE_SYSTEM.DeleteNodeArea(Area);
+}
+
+TEST(Basic, NodeSocket_CanBeDeletedByUser_DefaultsTrue_SetterAndGetterWork)
+{
+	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
+	Node* Owner = new Node();
+	NodeSocket* Socket = new NodeSocket(Owner, "INT", "x", NodeSocket::SocketFlow::Input);
+	ASSERT_TRUE(Owner->AddSocket(Socket));
+	ASSERT_TRUE(Area->AddNode(Owner));
+
+	EXPECT_TRUE(Socket->CanBeDeletedByUser());
+
+	Socket->SetCanBeDeletedByUser(false);
+	EXPECT_FALSE(Socket->CanBeDeletedByUser());
+
+	Socket->SetCanBeDeletedByUser(true);
+	EXPECT_TRUE(Socket->CanBeDeletedByUser());
+
+	NODE_SYSTEM.DeleteNodeArea(Area);
+}
+
+TEST(Basic, Node_DeleteSocket_RespectsCanBeDeletedByUserFlag)
+{
+	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
+	Node* Owner = new Node();
+	NodeSocket* Socket = new NodeSocket(Owner, "INT", "x", NodeSocket::SocketFlow::Input);
+	ASSERT_TRUE(Owner->AddSocket(Socket));
+	ASSERT_TRUE(Area->AddNode(Owner));
+
+	// Marked undeletable: DeleteSocket must refuse, socket stays.
+	Socket->SetCanBeDeletedByUser(false);
+	EXPECT_FALSE(Owner->DeleteSocket(Socket));
+	EXPECT_EQ(Owner->GetInputSocketCount(), 1u);
+
+	// Flip back to deletable: DeleteSocket now succeeds.
+	Socket->SetCanBeDeletedByUser(true);
+	EXPECT_TRUE(Owner->DeleteSocket(Socket));
+	EXPECT_EQ(Owner->GetInputSocketCount(), 0u);
+
+	NODE_SYSTEM.DeleteNodeArea(Area);
+}
+
+TEST(Basic, Node_CopyCtor_PreservesCanBeDeletedByUserFlag)
+{
+	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
+	Node* Source = new Node();
+
+	NodeSocket* Deletable = new NodeSocket(Source, "INT", "del", NodeSocket::SocketFlow::Input);
+	NodeSocket* Locked = new NodeSocket(Source, "INT", "lock", NodeSocket::SocketFlow::Output);
+	Locked->SetCanBeDeletedByUser(false);
+
+	ASSERT_TRUE(Source->AddSocket(Deletable));
+	ASSERT_TRUE(Source->AddSocket(Locked));
+	ASSERT_TRUE(Area->AddNode(Source));
+
+	Node* Copy = new Node(*Source);
+	ASSERT_TRUE(Area->AddNode(Copy));
+
+	NodeSocket* CopiedIn  = Copy->GetSocketByIndex(0, NodeSocket::SocketFlow::Input);
+	NodeSocket* CopiedOut = Copy->GetSocketByIndex(0, NodeSocket::SocketFlow::Output);
+	ASSERT_NE(CopiedIn, nullptr);
+	ASSERT_NE(CopiedOut, nullptr);
+
+	EXPECT_TRUE(CopiedIn->CanBeDeletedByUser());
+	EXPECT_FALSE(CopiedOut->CanBeDeletedByUser());
+
+	NODE_SYSTEM.DeleteNodeArea(Area);
+}
+
+TEST(Basic, NodeSocket_Persistence_RoundTripPreservesCanBeDeletedByUserFlag)
+{
+	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
+	Node* Source = new Node();
+
+	NodeSocket* DeletableInput = new NodeSocket(Source, "INT", "din", NodeSocket::SocketFlow::Input);
+	NodeSocket* LockedInput    = new NodeSocket(Source, "INT", "lin", NodeSocket::SocketFlow::Input);
+	NodeSocket* DeletableOutput = new NodeSocket(Source, "INT", "dout", NodeSocket::SocketFlow::Output);
+	NodeSocket* LockedOutput    = new NodeSocket(Source, "INT", "lout", NodeSocket::SocketFlow::Output);
+	LockedInput->SetCanBeDeletedByUser(false);
+	LockedOutput->SetCanBeDeletedByUser(false);
+
+	ASSERT_TRUE(Source->AddSocket(DeletableInput));
+	ASSERT_TRUE(Source->AddSocket(LockedInput));
+	ASSERT_TRUE(Source->AddSocket(DeletableOutput));
+	ASSERT_TRUE(Source->AddSocket(LockedOutput));
+	ASSERT_TRUE(Area->AddNode(Source));
+
+	Json::Value Json = Source->ToJson();
+
+	Node* Loaded = new Node();
+	ASSERT_TRUE(Area->AddNode(Loaded));
+	ASSERT_TRUE(Loaded->FromJson(Json));
+
+	ASSERT_EQ(Loaded->GetInputSocketCount(), 2);
+	ASSERT_EQ(Loaded->GetOutputSocketCount(), 2);
+
+	EXPECT_TRUE (Loaded->GetSocketByIndex(0, NodeSocket::SocketFlow::Input)->CanBeDeletedByUser());
+	EXPECT_FALSE(Loaded->GetSocketByIndex(1, NodeSocket::SocketFlow::Input)->CanBeDeletedByUser());
+	EXPECT_TRUE (Loaded->GetSocketByIndex(0, NodeSocket::SocketFlow::Output)->CanBeDeletedByUser());
+	EXPECT_FALSE(Loaded->GetSocketByIndex(1, NodeSocket::SocketFlow::Output)->CanBeDeletedByUser());
+
+	NODE_SYSTEM.DeleteNodeArea(Area);
+}
+
+TEST(Basic, NodeSocket_Persistence_OldSaveWithoutField_KeepsDefaultTrue)
+{
+	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
+	Node* Source = new Node();
+	NodeSocket* Socket = new NodeSocket(Source, "INT", "x", NodeSocket::SocketFlow::Output);
+	Socket->SetCanBeDeletedByUser(false);
+	ASSERT_TRUE(Source->AddSocket(Socket));
+	ASSERT_TRUE(Area->AddNode(Source));
+
+	// Simulate an old save by stripping the field before load.
+	Json::Value Json = Source->ToJson();
+	ASSERT_TRUE(Json["Output"]["0"].isMember("CanBeDeletedByUser"));
+	Json["Output"]["0"].removeMember("CanBeDeletedByUser");
+
+	Node* Loaded = new Node();
+	ASSERT_TRUE(Area->AddNode(Loaded));
+	ASSERT_TRUE(Loaded->FromJson(Json));
+
+	NodeSocket* LoadedSocket = Loaded->GetSocketByIndex(0, NodeSocket::SocketFlow::Output);
+	ASSERT_NE(LoadedSocket, nullptr);
+	// Missing field => framework default (true), not a crash.
+	EXPECT_TRUE(LoadedSocket->CanBeDeletedByUser());
+
+	NODE_SYSTEM.DeleteNodeArea(Area);
+}
+
+TEST(Basic, NodeSocket_Persistence_WrongTypeForField_IsIgnored_NotCrashing)
+{
+	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
+	Node* Source = new Node();
+	NodeSocket* Socket = new NodeSocket(Source, "INT", "x", NodeSocket::SocketFlow::Output);
+	ASSERT_TRUE(Source->AddSocket(Socket));
+	ASSERT_TRUE(Area->AddNode(Source));
+
+	// Garbage value where a bool was expected, common JSON tampering shape.
+	Json::Value Json = Source->ToJson();
+	Json["Output"]["0"]["CanBeDeletedByUser"] = "not_a_bool";
+
+	Node* Loaded = new Node();
+	ASSERT_TRUE(Area->AddNode(Loaded));
+	ASSERT_TRUE(Loaded->FromJson(Json));
+
+	NodeSocket* LoadedSocket = Loaded->GetSocketByIndex(0, NodeSocket::SocketFlow::Output);
+	ASSERT_NE(LoadedSocket, nullptr);
+	// Wrong type => treated as missing, fall back to framework default.
+	EXPECT_TRUE(LoadedSocket->CanBeDeletedByUser());
+
+	NODE_SYSTEM.DeleteNodeArea(Area);
+}

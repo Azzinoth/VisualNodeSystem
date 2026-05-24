@@ -550,7 +550,7 @@ TEST(NodeAreaLoadTest, LoadIncorrectGroupCommentFromJson)
 	NodeArea* NodeArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(NodeArea, nullptr);
 
-	ASSERT_EQ(NodeArea->LoadFromJson(JsonString), false);
+	ASSERT_EQ(NodeArea->LoadFromJson(JsonString), true);
 	ASSERT_EQ(NodeArea->GetNodeCount(), 2);
 	ASSERT_EQ(NodeArea->GetGroupCommentCount(), 0);
 	ASSERT_EQ(NodeArea->GetConnectionCount(), 0);
@@ -1094,6 +1094,99 @@ TEST(NodeAreaLoadTest, LoadWhenRerouteConnectionsInfoIsDamaged_3)
 	NODE_SYSTEM.DeleteNodeArea(NodeArea);
 }
 
+TEST(NodeAreaLoadTest, LoadConnection_With_MixedReroute_Validity)
+{
+	std::string JsonString = R"({
+		"Connections" :
+		{
+			"0" :
+			{
+				"In" :
+				{
+					"NodeID" : "6451100C0778214351766B7E",
+					"SocketID" : "1C191657360B7903691A5B66",
+					"SocketIndex" : 0
+				},
+				"Out" :
+				{
+					"NodeID" : "5C0E2E1D5D005C3E70421A67",
+					"SocketID" : "5D7E2A574B7D3C3069521C3F",
+					"SocketIndex" : 0
+				},
+				"RerouteConnections" :
+				{
+					"0" :
+					{
+						"BeginRerouteID" : "",
+						"BeginSocketID" : "5D7E2A574B7D3C3069521C3F",
+						"EndRerouteID" : "AAAA000000000000AAAA0000",
+						"EndSocketID" : "",
+						"PositionX" : 100.0,
+						"PositionY" : 100.0,
+						"RerouteID" : "1111000000000000111100000"
+					},
+					"1" :
+					{
+						"BeginRerouteID" : "",
+						"BeginSocketID" : "",
+						"EndRerouteID" : "",
+						"EndSocketID" : ""
+					},
+					"2" :
+					{
+						"BeginRerouteID" : "AAAA000000000000AAAA0000",
+						"BeginSocketID" : "",
+						"EndRerouteID" : "",
+						"EndSocketID" : "1C191657360B7903691A5B66",
+						"PositionX" : 200.0,
+						"PositionY" : 200.0,
+						"RerouteID" : "AAAA000000000000AAAA0000"
+					}
+				}
+			}
+		},
+		"Nodes" :
+		{
+			"0" :
+			{
+				"ID" : "6451100C0778214351766B7E",
+				"Input" :
+				{
+					"0" : { "ID" : "1C191657360B7903691A5B66", "Name" : "In", "AllowedTypes":["EXECUTE"] }
+				},
+				"Name" : "Sink",
+				"NodeStyle" : 0,
+				"NodeType" : "VisualNode",
+				"Position" : { "X" : 350.0, "Y" : 490.0 },
+				"Size" : { "X" : 120.0, "Y" : 80.0 }
+			},
+			"1" :
+			{
+				"ID" : "5C0E2E1D5D005C3E70421A67",
+				"Name" : "Source",
+				"NodeStyle" : 0,
+				"NodeType" : "VisualNode",
+				"Output" :
+				{
+					"0" : { "ID" : "5D7E2A574B7D3C3069521C3F", "Name" : "Out", "AllowedTypes":["EXECUTE"] }
+				},
+				"Position" : { "X" : 10.0, "Y" : 490.0 },
+				"Size" : { "X" : 120.0, "Y" : 80.0 }
+			}
+		}
+	})";
+
+	NodeArea* NodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(NodeArea, nullptr);
+
+	ASSERT_EQ(NodeArea->LoadFromJson(JsonString), true);
+
+	EXPECT_EQ(NodeArea->GetNodeCount(), 2);
+	EXPECT_EQ(NodeArea->GetConnectionCount(), 1);
+
+	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+}
+
 TEST(NodeAreaLoadTest, LoadMediumNodeArea)
 {
 	NodeArea* NodeArea = NODE_SYSTEM.CreateNodeArea();
@@ -1283,6 +1376,126 @@ TEST(NodeAreaLoadTest, LoadNodeEntryNotObject)
 
 	ASSERT_EQ(NodeArea->LoadFromJson(JsonString), true);
 	ASSERT_EQ(NodeArea->GetNodeCount(), 0);
+
+	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+}
+
+TEST(NodeAreaLoadTest, LoadRenderOffsetNotObject)
+{
+	std::string JsonString = R"({
+		"Nodes": {},
+		"RenderOffset": "not_an_object"
+	})";
+
+	NodeArea* NodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(NodeArea, nullptr);
+
+	ASSERT_EQ(NodeArea->LoadFromJson(JsonString), true);
+	ASSERT_EQ(NodeArea->GetNodeCount(), 0);
+
+	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+}
+
+TEST(NodeAreaLoadTest, LoadRenderOffsetXNotNumeric)
+{
+	std::string JsonString = R"({
+		"Nodes": {},
+		"RenderOffset": {"X": "abc", "Y": 0}
+	})";
+
+	NodeArea* NodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(NodeArea, nullptr);
+
+	ASSERT_EQ(NodeArea->LoadFromJson(JsonString), true);
+	ASSERT_EQ(NodeArea->GetNodeCount(), 0);
+
+	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+}
+
+TEST(NodeAreaLoadTest, Load_Connection_With_RerouteConnections_NotObject)
+{
+	std::string JsonString = R"({
+		"Connections": {
+			"0": {
+				"In":  { "NodeID": "6451100C0778214351766B7E", "SocketID": "1C191657360B7903691A5B66", "SocketIndex": 0 },
+				"Out": { "NodeID": "5C0E2E1D5D005C3E70421A67", "SocketID": "5D7E2A574B7D3C3069521C3F", "SocketIndex": 0 },
+				"RerouteConnections": "not_an_object"
+			}
+		},
+		"Nodes": {
+			"0": {
+				"ID": "6451100C0778214351766B7E",
+				"NodeType": "VisualNode",
+				"NodeStyle": 0,
+				"Name": "Sink",
+				"Position": {"X": 350.0, "Y": 490.0},
+				"Size": {"X": 120.0, "Y": 80.0},
+				"Input": { "0": { "ID": "1C191657360B7903691A5B66", "Name": "In", "AllowedTypes":["EXECUTE"] } }
+			},
+			"1": {
+				"ID": "5C0E2E1D5D005C3E70421A67",
+				"NodeType": "VisualNode",
+				"NodeStyle": 0,
+				"Name": "Source",
+				"Position": {"X": 10.0, "Y": 490.0},
+				"Size": {"X": 120.0, "Y": 80.0},
+				"Output": { "0": { "ID": "5D7E2A574B7D3C3069521C3F", "Name": "Out", "AllowedTypes":["EXECUTE"] } }
+			}
+		}
+	})";
+
+	NodeArea* NodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(NodeArea, nullptr);
+
+	ASSERT_EQ(NodeArea->LoadFromJson(JsonString), true);
+	EXPECT_EQ(NodeArea->GetNodeCount(), 2);
+	EXPECT_EQ(NodeArea->GetConnectionCount(), 1);
+	EXPECT_EQ(NodeArea->GetRerouteConnectionCount(), 0);
+
+	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+}
+
+TEST(NodeAreaLoadTest, LoadRootIsArray)
+{
+	std::string JsonString = R"([{"a":"b"}])";
+
+	NodeArea* NodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(NodeArea, nullptr);
+
+	EXPECT_FALSE(NodeArea->LoadFromJson(JsonString));
+	EXPECT_EQ(NodeArea->GetNodeCount(), 0);
+
+	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+}
+
+TEST(NodeAreaLoadTest, LoadAreaIDNotString)
+{
+	std::string JsonString = R"({
+		"Nodes": {},
+		"ID": 42
+	})";
+
+	NodeArea* NodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(NodeArea, nullptr);
+
+	ASSERT_EQ(NodeArea->LoadFromJson(JsonString), true);
+	EXPECT_EQ(NodeArea->GetNodeCount(), 0);
+
+	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+}
+
+TEST(NodeAreaLoadTest, LoadAreaNameNotString)
+{
+	std::string JsonString = R"({
+		"Nodes": {},
+		"Name": true
+	})";
+
+	NodeArea* NodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(NodeArea, nullptr);
+
+	ASSERT_EQ(NodeArea->LoadFromJson(JsonString), true);
+	EXPECT_EQ(NodeArea->GetNodeCount(), 0);
 
 	NODE_SYSTEM.DeleteNodeArea(NodeArea);
 }

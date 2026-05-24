@@ -683,3 +683,35 @@ TEST(ExecutionFlowNodesTests, SavingLoading_RandomArithmetic_Calculation)
 		ASSERT_EQ(ExecutedNodesCount, LoadedExecutedNodesCount);
 	}
 }
+
+TEST(ExecutionFlowNodesTests, DeleteSocket_OnUndeletableStandardNodeSocket_IsRejected_AndCopyStaysSafe)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
+	FloatVariableNode* Original = new FloatVariableNode();
+	ASSERT_TRUE(Area->AddNode(Original));
+	ASSERT_GE(Original->GetOutputSocketCount(), 2u);
+
+	// Standard variable nodes mark their structural sockets as undeletable.
+	// The deletion must be rejected and the socket vector must stay intact.
+	NodeSocket* Out0 = Original->GetSocketByIndex(0, NodeSocket::SocketFlow::Output);
+	NodeSocket* Out1 = Original->GetSocketByIndex(1, NodeSocket::SocketFlow::Output);
+	NodeSocket* In0  = Original->GetSocketByIndex(0, NodeSocket::SocketFlow::Input);
+
+	const size_t InputCountBefore  = Original->GetInputSocketCount();
+	const size_t OutputCountBefore = Original->GetOutputSocketCount();
+
+	EXPECT_FALSE(Original->DeleteSocket(Out0));
+	EXPECT_FALSE(Original->DeleteSocket(Out1));
+	EXPECT_FALSE(Original->DeleteSocket(In0));
+	EXPECT_EQ(Original->GetOutputSocketCount(), OutputCountBefore);
+	EXPECT_EQ(Original->GetInputSocketCount(), InputCountBefore);
+
+	Node* Copy = NODE_FACTORY.CopyNode("FloatVariableNode", *Original);
+	ASSERT_NE(Copy, nullptr);
+	EXPECT_TRUE(Area->AddNode(Copy));
+
+	NODE_SYSTEM.DeleteNodeArea(Area);
+	NODE_SYSTEM.Clear();
+}
