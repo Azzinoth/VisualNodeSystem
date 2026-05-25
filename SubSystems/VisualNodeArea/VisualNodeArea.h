@@ -339,8 +339,6 @@ namespace VisNodeSys
 		ImVec2 GetMouseDelta() const { return ImGui::GetIO().MouseDelta / Zoom; }
 		float GetConnectionThickness() const { return 3.0f * Zoom; }
 
-		static ImVec2 NeededShift;
-
 		bool bClearing = false;
 		bool bFillWindow = false;
 		bool bFocused = false;

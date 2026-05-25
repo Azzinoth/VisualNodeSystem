@@ -766,7 +766,7 @@ void NodeArea::KeyboardInputUpdate()
 	if (!IsFocused())
 		return;
 
-	if (ImGui::IsKeyDown(ImGuiKey_Delete))
+	if (ImGui::IsKeyDown(ImGuiKey_Delete) && !ImGui::GetIO().WantTextInput)
 	{
 		for (size_t i = 0; i < SelectedNodes.size(); i++)
 		{
@@ -794,7 +794,7 @@ void NodeArea::KeyboardInputUpdate()
 	}
 
 	static bool bWasCopiedToClipboard = false;
-	if (ImGui::IsKeyDown(ImGuiKey_LeftCtrl) || ImGui::IsKeyDown(ImGuiKey_RightCtrl))
+	if ((ImGui::IsKeyDown(ImGuiKey_LeftCtrl) || ImGui::IsKeyDown(ImGuiKey_RightCtrl)) && !ImGui::GetIO().WantTextInput)
 	{
 		if (ImGui::IsKeyDown(ImGuiKey_C))
 		{
@@ -816,6 +816,35 @@ void NodeArea::KeyboardInputUpdate()
 				NODE_SYSTEM.DeleteNodeArea(NewNodeArea);
 			}
 		}
+		else if (ImGui::IsKeyDown(ImGuiKey_X))
+		{
+			if (!SelectedNodes.empty() || !SelectedGroupComments.empty())
+			{
+				std::vector<Node*> NodesToCut = SelectedNodes;
+				// Only nodes that may be copied may also be cut, otherwise the clipboard would not contain what we just removed.
+				for (size_t i = 0; i < NodesToCut.size(); i++)
+				{
+					if (!NodesToCut[i]->bCouldBeCopiedByUser)
+					{
+						NodesToCut.erase(NodesToCut.begin() + i);
+						i--;
+					}
+				}
+
+				const NodeArea* NewNodeArea = NODE_SYSTEM.CreateNodeArea(NodesToCut, SelectedGroupComments);
+				NODE_CORE.SetClipboardText(NewNodeArea->ToJson());
+				NODE_SYSTEM.DeleteNodeArea(NewNodeArea);
+
+				for (size_t i = 0; i < NodesToCut.size(); i++)
+					Delete(NodesToCut[i]);
+
+				for (size_t i = 0; i < SelectedGroupComments.size(); i++)
+				{
+					if (Delete(SelectedGroupComments[i]))
+						i--;
+				}
+			}
+		}
 		else if (ImGui::IsKeyDown(ImGuiKey_V))
 		{
 			if (!bWasCopiedToClipboard)
@@ -823,15 +852,6 @@ void NodeArea::KeyboardInputUpdate()
 				bWasCopiedToClipboard = true;
 
 				const std::string NodesToImport = NODE_CORE.GetClipboardText();
-				Json::Value Data;
-
-				JSONCPP_STRING Error;
-				const Json::CharReaderBuilder Builder;
-
-				const std::unique_ptr<Json::CharReader> Reader(Builder.newCharReader());
-				if (!Reader->parse(NodesToImport.c_str(), NodesToImport.c_str() + NodesToImport.size(), &Data, &Error))
-					return;
-
 				NodeArea* NewNodeArea = new NodeArea();
 				if (!NewNodeArea->LoadFromJson(NodesToImport))
 				{
@@ -844,29 +864,25 @@ void NodeArea::KeyboardInputUpdate()
 				ImVec2 NodesAABBCenter = NewNodeArea->GetAllElementsAABBCenter();
 				NodesAABBCenter -= NewNodeArea->GetRenderOffset();
 
-				NeededShift = ViewCenter - NodesAABBCenter;
+				const ImVec2 Shift = ViewCenter - NodesAABBCenter;
 
-				NewNodeArea->RunOnEachNode([](Node* Node) {
-					Node->SetPosition(Node->GetPosition() + NeededShift);
+				NewNodeArea->RunOnEachNode([Shift](Node* Node) {
+					Node->SetPosition(Node->GetPosition() + Shift);
 				});
 
 				for (size_t i = 0; i < NewNodeArea->Connections.size(); i++)
 				{
 					for (size_t j = 0; j < NewNodeArea->Connections[i]->RerouteNodes.size(); j++)
-					{
-						NewNodeArea->Connections[i]->RerouteNodes[j]->Position += NeededShift;
-					}
+						NewNodeArea->Connections[i]->RerouteNodes[j]->Position += Shift;
 				}
 
 				for (size_t i = 0; i < NewNodeArea->GroupComments.size(); i++)
-				{
-					NewNodeArea->GroupComments[i]->SetPosition(NewNodeArea->GroupComments[i]->GetPosition() + NeededShift);
-				}
+					NewNodeArea->GroupComments[i]->SetPosition(NewNodeArea->GroupComments[i]->GetPosition() + Shift);
 				// ***************** Place new nodes in center of a view space END *****************
 
 				// Snapshot target sizes before the copy. If not we can get size_t(-1).
-				const size_t NodeCountBefore         = Nodes.size();
-				const size_t ConnectionCountBefore   = Connections.size();
+				const size_t NodeCountBefore = Nodes.size();
+				const size_t ConnectionCountBefore = Connections.size();
 				const size_t GroupCommentCountBefore = GroupComments.size();
 
 				NODE_SYSTEM.CopyNodesTo(NewNodeArea, this);
@@ -876,24 +892,18 @@ void NodeArea::KeyboardInputUpdate()
 
 				// Select all pasted nodes.
 				for (size_t i = NodeCountBefore; i < Nodes.size(); i++)
-				{
-					SelectedNodes.push_back(Nodes[i]);
-				}
+					AddSelected(Nodes[i]);
 
 				// Select all pasted reroute nodes.
 				for (size_t i = ConnectionCountBefore; i < Connections.size(); i++)
 				{
 					for (size_t j = 0; j < Connections[i]->RerouteNodes.size(); j++)
-					{
 						AddSelected(Connections[i]->RerouteNodes[j]);
-					}
 				}
 
 				// Select all pasted group comments.
 				for (size_t i = GroupCommentCountBefore; i < GroupComments.size(); i++)
-				{
 					AddSelected(GroupComments[i]);
-				}
 
 				delete NewNodeArea;
 			}

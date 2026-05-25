@@ -1,8 +1,6 @@
 #include "VisualNodeArea.h"
 using namespace VisNodeSys;
 
-ImVec2 NodeArea::NeededShift = ImVec2();
-
 NodeArea::NodeArea(std::string ID)
 {
 	this->ID = ID;
