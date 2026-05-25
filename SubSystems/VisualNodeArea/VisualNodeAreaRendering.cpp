@@ -1151,7 +1151,8 @@ void NodeArea::RenderDefaultMainContextMenu()
 			NewGroupComment->SetCaption("Group Comment");
 			NewGroupComment->SetPosition(ContextMenuOpenState.MousePositionRecorded);
 			NewGroupComment->bIsRenamingActive = true;
-			GroupComments.push_back(NewGroupComment);
+			if (!AddGroupComment(NewGroupComment))
+				delete NewGroupComment;
 		}
 
 #ifdef VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES

@@ -879,23 +879,55 @@ bool NodeSystem::MoveNodesTo(NodeArea* SourceNodeArea, NodeArea* TargetNodeArea,
 	if (SourceNodeArea == nullptr || TargetNodeArea == nullptr || SourceNodeArea == TargetNodeArea)
 		return false;
 
+	const size_t TargetNodeCountBefore = TargetNodeArea->Nodes.size();
+
+	// AddNode rejects any node whose ParentArea is non-null, so clear it temporarily.
+	// On rejection by any other guard, restore source ownership instead of orphaning the node.
+	std::vector<Node*> RetainedInSource;
 	for (size_t i = 0; i < SourceNodeArea->Nodes.size(); i++)
-		TargetNodeArea->AddNode(SourceNodeArea->Nodes[i]);
+	{
+		Node* CurrentNode = SourceNodeArea->Nodes[i];
+		if (CurrentNode == nullptr)
+			continue;
 
-	const size_t SourceNodeCount = SourceNodeArea->Nodes.size();
-	SourceNodeArea->Nodes.clear();
+		CurrentNode->ParentArea = nullptr;
+		if (!TargetNodeArea->AddNode(CurrentNode))
+		{
+			CurrentNode->ParentArea = SourceNodeArea;
+			RetainedInSource.push_back(CurrentNode);
+		}
+	}
+	SourceNodeArea->Nodes = RetainedInSource;
 
+	// Move only connections whose endpoints both ended up in target.
+	std::vector<Connection*> RetainedConnections;
 	for (size_t i = 0; i < SourceNodeArea->Connections.size(); i++)
-		TargetNodeArea->Connections.push_back(SourceNodeArea->Connections[i]);
+	{
+		Connection* CurrentConnection = SourceNodeArea->Connections[i];
+		if (CurrentConnection == nullptr)
+			continue;
 
-	SourceNodeArea->Connections.clear();
-	SourceNodeArea->Clear();
+		Node* OutParent = CurrentConnection->Out != nullptr ? CurrentConnection->Out->GetParent() : nullptr;
+		Node* InParent = CurrentConnection->In != nullptr ? CurrentConnection->In->GetParent() : nullptr;
+		const bool bBothInTarget = OutParent != nullptr && OutParent->GetParentArea() == TargetNodeArea
+		                           && InParent != nullptr && InParent->GetParentArea() == TargetNodeArea;
 
-	// Select moved nodes.
+		if (bBothInTarget)
+		{
+			TargetNodeArea->Connections.push_back(CurrentConnection);
+		}
+		else
+		{
+			RetainedConnections.push_back(CurrentConnection);
+		}	
+	}
+	SourceNodeArea->Connections = RetainedConnections;
+
+	// Select only the newly-arrived nodes via [before, after) slice - never underflows.
 	if (bSelectNodesAfterMovement)
 	{
 		TargetNodeArea->SelectedNodes.clear();
-		for (size_t i = TargetNodeArea->Nodes.size() - SourceNodeCount; i < TargetNodeArea->Nodes.size(); i++)
+		for (size_t i = TargetNodeCountBefore; i < TargetNodeArea->Nodes.size(); i++)
 			TargetNodeArea->SelectedNodes.push_back(TargetNodeArea->Nodes[i]);
 	}
 
