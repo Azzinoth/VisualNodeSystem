@@ -129,6 +129,74 @@ TEST(NodeSystemTests, MoveNodesTo_SameSourceAndTarget_Will_Do_Nothing)
 	NODE_SYSTEM.DeleteNodeArea(Area);
 }
 
+// When target's AddNode refuses a node MoveNodesTo must leave that node in source.
+TEST(NodeSystemTests, MoveNodesTo_AddNodeRejection_NodeIsRetained_InSource)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* TargetArea = NODE_SYSTEM.CreateNodeArea();
+
+	// Snapshot a LinkNode pointing at a TargetArea via a throwaway donor area.
+	NodeArea* DonorArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_TRUE(NODE_SYSTEM.LinkNodeAreas(DonorArea->GetID(), TargetArea->GetID()));
+	std::string DonorJson = DonorArea->ToJson();
+	NODE_SYSTEM.DeleteNodeArea(DonorArea);
+	ASSERT_EQ(TargetArea->GetNodeCount(), 0);
+
+	NodeArea* SourceArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_TRUE(SourceArea->LoadFromJson(DonorJson));
+	ASSERT_EQ(SourceArea->GetNodeCount(), 1);
+
+	NODE_SYSTEM.MoveNodesTo(SourceArea, TargetArea, false);
+
+	// Rejected node must stay in source, target gains nothing.
+	EXPECT_EQ(SourceArea->GetNodeCount(), 1);
+	EXPECT_EQ(TargetArea->GetNodeCount(), 0);
+
+	NODE_SYSTEM.Clear();
+}
+
+TEST(NodeSystemTests, MoveNodesTo_AllNodesAccepted_TransfersThemAndPreservesPartialSelection)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* SourceArea = NODE_SYSTEM.CreateNodeArea();
+	NodeArea* TargetArea = NODE_SYSTEM.CreateNodeArea();
+
+	// Pre-existing node in target, should NOT end up selected after the move.
+	Node* PreExisting = new Node();
+	ASSERT_TRUE(TargetArea->AddNode(PreExisting));
+
+	// Two movable nodes in source.
+	Node* MovableA = new Node();
+	Node* MovableB = new Node();
+	ASSERT_TRUE(SourceArea->AddNode(MovableA));
+	ASSERT_TRUE(SourceArea->AddNode(MovableB));
+
+	const std::string MovableAID = MovableA->GetID();
+	const std::string MovableBID = MovableB->GetID();
+	const std::string PreExistingID = PreExisting->GetID();
+
+	ASSERT_TRUE(NODE_SYSTEM.MoveNodesTo(SourceArea, TargetArea, true));
+
+	EXPECT_EQ(SourceArea->GetNodeCount(), 0);
+	EXPECT_EQ(TargetArea->GetNodeCount(), 3);
+
+	// Selection contains only the moved-in nodes.
+	std::vector<Node*> Selected = TargetArea->GetSelected();
+	EXPECT_EQ(Selected.size(), 2);
+	for (Node* SelectedNode : Selected)
+		EXPECT_NE(SelectedNode->GetID(), PreExistingID);
+
+	// All three are now owned by target.
+	EXPECT_EQ(TargetArea->GetNodeByID(MovableAID), MovableA);
+	EXPECT_EQ(TargetArea->GetNodeByID(MovableBID), MovableB);
+	EXPECT_EQ(MovableA->GetParentArea(), TargetArea);
+	EXPECT_EQ(MovableB->GetParentArea(), TargetArea);
+
+	NODE_SYSTEM.Clear();
+}
+
 TEST(NodeSystemTests, GetTotalNodeCount_DuplicateAreaIDInFilter_DoesNotDoubleCount)
 {
 	NODE_SYSTEM.Clear();
