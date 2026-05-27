@@ -2281,3 +2281,78 @@ TEST(SubAreaNodeTests, CopyNode_DefaultConstructedSubAreaNode_Is_Not_Crashing)
 
 	NODE_SYSTEM.Clear();
 }
+
+TEST(SubAreaNodeTests, MoveNodesTo_OwnedAreaToParentArea_DoesNotCreateSelfParentingArea)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* ParentArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(ParentArea, nullptr);
+
+	SubAreaNode* SubArea = NODE_SYSTEM.CreateSubAreaNode(ParentArea->GetID());
+	ASSERT_NE(SubArea, nullptr);
+
+	NodeArea* OwnedArea = SubArea->GetOwnedArea();
+	ASSERT_NE(OwnedArea, nullptr);
+
+	NODE_SYSTEM.MoveNodesTo(OwnedArea, ParentArea);
+
+	EXPECT_EQ(ParentArea->GetParent(), nullptr);
+
+	NodeArea* UnrelatedArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(UnrelatedArea, nullptr);
+	EXPECT_FALSE(ParentArea->IsChildOf(UnrelatedArea));
+	EXPECT_FALSE(UnrelatedArea->IsParentOf(ParentArea));
+
+	NODE_SYSTEM.Clear();
+}
+
+TEST(SubAreaNodeTests, CopyNodesTo_OwnedAreaToParentArea_DoesNotCreateSelfParentingArea)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* ParentArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(ParentArea, nullptr);
+
+	SubAreaNode* SubArea = NODE_SYSTEM.CreateSubAreaNode(ParentArea->GetID());
+	ASSERT_NE(SubArea, nullptr);
+
+	NodeArea* OwnedArea = SubArea->GetOwnedArea();
+	ASSERT_NE(OwnedArea, nullptr);
+
+	NODE_SYSTEM.CopyNodesTo(OwnedArea, ParentArea);
+
+	EXPECT_EQ(ParentArea->GetParent(), nullptr);
+
+	NodeArea* UnrelatedArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(UnrelatedArea, nullptr);
+	EXPECT_FALSE(ParentArea->IsChildOf(UnrelatedArea));
+	EXPECT_FALSE(UnrelatedArea->IsParentOf(ParentArea));
+
+	NODE_SYSTEM.Clear();
+}
+
+TEST(SubAreaNodeTests, CopyNodesTo_OwnedAreaToUnrelatedArea_DoesNotCreatePhantomParent)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* ParentArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(ParentArea, nullptr);
+
+	SubAreaNode* SubArea = NODE_SYSTEM.CreateSubAreaNode(ParentArea->GetID());
+	ASSERT_NE(SubArea, nullptr);
+
+	NodeArea* OwnedArea = SubArea->GetOwnedArea();
+	ASSERT_NE(OwnedArea, nullptr);
+
+	NodeArea* UnrelatedArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(UnrelatedArea, nullptr);
+
+	NODE_SYSTEM.CopyNodesTo(OwnedArea, UnrelatedArea);
+
+	EXPECT_EQ(UnrelatedArea->GetParent(), nullptr);
+	EXPECT_FALSE(UnrelatedArea->IsChildOf(ParentArea));
+	EXPECT_FALSE(ParentArea->IsParentOf(UnrelatedArea));
+
+	NODE_SYSTEM.Clear();
+}

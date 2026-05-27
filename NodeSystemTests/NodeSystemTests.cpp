@@ -361,3 +361,20 @@ TEST(NodeSystemTests, Paste_AllNodesRejectedByTarget_TargetNeverShrinksBelowSour
 
 	NODE_SYSTEM.Clear();
 }
+
+TEST(NodeSystemTests, CopyNodesTo_SourceEqualsTarget_IsNoOp)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(Area, nullptr);
+
+	BoolLiteralNode* NodeInArea = new BoolLiteralNode();
+	ASSERT_TRUE(Area->AddNode(NodeInArea));
+	const size_t NodeCountBefore = Area->GetNodeCount();
+
+	NODE_SYSTEM.CopyNodesTo(Area, Area);
+	EXPECT_EQ(Area->GetNodeCount(), NodeCountBefore);
+
+	NODE_SYSTEM.Clear();
+}

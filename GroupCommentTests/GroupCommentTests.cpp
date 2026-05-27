@@ -385,3 +385,28 @@ TEST(GroupComment, FromJson_PositionFieldWrongType_Returns_False)
 
 	delete Comment;
 }
+
+TEST(NodeAreaGroupComment, GetNodesInGroupComment_ForeignGroupComment_ReturnsEmpty)
+{
+	NodeArea* HostingArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(HostingArea, nullptr);
+
+	NodeArea* QueriedArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(QueriedArea, nullptr);
+
+	GroupComment* HostedComment = new GroupComment();
+	HostedComment->SetPosition(ImVec2(0.0f, 0.0f));
+	HostedComment->SetSize(ImVec2(200.0f, 200.0f));
+	ASSERT_TRUE(HostingArea->AddGroupComment(HostedComment));
+
+	// QueriedArea has a node whose bounding box sits inside HostedComment's rectangle.
+	Node* NodeInQueriedArea = new Node();
+	NodeInQueriedArea->SetPosition(ImVec2(50.0f, 50.0f));
+	NodeInQueriedArea->SetSize(ImVec2(50.0f, 50.0f));
+	ASSERT_TRUE(QueriedArea->AddNode(NodeInQueriedArea));
+
+	std::vector<Node*> Result = QueriedArea->GetNodesInGroupComment(HostedComment);
+	EXPECT_EQ(Result.size(), 0);
+
+	NODE_SYSTEM.Clear();
+}

@@ -470,3 +470,45 @@ TEST(NodeAreaGeneralTests, AddSelected_Reject_InAppropriateRerouteNode)
 
 	NODE_SYSTEM.Clear();
 }
+
+TEST(NodeAreaGeneralTests, Delete_Reject_InAppropriateRerouteNode)
+{
+	NodeArea* AreaA = NODE_SYSTEM.CreateNodeArea();
+	NodeArea* AreaB = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(AreaA, nullptr);
+	ASSERT_NE(AreaB, nullptr);
+
+	Node* NodeA = new Node();
+	NodeA->AddSocket(new NodeSocket(NodeA, "TYPE_A", "out", NodeSocket::SocketFlow::Output));
+	AreaA->AddNode(NodeA);
+
+	Node* NodeB = new Node();
+	NodeB->AddSocket(new NodeSocket(NodeB, "TYPE_A", "in", NodeSocket::SocketFlow::Input));
+	AreaA->AddNode(NodeB);
+
+	ASSERT_TRUE(AreaA->TryToConnect(NodeA, 0, NodeB, 0));
+	RerouteNode* CrossAreaRerouteNode = AreaA->AddRerouteNodeToConnection(NodeA, 0, NodeB, 0, 0, ImVec2(100.0f, 100.0f));
+	ASSERT_NE(CrossAreaRerouteNode, nullptr);
+	ASSERT_EQ(AreaA->GetRerouteConnectionCount(), 1);
+
+	EXPECT_FALSE(AreaB->Delete(CrossAreaRerouteNode));
+	EXPECT_EQ(AreaA->GetRerouteConnectionCount(), 1);
+
+	NODE_SYSTEM.Clear();
+}
+
+TEST(NodeAreaGeneralTests, SocketToPosition_InvalidInputs_DoNotCrash)
+{
+	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(Area, nullptr);
+
+	Node* NodeA = new Node();
+	NodeA->AddSocket(new NodeSocket(NodeA, "TYPE_A", "out", NodeSocket::SocketFlow::Output));
+	Area->AddNode(NodeA);
+
+	Area->SocketToPosition(nullptr, "any");
+	Area->SocketToPosition(NodeA, "nonexistent_socket_id");
+	Area->SocketToPosition(NodeA, "");
+
+	NODE_SYSTEM.Clear();
+}

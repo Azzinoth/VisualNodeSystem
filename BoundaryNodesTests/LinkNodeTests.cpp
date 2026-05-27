@@ -1393,3 +1393,43 @@ TEST(LinkNodeTests, GetImmediateDownstreamAreas_Deduplicates_DuplicateLinks)
 
 	NODE_SYSTEM.Clear();
 }
+
+TEST(LinkNodeTests, MoveNodesTo_UnrelatedArea_UpdatesLinkRecord)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* UpstreamArea = NODE_SYSTEM.CreateNodeArea();
+	NodeArea* DownstreamArea = NODE_SYSTEM.CreateNodeArea();
+	NodeArea* UnrelatedArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(UpstreamArea, nullptr);
+	ASSERT_NE(DownstreamArea, nullptr);
+	ASSERT_NE(UnrelatedArea, nullptr);
+
+	std::pair<std::string, std::string> LinkIDs;
+	ASSERT_TRUE(NODE_SYSTEM.LinkNodeAreas(UpstreamArea->GetID(), DownstreamArea->GetID(), &LinkIDs));
+
+	LinkNode* UpstreamLinkNode = static_cast<LinkNode*>(UpstreamArea->GetNodeByID(LinkIDs.first));
+	ASSERT_NE(UpstreamLinkNode, nullptr);
+
+	ASSERT_TRUE(NODE_SYSTEM.MoveNodesTo(UpstreamArea, UnrelatedArea));
+
+	// Physical layout reflects the move.
+	EXPECT_EQ(UpstreamArea->GetNodesByType<LinkNode>().size(), 0);
+	ASSERT_EQ(UnrelatedArea->GetNodesByType<LinkNode>().size(), 1);
+	EXPECT_EQ(UnrelatedArea->GetNodesByType<LinkNode>()[0]->GetID(), LinkIDs.first);
+
+	// Link record now follows the LinkNode: UpstreamArea is no longer linked to DownstreamArea, UnrelatedArea is.
+	EXPECT_FALSE(NODE_SYSTEM.IsLinked(UpstreamArea->GetID(), DownstreamArea->GetID()));
+	EXPECT_TRUE(NODE_SYSTEM.IsLinked(UnrelatedArea->GetID(), DownstreamArea->GetID()));
+
+	EXPECT_EQ(NODE_SYSTEM.GetImmediateDownstreamAreas(UpstreamArea->GetID()).size(), 0);
+	ASSERT_EQ(NODE_SYSTEM.GetImmediateDownstreamAreas(UnrelatedArea->GetID()).size(), 1);
+	EXPECT_EQ(NODE_SYSTEM.GetImmediateDownstreamAreas(UnrelatedArea->GetID())[0], DownstreamArea);
+	ASSERT_EQ(NODE_SYSTEM.GetImmediateUpstreamAreas(DownstreamArea->GetID()).size(), 1);
+	EXPECT_EQ(NODE_SYSTEM.GetImmediateUpstreamAreas(DownstreamArea->GetID())[0], UnrelatedArea);
+
+	// GetParent never follows LinkNode pointers, so a moved LinkNode does NOT create a phantom parent on the new host area.
+	EXPECT_EQ(UnrelatedArea->GetParent(), nullptr);
+
+	NODE_SYSTEM.Clear();
+}

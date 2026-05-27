@@ -743,3 +743,22 @@ TEST(NodeAreaEventSystemTests, Clear_EveryNodeReceivesDestroyed_EvenWhenCallback
 
 	NODE_SYSTEM.DeleteNodeArea(Area);
 }
+
+TEST(NodeAreaEventSystemTests, TriggerOrphanSocketEvent_Reject_ForeignNode)
+{
+	NodeArea* AreaA = NODE_SYSTEM.CreateNodeArea();
+	NodeArea* AreaB = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(AreaA, nullptr);
+	ASSERT_NE(AreaB, nullptr);
+
+	AreaB->SetSaveExecutedNodes(true);
+
+	Node* NodeInAreaA = new Node();
+	NodeInAreaA->AddSocket(new NodeSocket(NodeInAreaA, "EXECUTE", "in", NodeSocket::SocketFlow::Input));
+	ASSERT_TRUE(AreaA->AddNode(NodeInAreaA));
+
+	EXPECT_FALSE(AreaB->TriggerOrphanSocketEvent(NodeInAreaA, EXECUTE));
+	EXPECT_EQ(AreaB->GetLastExecutedNodes().size(), 0);
+
+	NODE_SYSTEM.Clear();
+}
