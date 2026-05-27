@@ -596,11 +596,17 @@ void NodeArea::RenderReroute(const RerouteNode* RerouteNode) const
 
 ImVec2 NodeArea::SocketToPosition(Node* Node, const std::string& SocketID) const
 {
+	if (Node == nullptr)
+		return ImVec2(0, 0);
+
 	return SocketToPosition(Node->GetSocketByID(SocketID));
 }
 
 ImVec2 NodeArea::SocketToPosition(const NodeSocket* Socket) const
 {
+	if (Socket == nullptr)
+		return ImVec2(0, 0);
+
 	const bool bIsInput = Socket->GetFlowDirection() == NodeSocket::SocketFlow::Input;
 	float SocketX = 0.0f;
 	float SocketY = 0.0f;

@@ -36,6 +36,38 @@ bool NodeArea::AddNode(Node* NewNode)
 			return false;
 	}
 
+	// if OwnerSubAreaNodeID of SubAreaInputNode resolves to a SubAreaNode whose GetOwnedArea() is not this, the field must be cleared.
+	if (NewNode->GetType() == "SubAreaInputNode")
+	{
+		SubAreaInputNode* AsSubAreaInput = static_cast<SubAreaInputNode*>(NewNode);
+		if (!AsSubAreaInput->OwnerSubAreaNodeID.empty())
+		{
+			Node* OwnerNode = NODE_SYSTEM.GetNodeByID(AsSubAreaInput->OwnerSubAreaNodeID);
+			if (OwnerNode != nullptr && OwnerNode->GetType() == "SubAreaNode")
+			{
+				SubAreaNode* OwnerSubArea = static_cast<SubAreaNode*>(OwnerNode);
+				if (OwnerSubArea->GetOwnedArea() != this)
+					AsSubAreaInput->OwnerSubAreaNodeID = "";
+			}
+		}
+	}
+
+	// if OwnerSubAreaNodeID of SubAreaOutputNode resolves to a SubAreaNode whose GetOwnedArea() is not this, the field must be cleared.
+	if (NewNode->GetType() == "SubAreaOutputNode")
+	{
+		SubAreaOutputNode* AsSubAreaOutput = static_cast<SubAreaOutputNode*>(NewNode);
+		if (!AsSubAreaOutput->OwnerSubAreaNodeID.empty())
+		{
+			Node* OwnerNode = NODE_SYSTEM.GetNodeByID(AsSubAreaOutput->OwnerSubAreaNodeID);
+			if (OwnerNode != nullptr && OwnerNode->GetType() == "SubAreaNode")
+			{
+				SubAreaNode* OwnerSubArea = static_cast<SubAreaNode*>(OwnerNode);
+				if (OwnerSubArea->GetOwnedArea() != this)
+					AsSubAreaOutput->OwnerSubAreaNodeID = "";
+			}
+		}
+	}
+
 	NewNode->ParentArea = this;
 	Nodes.push_back(NewNode);
 
@@ -178,6 +210,19 @@ void NodeArea::Delete(Connection* Connection)
 bool NodeArea::Delete(RerouteNode* RerouteNode)
 {
 	if (RerouteNode == nullptr)
+		return false;
+
+	// Reject reroutes whose parent Connection does not live in this area.
+	bool bOwnedHere = false;
+	for (size_t i = 0; i < Connections.size(); i++)
+	{
+		if (Connections[i] == RerouteNode->Parent)
+		{
+			bOwnedHere = true;
+			break;
+		}
+	}
+	if (!bOwnedHere)
 		return false;
 
 	if (RerouteNodeHovered == RerouteNode)
@@ -632,6 +677,9 @@ bool NodeArea::TriggerOrphanSocketEvent(Node* Node, NODE_SOCKET_EVENT EventType)
 	if (EventType != EXECUTE)
 		return false;
 
+	if (Node->GetParentArea() != this)
+		return false;
+
 #ifdef VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES
 	if (EventType == EXECUTE && Settings.bSaveExecutedNodes)
 		LastExecutedNodes.push_back(Node);
@@ -915,6 +963,9 @@ std::vector<Node*> NodeArea::GetNodesInGroupComment(GroupComment* GroupCommentTo
 	if (GroupCommentToCheck == nullptr)
 		return Result;
 
+	if (GroupCommentToCheck->GetParentArea() != this)
+		return Result;
+
 	for (size_t i = 0; i < Nodes.size(); i++)
 	{
 		if (Nodes[i]->GetStyle() == DEFAULT)
@@ -938,6 +989,9 @@ std::vector<RerouteNode*> NodeArea::GetRerouteNodesInGroupComment(GroupComment* 
 	if (GroupCommentToCheck == nullptr)
 		return Result;
 
+	if (GroupCommentToCheck->GetParentArea() != this)
+		return Result;
+
 	for (size_t i = 0; i < Connections.size(); i++)
 	{
 		for (size_t j = 0; j < Connections[i]->RerouteNodes.size(); j++)
@@ -955,6 +1009,9 @@ std::vector<GroupComment*> NodeArea::GetGroupCommentsInGroupComment(GroupComment
 {
 	std::vector<GroupComment*> Result;
 	if (GroupCommentToCheck == nullptr)
+		return Result;
+
+	if (GroupCommentToCheck->GetParentArea() != this)
 		return Result;
 
 	for (size_t i = 0; i < GroupComments.size(); i++)
@@ -1088,7 +1145,13 @@ size_t NodeArea::GetRecursiveChildCount() const
 	std::vector<SubAreaNode*> SubAreaNodes = GetNodesByType<SubAreaNode>();
 	size_t Count = SubAreaNodes.size();
 	for (size_t i = 0; i < SubAreaNodes.size(); i++)
-		Count += SubAreaNodes[i]->GetOwnedArea()->GetRecursiveChildCount();
+	{
+		NodeArea* ChildArea = SubAreaNodes[i]->GetOwnedArea();
+		if (ChildArea == nullptr)
+			continue;
+
+		Count += ChildArea->GetRecursiveChildCount();
+	}
 
 	return Count;
 }
@@ -1098,7 +1161,13 @@ std::vector<NodeArea*> NodeArea::GetImediateChildren() const
 	std::vector<NodeArea*> Result;
 	std::vector<SubAreaNode*> SubAreaNodes = GetNodesByType<SubAreaNode>();
 	for (size_t i = 0; i < SubAreaNodes.size(); i++)
-		Result.push_back(SubAreaNodes[i]->GetOwnedArea());
+	{
+		NodeArea* ChildArea = SubAreaNodes[i]->GetOwnedArea();
+		if (ChildArea == nullptr)
+			continue;
+
+		Result.push_back(ChildArea);
+	}
 
 	return Result;
 }
@@ -1109,8 +1178,12 @@ std::vector<NodeArea*> NodeArea::GetRecursiveChildren() const
 	std::vector<SubAreaNode*> SubAreaNodes = GetNodesByType<SubAreaNode>();
 	for (size_t i = 0; i < SubAreaNodes.size(); i++)
 	{
-		Result.push_back(SubAreaNodes[i]->GetOwnedArea());
-		std::vector<NodeArea*> ChildAreas = SubAreaNodes[i]->GetOwnedArea()->GetRecursiveChildren();
+		NodeArea* ChildArea = SubAreaNodes[i]->GetOwnedArea();
+		if (ChildArea == nullptr)
+			continue;
+
+		Result.push_back(ChildArea);
+		std::vector<NodeArea*> ChildAreas = ChildArea->GetRecursiveChildren();
 		for (size_t j = 0; j < ChildAreas.size(); j++)
 		{
 			// Check if we have already added this area to result to avoid duplicates in case of multiple links between same areas.

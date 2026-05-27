@@ -64,10 +64,10 @@ bool FloatVariableNode::FromJson(Json::Value Json)
 
 	// Here I am restoring the output data function.
 	// Because the function is not serializable, I have to set it manually.
-	if (Output.size() < 1)
+	if (Output.size() < 2)
 		return false;
 
-	if (Output[0] == nullptr)
+	if (Output[1] == nullptr)
 		return false;
 
 	Output[1]->SetFunctionToOutputData(FloatDataGetter);

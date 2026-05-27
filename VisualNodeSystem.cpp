@@ -634,7 +634,7 @@ NodeArea* NodeSystem::CreateNodeArea(const std::vector<Node*> Nodes, const std::
 
 void NodeSystem::CopyNodesTo(NodeArea* SourceNodeArea, NodeArea* TargetNodeArea)
 {
-	if (SourceNodeArea == nullptr || TargetNodeArea == nullptr)
+	if (SourceNodeArea == nullptr || TargetNodeArea == nullptr || SourceNodeArea == TargetNodeArea)
 		return;
 
 	const size_t NodeShift = TargetNodeArea->Nodes.size();
@@ -895,6 +895,22 @@ bool NodeSystem::MoveNodesTo(NodeArea* SourceNodeArea, NodeArea* TargetNodeArea,
 		{
 			CurrentNode->ParentArea = SourceNodeArea;
 			RetainedInSource.push_back(CurrentNode);
+		}
+		else if (CurrentNode->GetType() == "LinkNode")
+		{
+			// Update NodeAreaLinkRecords.
+			NodeAreaLinkRecord* Record = GetLinkDataByNodeID(CurrentNode->GetID());
+			if (Record != nullptr)
+			{
+				if (Record->InNodeID == CurrentNode->GetID())
+				{
+					Record->InAreaID = TargetNodeArea->GetID();
+				}
+				else if (Record->OutNodeID == CurrentNode->GetID())
+				{
+					Record->OutAreaID = TargetNodeArea->GetID();
+				}
+			}
 		}
 	}
 	SourceNodeArea->Nodes = RetainedInSource;
