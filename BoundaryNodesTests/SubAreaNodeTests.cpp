@@ -2307,6 +2307,57 @@ TEST(SubAreaNodeTests, MoveNodesTo_OwnedAreaToParentArea_DoesNotCreateSelfParent
 	NODE_SYSTEM.Clear();
 }
 
+TEST(SubAreaNodeTests, MoveNodesTo_That_WouldCreateOwnershipCycle_IsRejected)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* Root = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(Root, nullptr);
+
+	SubAreaNode* OuterSubArea = NODE_SYSTEM.CreateSubAreaNode(Root->GetID());
+	ASSERT_NE(OuterSubArea, nullptr);
+	NodeArea* AreaA = OuterSubArea->GetOwnedArea();
+	ASSERT_NE(AreaA, nullptr);
+
+	SubAreaNode* InnerSubArea = NODE_SYSTEM.CreateSubAreaNode(AreaA->GetID());
+	ASSERT_NE(InnerSubArea, nullptr);
+	NodeArea* AreaB = InnerSubArea->GetOwnedArea();
+	ASSERT_NE(AreaB, nullptr);
+
+	// Moving OuterSubArea (owner of AreaA) into AreaB (a descendant of AreaA) would form AreaA <=> AreaB.
+	EXPECT_FALSE(NODE_SYSTEM.MoveNodesTo(Root, AreaB));
+
+	EXPECT_EQ(OuterSubArea->GetParentArea(), Root);
+	EXPECT_EQ(OuterSubArea->GetOwnedArea(), AreaA);
+	EXPECT_EQ(Root->GetNodeByID(OuterSubArea->GetID()), OuterSubArea);
+	EXPECT_EQ(AreaB->GetNodeByID(OuterSubArea->GetID()), nullptr);
+
+	NODE_SYSTEM.Clear();
+}
+
+TEST(SubAreaNodeTests, MoveNodesTo_IntoOwnOwnedArea_IsRejected_AndPreservesOwnership)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* Root = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(Root, nullptr);
+
+	SubAreaNode* SubArea = NODE_SYSTEM.CreateSubAreaNode(Root->GetID());
+	ASSERT_NE(SubArea, nullptr);
+	NodeArea* Owned = SubArea->GetOwnedArea();
+	ASSERT_NE(Owned, nullptr);
+	const std::string OwnedID = Owned->GetID();
+
+	// Moving Root's nodes (just SubArea) into the area SubArea itself owns would form a cycle.
+	EXPECT_FALSE(NODE_SYSTEM.MoveNodesTo(Root, Owned));
+
+	EXPECT_EQ(SubArea->GetParentArea(), Root);
+	EXPECT_EQ(SubArea->GetOwnedArea(), Owned);
+	EXPECT_NE(NODE_SYSTEM.GetNodeAreaByID(OwnedID), nullptr);
+
+	NODE_SYSTEM.Clear();
+}
+
 TEST(SubAreaNodeTests, CopyNodesTo_OwnedAreaToParentArea_DoesNotCreateSelfParentingArea)
 {
 	NODE_SYSTEM.Clear();

@@ -300,6 +300,26 @@ TEST(NodeSystemTests, CreateNodeArea_NullEntryInNodesVector_Is_Skipped)
 	NODE_SYSTEM.Clear();
 }
 
+TEST(NodeSystemTests, CreateNodeArea_NullFirstAndInterspersedEntries_AreSkipped)
+{
+	NODE_SYSTEM.Clear();
+
+	std::vector<Node*> NodesWithNulls;
+	NodesWithNulls.push_back(nullptr);
+	NodesWithNulls.push_back(new Node());
+	NodesWithNulls.push_back(nullptr);
+	NodesWithNulls.push_back(new Node());
+	NodesWithNulls.push_back(new Node());
+	NodesWithNulls.push_back(nullptr);
+
+	NodeArea* NewArea = NODE_SYSTEM.CreateNodeArea(NodesWithNulls, {});
+
+	ASSERT_NE(NewArea, nullptr);
+	EXPECT_EQ(NewArea->GetNodeCount(), 3);
+
+	NODE_SYSTEM.Clear();
+}
+
 TEST(NodeSystemTests, CreateNodeArea_NullEntryInGroupCommentsVector_Is_Skipped)
 {
 	NODE_SYSTEM.Clear();

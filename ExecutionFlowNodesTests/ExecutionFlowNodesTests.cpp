@@ -150,6 +150,80 @@ TEST(ExecutionFlowNodesTests, LogicalOperatorsRandom)
 	}
 }
 
+TEST(ExecutionFlowNodesTests, LogicalOperators_ExecuteWithDisconnectedInputs_IsSafe)
+{
+	const LogicalNodeOperatorType AllOperatorTypes[] = {
+		LogicalNodeOperatorType::AND,
+		LogicalNodeOperatorType::NOT,
+		LogicalNodeOperatorType::OR,
+		LogicalNodeOperatorType::XOR,
+	};
+
+	for (LogicalNodeOperatorType OperatorType : AllOperatorTypes)
+	{
+		NodeArea* TestNodeArea = NODE_SYSTEM.CreateNodeArea();
+		ASSERT_NE(TestNodeArea, nullptr);
+
+		Node* BeginNode = NODE_FACTORY.CreateNode("BeginNode");
+		ASSERT_NE(BeginNode, nullptr);
+		TestNodeArea->AddNode(BeginNode);
+		ASSERT_TRUE(TestNodeArea->SetExecutionEntryNode(BeginNode));
+
+		BaseLogicalOperatorNode* OperatorNode = TEST_TOOLS.CreateBaseLogicalOperatorNode(OperatorType);
+		ASSERT_NE(OperatorNode, nullptr);
+		TestNodeArea->AddNode(OperatorNode);
+
+		// Wire only the execution flow, the A / B data inputs are deliberately left disconnected.
+		ASSERT_TRUE(TestNodeArea->TryToConnect(BeginNode, 0, OperatorNode, 0));
+
+		// Executing an operator with no data inputs must not crash or read out of bounds.
+		ASSERT_TRUE(TestNodeArea->ExecuteNodeNetwork());
+
+		NODE_SYSTEM.DeleteNodeArea(TestNodeArea);
+	}
+}
+
+// Creates a standard node of the given type, serializes it, drops every input socket EXCEPT the EXECUTE input (index "0") then deserializes it back and try to execute it.
+static void ExpectStandardNodeSurvivesMissingDataInputsOnExecute(const std::string& NodeType)
+{
+	Node* CurrentNode = NODE_FACTORY.CreateNode(NodeType);
+	ASSERT_NE(CurrentNode, nullptr);
+
+	Json::Value NodeJson = CurrentNode->ToJson();
+	Json::Value& Inputs = NodeJson["Input"];
+	const std::vector<std::string> InputKeys = Inputs.getMemberNames();
+	for (size_t i = 0; i < InputKeys.size(); i++)
+	{
+		if (InputKeys[i] != "0")
+			Inputs.removeMember(InputKeys[i]);
+	}
+
+	ASSERT_TRUE(CurrentNode->FromJson(NodeJson));
+
+	NodeArea* TestNodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_TRUE(TestNodeArea->AddNode(CurrentNode));
+	ASSERT_TRUE(TestNodeArea->SetExecutionEntryNode(CurrentNode));
+
+	TestNodeArea->ExecuteNodeNetwork();
+
+	NODE_SYSTEM.DeleteNodeArea(TestNodeArea);
+}
+
+TEST(ExecutionFlowNodesTests, StandardNodes_LoadedWithMissingDataInputs_ExecuteWithoutCrashing)
+{
+	const std::vector<std::string> NodeTypes = {
+		"IntegerVariableNode", "FloatVariableNode", "BoolVariableNode",
+		"Vec2VariableNode", "Vec3VariableNode", "Vec4VariableNode",
+		"ArithmeticAddNode", "ArithmeticDivideNode",
+		"EqualNode", "LessThanNode",
+		"LogicalANDOperatorNode", "LogicalNOTOperatorNode", "LogicalXOROperatorNode",
+		"BranchNode", "WhileLoopNode", "LoopNode", "SequenceNode",
+	};
+
+	for (size_t i = 0; i < NodeTypes.size(); i++)
+		ExpectStandardNodeSurvivesMissingDataInputsOnExecute(NodeTypes[i]);
+}
+
 TEST(ExecutionFlowNodesTests, CompareOperatorsRandom)
 {
 	NodeArea* TestNodeArea = NODE_SYSTEM.CreateNodeArea();
