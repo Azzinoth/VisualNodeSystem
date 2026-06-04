@@ -30,7 +30,8 @@ BaseArithmeticOperatorNode::BaseArithmeticOperatorNode(const BaseArithmeticOpera
 
 	// Here I am restoring the output data function.
 	// Because the function is not serializable, I have to set it manually.
-	Output[1]->SetFunctionToOutputData(ResultDataGetter);
+	if (Output.size() > 1 && Output[1] != nullptr)
+		Output[1]->SetFunctionToOutputData(ResultDataGetter);
 }
 
 Json::Value BaseArithmeticOperatorNode::ToJson()
@@ -63,6 +64,10 @@ void BaseArithmeticOperatorNode::Draw()
 
 std::string BaseArithmeticOperatorNode::GetActiveINDataType()
 {
+	// Both A and B input sockets are required to determine the active data type.
+	if (Input.size() <= 2)
+		return "";
+
 	if (Input[1]->GetConnectedSockets().empty() && Input[2]->GetConnectedSockets().empty())
 		return "";
 
@@ -90,7 +95,7 @@ void BaseArithmeticOperatorNode::SocketEvent(NodeSocket* OwnSocket, NodeSocket* 
 	{
 		Execute();
 
-		if (Output[0]->GetConnectedSockets().size() > 0)
+		if (Output.size() > 0 && Output[0]->GetConnectedSockets().size() > 0)
 			ParentArea->TriggerSocketEvent(Output[0], Output[0]->GetConnectedSockets()[0], EXECUTE);
 	}
 }
@@ -105,14 +110,14 @@ bool BaseArithmeticOperatorNode::CanConnect(NodeSocket* OwnSocket, NodeSocket* C
 	{
 		if (CandidateAllowedTypes[0] != "EXECUTE")
 		{
-			if (!Input[1]->GetConnectedSockets().empty())
+			if (Input.size() > 1 && !Input[1]->GetConnectedSockets().empty())
 			{
 				std::string AInputType = Input[1]->GetConnectedSockets()[0]->GetAllowedTypes()[0];
 				if (AInputType != CandidateAllowedTypes[0])
 					return false;
 			}
 
-			if (!Input[2]->GetConnectedSockets().empty())
+			if (Input.size() > 2 && !Input[2]->GetConnectedSockets().empty())
 			{
 				std::string BInputType = Input[2]->GetConnectedSockets()[0]->GetAllowedTypes()[0];
 				if (BInputType != CandidateAllowedTypes[0])

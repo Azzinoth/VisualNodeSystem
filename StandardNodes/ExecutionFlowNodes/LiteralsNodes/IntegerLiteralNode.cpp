@@ -81,7 +81,7 @@ void IntegerLiteralNode::Draw()
 	ImGui::SetNextItemWidth(100 * Zoom);
 	if (ImGui::InputInt("##value", &Data))
 	{
-		if (Output[0]->GetConnectedSockets().size() > 0)
+		if (Output.size() > 0 && Output[0]->GetConnectedSockets().size() > 0)
 			ParentArea->TriggerSocketEvent(Output[0], Output[0]->GetConnectedSockets()[0], UPDATE);
 	}
 }

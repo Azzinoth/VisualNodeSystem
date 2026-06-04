@@ -38,7 +38,7 @@ void BranchNode::SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSocket,
 	{
 		bool bConditionState = false;
 
-		if (Input[1]->GetConnectedSockets().size() > 0)
+		if (Input.size() > 1 && Input[1]->GetConnectedSockets().size() > 0)
 		{
 			void* TempData = Input[1]->GetConnectedSockets()[0]->GetData();
 			if (TempData != nullptr)
@@ -47,12 +47,12 @@ void BranchNode::SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSocket,
 
 		if (bConditionState)
 		{
-			if (Output[0]->GetConnectedSockets().size() > 0)
+			if (Output.size() > 0 && Output[0]->GetConnectedSockets().size() > 0)
 				ParentArea->TriggerSocketEvent(Output[0], Output[0]->GetConnectedSockets()[0], EXECUTE);
 		}
 		else
 		{
-			if (Output[1]->GetConnectedSockets().size() > 0)
+			if (Output.size() > 1 && Output[1]->GetConnectedSockets().size() > 0)
 				ParentArea->TriggerSocketEvent(Output[1], Output[1]->GetConnectedSockets()[0], EXECUTE);
 		}
 	}

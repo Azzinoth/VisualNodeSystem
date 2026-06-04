@@ -31,7 +31,8 @@ BaseLogicalOperatorNode::BaseLogicalOperatorNode(const BaseLogicalOperatorNode& 
 
 	// Here I am restoring the output data function.
 	// Because the function is not serializable, I have to set it manually.
-	Output[1]->SetFunctionToOutputData(DataGetter);
+	if (Output.size() > 1 && Output[1] != nullptr)
+		Output[1]->SetFunctionToOutputData(DataGetter);
 }
 
 Json::Value BaseLogicalOperatorNode::ToJson()
@@ -70,7 +71,7 @@ void BaseLogicalOperatorNode::SocketEvent(NodeSocket* OwnSocket, NodeSocket* Con
 	{
 		Execute();
 
-		if (Output[0]->GetConnectedSockets().size() > 0)
+		if (Output.size() > 0 && Output[0]->GetConnectedSockets().size() > 0)
 			ParentArea->TriggerSocketEvent(Output[0], Output[0]->GetConnectedSockets()[0], EXECUTE);
 	}
 }

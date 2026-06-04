@@ -70,7 +70,7 @@ void SequenceNode::SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSocke
 
 	if (EventType == EXECUTE)
 	{
-		for (size_t i = 0; i < OutputCount; i++)
+		for (size_t i = 0; i < OutputCount && i < Output.size(); i++)
 		{
 			if (Output[i]->GetConnectedSockets().size() > 0)
 				ParentArea->TriggerSocketEvent(Output[i], Output[i]->GetConnectedSockets()[0], EXECUTE);

@@ -22,9 +22,12 @@ private:
 
 	void Execute()
 	{
-		// If we don't have both A and B inputs connected, we can't do anything.
+		if (Input.size() < 2)
+			return;
+
+		// If we do not have both A and B inputs connected, we cannot do anything.
 		if (Input[1]->GetConnectedSockets().empty() &&
-			Input[2]->GetConnectedSockets().empty())
+			(Input.size() < 3 || Input[2]->GetConnectedSockets().empty())) // some nodes like NOT only have one input.
 			return;
 
 		void* AData = nullptr;

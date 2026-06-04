@@ -125,6 +125,9 @@ void BaseComparisonOperatorNode::Draw()
 
 std::string BaseComparisonOperatorNode::GetActiveOUTDataType()
 {
+	if (Input.size() <= 2)
+		return "";
+
 	if (Input[1]->GetConnectedSockets().empty() && Input[2]->GetConnectedSockets().empty())
 		return "";
 
@@ -157,6 +160,9 @@ std::string BaseComparisonOperatorNode::GetActiveOUTDataType()
 
 std::string BaseComparisonOperatorNode::GetActiveINDataType()
 {
+	if (Input.size() <= 2)
+		return "";
+
 	if (Input[1]->GetConnectedSockets().empty() && Input[2]->GetConnectedSockets().empty())
 		return "";
 
@@ -184,7 +190,7 @@ void BaseComparisonOperatorNode::SocketEvent(NodeSocket* OwnSocket, NodeSocket* 
 	{
 		Execute();
 
-		if (Output[0]->GetConnectedSockets().size() > 0)
+		if (Output.size() > 0 && Output[0]->GetConnectedSockets().size() > 0)
 			ParentArea->TriggerSocketEvent(Output[0], Output[0]->GetConnectedSockets()[0], EXECUTE);
 	}
 }
@@ -199,14 +205,14 @@ bool BaseComparisonOperatorNode::CanConnect(NodeSocket* OwnSocket, NodeSocket* C
 	{
 		if (CandidateAllowedTypes[0] != "EXECUTE")
 		{
-			if (!Input[1]->GetConnectedSockets().empty())
+			if (Input.size() > 1 && !Input[1]->GetConnectedSockets().empty())
 			{
 				std::string AInputType = Input[1]->GetConnectedSockets()[0]->GetAllowedTypes()[0];
 				if (AInputType != CandidateAllowedTypes[0])
 					return false;
 			}
 
-			if (!Input[2]->GetConnectedSockets().empty())
+			if (Input.size() > 2 && !Input[2]->GetConnectedSockets().empty())
 			{
 				std::string BInputType = Input[2]->GetConnectedSockets()[0]->GetAllowedTypes()[0];
 				if (BInputType != CandidateAllowedTypes[0])

@@ -118,14 +118,14 @@ void BoolVec3VariableNode::SocketEvent(NodeSocket* OwnSocket, NodeSocket* Connec
 
 	if (EventType == EXECUTE)
 	{
-		if (Input[1]->GetConnectedSockets().size() > 0)
+		if (Input.size() > 1 && Input[1]->GetConnectedSockets().size() > 0)
 		{
 			void* TemporaryData = Input[1]->GetConnectedSockets()[0]->GetData();
 			if (TemporaryData != nullptr)
 				Data = *reinterpret_cast<glm::bvec3*>(TemporaryData);
 		}
 
-		if (Output[0]->GetConnectedSockets().size() > 0)
+		if (Output.size() > 0 && Output[0]->GetConnectedSockets().size() > 0)
 			ParentArea->TriggerSocketEvent(Output[0], Output[0]->GetConnectedSockets()[0], EXECUTE);
 	}
 }
@@ -162,6 +162,6 @@ void BoolVec3VariableNode::SetData(glm::bvec3 NewValue)
 {
 	Data = NewValue;
 
-	if (Output[0]->GetConnectedSockets().size() > 0)
+	if (Output.size() > 0 && Output[0]->GetConnectedSockets().size() > 0)
 		ParentArea->TriggerSocketEvent(Output[0], Output[0]->GetConnectedSockets()[0], UPDATE);
 }

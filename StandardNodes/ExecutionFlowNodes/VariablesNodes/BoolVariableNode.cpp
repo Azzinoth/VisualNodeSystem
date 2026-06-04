@@ -93,14 +93,14 @@ void BoolVariableNode::SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedS
 
 	if (EventType == EXECUTE)
 	{
-		if (Input[1]->GetConnectedSockets().size() > 0)
+		if (Input.size() > 1 && Input[1]->GetConnectedSockets().size() > 0)
 		{
 			void* TemporaryData = Input[1]->GetConnectedSockets()[0]->GetData();
 			if (TemporaryData != nullptr)
 				bData = *reinterpret_cast<bool*>(TemporaryData);
 		}
 
-		if (Output[0]->GetConnectedSockets().size() > 0)
+		if (Output.size() > 0 && Output[0]->GetConnectedSockets().size() > 0)
 			ParentArea->TriggerSocketEvent(Output[0], Output[0]->GetConnectedSockets()[0], EXECUTE);
 	}
 }
@@ -137,6 +137,6 @@ void BoolVariableNode::SetData(bool NewValue)
 {
 	bData = NewValue;
 
-	if (Output[0]->GetConnectedSockets().size() > 0)
+	if (Output.size() > 0 && Output[0]->GetConnectedSockets().size() > 0)
 		ParentArea->TriggerSocketEvent(Output[0], Output[0]->GetConnectedSockets()[0], UPDATE);
 }

@@ -518,7 +518,19 @@ void NodeSystem::ProcessConnections(const std::vector<NodeSocket*>& Sockets,
 									std::unordered_map<NodeSocket*, NodeSocket*>& OldToNewSocket,
 									NodeArea* TargetArea, size_t NodeShift, const std::vector<Node*>& SourceNodes)
 {
-	NodeArea* SourceArea = SourceNodes[0]->GetParentArea();
+	// Find the source area from the first valid source node.
+	NodeArea* SourceArea = nullptr;
+	for (size_t i = 0; i < SourceNodes.size(); i++)
+	{
+		if (SourceNodes[i] != nullptr)
+		{
+			SourceArea = SourceNodes[i]->GetParentArea();
+			break;
+		}
+	}
+
+	if (SourceArea == nullptr)
+		return;
 
 	for (size_t i = 0; i < Sockets.size(); i++)
 	{
@@ -878,6 +890,21 @@ bool NodeSystem::MoveNodesTo(NodeArea* SourceNodeArea, NodeArea* TargetNodeArea,
 {
 	if (SourceNodeArea == nullptr || TargetNodeArea == nullptr || SourceNodeArea == TargetNodeArea)
 		return false;
+
+	// Reject any move that would create a SubAreaNode ownership cycle.
+	for (size_t i = 0; i < SourceNodeArea->Nodes.size(); i++)
+	{
+		Node* CurrentNode = SourceNodeArea->Nodes[i];
+		if (CurrentNode == nullptr || CurrentNode->GetType() != "SubAreaNode")
+			continue;
+
+		NodeArea* OwnedArea = static_cast<SubAreaNode*>(CurrentNode)->GetOwnedArea();
+		if (OwnedArea == nullptr)
+			continue;
+
+		if (TargetNodeArea == OwnedArea || TargetNodeArea->IsChildOf(OwnedArea))
+			return false;
+	}
 
 	const size_t TargetNodeCountBefore = TargetNodeArea->Nodes.size();
 

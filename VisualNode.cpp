@@ -615,7 +615,7 @@ bool Node::IsNodeWithIDInList(const std::string ID, const std::vector<Node*> Lis
 {
 	for (size_t i = 0; i < List.size(); i++)
 	{
-		if (List[i]->GetID() == ID)
+		if (List[i] != nullptr && List[i]->GetID() == ID)
 			return true;
 	}
 

@@ -1114,11 +1114,17 @@ bool NodeArea::IsChildOf(const NodeArea* PotentialParent) const
 	if (PotentialParent == nullptr)
 		return false;
 
+	// Track visited areas to guard against cycles.
+	std::vector<NodeArea*> Visited;
 	NodeArea* Parent = GetParent();
 	while (Parent != nullptr)
 	{
 		if (Parent == PotentialParent)
 			return true;
+
+		if (NODE_SYSTEM.IsInAListOfAreas(Parent, Visited))
+			break;
+		Visited.push_back(Parent);
 
 		Parent = Parent->GetParent();
 	}
@@ -1142,15 +1148,22 @@ size_t NodeArea::GetImediateChildrenCount() const
 
 size_t NodeArea::GetRecursiveChildCount() const
 {
-	std::vector<SubAreaNode*> SubAreaNodes = GetNodesByType<SubAreaNode>();
-	size_t Count = SubAreaNodes.size();
-	for (size_t i = 0; i < SubAreaNodes.size(); i++)
+	size_t Count = GetImediateChildrenCount();
+
+	// Track visited areas to guard against cycles.
+	std::vector<NodeArea*> Visited;
+	std::vector<NodeArea*> ToVisit = GetImediateChildren();
+	for (size_t i = 0; i < ToVisit.size(); i++)
 	{
-		NodeArea* ChildArea = SubAreaNodes[i]->GetOwnedArea();
-		if (ChildArea == nullptr)
+		NodeArea* CurrentArea = ToVisit[i];
+		if (CurrentArea == nullptr || NODE_SYSTEM.IsInAListOfAreas(CurrentArea, Visited))
 			continue;
 
-		Count += ChildArea->GetRecursiveChildCount();
+		Visited.push_back(CurrentArea);
+		Count += CurrentArea->GetImediateChildrenCount();
+
+		std::vector<NodeArea*> Grandchildren = CurrentArea->GetImediateChildren();
+		ToVisit.insert(ToVisit.end(), Grandchildren.begin(), Grandchildren.end());
 	}
 
 	return Count;
@@ -1175,21 +1188,19 @@ std::vector<NodeArea*> NodeArea::GetImediateChildren() const
 std::vector<NodeArea*> NodeArea::GetRecursiveChildren() const
 {
 	std::vector<NodeArea*> Result;
-	std::vector<SubAreaNode*> SubAreaNodes = GetNodesByType<SubAreaNode>();
-	for (size_t i = 0; i < SubAreaNodes.size(); i++)
+
+	// Track visited areas to guard against cycles.
+	std::vector<NodeArea*> ToVisit = GetImediateChildren();
+	for (size_t i = 0; i < ToVisit.size(); i++)
 	{
-		NodeArea* ChildArea = SubAreaNodes[i]->GetOwnedArea();
-		if (ChildArea == nullptr)
+		NodeArea* CurrentArea = ToVisit[i];
+		if (CurrentArea == nullptr || NODE_SYSTEM.IsInAListOfAreas(CurrentArea, Result))
 			continue;
 
-		Result.push_back(ChildArea);
-		std::vector<NodeArea*> ChildAreas = ChildArea->GetRecursiveChildren();
-		for (size_t j = 0; j < ChildAreas.size(); j++)
-		{
-			// Check if we have already added this area to result to avoid duplicates in case of multiple links between same areas.
-			if (!NODE_SYSTEM.IsInAListOfAreas(ChildAreas[j], Result))
-				Result.push_back(ChildAreas[j]);
-		}
+		Result.push_back(CurrentArea);
+
+		std::vector<NodeArea*> Grandchildren = CurrentArea->GetImediateChildren();
+		ToVisit.insert(ToVisit.end(), Grandchildren.begin(), Grandchildren.end());
 	}
 
 	return Result;

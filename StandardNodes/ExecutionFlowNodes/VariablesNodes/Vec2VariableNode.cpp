@@ -93,7 +93,7 @@ void Vec2VariableNode::Draw()
 	{
 		Data = glm::vec2(VectorData[0], VectorData[1]);
 
-		if (Output[0]->GetConnectedSockets().size() > 0)
+		if (Output.size() > 0 && Output[0]->GetConnectedSockets().size() > 0)
 			ParentArea->TriggerSocketEvent(Output[0], Output[0]->GetConnectedSockets()[0], UPDATE);
 	}
 }
@@ -104,14 +104,14 @@ void Vec2VariableNode::SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedS
 
 	if (EventType == EXECUTE)
 	{
-		if (Input[1]->GetConnectedSockets().size() > 0)
+		if (Input.size() > 1 && Input[1]->GetConnectedSockets().size() > 0)
 		{
 			void* TemporaryData = Input[1]->GetConnectedSockets()[0]->GetData();
 			if (TemporaryData != nullptr)
 				Data = *reinterpret_cast<glm::vec2*>(TemporaryData);
 		}
 
-		if (Output[0]->GetConnectedSockets().size() > 0)
+		if (Output.size() > 0 && Output[0]->GetConnectedSockets().size() > 0)
 			ParentArea->TriggerSocketEvent(Output[0], Output[0]->GetConnectedSockets()[0], EXECUTE);
 	}
 }
@@ -149,6 +149,6 @@ void Vec2VariableNode::SetData(glm::vec2 NewValue)
 {
 	Data = NewValue;
 
-	if (Output[0]->GetConnectedSockets().size() > 0)
+	if (Output.size() > 0 && Output[0]->GetConnectedSockets().size() > 0)
 		ParentArea->TriggerSocketEvent(Output[0], Output[0]->GetConnectedSockets()[0], UPDATE);
 }

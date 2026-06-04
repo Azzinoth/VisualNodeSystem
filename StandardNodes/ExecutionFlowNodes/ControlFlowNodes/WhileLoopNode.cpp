@@ -27,7 +27,7 @@ void WhileLoopNode::SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSock
 	if (EventType == EXECUTE)
 	{
 		bool bCurrentConditionState = false;
-		if (Input[1]->GetConnectedSockets().size() > 0)
+		if (Input.size() > 1 && Input[1]->GetConnectedSockets().size() > 0)
 		{
 			void* TempData = Input[1]->GetConnectedSockets()[0]->GetData();
 			if (TempData != nullptr)
@@ -36,7 +36,7 @@ void WhileLoopNode::SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSock
 
 		while (bCurrentConditionState)
 		{
-			if (Output[0]->GetConnectedSockets().size() > 0)
+			if (Output.size() > 0 && Output[0]->GetConnectedSockets().size() > 0)
 			{
 				for (size_t j = 0; j < Output[0]->GetConnectedSockets().size(); j++)
 				{
@@ -44,7 +44,7 @@ void WhileLoopNode::SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSock
 				}
 			}
 
-			if (Input[1]->GetConnectedSockets().size() > 0)
+			if (Input.size() > 1 && Input[1]->GetConnectedSockets().size() > 0)
 			{
 				void* TempData = Input[1]->GetConnectedSockets()[0]->GetData();
 				if (TempData != nullptr)
@@ -57,7 +57,7 @@ void WhileLoopNode::SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSock
 		}
 
 		// After the while loop is done, we will trigger completed socket.
-		if (Output[1]->GetConnectedSockets().size() > 0)
+		if (Output.size() > 1 && Output[1]->GetConnectedSockets().size() > 0)
 		{
 			if (Output[1]->GetConnectedSockets().size() > 0)
 			{

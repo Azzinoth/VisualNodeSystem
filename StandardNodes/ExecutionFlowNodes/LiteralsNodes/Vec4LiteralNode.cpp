@@ -90,7 +90,7 @@ void Vec4LiteralNode::Draw()
 	{
 		Data = glm::vec4(VectorData[0], VectorData[1], VectorData[2], VectorData[3]);
 
-		if (Output[0]->GetConnectedSockets().size() > 0)
+		if (Output.size() > 0 && Output[0]->GetConnectedSockets().size() > 0)
 			ParentArea->TriggerSocketEvent(Output[0], Output[0]->GetConnectedSockets()[0], UPDATE);
 	}
 }

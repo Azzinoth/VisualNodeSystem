@@ -32,7 +32,8 @@ LoopNode::LoopNode(const LoopNode& Other) : BaseExecutionFlowNode(Other)
 
 	// Here I am restoring the output data function.
 	// Because the function is not serializable, I have to set it manually.
-	Output[1]->SetFunctionToOutputData(CurrentIndexGetter);
+	if (Output.size() > 1)
+		Output[1]->SetFunctionToOutputData(CurrentIndexGetter);
 }
 
 Json::Value LoopNode::ToJson()
@@ -88,14 +89,14 @@ void LoopNode::Draw()
 	float XPosition = ImGui::GetCursorScreenPos().x + 122.0f * Zoom;
 	float YPosition = ImGui::GetCursorScreenPos().y + 65.0f * Zoom;
 
-	ImGui::BeginDisabled(Input[1]->GetConnectedSockets().size() != 0);
+	ImGui::BeginDisabled(Input.size() > 1 && Input[1]->GetConnectedSockets().size() != 0);
 	ImGui::SetCursorScreenPos(ImVec2(XPosition, YPosition));
 	ImGui::SetNextItemWidth(35.0f * Zoom);
 	ImGui::DragInt("##LocalFirstIndex", &LocalFirstIndex);
 	ImGui::EndDisabled();
 
 	YPosition += 30 * Zoom;
-	ImGui::BeginDisabled(Input[2]->GetConnectedSockets().size() != 0);
+	ImGui::BeginDisabled(Input.size() > 2 && Input[2]->GetConnectedSockets().size() != 0);
 	ImGui::SetCursorScreenPos(ImVec2(XPosition, YPosition));
 	ImGui::SetNextItemWidth(35.0f * Zoom);
 	ImGui::DragInt("##LocalLastIndex", &LocalLastIndex);
@@ -113,14 +114,14 @@ void LoopNode::SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSocket, N
 		// We need to get first and last index.
 		// First we will check if we can get it from connections.
 		// If we have no connections, we will use values that was set by int input by user.
-		if (Input[1]->GetConnectedSockets().size() > 0)
+		if (Input.size() > 1 && Input[1]->GetConnectedSockets().size() > 0)
 		{
 			void* TempData = Input[1]->GetConnectedSockets()[0]->GetData();
 			if (TempData != nullptr)
 				LocalFirstIndex = *reinterpret_cast<int*>(TempData);
 		}
 
-		if (Input[2]->GetConnectedSockets().size() > 0)
+		if (Input.size() > 2 && Input[2]->GetConnectedSockets().size() > 0)
 		{
 			void* TempData = Input[2]->GetConnectedSockets()[0]->GetData();
 			if (TempData != nullptr)
@@ -131,7 +132,7 @@ void LoopNode::SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSocket, N
 		{
 			CurrentIndex = i;
 
-			if (Output[0]->GetConnectedSockets().size() > 0)
+			if (Output.size() > 0 && Output[0]->GetConnectedSockets().size() > 0)
 			{
 				for (size_t j = 0; j < Output[0]->GetConnectedSockets().size(); j++)
 				{
@@ -141,7 +142,7 @@ void LoopNode::SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSocket, N
 		}
 
 		// After the loop is done, we will trigger completed socket.
-		if (Output[2]->GetConnectedSockets().size() > 0)
+		if (Output.size() > 2 && Output[2]->GetConnectedSockets().size() > 0)
 		{
 			if (Output[2]->GetConnectedSockets().size() > 0)
 			{

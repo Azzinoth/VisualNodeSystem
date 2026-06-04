@@ -104,6 +104,10 @@ private:
 
 	void Execute()
 	{
+		// Both A and B input sockets are required to perform the operation.
+		if (Input.size() <= 2)
+			return;
+
 		std::string CurrentMode = GetActiveINDataType();
 		if (CurrentMode.empty())
 			return;
