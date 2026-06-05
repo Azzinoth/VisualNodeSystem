@@ -1261,6 +1261,53 @@ TEST(NodeAreaLoadTest, ConnectionOrderingTest)
 	}
 }
 
+TEST(NodeAreaLoadTest, LoadJsonWithNonSequentialKeys)
+{
+	// Build a small area: two nodes and one group comment.
+	NodeArea* SourceArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(SourceArea, nullptr);
+	ASSERT_TRUE(SourceArea->AddNode(TEST_TOOLS.CreateBoolLiteralNode(true)));
+	ASSERT_TRUE(SourceArea->AddNode(TEST_TOOLS.CreateBoolLiteralNode(false)));
+	SourceArea->AddGroupComment(new GroupComment());
+	ASSERT_EQ(SourceArea->GetNodeCount(), 2);
+	ASSERT_EQ(SourceArea->GetGroupCommentCount(), 1);
+
+	// Serialize, then parse it so the member keys can be rewritten.
+	const std::string OriginalJson = SourceArea->ToJson();
+	Json::Value Root;
+	JSONCPP_STRING Error;
+	Json::CharReaderBuilder Builder;
+	const std::unique_ptr<Json::CharReader> Reader(Builder.newCharReader());
+	ASSERT_EQ(Reader->parse(OriginalJson.c_str(), OriginalJson.c_str() + OriginalJson.size(), &Root, &Error), true);
+
+	// Re-key every numeric member of an object to a non-zero-based set (offset +5).
+	// Non-numeric members (e.g. the reserved "ExecutionEntryNodeID") are kept as-is.
+	auto ShiftNumericKeys = [](Json::Value& Object) {
+		Json::Value Shifted(Json::objectValue);
+		for (const std::string& Key : Object.getMemberNames())
+		{
+			const bool bNumeric = !Key.empty() && Key.find_first_not_of("0123456789") == std::string::npos;
+			Shifted[bNumeric ? std::to_string(std::stoi(Key) + 5) : Key] = Object[Key];
+		}
+		Object = Shifted;
+	};
+	ShiftNumericKeys(Root["Nodes"]);
+	ShiftNumericKeys(Root["GroupComments"]);
+
+	Json::StreamWriterBuilder WriterBuilder;
+	const std::string EditedJson = Json::writeString(WriterBuilder, Root);
+
+	// Loading the re-keyed JSON must still restore every node and group comment.
+	NodeArea* LoadedArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(LoadedArea, nullptr);
+	ASSERT_EQ(LoadedArea->LoadFromJson(EditedJson), true);
+	EXPECT_EQ(LoadedArea->GetNodeCount(), 2);
+	EXPECT_EQ(LoadedArea->GetGroupCommentCount(), 1);
+
+	NODE_SYSTEM.DeleteNodeArea(SourceArea);
+	NODE_SYSTEM.DeleteNodeArea(LoadedArea);
+}
+
 TEST(NodeAreaLoadTest, LoadNodeNodeStyleNotNumeric)
 {
 	std::string JsonString = R"({

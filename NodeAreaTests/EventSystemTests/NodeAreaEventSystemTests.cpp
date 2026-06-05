@@ -553,6 +553,33 @@ TEST(NodeAreaEventSystemTests, LastExecutedNodes_IsInExecutionOrder_ThroughConne
 	NODE_SYSTEM.DeleteNodeArea(LocalNodeArea);
 }
 
+TEST(NodeAreaEventSystemTests, LastExecutedNodes_ExcludesDeletedNode)
+{
+	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(LocalNodeArea, nullptr);
+	LocalNodeArea->SetSaveExecutedNodes(true);
+
+	Node* ExecutedNode = new Node();
+	ExecutedNode->AddSocket(new NodeSocket(ExecutedNode, "EXECUTE", "out", NodeSocket::SocketFlow::Output));
+	ASSERT_TRUE(LocalNodeArea->AddNode(ExecutedNode));
+	ASSERT_TRUE(LocalNodeArea->SetExecutionEntryNode(ExecutedNode));
+
+	ASSERT_TRUE(LocalNodeArea->ExecuteNodeNetwork());
+
+	std::vector<Node*> Before = LocalNodeArea->GetLastExecutedNodes();
+	ASSERT_FALSE(Before.empty());
+	Node* ExecutedPtr = Before[0];
+	ASSERT_EQ(ExecutedPtr, ExecutedNode);
+
+	ASSERT_TRUE(LocalNodeArea->Delete(ExecutedNode));
+
+	// The freed pointer must no longer be in return values.
+	std::vector<Node*> After = LocalNodeArea->GetLastExecutedNodes();
+	EXPECT_EQ(std::find(After.begin(), After.end(), ExecutedPtr), After.end());
+
+	NODE_SYSTEM.DeleteNodeArea(LocalNodeArea);
+}
+
 TEST(NodeAreaEventSystemTests, RunOnEachConnectedNode_NullStartNode_DoesNotCrash)
 {
 	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
@@ -761,4 +788,29 @@ TEST(NodeAreaEventSystemTests, TriggerOrphanSocketEvent_Reject_ForeignNode)
 	EXPECT_EQ(AreaB->GetLastExecutedNodes().size(), 0);
 
 	NODE_SYSTEM.Clear();
+}
+
+TEST(NodeAreaEventSystemTests, Delete_CallbackDeletesAnotherNode_DoesNotCrash)
+{
+	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(Area, nullptr);
+
+	Node* NodeA = new Node();
+	Node* NodeB = new Node();
+	ASSERT_TRUE(Area->AddNode(NodeA));
+	ASSERT_TRUE(Area->AddNode(NodeB));
+
+	std::string NodeAID = NodeA->GetID();
+	std::string NodeBID = NodeB->GetID();
+
+	// When NodeB is being destroyed, delete NodeA, which sits earlier in the node list.
+	Area->AddNodeEventCallback([&](Node* Node, NODE_EVENT EventType) {
+		if (EventType == NODE_EVENT::DESTROYED && Node->GetID() == NodeBID && Area->GetNodeByID(NodeAID) != nullptr)
+			Area->Delete(Area->GetNodeByID(NodeAID));
+	});
+
+	EXPECT_TRUE(Area->Delete(NodeB));
+	EXPECT_EQ(Area->GetNodeCount(), 0);
+
+	NODE_SYSTEM.DeleteNodeArea(Area);
 }
