@@ -306,22 +306,23 @@ bool NodeArea::Delete(const Node* NodeToDelete)
 	if (CheckNode == nullptr)
 		return false;
 
-	for (size_t i = 0; i < Nodes[Index]->Input.size(); i++)
+	// The DESTROYED callback above may have deleted or reordered nodes, so the cached Index is no longer trustworthy.
+	for (size_t i = 0; i < CheckNode->Input.size(); i++)
 	{
-		auto Connections = GetAllConnections(Nodes[Index]->Input[i]);
+		auto Connections = GetAllConnections(CheckNode->Input[i]);
 		for (size_t j = 0; j < Connections.size(); j++)
 			Delete(Connections[j]);
 	}
 
-	for (size_t i = 0; i < Nodes[Index]->Output.size(); i++)
+	for (size_t i = 0; i < CheckNode->Output.size(); i++)
 	{
-		auto Connections = GetAllConnections(Nodes[Index]->Output[i]);
+		auto Connections = GetAllConnections(CheckNode->Output[i]);
 		for (size_t j = 0; j < Connections.size(); j++)
 			Delete(Connections[j]);
 	}
 
-	std::string NodeToDeleteID = Nodes[Index]->GetID();
-	NODE_SYSTEM.OnNodeDeletion(Nodes[Index]);
+	std::string NodeToDeleteID = CheckNode->GetID();
+	NODE_SYSTEM.OnNodeDeletion(CheckNode);
 	Node* NodeAfterOnNodeDeletion = GetNodeByID(NodeToDeleteID);
 	// NODE_SYSTEM.OnNodeDeletion can potentially delete the node, so we need to check if it still exists before trying to delete it.
 	if (NodeAfterOnNodeDeletion != nullptr)
@@ -352,6 +353,16 @@ void NodeArea::DeleteNodeInternal(const Node* Node, int Index)
 
 	if (Index < 0 || Index >= Nodes.size())
 		return;
+
+	// Remove node from LastExecutedNodes vector.
+	for (size_t i = 0; i < LastExecutedNodes.size(); i++)
+	{
+		if (LastExecutedNodes[i] == Nodes[Index])
+		{
+			LastExecutedNodes.erase(LastExecutedNodes.begin() + i, LastExecutedNodes.begin() + i + 1);
+			i--;
+		}
+	}
 
 	delete Nodes[Index];
 	Nodes.erase(Nodes.begin() + Index, Nodes.begin() + Index + 1);

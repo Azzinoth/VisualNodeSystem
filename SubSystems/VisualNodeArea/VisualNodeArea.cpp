@@ -347,7 +347,7 @@ bool NodeArea::LoadFromJson(std::string JsonText)
 	std::vector<Json::String> NodesList = Root["Nodes"].getMemberNames();
 	for (size_t i = 0; i < NodesList.size(); i++)
 	{
-		std::string NodeKey = std::to_string(i);
+		const std::string& NodeKey = NodesList[i];
 		if (!Root["Nodes"][NodeKey].isObject())
 			continue;
 
@@ -481,11 +481,12 @@ bool NodeArea::LoadFromJson(std::string JsonText)
 		std::vector<Json::String> GroupCommentsList = Root["GroupComments"].getMemberNames();
 		for (size_t i = 0; i < GroupCommentsList.size(); i++)
 		{
-			if (!Root["GroupComments"][std::to_string(i)].isObject())
+			const std::string& GroupCommentKey = GroupCommentsList[i];
+			if (!Root["GroupComments"][GroupCommentKey].isObject())
 				continue;
 
 			GroupComment* NewGroupComment = new GroupComment();
-			if (!NewGroupComment->FromJson(Root["GroupComments"][std::to_string(i)]))
+			if (!NewGroupComment->FromJson(Root["GroupComments"][GroupCommentKey]))
 			{
 				delete NewGroupComment;
 				continue;
