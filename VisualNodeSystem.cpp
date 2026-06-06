@@ -535,19 +535,34 @@ void NodeSystem::ProcessConnections(const std::vector<NodeSocket*>& Sockets,
 	for (size_t i = 0; i < Sockets.size(); i++)
 	{
 		NodeSocket* CurrentSocket = Sockets[i];
+		if (CurrentSocket == nullptr)
+			continue;
+
+		// Skip the socket if its node was not copied into the target.
+		if (OldToNewSocket.find(CurrentSocket) == OldToNewSocket.end())
+			continue;
+
+		NodeSocket* NewCurrentSocket = OldToNewSocket[CurrentSocket];
 		for (const auto& ConnectedSocket : CurrentSocket->ConnectedSockets)
 		{
+			if (ConnectedSocket == nullptr || ConnectedSocket->GetParent() == nullptr)
+				continue;
+
 			if (Node::IsNodeWithIDInList(ConnectedSocket->GetParent()->GetID(), SourceNodes))
 			{
+				if (OldToNewSocket.find(ConnectedSocket) == OldToNewSocket.end())
+					continue;
+
+				NodeSocket* NewConnectedSocket = OldToNewSocket[ConnectedSocket];
 				// Check if we have already established this connection.
-				if (!IsAlreadyConnected(OldToNewSocket[CurrentSocket], OldToNewSocket[ConnectedSocket], TargetArea->Connections))
+				if (!IsAlreadyConnected(NewCurrentSocket, NewConnectedSocket, TargetArea->Connections))
 				{
 					std::unordered_map<RerouteNode*, RerouteNode*> OldToNewRerouteNode;
 					// Look the original connection up in the area that owns this socket's node.
 					NodeArea* OwningArea = CurrentSocket->GetParent() != nullptr ? CurrentSocket->GetParent()->GetParentArea() : nullptr;
 					Connection* OldConnection = OwningArea != nullptr ? OwningArea->GetConnection(CurrentSocket, ConnectedSocket) : nullptr;
 
-					if (!TargetArea->TryToConnect(OldToNewSocket[CurrentSocket]->GetParent(), OldToNewSocket[CurrentSocket]->GetID(), OldToNewSocket[ConnectedSocket]->GetParent(), OldToNewSocket[ConnectedSocket]->GetID()))
+					if (!TargetArea->TryToConnect(NewCurrentSocket->GetParent(), NewCurrentSocket->GetID(), NewConnectedSocket->GetParent(), NewConnectedSocket->GetID()))
 						continue;
 
 					Connection* NewConnection = TargetArea->Connections.back();
@@ -564,9 +579,16 @@ void NodeSystem::ProcessConnections(const std::vector<NodeSocket*>& Sockets,
 							NewReroute->Position = OldReroute->Position;
 
 							if (OldReroute->BeginSocket != nullptr)
-								NewReroute->BeginSocket = OldToNewSocket[OldReroute->BeginSocket];
+							{
+								if (OldToNewSocket.find(OldReroute->BeginSocket) != OldToNewSocket.end())
+									NewReroute->BeginSocket = OldToNewSocket[OldReroute->BeginSocket];
+							}
+
 							if (OldReroute->EndSocket != nullptr)
-								NewReroute->EndSocket = OldToNewSocket[OldReroute->EndSocket];
+							{
+								if (OldToNewSocket.find(OldReroute->EndSocket) != OldToNewSocket.end())
+									NewReroute->EndSocket = OldToNewSocket[OldReroute->EndSocket];
+							}
 
 							// Associate old to new
 							OldToNewRerouteNode[OldConnection->RerouteNodes[j]] = NewReroute;
@@ -702,8 +724,8 @@ void NodeSystem::OnNodeDeletion(Node* DeletedNode)
 		return;
 
 	std::string LinkID = Data->ID;
-	LinkNode* CurrentLinkNode = static_cast<LinkNode*>(DeletedNode);
-	if (CurrentLinkNode->bIsInProcessOfBeingDestroyed)
+	LinkNode* CurrentLinkNode = dynamic_cast<LinkNode*>(DeletedNode);
+	if (CurrentLinkNode == nullptr || CurrentLinkNode->bIsInProcessOfBeingDestroyed)
 		return;
 	CurrentLinkNode->bIsInProcessOfBeingDestroyed = true;
 
@@ -713,7 +735,10 @@ void NodeSystem::OnNodeDeletion(Node* DeletedNode)
 		Node* PartnerNode = LinkedArea->GetNodeByID(CurrentLinkNode->PartnerNodeID);
 		if (PartnerNode != nullptr)
 		{
-			LinkNode* CastedPartnerNode = static_cast<LinkNode*>(PartnerNode);
+			LinkNode* CastedPartnerNode = dynamic_cast<LinkNode*>(PartnerNode);
+			if (CastedPartnerNode == nullptr)
+				return;
+
 			if (!CastedPartnerNode->bIsInProcessOfBeingDestroyed)
 			{
 				CastedPartnerNode->bIsInProcessOfBeingDestroyed = true;
@@ -738,6 +763,7 @@ void NodeSystem::DeleteNodeArea(const NodeArea* NodeAreaToDelete)
 		NodeArea* ParentArea = ParentSubAreaNode->GetParentArea();
 		if (ParentArea != nullptr)
 		{
+			ParentSubAreaNode->bCouldBeDestroyedByUser = true;
 			ParentArea->Delete(ParentSubAreaNode);
 			return;
 		}
@@ -929,6 +955,13 @@ bool NodeSystem::MoveNodesTo(NodeArea* SourceNodeArea, NodeArea* TargetNodeArea,
 		Node* CurrentNode = SourceNodeArea->Nodes[i];
 		if (CurrentNode == nullptr)
 			continue;
+
+		// SubAreaInput and SubAreaOutput nodes cannot be moved.
+		if (CurrentNode->GetType() == "SubAreaInputNode" || CurrentNode->GetType() == "SubAreaOutputNode")
+		{
+			RetainedInSource.push_back(CurrentNode);
+			continue;
+		}
 
 		CurrentNode->ParentArea = nullptr;
 		if (!TargetNodeArea->AddNode(CurrentNode))
@@ -1597,8 +1630,12 @@ bool NodeSystem::TryToFixDanglingLinkNode(LinkNode* LinkNodeToFix, bool bForceRe
 
 	if (NODE_SYSTEM.GetLinkDataByNodeID(LinkNodeToFix->GetID()) == nullptr)
 	{
-		LinkNode* InNode = LinkNodeToFix->IsInputNode() ? LinkNodeToFix : reinterpret_cast<LinkNode*>(LinkNodeToFix->GetPartnerNode());
-		LinkNode* OutNode = LinkNodeToFix->IsInputNode() ? reinterpret_cast<LinkNode*>(LinkNodeToFix->GetPartnerNode()) : LinkNodeToFix;
+		LinkNode* CastedPartnerNode = dynamic_cast<LinkNode*>(LinkNodeToFix->GetPartnerNode());
+		if (CastedPartnerNode == nullptr)
+			return false;
+
+		LinkNode* InNode = LinkNodeToFix->IsInputNode() ? LinkNodeToFix : CastedPartnerNode;
+		LinkNode* OutNode = LinkNodeToFix->IsInputNode() ? CastedPartnerNode : LinkNodeToFix;
 
 		NodeAreaLinkRecord NewRecord;
 		NewRecord.ID = InNode->GetID() + "_" + OutNode->GetID();

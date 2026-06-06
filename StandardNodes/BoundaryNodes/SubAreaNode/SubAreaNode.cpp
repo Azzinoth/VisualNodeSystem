@@ -149,20 +149,52 @@ bool SubAreaNode::FromJson(Json::Value Json)
 	if (!Json.isMember("SubAreaOutputNodeID") || !Json["SubAreaOutputNodeID"].isString())
 		return false;
 
-	std::string CandidateOwnedAreaID = Json["OwnedAreaID"].asString();
+	const std::string CandidateOwnedAreaID = Json["OwnedAreaID"].asString();
 
-	// Refuse to adopt an area that some other SubAreaNode already owns.
+	// Detach current owned area if it exists.
+	NodeArea* PreviouslyOwnedArea = GetOwnedArea();
+	OwnedAreaID = "";
+
+	// Refuse an area another SubAreaNode already owns.
 	if (NODE_SYSTEM.FindOwnerSubAreaNode(CandidateOwnedAreaID) != nullptr)
-		return false;
-
-	OwnedAreaID = CandidateOwnedAreaID;
-
-	NodeArea* OwnedArea = NODE_SYSTEM.GetNodeAreaByID(OwnedAreaID);
-	if (OwnedArea == nullptr)
 	{
-		OwnedArea = NODE_SYSTEM.CreateNodeArea();
-		OwnedArea->LoadFromJson(Json["OwnedAreaData"].asString());
+		if (PreviouslyOwnedArea != nullptr)
+			OwnedAreaID = PreviouslyOwnedArea->GetID();
+
+		return false;
 	}
+
+	NodeArea* LoadedArea = NODE_SYSTEM.GetNodeAreaByID(CandidateOwnedAreaID);
+	if (LoadedArea == nullptr)
+	{
+		NodeArea* NewOwnedArea = NODE_SYSTEM.CreateNodeArea();
+		if (!NewOwnedArea->LoadFromJson(Json["OwnedAreaData"].asString()))
+		{
+			NODE_SYSTEM.DeleteNodeArea(NewOwnedArea);
+			if (PreviouslyOwnedArea != nullptr)
+				OwnedAreaID = PreviouslyOwnedArea->GetID();
+
+			return false;
+		}
+
+		// Reject if loaded area has ID that collides with a different existing area.
+		if (NODE_SYSTEM.GetNodeAreaByID(NewOwnedArea->GetID()) != NewOwnedArea)
+		{
+			NODE_SYSTEM.DeleteNodeArea(NewOwnedArea);
+			if (PreviouslyOwnedArea != nullptr)
+				OwnedAreaID = PreviouslyOwnedArea->GetID();
+
+			return false;
+		}
+
+		LoadedArea = NewOwnedArea;
+	}
+
+	// Delete previously owned area.
+	if (PreviouslyOwnedArea != nullptr && PreviouslyOwnedArea != LoadedArea)
+		NODE_SYSTEM.DeleteNodeArea(PreviouslyOwnedArea);
+
+	OwnedAreaID = LoadedArea->GetID();
 
 	SubAreaInputNodeID = Json["SubAreaInputNodeID"].asString();
 	SubAreaOutputNodeID = Json["SubAreaOutputNodeID"].asString();
@@ -254,10 +286,7 @@ SubAreaOutputNode* SubAreaNode::GetSubAreaOutputNode() const
 
 bool SubAreaNode::IsDangling() const
 {
-	Node* InputNode = NODE_SYSTEM.GetNodeByID(SubAreaInputNodeID);
-	Node* OutputNode = NODE_SYSTEM.GetNodeByID(SubAreaOutputNodeID);
-
-	return InputNode == nullptr || OutputNode == nullptr;
+	return GetSubAreaInputNode() == nullptr || GetSubAreaOutputNode() == nullptr;
 }
 
 void SubAreaNode::SetNameInternal(std::string NewValue)
