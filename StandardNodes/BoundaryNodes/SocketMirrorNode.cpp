@@ -185,7 +185,13 @@ bool SocketMirrorNode::AddSocket(std::vector<std::string> AllowedTypes, std::str
 		return false;
 
 	NodeSocket* NewSocket = new NodeSocket(this, AllowedTypes, Name, FlowDirection);
-	return AddSocket(NewSocket);
+	if (!AddSocket(NewSocket))
+	{
+		delete NewSocket;
+		return false;
+	}
+
+	return true;
 }
 
 bool SocketMirrorNode::AddSocket(NodeSocket* Socket)

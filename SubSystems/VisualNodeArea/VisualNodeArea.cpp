@@ -177,14 +177,13 @@ bool NodeArea::SaveNodesToFile(std::string FilePath, std::vector<Node*> Nodes)
 	if (Nodes.empty())
 		return false;
 
-	const NodeArea* NewNodeArea = NODE_SYSTEM.CreateNodeArea(Nodes, std::vector<GroupComment*>());
-	const std::string JsonFile = NewNodeArea->ToJson();
 	std::ofstream SaveFile;
 	SaveFile.open(FilePath);
 	if (!SaveFile.is_open())
 		return false;
 
-	SaveFile << JsonFile;
+	const NodeArea* NewNodeArea = NODE_SYSTEM.CreateNodeArea(Nodes, std::vector<GroupComment*>());
+	SaveFile << NewNodeArea->ToJson();
 	SaveFile.close();
 	NODE_SYSTEM.DeleteNodeArea(NewNodeArea);
 

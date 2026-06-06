@@ -18,6 +18,12 @@ WhileLoopNode::WhileLoopNode() : BaseExecutionFlowNode()
 	AddSocket(new NodeSocket(this, "EXECUTE", "Completed", NodeSocket::SocketFlow::Output));
 	
 	SetSize(ImVec2(220.0f, static_cast<float>(NODE_HEIGHT_PER_SOCKET * std::max(Input.size(), Output.size()))));
+
+	// All sockets are structural and must not be user-deletable.
+	for (NodeSocket* Socket : Input)
+		Socket->SetCanBeDeletedByUser(false);
+	for (NodeSocket* Socket : Output)
+		Socket->SetCanBeDeletedByUser(false);
 }
 
 void WhileLoopNode::SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSocket, NODE_SOCKET_EVENT EventType)

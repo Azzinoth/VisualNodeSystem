@@ -34,6 +34,12 @@ BaseComparisonOperatorNode::BaseComparisonOperatorNode() : BaseExecutionFlowNode
 	AddSocket(new NodeSocket(this, "EXECUTE", "", NodeSocket::SocketFlow::Output));
 	AddSocket(new NodeSocket(this, AllowedOutTypes, "Out", NodeSocket::SocketFlow::Output));
 	Output[1]->SetFunctionToOutputData(ComparisonGetter);
+
+	// All sockets are structural and must not be user-deletable.
+	for (NodeSocket* Socket : Input)
+		Socket->SetCanBeDeletedByUser(false);
+	for (NodeSocket* Socket : Output)
+		Socket->SetCanBeDeletedByUser(false);
 }
 
 BaseComparisonOperatorNode::BaseComparisonOperatorNode(const BaseComparisonOperatorNode& Other) : BaseExecutionFlowNode(Other)

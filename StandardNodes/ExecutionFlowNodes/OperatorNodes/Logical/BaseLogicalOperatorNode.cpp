@@ -21,6 +21,12 @@ BaseLogicalOperatorNode::BaseLogicalOperatorNode(bool bNeedBInput) : BaseExecuti
 
 	SetSize(ImVec2(130.0f, static_cast<float>(NODE_HEIGHT_PER_SOCKET * std::max(Input.size(), Output.size()))));
 	Output[1]->SetFunctionToOutputData(DataGetter);
+
+	// All sockets are structural and must not be user-deletable.
+	for (NodeSocket* Socket : Input)
+		Socket->SetCanBeDeletedByUser(false);
+	for (NodeSocket* Socket : Output)
+		Socket->SetCanBeDeletedByUser(false);
 }
 
 BaseLogicalOperatorNode::BaseLogicalOperatorNode(const BaseLogicalOperatorNode& Other) : BaseExecutionFlowNode(Other)

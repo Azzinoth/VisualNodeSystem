@@ -18,8 +18,14 @@ BaseArithmeticOperatorNode::BaseArithmeticOperatorNode(std::vector<std::string> 
 	AddSocket(new NodeSocket(this, "EXECUTE", "", NodeSocket::SocketFlow::Output));
 	AddSocket(new NodeSocket(this, AllowedTypes, "Result", NodeSocket::SocketFlow::Output));
 	Output[1]->SetFunctionToOutputData(ResultDataGetter);
-	
+
 	SetSize(ImVec2(130.0f, static_cast<float>(NODE_HEIGHT_PER_SOCKET * std::max(Input.size(), Output.size()))));
+
+	// All sockets are structural and must not be user-deletable.
+	for (NodeSocket* Socket : Input)
+		Socket->SetCanBeDeletedByUser(false);
+	for (NodeSocket* Socket : Output)
+		Socket->SetCanBeDeletedByUser(false);
 }
 
 BaseArithmeticOperatorNode::BaseArithmeticOperatorNode(const BaseArithmeticOperatorNode& Other) : BaseExecutionFlowNode(Other)

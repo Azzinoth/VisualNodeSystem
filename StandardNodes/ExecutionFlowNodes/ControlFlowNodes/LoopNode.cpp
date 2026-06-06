@@ -21,6 +21,12 @@ LoopNode::LoopNode() : BaseExecutionFlowNode()
 
 	SetSize(ImVec2(270.0f, static_cast<float>(NODE_HEIGHT_PER_SOCKET * std::max(Input.size(), Output.size()))));
 	Output[1]->SetFunctionToOutputData(CurrentIndexGetter);
+
+	// All sockets are structural and must not be user-deletable.
+	for (NodeSocket* Socket : Input)
+		Socket->SetCanBeDeletedByUser(false);
+	for (NodeSocket* Socket : Output)
+		Socket->SetCanBeDeletedByUser(false);
 }
 
 LoopNode::LoopNode(const LoopNode& Other) : BaseExecutionFlowNode(Other)

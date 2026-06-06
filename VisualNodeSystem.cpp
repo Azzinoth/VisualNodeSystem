@@ -543,42 +543,47 @@ void NodeSystem::ProcessConnections(const std::vector<NodeSocket*>& Sockets,
 				if (!IsAlreadyConnected(OldToNewSocket[CurrentSocket], OldToNewSocket[ConnectedSocket], TargetArea->Connections))
 				{
 					std::unordered_map<RerouteNode*, RerouteNode*> OldToNewRerouteNode;
-					// Get connection info from old node area.
-					Connection* OldConnection = SourceArea->GetConnection(CurrentSocket, ConnectedSocket);
+					// Look the original connection up in the area that owns this socket's node.
+					NodeArea* OwningArea = CurrentSocket->GetParent() != nullptr ? CurrentSocket->GetParent()->GetParentArea() : nullptr;
+					Connection* OldConnection = OwningArea != nullptr ? OwningArea->GetConnection(CurrentSocket, ConnectedSocket) : nullptr;
 
 					if (!TargetArea->TryToConnect(OldToNewSocket[CurrentSocket]->GetParent(), OldToNewSocket[CurrentSocket]->GetID(), OldToNewSocket[ConnectedSocket]->GetParent(), OldToNewSocket[ConnectedSocket]->GetID()))
 						continue;
 
 					Connection* NewConnection = TargetArea->Connections.back();
-					// First pass to fill OldToNewRerouteNode map and other information that does not depend on OldToNewRerouteNode map.
-					for (size_t j = 0; j < OldConnection->RerouteNodes.size(); j++)
+					// Only copy reroute nodes if the original connection was located.
+					if (OldConnection != nullptr)
 					{
-						RerouteNode* OldReroute = OldConnection->RerouteNodes[j];
-						RerouteNode* NewReroute = new RerouteNode();
-						NewReroute->ID = NODE_CORE.GetUniqueHexID();
-						NewReroute->Parent = NewConnection;
-						NewReroute->Position = OldReroute->Position;
+						// First pass to fill OldToNewRerouteNode map and other information that does not depend on OldToNewRerouteNode map.
+						for (size_t j = 0; j < OldConnection->RerouteNodes.size(); j++)
+						{
+							RerouteNode* OldReroute = OldConnection->RerouteNodes[j];
+							RerouteNode* NewReroute = new RerouteNode();
+							NewReroute->ID = NODE_CORE.GetUniqueHexID();
+							NewReroute->Parent = NewConnection;
+							NewReroute->Position = OldReroute->Position;
 
-						if (OldReroute->BeginSocket != nullptr)
-							NewReroute->BeginSocket = OldToNewSocket[OldReroute->BeginSocket];
-						if (OldReroute->EndSocket != nullptr)
-							NewReroute->EndSocket = OldToNewSocket[OldReroute->EndSocket];
+							if (OldReroute->BeginSocket != nullptr)
+								NewReroute->BeginSocket = OldToNewSocket[OldReroute->BeginSocket];
+							if (OldReroute->EndSocket != nullptr)
+								NewReroute->EndSocket = OldToNewSocket[OldReroute->EndSocket];
 
-						// Associate old to new
-						OldToNewRerouteNode[OldConnection->RerouteNodes[j]] = NewReroute;
+							// Associate old to new
+							OldToNewRerouteNode[OldConnection->RerouteNodes[j]] = NewReroute;
 
-						NewConnection->RerouteNodes.push_back(NewReroute);
-					}
+							NewConnection->RerouteNodes.push_back(NewReroute);
+						}
 
-					// Second pass to fill all other info.
-					for (size_t j = 0; j < OldConnection->RerouteNodes.size(); j++)
-					{
-						RerouteNode* OldReroute = OldConnection->RerouteNodes[j];
+						// Second pass to fill all other info.
+						for (size_t j = 0; j < OldConnection->RerouteNodes.size(); j++)
+						{
+							RerouteNode* OldReroute = OldConnection->RerouteNodes[j];
 
-						if (OldReroute->BeginReroute != nullptr)
-							OldToNewRerouteNode[OldReroute]->BeginReroute = OldToNewRerouteNode[OldReroute->BeginReroute];
-						if (OldReroute->EndReroute != nullptr)
-							OldToNewRerouteNode[OldReroute]->EndReroute = OldToNewRerouteNode[OldReroute->EndReroute];
+							if (OldReroute->BeginReroute != nullptr)
+								OldToNewRerouteNode[OldReroute]->BeginReroute = OldToNewRerouteNode[OldReroute->BeginReroute];
+							if (OldReroute->EndReroute != nullptr)
+								OldToNewRerouteNode[OldReroute]->EndReroute = OldToNewRerouteNode[OldReroute->EndReroute];
+						}
 					}
 				}
 			}
@@ -601,7 +606,11 @@ void NodeSystem::CopyNodesInternal(const std::vector<Node*>& SourceNodes, NodeAr
 		if (CopyOfNode == nullptr)
 			CopyOfNode = new Node(*SourceNodes[i]);
 
-		TargetArea->AddNode(CopyOfNode);
+		if (!TargetArea->AddNode(CopyOfNode))
+		{
+			delete CopyOfNode;
+			continue;
+		}
 
 		// Associate old to new
 		OldToNewNode[SourceNodes[i]] = CopyOfNode;
@@ -694,6 +703,10 @@ void NodeSystem::OnNodeDeletion(Node* DeletedNode)
 
 	std::string LinkID = Data->ID;
 	LinkNode* CurrentLinkNode = static_cast<LinkNode*>(DeletedNode);
+	if (CurrentLinkNode->bIsInProcessOfBeingDestroyed)
+		return;
+	CurrentLinkNode->bIsInProcessOfBeingDestroyed = true;
+
 	NodeArea* LinkedArea = CurrentLinkNode->GetLinkedArea();
 	if (LinkedArea != nullptr)
 	{
@@ -925,18 +938,25 @@ bool NodeSystem::MoveNodesTo(NodeArea* SourceNodeArea, NodeArea* TargetNodeArea,
 		}
 		else if (CurrentNode->GetType() == "LinkNode")
 		{
-			// Update NodeAreaLinkRecords.
+			// Update NodeAreaLinkRecords and the partner LinkNode's LinkedAreaID.
 			NodeAreaLinkRecord* Record = GetLinkDataByNodeID(CurrentNode->GetID());
 			if (Record != nullptr)
 			{
+				std::string PartnerNodeID;
 				if (Record->InNodeID == CurrentNode->GetID())
 				{
 					Record->InAreaID = TargetNodeArea->GetID();
+					PartnerNodeID = Record->OutNodeID;
 				}
 				else if (Record->OutNodeID == CurrentNode->GetID())
 				{
 					Record->OutAreaID = TargetNodeArea->GetID();
+					PartnerNodeID = Record->InNodeID;
 				}
+
+				LinkNode* PartnerNode = dynamic_cast<LinkNode*>(GetNodeByID(PartnerNodeID));
+				if (PartnerNode != nullptr)
+					PartnerNode->LinkedAreaID = TargetNodeArea->GetID();
 			}
 		}
 	}
@@ -1532,7 +1552,8 @@ bool NodeSystem::TryToFixDanglingLinkNode(LinkNode* LinkNodeToFix, bool bForceRe
 			return false;
 
 		NodeArea* PartnerNodeArea = LinkNodeToFix->GetLinkedArea();
-		if (LinkNodeToFix->GetParentArea() == PartnerNodeArea)
+		NodeArea* OwningArea = LinkNodeToFix->GetParentArea();
+		if (OwningArea == nullptr || OwningArea == PartnerNodeArea)
 			return false;
 
 		bool bIsInputNode = LinkNodeToFix->IsInputNode();
@@ -1557,7 +1578,7 @@ bool NodeSystem::TryToFixDanglingLinkNode(LinkNode* LinkNodeToFix, bool bForceRe
 		LinkNodeToFix->PartnerNodeID = PartnerNode->GetID();
 
 		PartnerNode->PartnerNodeID = LinkNodeToFix->GetID();
-		PartnerNode->LinkedAreaID = LinkNodeToFix->GetParentArea()->GetID();
+		PartnerNode->LinkedAreaID = OwningArea->GetID();
 
 		LinkNode* InNode = LinkNodeToFix->IsInputNode() ? LinkNodeToFix : PartnerNode;
 		LinkNode* OutNode = LinkNodeToFix->IsInputNode() ? PartnerNode : LinkNodeToFix;

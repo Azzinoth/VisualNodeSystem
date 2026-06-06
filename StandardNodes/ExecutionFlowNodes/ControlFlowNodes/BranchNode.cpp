@@ -18,6 +18,12 @@ BranchNode::BranchNode() : BaseExecutionFlowNode()
 	AddSocket(new NodeSocket(this, "EXECUTE", "False", NodeSocket::SocketFlow::Output));
 
 	SetSize(ImVec2(190.0f, static_cast<float>(NODE_HEIGHT_PER_SOCKET * std::max(Input.size(), Output.size()))));
+
+	// All sockets are structural and must not be user-deletable.
+	for (NodeSocket* Socket : Input)
+		Socket->SetCanBeDeletedByUser(false);
+	for (NodeSocket* Socket : Output)
+		Socket->SetCanBeDeletedByUser(false);
 }
 
 BranchNode::BranchNode(const BranchNode& Other) : BaseExecutionFlowNode(Other)

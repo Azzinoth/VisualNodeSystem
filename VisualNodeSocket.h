@@ -22,6 +22,7 @@ namespace VisNodeSys
 	private:
 		friend class NodeSystem;
 		friend class NodeArea;
+		friend class SocketMirrorNode;
 		friend Node;
 
 		~NodeSocket() = default;

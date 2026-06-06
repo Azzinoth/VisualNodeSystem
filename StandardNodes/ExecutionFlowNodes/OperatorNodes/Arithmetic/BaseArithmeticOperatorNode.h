@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cmath>
+#include <climits>
 #include "../../BaseExecutionFlowNode.h"
 
 enum class ArithmeticOperationType
@@ -61,15 +63,32 @@ private:
 		case ArithmeticOperationType::MULTIPLY:
 			return A * B;
 		case ArithmeticOperationType::DIVIDE:
+		{
 			if (B == 0)
 				return A;
 			return A / B;
+		}
 		case ArithmeticOperationType::MODULUS:
+		{
 			if (B == 0)
 				return A;
 			return A % B;
+		}
 		case ArithmeticOperationType::POWER:
-			return static_cast<int>(std::pow(static_cast<double>(A), static_cast<double>(B)));
+		{
+			const double Result = std::pow(static_cast<double>(A), static_cast<double>(B));
+
+			if (!std::isfinite(Result))
+				return 0;
+
+			if (Result >= static_cast<double>(INT_MAX))
+				return INT_MAX;
+
+			if (Result <= static_cast<double>(INT_MIN))
+				return INT_MIN;
+
+			return static_cast<int>(Result);
+		}
 		default:
 			return A;
 		}

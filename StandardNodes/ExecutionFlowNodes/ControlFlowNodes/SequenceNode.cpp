@@ -13,6 +13,7 @@ SequenceNode::SequenceNode() : BaseExecutionFlowNode()
 	TitleBackgroundColorHovered = ImColor(35, 145, 255);
 
 	AddSequenceOutput();
+	Output.back()->SetCanBeDeletedByUser(false);
 	AddSequenceOutput();
 
 	SetSize(ImVec2(150.0f, static_cast<float>(NODE_HEIGHT_PER_SOCKET * std::max(Input.size(), Output.size()))));
