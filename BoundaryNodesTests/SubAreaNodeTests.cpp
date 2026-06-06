@@ -1044,6 +1044,69 @@ TEST(SubAreaNodeTests, SaveLoad_RestoresInputOutputNodeRelationship)
 	NODE_SYSTEM.Clear();
 }
 
+TEST(SubAreaNodeTests, FromJson_MalformedOwnedAreaData_FailsWithoutLeakOrDangling)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* ParentArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(ParentArea, nullptr);
+
+	SubAreaNode* SubArea = NODE_SYSTEM.CreateSubAreaNode(ParentArea->GetID());
+	ASSERT_NE(SubArea, nullptr);
+
+	NodeArea* OwnedArea = SubArea->GetOwnedArea();
+	ASSERT_NE(OwnedArea, nullptr);
+	std::string OwnedAreaID = OwnedArea->GetID();
+
+	Json::Value SerializedNode = SubArea->ToJson();
+	// Fresh id, not owned and not already loaded.
+	SerializedNode["OwnedAreaID"] = "FakeOwnedAreaID";
+	// Malformed, so NodeArea::LoadFromJson fails.
+	SerializedNode["OwnedAreaData"] = "{ broken";
+
+	size_t AreaCountBefore = NODE_SYSTEM.GetNodeAreaCount();
+	bool bResult = SubArea->FromJson(SerializedNode);
+	size_t AreaCountAfter = NODE_SYSTEM.GetNodeAreaCount();
+
+	EXPECT_FALSE(bResult);
+	EXPECT_EQ(AreaCountAfter, AreaCountBefore);
+	EXPECT_EQ(SubArea->GetOwnedArea(), OwnedArea);
+	EXPECT_EQ(SubArea->GetOwnedArea()->GetID(), OwnedAreaID);
+
+	NODE_SYSTEM.Clear();
+}
+
+TEST(SubAreaNodeTests, FromJson_OnEstablishedNode_ReleasesPreviousOwnedArea)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* ParentArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(ParentArea, nullptr);
+
+	SubAreaNode* SubArea = NODE_SYSTEM.CreateSubAreaNode(ParentArea->GetID());
+	ASSERT_NE(SubArea, nullptr);
+	std::string OldOwnedAreaID = SubArea->GetOwnedArea()->GetID();
+
+	// Build a valid SubAreaNode JSON describing a different owned area, then delete its source
+	// so the described area ID is free and unowned at FromJson time.
+	NodeArea* OtherParentArea = NODE_SYSTEM.CreateNodeArea();
+	SubAreaNode* OtherSubArea = NODE_SYSTEM.CreateSubAreaNode(OtherParentArea->GetID());
+	Json::Value OtherJson = OtherSubArea->ToJson();
+	NODE_SYSTEM.DeleteNodeArea(OtherParentArea);
+
+	bool bResult = SubArea->FromJson(OtherJson);
+	EXPECT_TRUE(bResult);
+
+	// The previously owned area is released, not orphaned.
+	EXPECT_EQ(NODE_SYSTEM.GetNodeAreaByID(OldOwnedAreaID), nullptr);
+	// SubArea now owns the recreated area.
+	ASSERT_NE(SubArea->GetOwnedArea(), nullptr);
+	EXPECT_NE(SubArea->GetOwnedArea()->GetID(), OldOwnedAreaID);
+	EXPECT_EQ(NODE_SYSTEM.FindOwnerSubAreaNode(SubArea->GetOwnedArea()->GetID()), SubArea);
+
+	NODE_SYSTEM.Clear();
+}
+
 TEST(SubAreaNodeTests, MultipleSubAreasInParent_BothExecute)
 {
 	NodeArea* ParentArea = NODE_SYSTEM.CreateNodeArea();
@@ -1800,6 +1863,45 @@ TEST(SubAreaNodeTests, DeleteOwnedArea_Removes_OrphanedSubAreaNode_From_Parent)
 	NODE_SYSTEM.DeleteNodeArea(ParentArea);
 }
 
+TEST(SubAreaNodeTests, DeleteOwnedArea_OnNonDestroyableSubAreaOwner_DeletesArea)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* ParentArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(ParentArea, nullptr);
+	SubAreaNode* SubArea = NODE_SYSTEM.CreateSubAreaNode(ParentArea->GetID());
+	ASSERT_NE(SubArea, nullptr);
+
+	std::string Serialized = ParentArea->ToJson();
+	NODE_SYSTEM.Clear();
+
+	std::string Needle = "\"bCouldBeDestroyedByUser\":true";
+	std::string Replacement = "\"bCouldBeDestroyedByUser\":false";
+	size_t NeedlePosition = Serialized.find(Needle);
+	ASSERT_NE(NeedlePosition, std::string::npos);
+	Serialized.replace(NeedlePosition, Needle.size(), Replacement);
+
+	NodeArea* LoadedParentArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_TRUE(LoadedParentArea->LoadFromJson(Serialized));
+
+	std::vector<SubAreaNode*> SubAreas = LoadedParentArea->GetNodesByType<SubAreaNode>();
+	ASSERT_EQ(SubAreas.size(), 1);
+	SubAreaNode* LoadedSubArea = SubAreas[0];
+	ASSERT_NE(LoadedSubArea->GetOwnedArea(), nullptr);
+	std::string OwnedAreaID = LoadedSubArea->GetOwnedArea()->GetID();
+	std::string SubAreaNodeID = LoadedSubArea->GetID();
+
+	size_t AreaCountBefore = NODE_SYSTEM.GetNodeAreaCount();
+	NODE_SYSTEM.DeleteNodeArea(LoadedSubArea->GetOwnedArea());
+
+	// The owned area is actually deleted (not silently leaked), and its owner removed too.
+	EXPECT_EQ(NODE_SYSTEM.GetNodeAreaByID(OwnedAreaID), nullptr);
+	EXPECT_EQ(NODE_SYSTEM.GetNodeAreaCount(), AreaCountBefore - 1);
+	EXPECT_EQ(LoadedParentArea->GetNodeByID(SubAreaNodeID), nullptr);
+
+	NODE_SYSTEM.Clear();
+}
+
 TEST(SubAreaNodeTests, AddSocket_FromSubArea_Input_Output_Nodes_PropagatesToSubAreaNode_Correctly)
 {
 	NodeArea* ParentArea = NODE_SYSTEM.CreateNodeArea();
@@ -2354,6 +2456,52 @@ TEST(SubAreaNodeTests, MoveNodesTo_IntoOwnOwnedArea_IsRejected_AndPreservesOwner
 	EXPECT_EQ(SubArea->GetParentArea(), Root);
 	EXPECT_EQ(SubArea->GetOwnedArea(), Owned);
 	EXPECT_NE(NODE_SYSTEM.GetNodeAreaByID(OwnedID), nullptr);
+
+	NODE_SYSTEM.Clear();
+}
+
+TEST(SubAreaNodeTests, MoveNodesTo_DoesNotMoveSubAreaBoundaryNodes)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* ParentArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(ParentArea, nullptr);
+
+	SubAreaNode* SubArea = NODE_SYSTEM.CreateSubAreaNode(ParentArea->GetID());
+	ASSERT_NE(SubArea, nullptr);
+
+	NodeArea* OwnedArea = SubArea->GetOwnedArea();
+	ASSERT_NE(OwnedArea, nullptr);
+
+	SubAreaInputNode* InputNode = SubArea->GetSubAreaInputNode();
+	SubAreaOutputNode* OutputNode = SubArea->GetSubAreaOutputNode();
+	ASSERT_NE(InputNode, nullptr);
+	ASSERT_NE(OutputNode, nullptr);
+
+	// A regular node in the owned area should still be movable.
+	Node* RegularNode = new BeginNode();
+	ASSERT_TRUE(OwnedArea->AddNode(RegularNode));
+	const std::string RegularNodeID = RegularNode->GetID();
+
+	EXPECT_TRUE(NODE_SYSTEM.MoveNodesTo(OwnedArea, ParentArea));
+
+	// The hidden SubAreaInputNode and SubAreaOutputNode must stay inside the owned area.
+	EXPECT_EQ(OwnedArea->GetNodeByID(InputNode->GetID()), InputNode);
+	EXPECT_EQ(OwnedArea->GetNodeByID(OutputNode->GetID()), OutputNode);
+	EXPECT_EQ(InputNode->GetParentArea(), OwnedArea);
+	EXPECT_EQ(OutputNode->GetParentArea(), OwnedArea);
+	EXPECT_EQ(ParentArea->GetNodesByType<SubAreaInputNode>().size(), 0);
+	EXPECT_EQ(ParentArea->GetNodesByType<SubAreaOutputNode>().size(), 0);
+
+	// The regular node was still moved out into the target area.
+	EXPECT_EQ(OwnedArea->GetNodeByID(RegularNodeID), nullptr);
+	EXPECT_EQ(ParentArea->GetNodeByID(RegularNodeID), RegularNode);
+	EXPECT_EQ(RegularNode->GetParentArea(), ParentArea);
+
+	// The SubAreaNode stays consistent: accessors resolve and IsDangling agrees.
+	EXPECT_EQ(SubArea->GetSubAreaInputNode(), InputNode);
+	EXPECT_EQ(SubArea->GetSubAreaOutputNode(), OutputNode);
+	EXPECT_FALSE(SubArea->IsDangling());
 
 	NODE_SYSTEM.Clear();
 }

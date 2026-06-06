@@ -1087,12 +1087,12 @@ TEST(Basic, Node_DeleteSocket_RespectsCanBeDeletedByUserFlag)
 	// Marked undeletable: DeleteSocket must refuse, socket stays.
 	Socket->SetCanBeDeletedByUser(false);
 	EXPECT_FALSE(Owner->DeleteSocket(Socket));
-	EXPECT_EQ(Owner->GetInputSocketCount(), 1u);
+	EXPECT_EQ(Owner->GetInputSocketCount(), 1);
 
 	// Flip back to deletable: DeleteSocket now succeeds.
 	Socket->SetCanBeDeletedByUser(true);
 	EXPECT_TRUE(Owner->DeleteSocket(Socket));
-	EXPECT_EQ(Owner->GetInputSocketCount(), 0u);
+	EXPECT_EQ(Owner->GetInputSocketCount(), 0);
 
 	NODE_SYSTEM.DeleteNodeArea(Area);
 }

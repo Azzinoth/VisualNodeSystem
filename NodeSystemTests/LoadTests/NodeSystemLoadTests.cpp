@@ -275,7 +275,7 @@ TEST(NodeSystemLoadTest, Load_SocketAssociationColorComponent_NonNumeric_Is_Not_
 	NODE_SYSTEM.Clear();
 }
 
-TEST(NodeSystemLoadTest, Load_SubAreaNode_TransitiveOwnershipCycle_Break_Cycle)
+TEST(NodeSystemLoadTest, Load_SubAreaNode_TransitiveOwnershipCycle_LoadsConsistentAndAcyclic)
 {
 	NODE_SYSTEM.Clear();
 
@@ -298,7 +298,8 @@ TEST(NodeSystemLoadTest, Load_SubAreaNode_TransitiveOwnershipCycle_Break_Cycle)
 
 	std::string Serialized = NODE_SYSTEM.ToJson();
 
-	// Rewrite MiddleSubAreaNode's OwnedAreaID from InnerAreaID to OuterAreaID, closing the loop Outer -> Middle -> Outer.
+	// Rewrite MiddleSubAreaNode's OwnedAreaID from InnerAreaID to OuterAreaID: an inconsistent
+	// save whose ownership points back up the tree (Outer -> Middle -> Outer).
 	auto ReplaceAll = [](std::string& Text, const std::string& Needle, const std::string& Replacement)
 	{
 		size_t Position = 0;
@@ -319,17 +320,31 @@ TEST(NodeSystemLoadTest, Load_SubAreaNode_TransitiveOwnershipCycle_Break_Cycle)
 
 	NODE_SYSTEM.Clear();
 
+	// Loading the inconsistent/cyclic save must complete, no crash and no infinite recursion through the ownership graph.
 	EXPECT_TRUE(NODE_SYSTEM.LoadFromJson(Serialized));
 
-	NodeArea* ReloadedOuterArea = NODE_SYSTEM.GetNodeAreaByID(OuterAreaID);
-	NodeArea* ReloadedMiddleArea = NODE_SYSTEM.GetNodeAreaByID(MiddleAreaID);
-	ASSERT_NE(ReloadedOuterArea, nullptr);
-	ASSERT_NE(ReloadedMiddleArea, nullptr);
+	// However the loader resolves the inconsistency, the result must be a consistent, acyclic
+	// ownership graph: every surviving SubAreaNode owns a real area, is not dangling, its own
+	// area does not descend from the area it owns (no cycle), and no area is owned twice.
+	std::vector<std::string> OwnedAreaIDs;
+	std::vector<std::string> AreaIDs = NODE_SYSTEM.GetNodeAreaIDList();
+	for (const std::string& AreaID : AreaIDs)
+	{
+		NodeArea* Area = NODE_SYSTEM.GetNodeAreaByID(AreaID);
+		ASSERT_NE(Area, nullptr);
 
-	// The cycle-breaker drops exactly one of the two SubAreaNodes, whichever closes the loop in its DFS traversal.
-	const size_t OuterAreaSubAreaNodes = ReloadedOuterArea->GetNodesByType<SubAreaNode>().size();
-	const size_t MiddleAreaSubAreaNodes = ReloadedMiddleArea->GetNodesByType<SubAreaNode>().size();
-	EXPECT_EQ(OuterAreaSubAreaNodes + MiddleAreaSubAreaNodes, 1);
+		for (SubAreaNode* SubArea : Area->GetNodesByType<SubAreaNode>())
+		{
+			NodeArea* OwnedArea = SubArea->GetOwnedArea();
+			ASSERT_NE(OwnedArea, nullptr);
+			EXPECT_FALSE(SubArea->IsDangling());
+			EXPECT_FALSE(Area->IsChildOf(OwnedArea));
+
+			for (const std::string& SeenID : OwnedAreaIDs)
+				EXPECT_NE(SeenID, OwnedArea->GetID());
+			OwnedAreaIDs.push_back(OwnedArea->GetID());
+		}
+	}
 
 	NODE_SYSTEM.Clear();
 }

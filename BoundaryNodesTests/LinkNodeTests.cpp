@@ -1541,3 +1541,97 @@ TEST(LinkNodeTests, MoveNodesTo_UnrelatedArea_PartnerStaysLinked_AndDataFlows)
 
 	NODE_SYSTEM.Clear();
 }
+
+TEST(LinkNodeTests, Load_LinkNodeWithNonLinkNodePartner_IsHandledSafely)
+{
+	NODE_SYSTEM.Clear();
+
+	// PartnerArea holds a plain, non LinkNode node.
+	NodeArea* PartnerArea = NODE_SYSTEM.CreateNodeArea();
+	Node* NonLinkNode = NODE_FACTORY.CreateNode("BeginNode");
+	ASSERT_NE(NonLinkNode, nullptr);
+	ASSERT_TRUE(PartnerArea->AddNode(NonLinkNode));
+	const std::string PartnerAreaID = PartnerArea->GetID();
+	const std::string NonLinkNodeID = NonLinkNode->GetID();
+
+	// LinkArea holds a real LinkNode, created as a proper pair with a throwaway area.
+	NodeArea* LinkArea = NODE_SYSTEM.CreateNodeArea();
+	NodeArea* ThrowawayArea = NODE_SYSTEM.CreateNodeArea();
+	std::pair<std::string, std::string> LinkResult;
+	ASSERT_TRUE(NODE_SYSTEM.LinkNodeAreas(LinkArea->GetID(), ThrowawayArea->GetID(), &LinkResult));
+	const std::string LinkAreaID = LinkArea->GetID();
+	const std::string ThrowawayAreaID = ThrowawayArea->GetID();
+	const std::string LinkNodeID = LinkResult.first;
+	const std::string PartnerLinkNodeID = LinkResult.second;
+
+	auto ReplaceFirst = [](std::string& Text, const std::string& Needle, const std::string& Replacement) -> bool
+	{
+		const size_t Position = Text.find(Needle);
+		if (Position == std::string::npos)
+			return false;
+		Text.replace(Position, Needle.size(), Replacement);
+		return true;
+	};
+
+	// Repoint the LinkNode's partner at the non LinkNode (simulating a hand edited save).
+	std::string LinkAreaJson = LinkArea->ToJson();
+	std::string PartnerAreaJson = PartnerArea->ToJson();
+	ASSERT_TRUE(ReplaceFirst(LinkAreaJson, "\"PartnerNodeID\":\"" + PartnerLinkNodeID + "\"", "\"PartnerNodeID\":\"" + NonLinkNodeID + "\""));
+	ASSERT_TRUE(ReplaceFirst(LinkAreaJson, "\"LinkedAreaID\":\"" + ThrowawayAreaID + "\"", "\"LinkedAreaID\":\"" + PartnerAreaID + "\""));
+
+	// Assemble a NodeSystem JSON containing only LinkArea and PartnerArea.
+	Json::Value Root;
+	Root["SocketTypeToColorAssociations"] = Json::objectValue;
+	Json::Value AreasJson(Json::objectValue);
+	AreasJson[LinkAreaID] = LinkAreaJson;
+	AreasJson[PartnerAreaID] = PartnerAreaJson;
+	Root["NodeAreas"] = AreasJson;
+	Json::StreamWriterBuilder Builder;
+	Builder.settings_["indentation"] = "";
+	const std::string SystemJson = Json::writeString(Builder, Root);
+
+	// Loading must complete without crashing or reading out of bounds.
+	EXPECT_TRUE(NODE_SYSTEM.LoadFromJson(SystemJson));
+
+	// The non-LinkNode partner is untouched, and the link was not "fixed" to point at it.
+	Node* ReloadedNonLinkNode = NODE_SYSTEM.GetNodeByID(NonLinkNodeID);
+	ASSERT_NE(ReloadedNonLinkNode, nullptr);
+	EXPECT_EQ(ReloadedNonLinkNode->GetType(), "BeginNode");
+
+	LinkNode* ReloadedLinkNode = dynamic_cast<LinkNode*>(NODE_SYSTEM.GetNodeByID(LinkNodeID));
+	ASSERT_NE(ReloadedLinkNode, nullptr);
+	EXPECT_TRUE(ReloadedLinkNode->IsDangling());
+
+	NODE_SYSTEM.Clear();
+}
+
+TEST(LinkNodeTests, CopyArea_IntoLinkedArea_RejectedLinkNode_SkipsConnection)
+{
+	NODE_SYSTEM.Clear();
+
+	// SourceArea holds a LinkNode whose partner lives in LinkedArea.
+	NodeArea* SourceArea = NODE_SYSTEM.CreateNodeArea();
+	NodeArea* LinkedArea = NODE_SYSTEM.CreateNodeArea();
+	std::pair<std::string, std::string> LinkResult;
+	ASSERT_TRUE(NODE_SYSTEM.LinkNodeAreas(SourceArea->GetID(), LinkedArea->GetID(), &LinkResult));
+	Node* UpstreamLinkNode = NODE_SYSTEM.GetNodeByID(LinkResult.first);
+	ASSERT_NE(UpstreamLinkNode, nullptr);
+
+	// A BeginNode connected to the LinkNode, both inside SourceArea.
+	Node* ExecutionBeginNode = NODE_FACTORY.CreateNode("BeginNode");
+	ASSERT_NE(ExecutionBeginNode, nullptr);
+	ASSERT_TRUE(SourceArea->AddNode(ExecutionBeginNode));
+	ASSERT_TRUE(SourceArea->TryToConnect(ExecutionBeginNode, 0, UpstreamLinkNode, 0));
+	ASSERT_GT(SourceArea->GetConnectionCount(), 0);
+
+	// Copying SourceArea into LinkedArea: the LinkNode's copy (LinkedAreaID == LinkedArea) is
+	// rejected by AddNode while the BeginNode copies fine. ProcessConnections must skip the
+	// unrecreatable connection instead of dereferencing a null mapped socket.
+	NODE_SYSTEM.CopyNodesTo(SourceArea, LinkedArea);
+
+	// The BeginNode was copied, the rejected LinkNode's connection was not recreated.
+	EXPECT_EQ(LinkedArea->GetNodesByType<BeginNode>().size(), 1);
+	EXPECT_EQ(LinkedArea->GetConnectionCount(), 0);
+
+	NODE_SYSTEM.Clear();
+}

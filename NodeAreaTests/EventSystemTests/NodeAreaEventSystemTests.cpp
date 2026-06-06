@@ -713,7 +713,7 @@ TEST(NodeAreaEventSystemTests, Delete_Connection_OutSocketNodeReceivesDisconnect
 	Area->AddNode(OutNode);
 	Area->AddNode(InNode);
 	ASSERT_TRUE(Area->TryToConnect(OutNode, 0, InNode, 0));
-	ASSERT_EQ(Area->GetConnectionCount(), 1u);
+	ASSERT_EQ(Area->GetConnectionCount(), 1);
 
 	// Both nodes should have received CONNECTED on the connect.
 	EXPECT_EQ(InNode->GetConnectedCount(), 1);
@@ -763,7 +763,7 @@ TEST(NodeAreaEventSystemTests, Clear_EveryNodeReceivesDestroyed_EvenWhenCallback
 	Area->Clear();
 
 	// All three nodes were in the area when Clear() started, so all three should have received DESTROYED.
-	EXPECT_EQ(DestroyedIDs.size(), 3u);
+	EXPECT_EQ(DestroyedIDs.size(), 3);
 	EXPECT_NE(std::find(DestroyedIDs.begin(), DestroyedIDs.end(), NodeAID), DestroyedIDs.end());
 	EXPECT_NE(std::find(DestroyedIDs.begin(), DestroyedIDs.end(), NodeBID), DestroyedIDs.end());
 	EXPECT_NE(std::find(DestroyedIDs.begin(), DestroyedIDs.end(), NodeCID), DestroyedIDs.end());
