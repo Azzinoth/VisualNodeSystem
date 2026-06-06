@@ -763,28 +763,62 @@ TEST(ExecutionFlowNodesTests, DeleteSocket_OnUndeletableStandardNodeSocket_IsRej
 	NODE_SYSTEM.Clear();
 
 	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
-	FloatVariableNode* Original = new FloatVariableNode();
-	ASSERT_TRUE(Area->AddNode(Original));
-	ASSERT_GE(Original->GetOutputSocketCount(), 2u);
 
-	// Standard variable nodes mark their structural sockets as undeletable.
-	// The deletion must be rejected and the socket vector must stay intact.
-	NodeSocket* Out0 = Original->GetSocketByIndex(0, NodeSocket::SocketFlow::Output);
-	NodeSocket* Out1 = Original->GetSocketByIndex(1, NodeSocket::SocketFlow::Output);
-	NodeSocket* In0  = Original->GetSocketByIndex(0, NodeSocket::SocketFlow::Input);
+	// Every structural socket of a standard node must reject user deletion,
+	// and the socket vectors must stay intact.
+	auto ExpectAllSocketsUndeletable = [](Node* TestNode)
+	{
+		ASSERT_NE(TestNode, nullptr);
+		const size_t InputCountBefore  = TestNode->GetInputSocketCount();
+		const size_t OutputCountBefore = TestNode->GetOutputSocketCount();
 
-	const size_t InputCountBefore  = Original->GetInputSocketCount();
-	const size_t OutputCountBefore = Original->GetOutputSocketCount();
+		for (size_t Index = 0; Index < InputCountBefore; ++Index)
+			EXPECT_FALSE(TestNode->DeleteSocket(TestNode->GetSocketByIndex(Index, NodeSocket::SocketFlow::Input)));
 
-	EXPECT_FALSE(Original->DeleteSocket(Out0));
-	EXPECT_FALSE(Original->DeleteSocket(Out1));
-	EXPECT_FALSE(Original->DeleteSocket(In0));
-	EXPECT_EQ(Original->GetOutputSocketCount(), OutputCountBefore);
-	EXPECT_EQ(Original->GetInputSocketCount(), InputCountBefore);
+		for (size_t Index = 0; Index < OutputCountBefore; ++Index)
+			EXPECT_FALSE(TestNode->DeleteSocket(TestNode->GetSocketByIndex(Index, NodeSocket::SocketFlow::Output)));
 
-	Node* Copy = NODE_FACTORY.CopyNode("FloatVariableNode", *Original);
+		EXPECT_EQ(TestNode->GetInputSocketCount(),  InputCountBefore);
+		EXPECT_EQ(TestNode->GetOutputSocketCount(), OutputCountBefore);
+	};
+
+	// Variable nodes lock their structural sockets.
+	FloatVariableNode* Variable = new FloatVariableNode();
+	ASSERT_TRUE(Area->AddNode(Variable));
+	ASSERT_GE(Variable->GetOutputSocketCount(), 2);
+	ExpectAllSocketsUndeletable(Variable);
+
+	// Control-flow nodes.
+	LoopNode* Loop = new LoopNode();
+	ASSERT_TRUE(Area->AddNode(Loop));
+	ExpectAllSocketsUndeletable(Loop);
+
+	WhileLoopNode* While = new WhileLoopNode();
+	ASSERT_TRUE(Area->AddNode(While));
+	ExpectAllSocketsUndeletable(While);
+
+	BranchNode* Branch = new BranchNode();
+	ASSERT_TRUE(Area->AddNode(Branch));
+	ExpectAllSocketsUndeletable(Branch);
+
+	// Operator nodes (sockets are locked in the operator base constructors).
+	ArithmeticAddNode* Arithmetic = new ArithmeticAddNode();
+	ASSERT_TRUE(Area->AddNode(Arithmetic));
+	ExpectAllSocketsUndeletable(Arithmetic);
+
+	EqualNode* Comparison = new EqualNode();
+	ASSERT_TRUE(Area->AddNode(Comparison));
+	ExpectAllSocketsUndeletable(Comparison);
+
+	LogicalANDOperatorNode* Logical = new LogicalANDOperatorNode();
+	ASSERT_TRUE(Area->AddNode(Logical));
+	ExpectAllSocketsUndeletable(Logical);
+
+	// A copied standard node keeps the same undeletable structural sockets.
+	Node* Copy = NODE_FACTORY.CopyNode("FloatVariableNode", *Variable);
 	ASSERT_NE(Copy, nullptr);
 	EXPECT_TRUE(Area->AddNode(Copy));
+	ExpectAllSocketsUndeletable(Copy);
 
 	NODE_SYSTEM.DeleteNodeArea(Area);
 	NODE_SYSTEM.Clear();

@@ -475,6 +475,48 @@ TEST(LinkNodeTests, DeletingDownstreamArea_RemovesUpstreamLinkNode)
 	NODE_SYSTEM.DeleteNodeArea(UpstreamArea);
 }
 
+TEST(LinkNodeTests, Deletion_FiresDestroyedCallbackOncePerNode)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* UpstreamArea = NODE_SYSTEM.CreateNodeArea();
+	NodeArea* DownstreamArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(UpstreamArea, nullptr);
+	ASSERT_NE(DownstreamArea, nullptr);
+
+	std::pair<std::string, std::string> LinkIDs;
+	ASSERT_TRUE(NODE_SYSTEM.LinkNodeAreas(UpstreamArea->GetID(), DownstreamArea->GetID(), &LinkIDs));
+
+	const std::string UpstreamLinkID = LinkIDs.first;
+	const std::string DownstreamLinkID = LinkIDs.second;
+
+	int UpstreamDestroyedCount = 0;
+	int DownstreamDestroyedCount = 0;
+	UpstreamArea->AddNodeEventCallback([&UpstreamDestroyedCount, UpstreamLinkID](Node* CurrentNode, NODE_EVENT Event)
+	{
+		if (Event == DESTROYED && CurrentNode != nullptr && CurrentNode->GetID() == UpstreamLinkID)
+			UpstreamDestroyedCount++;
+	});
+
+	DownstreamArea->AddNodeEventCallback([&DownstreamDestroyedCount, DownstreamLinkID](Node* CurrentNode, NODE_EVENT Event)
+	{
+		if (Event == DESTROYED && CurrentNode != nullptr && CurrentNode->GetID() == DownstreamLinkID)
+			DownstreamDestroyedCount++;
+	});
+
+	// Deleting one half cascades to its partner, each node's DESTROYED callback must fire exactly once.
+	ASSERT_TRUE(UpstreamArea->Delete(UpstreamArea->GetNodeByID(UpstreamLinkID)));
+
+	EXPECT_EQ(UpstreamDestroyedCount, 1);
+	EXPECT_EQ(DownstreamDestroyedCount, 1);
+
+	EXPECT_EQ(UpstreamArea->GetNodeByID(UpstreamLinkID), nullptr);
+	EXPECT_EQ(DownstreamArea->GetNodeByID(DownstreamLinkID), nullptr);
+	EXPECT_FALSE(NODE_SYSTEM.IsLinked(UpstreamArea->GetID(), DownstreamArea->GetID()));
+
+	NODE_SYSTEM.Clear();
+}
+
 TEST(LinkNodeTests, Basic_Tiny_Graph)
 {
 	// Create a 3-level hierarchy (Parent => Child => Grandchild).
@@ -1430,6 +1472,72 @@ TEST(LinkNodeTests, MoveNodesTo_UnrelatedArea_UpdatesLinkRecord)
 
 	// GetParent never follows LinkNode pointers, so a moved LinkNode does NOT create a phantom parent on the new host area.
 	EXPECT_EQ(UnrelatedArea->GetParent(), nullptr);
+
+	NODE_SYSTEM.Clear();
+}
+
+TEST(LinkNodeTests, MoveNodesTo_UnrelatedArea_PartnerStaysLinked_AndDataFlows)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* UpstreamArea = NODE_SYSTEM.CreateNodeArea();
+	NodeArea* DownstreamArea = NODE_SYSTEM.CreateNodeArea();
+	NodeArea* UnrelatedArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(UpstreamArea, nullptr);
+	ASSERT_NE(DownstreamArea, nullptr);
+	ASSERT_NE(UnrelatedArea, nullptr);
+
+	std::pair<std::string, std::string> LinkIDs;
+	ASSERT_TRUE(NODE_SYSTEM.LinkNodeAreas(UpstreamArea->GetID(), DownstreamArea->GetID(), &LinkIDs));
+
+	LinkNode* UpstreamLinkNode = static_cast<LinkNode*>(UpstreamArea->GetNodeByID(LinkIDs.first));
+	LinkNode* DownstreamLinkNode = static_cast<LinkNode*>(DownstreamArea->GetNodeByID(LinkIDs.second));
+	ASSERT_NE(UpstreamLinkNode, nullptr);
+	ASSERT_NE(DownstreamLinkNode, nullptr);
+	ASSERT_TRUE(UpstreamLinkNode->AddSocket({ "BOOL" }));
+
+	// Upstream graph: BeginNode (entry) and a BOOL literal feeding the link's data socket.
+	Node* BeginNode = NODE_FACTORY.CreateNode("BeginNode");
+	ASSERT_NE(BeginNode, nullptr);
+	ASSERT_TRUE(UpstreamArea->AddNode(BeginNode));
+	UpstreamArea->SetExecutionEntryNode(BeginNode);
+
+	BoolLiteralNode* UpstreamBoolNode = new BoolLiteralNode();
+	UpstreamBoolNode->SetData(true);
+	ASSERT_TRUE(UpstreamArea->AddNode(UpstreamBoolNode));
+
+	ASSERT_TRUE(UpstreamArea->TryToConnect(BeginNode, 0, UpstreamLinkNode, 0));
+	ASSERT_TRUE(UpstreamArea->TryToConnect(UpstreamBoolNode, 0, UpstreamLinkNode, 1));
+
+	// Downstream graph: the link drives a BOOL variable (execution and data).
+	BoolVariableNode* DownstreamBoolNode = new BoolVariableNode();
+	DownstreamBoolNode->SetData(false);
+	ASSERT_TRUE(DownstreamArea->AddNode(DownstreamBoolNode));
+	ASSERT_TRUE(DownstreamArea->TryToConnect(DownstreamLinkNode, 0, DownstreamBoolNode, 0));
+	ASSERT_TRUE(DownstreamArea->TryToConnect(DownstreamLinkNode, 1, DownstreamBoolNode, 1));
+
+	// Data flows across the link before the move.
+	ASSERT_TRUE(UpstreamArea->ExecuteNodeNetwork());
+	ASSERT_TRUE(DownstreamBoolNode->GetData());
+
+	// Move the whole upstream graph (BeginNode, literal and link) to an unrelated area.
+	DownstreamBoolNode->SetData(false);
+	ASSERT_TRUE(NODE_SYSTEM.MoveNodesTo(UpstreamArea, UnrelatedArea));
+
+	// Physical layout and link record follow the moved LinkNode.
+	EXPECT_EQ(UpstreamArea->GetNodesByType<LinkNode>().size(), 0);
+	ASSERT_EQ(UnrelatedArea->GetNodesByType<LinkNode>().size(), 1);
+	EXPECT_FALSE(NODE_SYSTEM.IsLinked(UpstreamArea->GetID(), DownstreamArea->GetID()));
+	EXPECT_TRUE(NODE_SYSTEM.IsLinked(UnrelatedArea->GetID(), DownstreamArea->GetID()));
+
+	// The non-moved partner must remain linked and resolve to the moved LinkNode.
+	EXPECT_FALSE(DownstreamLinkNode->IsDangling());
+	EXPECT_EQ(DownstreamLinkNode->GetPartnerNode(), UpstreamLinkNode);
+
+	// Cross-area data still flows when executed from the new host area.
+	UnrelatedArea->SetExecutionEntryNode(BeginNode);
+	ASSERT_TRUE(UnrelatedArea->ExecuteNodeNetwork());
+	EXPECT_TRUE(DownstreamBoolNode->GetData());
 
 	NODE_SYSTEM.Clear();
 }

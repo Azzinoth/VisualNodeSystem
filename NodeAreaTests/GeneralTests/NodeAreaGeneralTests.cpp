@@ -512,3 +512,24 @@ TEST(NodeAreaGeneralTests, SocketToPosition_InvalidInputs_DoNotCrash)
 
 	NODE_SYSTEM.Clear();
 }
+
+TEST(NodeAreaGeneralTests, SaveNodesToFile_OpenFailure_DoesNotLeakArea)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(Area, nullptr);
+	Node* NodeToSave = new Node();
+	ASSERT_TRUE(Area->AddNode(NodeToSave));
+
+	const size_t AreaCountBefore = NODE_SYSTEM.GetNodeAreaCount();
+
+	// Path inside a non-existent directory, so std::ofstream::open fails.
+	const std::string UnwritablePath = "__no_such_dir__/SaveNodesToFile_OpenFailure.json";
+	EXPECT_FALSE(Area->SaveNodesToFile(UnwritablePath, std::vector<Node*>{ NodeToSave }));
+
+	// No phantom area should remain registered after the failed save.
+	EXPECT_EQ(NODE_SYSTEM.GetNodeAreaCount(), AreaCountBefore);
+
+	NODE_SYSTEM.Clear();
+}

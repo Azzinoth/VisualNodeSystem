@@ -333,6 +333,38 @@ TEST(NodeSystemTests, CreateNodeArea_NullEntryInGroupCommentsVector_Is_Skipped)
 	NODE_SYSTEM.Clear();
 }
 
+TEST(NodeSystemTests, CreateNodeArea_NodesSpanningMultipleAreas_RecreatesAllConnections)
+{
+	NODE_SYSTEM.Clear();
+
+	// Two independent areas, each holding its own internal connection.
+	NodeArea* AreaA = NODE_SYSTEM.CreateNodeArea();
+	NodeArea* AreaB = NODE_SYSTEM.CreateNodeArea();
+
+	BoolVariableNode* SourceInAreaA = new BoolVariableNode();
+	BoolVariableNode* DestinationInAreaA = new BoolVariableNode();
+	ASSERT_TRUE(AreaA->AddNode(SourceInAreaA));
+	ASSERT_TRUE(AreaA->AddNode(DestinationInAreaA));
+	ASSERT_TRUE(AreaA->TryToConnect(SourceInAreaA, 0, DestinationInAreaA, 0));
+
+	BoolVariableNode* SourceInAreaB = new BoolVariableNode();
+	BoolVariableNode* DestinationInAreaB = new BoolVariableNode();
+	ASSERT_TRUE(AreaB->AddNode(SourceInAreaB));
+	ASSERT_TRUE(AreaB->AddNode(DestinationInAreaB));
+	ASSERT_TRUE(AreaB->TryToConnect(SourceInAreaB, 0, DestinationInAreaB, 0));
+
+	// Copying nodes from more than one area should work fine.
+	std::vector<Node*> NodesFromBothAreas = { SourceInAreaA, DestinationInAreaA, SourceInAreaB, DestinationInAreaB };
+	NodeArea* MergedArea = NODE_SYSTEM.CreateNodeArea(NodesFromBothAreas, {});
+
+	ASSERT_NE(MergedArea, nullptr);
+	EXPECT_EQ(MergedArea->GetNodeCount(), 4);
+	// Both connections are recreated in the merged area.
+	EXPECT_EQ(MergedArea->GetConnectionCount(), 2);
+
+	NODE_SYSTEM.Clear();
+}
+
 TEST(NodeSystemTests, CopyNodesTo_CopiesGroupComments_To_Target)
 {
 	NODE_SYSTEM.Clear();
