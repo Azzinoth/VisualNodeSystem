@@ -232,10 +232,14 @@ bool SocketMirrorNode::DeleteSocket(NodeSocket* Socket)
 	if (!Socket->GetAllowedTypes().empty() && Socket->GetAllowedTypes()[0] == "EXECUTE" && GetSocketIndexByID(Socket->GetID()) == 0)
 		return false; // We should never change execution socket types.
 
+	// If the local socket can not be deleted, do not delete the partner socket either.
+	if (!Socket->CanBeDeletedByUser())
+		return false;
+
 	NodeSocket::SocketFlow DeletedSocketFlow = Socket->GetFlowDirection();
 	SocketIDBeingModified = Socket->GetID();
 	NODE_SYSTEM.DeleteSocketFromMirrorNode(ID, Socket->GetID());
-	Node::DeleteSocket(Socket);
+	const bool bLocalDeleted = Node::DeleteSocket(Socket);
 	SetCorrectSize();
 
 	if (DeletedSocketFlow == NodeSocket::SocketFlow::Output && bHaveOutput)
@@ -246,7 +250,7 @@ bool SocketMirrorNode::DeleteSocket(NodeSocket* Socket)
 	}
 
 	SocketIDBeingModified = "";
-	return true;
+	return bLocalDeleted;
 }
 
 void SocketMirrorNode::Draw()

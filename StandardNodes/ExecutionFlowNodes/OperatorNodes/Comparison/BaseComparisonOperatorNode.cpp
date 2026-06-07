@@ -50,7 +50,8 @@ BaseComparisonOperatorNode::BaseComparisonOperatorNode(const BaseComparisonOpera
 
 	// Here I am restoring the output data function.
 	// Because the function is not serializable, I have to set it manually.
-	Output[1]->SetFunctionToOutputData(ComparisonGetter);
+	if (Output.size() > 1 && Output[1] != nullptr)
+		Output[1]->SetFunctionToOutputData(ComparisonGetter);
 }
 
 Json::Value BaseComparisonOperatorNode::ToJson()

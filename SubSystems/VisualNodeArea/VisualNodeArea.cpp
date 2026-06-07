@@ -10,13 +10,7 @@ NodeArea::NodeArea(std::string ID)
 	SetSize(ImVec2(256, 256));
 }
 
-NodeArea::NodeArea(const NodeArea& Other)
-{
-	*this = Other;
-	ID = NODE_CORE.GetUniqueHexID();
-}
-
-NodeArea::~NodeArea() 
+NodeArea::~NodeArea()
 {
 	Clear();
 }

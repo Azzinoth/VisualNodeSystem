@@ -68,6 +68,23 @@ void BaseArithmeticOperatorNode::Draw()
 	Node::Draw();
 }
 
+std::string BaseArithmeticOperatorNode::ResolveConnectedSocketType(NodeSocket* ConnectedSocket) const
+{
+	const std::vector<std::string>& AllowedTypes = ConnectedSocket->GetAllowedTypes();
+	if (AllowedTypes.empty())
+		return "";
+
+	if (AllowedTypes.size() == 1)
+		return AllowedTypes[0];
+
+	// If multi type socket is connected, we need to resolve the type based on the other socket.
+	BaseArithmeticOperatorNode* ProducerNode = dynamic_cast<BaseArithmeticOperatorNode*>(ConnectedSocket->GetParent());
+	if (ProducerNode != nullptr)
+		return ProducerNode->GetActiveINDataType();
+
+	return AllowedTypes[0];
+}
+
 std::string BaseArithmeticOperatorNode::GetActiveINDataType()
 {
 	// Both A and B input sockets are required to determine the active data type.
@@ -78,14 +95,14 @@ std::string BaseArithmeticOperatorNode::GetActiveINDataType()
 		return "";
 
 	if (Input[1]->GetConnectedSockets().empty() && !Input[2]->GetConnectedSockets().empty())
-		return Input[2]->GetConnectedSockets()[0]->GetAllowedTypes()[0];
+		return ResolveConnectedSocketType(Input[2]->GetConnectedSockets()[0]);
 
 	if (!Input[1]->GetConnectedSockets().empty() && Input[2]->GetConnectedSockets().empty())
-		return Input[1]->GetConnectedSockets()[0]->GetAllowedTypes()[0];
+		return ResolveConnectedSocketType(Input[1]->GetConnectedSockets()[0]);
 
 	// If we have both A and B inputs connected, we can check their types.
-	std::string AInputType = Input[1]->GetConnectedSockets()[0]->GetAllowedTypes()[0];
-	std::string BInputType = Input[2]->GetConnectedSockets()[0]->GetAllowedTypes()[0];
+	std::string AInputType = ResolveConnectedSocketType(Input[1]->GetConnectedSockets()[0]);
+	std::string BInputType = ResolveConnectedSocketType(Input[2]->GetConnectedSockets()[0]);
 
 	if (AInputType == BInputType)
 		return AInputType;

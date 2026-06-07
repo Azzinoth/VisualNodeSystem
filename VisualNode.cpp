@@ -122,11 +122,13 @@ bool Node::AddSocket(NodeSocket* Socket)
 	if (Socket == nullptr)
 		return false;
 
-	if (Socket->GetFlowDirection() == NodeSocket::SocketFlow::Output)
-		Output.push_back(Socket);
-	else
-		Input.push_back(Socket);
+	if (Socket->GetParent() != this)
+		return false;
 
+	if (GetSocketByID(Socket->GetID()))
+		return false;
+
+	Socket->GetFlowDirection() == NodeSocket::SocketFlow::Output ? Output.push_back(Socket) : Input.push_back(Socket);
 	return true;
 }
 
@@ -143,12 +145,9 @@ bool Node::DeleteSocket(NodeSocket* Socket)
 	if (!Socket->CanBeDeletedByUser())
 		return false;
 
-	if (Socket->GetParent() != nullptr && GetParentArea() != nullptr)
-	{
-		NODE_SYSTEM.DeleteSocket(GetID(), Socket->GetID());
-		return true;
-	}
-
+	if (Socket->GetParent() == this && GetParentArea() != nullptr)
+		return NODE_SYSTEM.DeleteSocket(GetID(), Socket->GetID());
+	
 	std::vector<NodeSocket*>& SocketList = Socket->GetFlowDirection() == NodeSocket::SocketFlow::Output ? Output : Input;
 	for (size_t i = 0; i < SocketList.size(); i++)
 	{

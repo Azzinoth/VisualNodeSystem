@@ -948,7 +948,7 @@ bool NodeSystem::MoveNodesTo(NodeArea* SourceNodeArea, NodeArea* TargetNodeArea,
 	const size_t TargetNodeCountBefore = TargetNodeArea->Nodes.size();
 
 	// AddNode rejects any node whose ParentArea is non-null, so clear it temporarily.
-	// On rejection by any other guard, restore source ownership instead of orphaning the node.
+	// On rejection by any other guard, restore source ownership.
 	std::vector<Node*> RetainedInSource;
 	for (size_t i = 0; i < SourceNodeArea->Nodes.size(); i++)
 	{
@@ -995,8 +995,10 @@ bool NodeSystem::MoveNodesTo(NodeArea* SourceNodeArea, NodeArea* TargetNodeArea,
 	}
 	SourceNodeArea->Nodes = RetainedInSource;
 
-	// Move only connections whose endpoints both ended up in target.
-	std::vector<Connection*> RetainedConnections;
+	// Move connections of nodes that end up in TargetNodeArea.
+	// And sort other connections into ones that should be keept(both in same area), and connections that should be deleted(end up in different areas).
+	std::vector<Connection*> ConnectionsToKeep;
+	std::vector<Connection*> ConnectionsToDelete;
 	for (size_t i = 0; i < SourceNodeArea->Connections.size(); i++)
 	{
 		Connection* CurrentConnection = SourceNodeArea->Connections[i];
@@ -1005,21 +1007,61 @@ bool NodeSystem::MoveNodesTo(NodeArea* SourceNodeArea, NodeArea* TargetNodeArea,
 
 		Node* OutParent = CurrentConnection->Out != nullptr ? CurrentConnection->Out->GetParent() : nullptr;
 		Node* InParent = CurrentConnection->In != nullptr ? CurrentConnection->In->GetParent() : nullptr;
-		const bool bBothInTarget = OutParent != nullptr && OutParent->GetParentArea() == TargetNodeArea
-		                           && InParent != nullptr && InParent->GetParentArea() == TargetNodeArea;
+		const bool bOutInTarget = OutParent != nullptr && OutParent->GetParentArea() == TargetNodeArea;
+		const bool bInInTarget = InParent != nullptr && InParent->GetParentArea() == TargetNodeArea;
 
-		if (bBothInTarget)
+		if (bOutInTarget && bInInTarget)
 		{
 			TargetNodeArea->Connections.push_back(CurrentConnection);
 		}
+		else if (!bOutInTarget && !bInInTarget)
+		{
+			ConnectionsToKeep.push_back(CurrentConnection);
+		}
 		else
 		{
-			RetainedConnections.push_back(CurrentConnection);
-		}	
+			ConnectionsToDelete.push_back(CurrentConnection);
+		}
 	}
-	SourceNodeArea->Connections = RetainedConnections;
+	SourceNodeArea->Connections = ConnectionsToKeep;
 
-	// Select only the newly-arrived nodes via [before, after) slice - never underflows.
+	for (size_t i = 0; i < ConnectionsToDelete.size(); i++)
+	{
+		Connection* CurrentConnectionToDelete = ConnectionsToDelete[i];
+
+		// Doing manual deletion, because Delete(Connection*) would not properly delete the connection.
+		if (CurrentConnectionToDelete->Out != nullptr)
+		{
+			std::vector<NodeSocket*>& OutConnected = CurrentConnectionToDelete->Out->ConnectedSockets;
+			for (size_t j = 0; j < OutConnected.size(); j++)
+			{
+				if (OutConnected[j] == CurrentConnectionToDelete->In)
+				{
+					OutConnected.erase(OutConnected.begin() + j);
+					break;
+				}
+			}
+		}
+
+		if (CurrentConnectionToDelete->In != nullptr)
+		{
+			std::vector<NodeSocket*>& InConnected = CurrentConnectionToDelete->In->ConnectedSockets;
+			for (size_t j = 0; j < InConnected.size(); j++)
+			{
+				if (InConnected[j] == CurrentConnectionToDelete->Out)
+				{
+					InConnected.erase(InConnected.begin() + j);
+					break;
+				}
+			}
+		}
+
+		delete CurrentConnectionToDelete;
+	}
+
+	SourceNodeArea->RemoveStaleSelectionAndHoverReferences();
+
+	// Select only the newly-arrived nodes via [before, after) slice.
 	if (bSelectNodesAfterMovement)
 	{
 		TargetNodeArea->SelectedNodes.clear();

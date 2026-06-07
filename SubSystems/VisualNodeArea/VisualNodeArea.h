@@ -155,7 +155,8 @@ namespace VisNodeSys
 		friend NodeSystem;
 	public:
 		NodeArea(std::string ID = "");
-		NodeArea(const NodeArea& Other);
+		NodeArea(const NodeArea& Other) = delete;
+		NodeArea& operator=(const NodeArea& Other) = delete;
 
 		std::string GetID() const;
 
@@ -390,6 +391,8 @@ namespace VisNodeSys
 		std::queue<SocketEvent> SocketEventQueue;
 
 		void DeleteNodeInternal(const Node* Node, int Index = -1);
+
+		void RemoveStaleSelectionAndHoverReferences();
 
 		void PropagateNodeEventsCallbacks(Node* Node, NODE_EVENT EventToPropagate) const;
 		ImVec2 SocketToPosition(const NodeSocket* Socket) const;

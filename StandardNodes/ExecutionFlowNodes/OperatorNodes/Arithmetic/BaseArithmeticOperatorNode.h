@@ -19,6 +19,8 @@ class BaseArithmeticOperatorNode : public BaseExecutionFlowNode
 	bool CanConnect(VisNodeSys::NodeSocket* OwnSocket, VisNodeSys::NodeSocket* CandidateSocket, char** MsgToUser);
 	void SocketEvent(VisNodeSys::NodeSocket* OwnSocket, VisNodeSys::NodeSocket* ConnectedSocket, VisNodeSys::NODE_SOCKET_EVENT EventType);
 
+	std::string ResolveConnectedSocketType(VisNodeSys::NodeSocket* ConnectedSocket) const;
+
 protected:
 	ArithmeticOperationType OperatorType = ArithmeticOperationType::ADD;
 private:
@@ -45,6 +47,13 @@ private:
 				if (B == T(0))
 					return A;
 				return A / B;
+			case ArithmeticOperationType::MODULUS:
+			{
+				T Result = A;
+				for (glm::length_t i = 0; i < Result.length(); i++)
+					Result[i] = (B[i] == 0.0f) ? A[i] : std::fmod(A[i], B[i]);
+				return Result;
+			}
 			default:
 				return A;
 		}
@@ -66,12 +75,16 @@ private:
 		{
 			if (B == 0)
 				return A;
+			if (A == INT_MIN && B == -1)
+				return INT_MAX; // INT_MIN / -1 overflows int; saturate like the POWER case.
 			return A / B;
 		}
 		case ArithmeticOperationType::MODULUS:
 		{
 			if (B == 0)
 				return A;
+			if (A == INT_MIN && B == -1)
+				return 0; // INT_MIN % -1 is mathematically 0.
 			return A % B;
 		}
 		case ArithmeticOperationType::POWER:

@@ -128,6 +128,19 @@ void NodeArea::Delete(Connection* Connection)
 	if (Connection == nullptr)
 		return;
 
+	bool bOwnedByThis = false;
+	for (size_t i = 0; i < Connections.size(); i++)
+	{
+		if (Connections[i] == Connection)
+		{
+			bOwnedByThis = true;
+			break;
+		}
+	}
+
+	if (!bOwnedByThis)
+		return;
+
 	if (HoveredConnection == Connection)
 		HoveredConnection = nullptr;
 
@@ -310,9 +323,13 @@ bool NodeArea::Delete(const Node* NodeToDelete)
 		return false;
 
 	UnSelect(NodeToDelete);
+
+	// Capture the ID before firing DESTROYED callback.
+	const std::string NodeToDeleteID = NodeToDelete->GetID();
 	PropagateNodeEventsCallbacks(Nodes[Index], DESTROYED);
+
 	// After propagating the DESTROYED event, the node might be already deleted.
-	Node* CheckNode = GetNodeByID(NodeToDelete->GetID());
+	Node* CheckNode = GetNodeByID(NodeToDeleteID);
 	if (CheckNode == nullptr)
 		return false;
 
@@ -331,13 +348,12 @@ bool NodeArea::Delete(const Node* NodeToDelete)
 			Delete(Connections[j]);
 	}
 
-	std::string NodeToDeleteID = CheckNode->GetID();
 	NODE_SYSTEM.OnNodeDeletion(CheckNode);
 	Node* NodeAfterOnNodeDeletion = GetNodeByID(NodeToDeleteID);
 	// NODE_SYSTEM.OnNodeDeletion can potentially delete the node, so we need to check if it still exists before trying to delete it.
 	if (NodeAfterOnNodeDeletion != nullptr)
 	{
-		int NewIndex = GetNodeIndex(NodeToDelete);
+		int NewIndex = GetNodeIndex(NodeAfterOnNodeDeletion);
 		DeleteNodeInternal(NodeAfterOnNodeDeletion, NewIndex);
 	}
 
@@ -378,6 +394,114 @@ void NodeArea::DeleteNodeInternal(const Node* Node, int Index)
 	Nodes.erase(Nodes.begin() + Index, Nodes.begin() + Index + 1);
 }
 
+void NodeArea::RemoveStaleSelectionAndHoverReferences()
+{
+	for (size_t i = 0; i < SelectedNodes.size(); i++)
+	{
+		if (GetNodeByID(SelectedNodes[i]->GetID()) == nullptr)
+		{
+			SelectedNodes.erase(SelectedNodes.begin() + i);
+			i--;
+		}
+	}
+
+	for (size_t i = 0; i < SelectedConnections.size(); i++)
+	{
+		bool bFound = false;
+		for (size_t j = 0; j < Connections.size(); j++)
+		{
+			if (SelectedConnections[i] == Connections[j])
+			{
+				bFound = true;
+				break;
+			}
+		}
+
+		if (!bFound)
+		{
+			SelectedConnections.erase(SelectedConnections.begin() + i);
+			i--;
+		}
+	}
+
+	for (size_t i = 0; i < SelectedRerouteNodes.size(); i++)
+	{
+		bool bFound = false;
+		for (size_t j = 0; j < Connections.size() && !bFound; j++)
+		{
+			for (RerouteNode* CurrentReroute : Connections[j]->RerouteNodes)
+			{
+				if (SelectedRerouteNodes[i] == CurrentReroute)
+				{
+					bFound = true;
+					break;
+				}
+			}
+		}
+
+		if (!bFound)
+		{
+			SelectedRerouteNodes.erase(SelectedRerouteNodes.begin() + i);
+			i--;
+		}
+	}
+
+	if (HoveredNode != nullptr && GetNodeByID(HoveredNode->GetID()) == nullptr)
+		HoveredNode = nullptr;
+
+	if (HoveredConnection != nullptr)
+	{
+		bool bFound = false;
+		for (size_t j = 0; j < Connections.size(); j++)
+		{
+			if (HoveredConnection == Connections[j])
+			{
+				bFound = true;
+				break;
+			}
+		}
+
+		if (!bFound)
+			HoveredConnection = nullptr;
+	}
+
+	if (RerouteNodeHovered != nullptr)
+	{
+		bool bFound = false;
+		for (size_t j = 0; j < Connections.size() && !bFound; j++)
+		{
+			for (RerouteNode* CurrentReroute : Connections[j]->RerouteNodes)
+			{
+				if (RerouteNodeHovered == CurrentReroute)
+				{
+					bFound = true;
+					break;
+				}
+			}
+		}
+
+		if (!bFound)
+			RerouteNodeHovered = nullptr;
+	}
+
+	if (SocketHovered != nullptr && SocketHovered->GetParent() != nullptr && SocketHovered->GetParent()->GetParentArea() != this)
+		SocketHovered = nullptr;
+
+	if (SocketLookingForConnection != nullptr && SocketLookingForConnection->GetParent() != nullptr && SocketLookingForConnection->GetParent()->GetParentArea() != this)
+		SocketLookingForConnection = nullptr;
+
+#ifdef VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES
+	for (size_t i = 0; i < LastExecutedNodes.size(); i++)
+	{
+		if (GetNodeByID(LastExecutedNodes[i]->GetID()) == nullptr)
+		{
+			LastExecutedNodes.erase(LastExecutedNodes.begin() + i);
+			i--;
+		}
+	}
+#endif
+}
+
 void NodeArea::PropagateUpdateToConnectedNodes(const Node* CallerNode) const
 {
 	if (CallerNode == nullptr)
@@ -388,7 +512,7 @@ void NodeArea::PropagateUpdateToConnectedNodes(const Node* CallerNode) const
 		auto Connections = GetAllConnections(CallerNode->Input[i]);
 		for (size_t j = 0; j < Connections.size(); j++)
 		{
-			Connections[j]->In->GetParent()->SocketEvent(Connections[j]->In, Connections[j]->Out, UPDATE);
+			Connections[j]->Out->GetParent()->SocketEvent(Connections[j]->Out, Connections[j]->In, UPDATE);
 		}
 	}
 

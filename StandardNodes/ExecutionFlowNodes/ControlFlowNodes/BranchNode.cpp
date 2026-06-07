@@ -69,5 +69,20 @@ bool BranchNode::CanConnect(NodeSocket* OwnSocket, NodeSocket* CandidateSocket, 
 	if (!Node::CanConnect(OwnSocket, CandidateSocket, nullptr))
 		return false;
 
+	std::vector<std::string> CandidateAllowedTypes = CandidateSocket->GetAllowedTypes();
+	if (CandidateAllowedTypes.size() == 1)
+		return true;
+
+	if (CandidateSocket->GetParent() == nullptr)
+		return false;
+
+	// A multi-type comparison Result is only valid on the bool Condition input while it is in BOOL mode.
+	BaseComparisonOperatorNode* CandidateNode = dynamic_cast<BaseComparisonOperatorNode*>(CandidateSocket->GetParent());
+	if (CandidateNode == nullptr)
+		return false;
+
+	if (CandidateNode->GetActiveOUTDataType() != OwnSocket->GetAllowedTypes()[0])
+		return false;
+
 	return true;
 }
