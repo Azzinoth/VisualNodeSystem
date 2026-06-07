@@ -3,6 +3,8 @@ using namespace VisNodeSys;
 
 TEST(GroupComment, CreateAndDelete)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* NodeArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(NodeArea, nullptr);
 
@@ -16,11 +18,13 @@ TEST(GroupComment, CreateAndDelete)
 	NodeArea->Delete(Comment);
 	EXPECT_EQ(NodeArea->GetGroupCommentCount(), 0);
 
-	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaGroupComment, GetNodesInComment)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* NodeArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(NodeArea, nullptr);
 
@@ -103,11 +107,13 @@ TEST(NodeAreaGroupComment, GetNodesInComment)
 		EXPECT_TRUE(bFound);
 	}
 
-	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaGroupComment, GetCommentsInComment)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* NodeArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(NodeArea, nullptr);
 
@@ -190,11 +196,13 @@ TEST(NodeAreaGroupComment, GetCommentsInComment)
 		EXPECT_TRUE(bFound);
 	}
 
-	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaGroupComment, MoveWithElements)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* NodeArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(NodeArea, nullptr);
 
@@ -338,11 +346,13 @@ TEST(NodeAreaGroupComment, MoveWithElements)
 		EXPECT_EQ(NodesOutsideComment[i]->GetPosition(), NodesOutsideCommentPositionsBeforeMove[i]);
 	}
 
-	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(GroupComment, SetCaption_RejectsStringLongerThanMaxLength)
 {
+	NODE_SYSTEM.Clear();
+
 	// Build a string that is exactly one character over the limit.
 	const std::string OversizedCaption(GROUP_COMMENT_CAPTION_MAX_LENGTH + 1, 'X');
 
@@ -355,6 +365,8 @@ TEST(GroupComment, SetCaption_RejectsStringLongerThanMaxLength)
 
 TEST(GroupComment, FromJson_EmptyObject_Returns_False)
 {
+	NODE_SYSTEM.Clear();
+
 	GroupComment* Comment = new GroupComment();
 
 	Json::Value EmptyJson(Json::objectValue);
@@ -365,6 +377,8 @@ TEST(GroupComment, FromJson_EmptyObject_Returns_False)
 
 TEST(GroupComment, FromJson_MissingPositionField_Returns_False)
 {
+	NODE_SYSTEM.Clear();
+
 	GroupComment* Comment = new GroupComment();
 
 	Json::Value PartialJson(Json::objectValue);
@@ -376,6 +390,8 @@ TEST(GroupComment, FromJson_MissingPositionField_Returns_False)
 
 TEST(GroupComment, FromJson_PositionFieldWrongType_Returns_False)
 {
+	NODE_SYSTEM.Clear();
+
 	GroupComment* Comment = new GroupComment();
 
 	Json::Value JsonWithBadPosition(Json::objectValue);
@@ -388,6 +404,8 @@ TEST(GroupComment, FromJson_PositionFieldWrongType_Returns_False)
 
 TEST(NodeAreaGroupComment, GetNodesInGroupComment_ForeignGroupComment_ReturnsEmpty)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* HostingArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(HostingArea, nullptr);
 

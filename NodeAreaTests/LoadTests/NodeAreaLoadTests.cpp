@@ -3,6 +3,8 @@ using namespace VisNodeSys;
 
 TEST(NodeAreaLoadTest, BasicSaveLoad)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* NodeArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(NodeArea, nullptr);
 	std::string NodeAreaID = NodeArea->GetID();
@@ -10,11 +12,13 @@ TEST(NodeAreaLoadTest, BasicSaveLoad)
 
 	EXPECT_TRUE(TEST_TOOLS.VerifyNodeAreaSaveLoadCycle_BasicChecks(NodeArea));
 	NodeArea = NODE_SYSTEM.GetNodeAreaByID(NodeAreaID);
-	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaLoadTest, LoadEmptyJson)
 {
+	NODE_SYSTEM.Clear();
+
 	std::string JsonString = "{}";
 	NodeArea* NodeArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(NodeArea, nullptr);
@@ -25,11 +29,13 @@ TEST(NodeAreaLoadTest, LoadEmptyJson)
 	ASSERT_EQ(NodeArea->GetConnectionCount(), 0);
 	ASSERT_EQ(NodeArea->GetSelected().size(), 0);
 
-	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaLoadTest, LoadJsonWithOnlyOffset)
 {
+	NODE_SYSTEM.Clear();
+
 	std::string JsonString = R"({ "RenderOffset": {"X": 100.5, "Y": -50.0} })";
 	NodeArea* NodeArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(NodeArea, nullptr);
@@ -40,11 +46,13 @@ TEST(NodeAreaLoadTest, LoadJsonWithOnlyOffset)
 	ASSERT_EQ(NodeArea->GetConnectionCount(), 0);
 	ASSERT_EQ(NodeArea->GetSelected().size(), 0);
 
-	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaLoadTest, LoadJsonWithIncorrectNodes)
 {
+	NODE_SYSTEM.Clear();
+
 	std::string JsonString = R"({ "Nodes": "invalid" })";
 	NodeArea* NodeArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(NodeArea, nullptr);
@@ -55,11 +63,13 @@ TEST(NodeAreaLoadTest, LoadJsonWithIncorrectNodes)
 	ASSERT_EQ(NodeArea->GetConnectionCount(), 0);
 	ASSERT_EQ(NodeArea->GetSelected().size(), 0);
 
-	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaLoadTest, LoadShouldClear)
 {
+	NODE_SYSTEM.Clear();
+
 	std::vector<std::string> NodesIDList;
 	std::vector<std::string> GroupCommentsIDList;
 
@@ -82,11 +92,13 @@ TEST(NodeAreaLoadTest, LoadShouldClear)
 	ASSERT_EQ(NodeArea->GetRerouteConnectionCount(), 2);
 	ASSERT_EQ(NodeArea->GetGroupCommentCount(), 1);
 
-	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaLoadTest, LoadNodeMissingType)
 {
+	NODE_SYSTEM.Clear();
+
 	std::string JsonString = R"({ 
 		"Nodes": { 
 			"0": { 
@@ -107,11 +119,13 @@ TEST(NodeAreaLoadTest, LoadNodeMissingType)
 	ASSERT_EQ(NodeArea->GetConnectionCount(), 0);
 	ASSERT_EQ(NodeArea->GetSelected().size(), 0);
 
-	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaLoadTest, LoadNodeTypeNotString)
 {
+	NODE_SYSTEM.Clear();
+
 	std::string JsonString = R"({ 
 		"Nodes": { 
 			"0": { 
@@ -133,11 +147,13 @@ TEST(NodeAreaLoadTest, LoadNodeTypeNotString)
 	ASSERT_EQ(NodeArea->GetConnectionCount(), 0);
 	ASSERT_EQ(NodeArea->GetSelected().size(), 0);
 
-	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaLoadTest, LoadNodeUnregisteredType)
 {
+	NODE_SYSTEM.Clear();
+
 	std::string JsonString = R"({ 
 		"Nodes": { 
 			"0": { 
@@ -159,11 +175,13 @@ TEST(NodeAreaLoadTest, LoadNodeUnregisteredType)
 	ASSERT_EQ(NodeArea->GetConnectionCount(), 0);
 	ASSERT_EQ(NodeArea->GetSelected().size(), 0);
 
-	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaLoadTest, LoadNodeWithMoreInputsThanClassDefinition)
 {
+	NODE_SYSTEM.Clear();
+
 	// CustomNode2 normally has 1 input, but JSON provides 2 inputs.
 	// This simulates loading an old file after the class lost a socket.
 	std::string JsonString = R"({
@@ -196,11 +214,13 @@ TEST(NodeAreaLoadTest, LoadNodeWithMoreInputsThanClassDefinition)
 	EXPECT_EQ(LoadedNode->GetInputSocketCount(), 2);
 	EXPECT_EQ(LoadedNode->GetOutputSocketCount(), 1);
 
-	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaLoadTest, LoadNodeWithFewerInputsThanClassDefinition)
 {
+	NODE_SYSTEM.Clear();
+
 	// CustomNode2 normally has 1 input, but JSON provides 0 inputs.
 	// This simulates loading an old file after the class gained a socket.
 	std::string JsonString = R"({
@@ -230,11 +250,13 @@ TEST(NodeAreaLoadTest, LoadNodeWithFewerInputsThanClassDefinition)
 	EXPECT_EQ(LoadedNode->GetInputSocketCount(), 0);
 	EXPECT_EQ(LoadedNode->GetOutputSocketCount(), 1);
 
-	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaLoadTest, LoadNodeWithMoreOutputsThanClassDefinition)
 {
+	NODE_SYSTEM.Clear();
+
 	// CustomNode2 normally has 1 output, but JSON provides 3 outputs.
 	std::string JsonString = R"({
 		"Nodes": {
@@ -267,11 +289,13 @@ TEST(NodeAreaLoadTest, LoadNodeWithMoreOutputsThanClassDefinition)
 	EXPECT_EQ(LoadedNode->GetInputSocketCount(), 1);
 	EXPECT_EQ(LoadedNode->GetOutputSocketCount(), 3);
 
-	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaLoadTest, LoadNodeWithMismatchedSocketsAndConnections)
 {
+	NODE_SYSTEM.Clear();
+
 	// Two CustomNode2 nodes, each with extra sockets beyond class definition.
 	// A valid connection exists between them through the "extra" sockets.
 	// Verifies the full round-trip: mismatched load + connection restoration.
@@ -330,11 +354,13 @@ TEST(NodeAreaLoadTest, LoadNodeWithMismatchedSocketsAndConnections)
 	EXPECT_EQ(SourceNode->GetOutputSocketCount(), 2);
 	EXPECT_EQ(DestNode->GetInputSocketCount(), 2);
 
-	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaLoadTest, LoadConnectionEntryNotObject)
 {
+	NODE_SYSTEM.Clear();
+
 	std::string JsonString = R"({
 		"Nodes": { 
 			"0": { 
@@ -359,11 +385,13 @@ TEST(NodeAreaLoadTest, LoadConnectionEntryNotObject)
 	ASSERT_EQ(NodeArea->GetConnectionCount(), 0);
 	ASSERT_EQ(NodeArea->GetSelected().size(), 0);
 
-	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaLoadTest, LoadConnectionMissingInOrOut)
 {
+	NODE_SYSTEM.Clear();
+
 	std::string JsonString = R"({
 		"Nodes": {
 			"0": { 
@@ -425,11 +453,13 @@ TEST(NodeAreaLoadTest, LoadConnectionMissingInOrOut)
 	ASSERT_EQ(NodeArea->GetConnectionCount(), 0);
 	ASSERT_EQ(NodeArea->GetSelected().size(), 0);
 
-	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaLoadTest, LoadConnectionMissingIDs)
 {
+	NODE_SYSTEM.Clear();
+
 	std::string JsonString = R"({
 		"Nodes": {
 			"0": { 
@@ -492,11 +522,13 @@ TEST(NodeAreaLoadTest, LoadConnectionMissingIDs)
 	ASSERT_EQ(NodeArea->GetConnectionCount(), 0);
 	ASSERT_EQ(NodeArea->GetSelected().size(), 0);
 
-	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaLoadTest, LoadIncorrectGroupCommentFromJson)
 {
+	NODE_SYSTEM.Clear();
+
 	std::string JsonString = R"({
 		"Nodes": {
 			"0": { 
@@ -556,11 +588,13 @@ TEST(NodeAreaLoadTest, LoadIncorrectGroupCommentFromJson)
 	ASSERT_EQ(NodeArea->GetConnectionCount(), 0);
 	ASSERT_EQ(NodeArea->GetSelected().size(), 0);
 
-	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaLoadTest, LoadConnectionFailedTryToConnect_IncompatibleSockets)
 {
+	NODE_SYSTEM.Clear();
+
 	// Node 0 (n1): FLOAT output
 	// Node 1 (n2): FLOAT input, FLOAT output
 	// Node 2 (n3): FLOAT input, FLOAT output
@@ -615,11 +649,13 @@ TEST(NodeAreaLoadTest, LoadConnectionFailedTryToConnect_IncompatibleSockets)
 	ASSERT_EQ(NodeArea->GetGroupCommentCount(), 0);
 	ASSERT_EQ(NodeArea->GetSelected().size(), 0);
 
-	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaLoadTest, LoadWhenRerouteConnectionsInfoIsNull)
 {
+	NODE_SYSTEM.Clear();
+
 	std::string JsonString = R"({
 		"Connections" : 
 		{
@@ -720,11 +756,13 @@ TEST(NodeAreaLoadTest, LoadWhenRerouteConnectionsInfoIsNull)
 	ASSERT_EQ(NodeArea->GetSelected().size(), 0);
 	ASSERT_EQ(NodeArea->GetRerouteConnectionCount(), 0);
 
-	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaLoadTest, LoadWhenRerouteConnectionsInfoIsDamaged)
 {
+	NODE_SYSTEM.Clear();
+
 	std::string JsonString = R"({
 		"Connections" : 
 		{
@@ -844,11 +882,13 @@ TEST(NodeAreaLoadTest, LoadWhenRerouteConnectionsInfoIsDamaged)
 	ASSERT_EQ(NodeArea->GetSelected().size(), 0);
 	ASSERT_EQ(NodeArea->GetRerouteConnectionCount(), 0);
 
-	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaLoadTest, LoadWhenRerouteConnectionsInfoIsDamaged_2)
 {
+	NODE_SYSTEM.Clear();
+
 	std::string JsonString = R"({
 		"Connections" : 
 		{
@@ -968,11 +1008,13 @@ TEST(NodeAreaLoadTest, LoadWhenRerouteConnectionsInfoIsDamaged_2)
 	ASSERT_EQ(NodeArea->GetSelected().size(), 0);
 	ASSERT_EQ(NodeArea->GetRerouteConnectionCount(), 0);
 
-	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaLoadTest, LoadWhenRerouteConnectionsInfoIsDamaged_3)
 {
+	NODE_SYSTEM.Clear();
+
 	std::string JsonString = R"({
 		"Connections" : 
 		{
@@ -1091,11 +1133,13 @@ TEST(NodeAreaLoadTest, LoadWhenRerouteConnectionsInfoIsDamaged_3)
 	ASSERT_EQ(NodeArea->GetSelected().size(), 0);
 	ASSERT_EQ(NodeArea->GetRerouteConnectionCount(), 0);
 
-	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaLoadTest, LoadConnection_With_MixedReroute_Validity)
 {
+	NODE_SYSTEM.Clear();
+
 	std::string JsonString = R"({
 		"Connections" :
 		{
@@ -1184,11 +1228,13 @@ TEST(NodeAreaLoadTest, LoadConnection_With_MixedReroute_Validity)
 	EXPECT_EQ(NodeArea->GetNodeCount(), 2);
 	EXPECT_EQ(NodeArea->GetConnectionCount(), 1);
 
-	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaLoadTest, LoadMediumNodeArea)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* NodeArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(NodeArea, nullptr);
 
@@ -1200,11 +1246,13 @@ TEST(NodeAreaLoadTest, LoadMediumNodeArea)
 	ASSERT_EQ(NodeArea->GetGroupCommentCount(), 1);
 	ASSERT_EQ(NodeArea->GetSelected().size(), 0);
 
-	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaLoadTest, ConnectionOrderingTest)
 {
+	NODE_SYSTEM.Clear();
+
 	std::ifstream NodesFile;
 	NodesFile.open("Resources/ConnectionOrderingTestData.json");
 
@@ -1263,6 +1311,8 @@ TEST(NodeAreaLoadTest, ConnectionOrderingTest)
 
 TEST(NodeAreaLoadTest, LoadJsonWithNonSequentialKeys)
 {
+	NODE_SYSTEM.Clear();
+
 	// Build a small area: two nodes and one group comment.
 	NodeArea* SourceArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(SourceArea, nullptr);
@@ -1304,12 +1354,13 @@ TEST(NodeAreaLoadTest, LoadJsonWithNonSequentialKeys)
 	EXPECT_EQ(LoadedArea->GetNodeCount(), 2);
 	EXPECT_EQ(LoadedArea->GetGroupCommentCount(), 1);
 
-	NODE_SYSTEM.DeleteNodeArea(SourceArea);
-	NODE_SYSTEM.DeleteNodeArea(LoadedArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaLoadTest, LoadNodeNodeStyleNotNumeric)
 {
+	NODE_SYSTEM.Clear();
+
 	std::string JsonString = R"({
 		"Nodes": {
 			"0": {
@@ -1329,11 +1380,13 @@ TEST(NodeAreaLoadTest, LoadNodeNodeStyleNotNumeric)
 	ASSERT_EQ(NodeArea->LoadFromJson(JsonString), true);
 	ASSERT_EQ(NodeArea->GetNodeCount(), 1);
 
-	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaLoadTest, LoadNodeInputFieldIsString)
 {
+	NODE_SYSTEM.Clear();
+
 	std::string JsonString = R"({
 		"Nodes": {
 			"0": {
@@ -1353,11 +1406,13 @@ TEST(NodeAreaLoadTest, LoadNodeInputFieldIsString)
 	ASSERT_EQ(NodeArea->LoadFromJson(JsonString), true);
 	ASSERT_EQ(NodeArea->GetNodeCount(), 0);
 
-	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaLoadTest, LoadNodeOutputFieldIsArray)
 {
+	NODE_SYSTEM.Clear();
+
 	std::string JsonString = R"({
 		"Nodes": {
 			"0": {
@@ -1377,11 +1432,13 @@ TEST(NodeAreaLoadTest, LoadNodeOutputFieldIsArray)
 	ASSERT_EQ(NodeArea->LoadFromJson(JsonString), true);
 	ASSERT_EQ(NodeArea->GetNodeCount(), 0);
 
-	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaLoadTest, LoadNodeAllowedTypesContainsNonString)
 {
+	NODE_SYSTEM.Clear();
+
 	std::string JsonString = R"({
 		"Nodes": {
 			"0": {
@@ -1407,11 +1464,13 @@ TEST(NodeAreaLoadTest, LoadNodeAllowedTypesContainsNonString)
 	ASSERT_EQ(NodeArea->LoadFromJson(JsonString), true);
 	ASSERT_EQ(NodeArea->GetNodeCount(), 0);
 
-	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaLoadTest, LoadNodeEntryNotObject)
 {
+	NODE_SYSTEM.Clear();
+
 	std::string JsonString = R"({
 		"Nodes": {
 			"0": "this_is_a_string_not_an_object"
@@ -1424,11 +1483,13 @@ TEST(NodeAreaLoadTest, LoadNodeEntryNotObject)
 	ASSERT_EQ(NodeArea->LoadFromJson(JsonString), true);
 	ASSERT_EQ(NodeArea->GetNodeCount(), 0);
 
-	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaLoadTest, LoadRenderOffsetNotObject)
 {
+	NODE_SYSTEM.Clear();
+
 	std::string JsonString = R"({
 		"Nodes": {},
 		"RenderOffset": "not_an_object"
@@ -1440,11 +1501,13 @@ TEST(NodeAreaLoadTest, LoadRenderOffsetNotObject)
 	ASSERT_EQ(NodeArea->LoadFromJson(JsonString), true);
 	ASSERT_EQ(NodeArea->GetNodeCount(), 0);
 
-	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaLoadTest, LoadRenderOffsetXNotNumeric)
 {
+	NODE_SYSTEM.Clear();
+
 	std::string JsonString = R"({
 		"Nodes": {},
 		"RenderOffset": {"X": "abc", "Y": 0}
@@ -1456,11 +1519,13 @@ TEST(NodeAreaLoadTest, LoadRenderOffsetXNotNumeric)
 	ASSERT_EQ(NodeArea->LoadFromJson(JsonString), true);
 	ASSERT_EQ(NodeArea->GetNodeCount(), 0);
 
-	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaLoadTest, Load_Connection_With_RerouteConnections_NotObject)
 {
+	NODE_SYSTEM.Clear();
+
 	std::string JsonString = R"({
 		"Connections": {
 			"0": {
@@ -1499,11 +1564,13 @@ TEST(NodeAreaLoadTest, Load_Connection_With_RerouteConnections_NotObject)
 	EXPECT_EQ(NodeArea->GetConnectionCount(), 1);
 	EXPECT_EQ(NodeArea->GetRerouteConnectionCount(), 0);
 
-	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaLoadTest, LoadRootIsArray)
 {
+	NODE_SYSTEM.Clear();
+
 	std::string JsonString = R"([{"a":"b"}])";
 
 	NodeArea* NodeArea = NODE_SYSTEM.CreateNodeArea();
@@ -1512,11 +1579,13 @@ TEST(NodeAreaLoadTest, LoadRootIsArray)
 	EXPECT_FALSE(NodeArea->LoadFromJson(JsonString));
 	EXPECT_EQ(NodeArea->GetNodeCount(), 0);
 
-	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaLoadTest, LoadAreaIDNotString)
 {
+	NODE_SYSTEM.Clear();
+
 	std::string JsonString = R"({
 		"Nodes": {},
 		"ID": 42
@@ -1528,11 +1597,13 @@ TEST(NodeAreaLoadTest, LoadAreaIDNotString)
 	ASSERT_EQ(NodeArea->LoadFromJson(JsonString), true);
 	EXPECT_EQ(NodeArea->GetNodeCount(), 0);
 
-	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaLoadTest, LoadAreaNameNotString)
 {
+	NODE_SYSTEM.Clear();
+
 	std::string JsonString = R"({
 		"Nodes": {},
 		"Name": true
@@ -1544,5 +1615,5 @@ TEST(NodeAreaLoadTest, LoadAreaNameNotString)
 	ASSERT_EQ(NodeArea->LoadFromJson(JsonString), true);
 	EXPECT_EQ(NodeArea->GetNodeCount(), 0);
 
-	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+	NODE_SYSTEM.Clear();
 }

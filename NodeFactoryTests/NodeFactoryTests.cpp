@@ -3,6 +3,8 @@ using namespace VisNodeSys;
 
 TEST(NodeFactory, CreateKnownNodes)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* NodeArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(NodeArea, nullptr);
 
@@ -22,11 +24,13 @@ TEST(NodeFactory, CreateKnownNodes)
 	}
 
 	ASSERT_EQ(NodeArea->GetNodeCount(), KnownNodesTypes.size());
-	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeFactory, CreateUnknownNodes)
 {
+	NODE_SYSTEM.Clear();
+
 	VisNodeSys::Node* UnknownNode = NODE_FACTORY.CreateNode("UnknownNode");
 	ASSERT_EQ(UnknownNode, nullptr);
 
@@ -36,6 +40,8 @@ TEST(NodeFactory, CreateUnknownNodes)
 
 TEST(NodeFactory, CopyKnownNodes)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* NodeArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(NodeArea, nullptr);
 
@@ -81,11 +87,13 @@ TEST(NodeFactory, CopyKnownNodes)
 	NodeArea->Delete(CopiedNode);
 	ASSERT_EQ(NodeArea->GetNodeCount(), 2);
 
-	NODE_SYSTEM.DeleteNodeArea(NodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeFactory, CopyUnknownNodes)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* NodeArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(NodeArea, nullptr);
 
@@ -104,6 +112,8 @@ TEST(NodeFactory, CopyUnknownNodes)
 
 TEST(NodeFactory, IncorrectRegistration)
 {
+	NODE_SYSTEM.Clear();
+
 	bool Result = NODE_FACTORY.RegisterNodeType("CustomNode",
 		[]() -> Node* {
 			return new CustomNode();

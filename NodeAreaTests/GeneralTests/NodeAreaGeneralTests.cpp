@@ -3,6 +3,8 @@ using namespace VisNodeSys;
 
 TEST(NodeAreaGeneralTests, GetNodeByID)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(LocalNodeArea, nullptr);
 	ASSERT_EQ(LocalNodeArea->GetNodeCount(), 0);
@@ -15,11 +17,13 @@ TEST(NodeAreaGeneralTests, GetNodeByID)
 	ASSERT_EQ(LocalNodeArea->GetNodeCount(), 1);
 	ASSERT_EQ(LocalNodeArea->GetNodeByID(NewNode->GetID()), NewNode);
 	
-	NODE_SYSTEM.DeleteNodeArea(LocalNodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaGeneralTests, GetNodesByNameBasic)
 {
+	NODE_SYSTEM.Clear();
+
 	std::vector<Node*> FoundNodes;
 	std::vector<Node*> NodesWithSameName;
 	bool bFound = false;
@@ -71,11 +75,13 @@ TEST(NodeAreaGeneralTests, GetNodesByNameBasic)
 	
 	ASSERT_EQ(bFound, true);
 
-	NODE_SYSTEM.DeleteNodeArea(LocalNodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaGeneralTests, GetNodesByStringType)
 {
+	NODE_SYSTEM.Clear();
+
 	std::vector<std::string> NodesIDList;
 	std::vector<std::string> GroupCommentsIDList;
 
@@ -115,11 +121,13 @@ TEST(NodeAreaGeneralTests, GetNodesByStringType)
 	ASSERT_EQ(FoundNodes.size(), 2);
 	CheckIDsInList(FoundNodes);
 
-	NODE_SYSTEM.DeleteNodeArea(LocalNodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaGeneralTests, GetNodesByType)
 {
+	NODE_SYSTEM.Clear();
+
 	std::vector<std::string> NodesIDList;
 	std::vector<std::string> GroupCommentsIDList;
 
@@ -163,11 +171,13 @@ TEST(NodeAreaGeneralTests, GetNodesByType)
 	std::vector<CustomNode5*> FoundCustomNode5Nodes = LocalNodeArea->GetNodesByType<CustomNode5>();
 	ASSERT_EQ(FoundCustomNode5Nodes.size(), 0);
 
-	NODE_SYSTEM.DeleteNodeArea(LocalNodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaGeneralTests, TryToDisconnect_WithNonExistentSocketIDs)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
 
 	Node* NodeA = new Node();
@@ -183,11 +193,13 @@ TEST(NodeAreaGeneralTests, TryToDisconnect_WithNonExistentSocketIDs)
 	EXPECT_FALSE(Area->TryToDisconnect(NodeA, std::string("nonexistent_out"), NodeB, std::string("nonexistent_in")));
 	EXPECT_EQ(Area->GetConnectionCount(), 1);
 	EXPECT_TRUE(Area->IsConnected(NodeA, NodeB));
-	NODE_SYSTEM.DeleteNodeArea(Area);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaGeneralTests, IsConnected_WithNonExistentSocketIDs)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
 
 	Node* NodeA = new Node();
@@ -201,11 +213,13 @@ TEST(NodeAreaGeneralTests, IsConnected_WithNonExistentSocketIDs)
 	ASSERT_EQ(Area->GetConnectionCount(), 1);
 
 	EXPECT_FALSE(Area->IsConnected(NodeA, std::string("nonexistent_out"), NodeB, std::string("nonexistent_in")));
-	NODE_SYSTEM.DeleteNodeArea(Area);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaGeneralTests, AddRerouteNodeToConnection_WithNonExistentSocketIDs)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
 
 	Node* NodeA = new Node();
@@ -220,12 +234,14 @@ TEST(NodeAreaGeneralTests, AddRerouteNodeToConnection_WithNonExistentSocketIDs)
 
 	EXPECT_FALSE(Area->AddRerouteNodeToConnection(NodeA, std::string("nonexistent_out"), NodeB, std::string("nonexistent_in"), 0, ImVec2(50.0f, 50.0f)));
 	EXPECT_EQ(Area->GetRerouteConnectionCount(), 0);
-	NODE_SYSTEM.DeleteNodeArea(Area);
+	NODE_SYSTEM.Clear();
 }
 
 
 TEST(NodeAreaGeneralTests, IsConnected_WithReversedDirectionSocketIDs_ReturnsFalse)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
 
 	Node* NodeA = new Node();
@@ -250,11 +266,13 @@ TEST(NodeAreaGeneralTests, IsConnected_WithReversedDirectionSocketIDs_ReturnsFal
 	// Socket IDs are passed in reversed direction, it should return false.
 	EXPECT_FALSE(Area->IsConnected(NodeA, NodeAInSocketID, NodeB, NodeBOutSocketID));
 
-	NODE_SYSTEM.DeleteNodeArea(Area);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaGeneralTests, TryToDisconnect_WithReversedDirectionSocketIDs_DoesNotDisconnect)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
 
 	Node* NodeA = new Node();
@@ -278,11 +296,13 @@ TEST(NodeAreaGeneralTests, TryToDisconnect_WithReversedDirectionSocketIDs_DoesNo
 	EXPECT_EQ(Area->GetConnectionCount(), 1);
 	EXPECT_TRUE(Area->IsConnected(NodeA, NodeB));
 
-	NODE_SYSTEM.DeleteNodeArea(Area);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaGeneralTests, TryToConnect_WithReversedDirectionSocketIDs_ReturnsFalse)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
 
 	Node* NodeA = new Node();
@@ -304,11 +324,13 @@ TEST(NodeAreaGeneralTests, TryToConnect_WithReversedDirectionSocketIDs_ReturnsFa
 	EXPECT_FALSE(Area->TryToConnect(NodeA, NodeAInSocketID, NodeB, NodeBOutSocketID));
 	EXPECT_EQ(Area->GetConnectionCount(), 0);
 
-	NODE_SYSTEM.DeleteNodeArea(Area);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaGeneralTests, AddObjects_Twice_IsRejected)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
 
 	Node* NodeA = new Node();
@@ -321,11 +343,13 @@ TEST(NodeAreaGeneralTests, AddObjects_Twice_IsRejected)
 	EXPECT_FALSE(Area->AddGroupComment(GroupCommentA));
 	ASSERT_EQ(Area->GetGroupCommentCount(), 1);
 
-	NODE_SYSTEM.DeleteNodeArea(Area);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaGeneralTests, AddSelected_Reject_InAppropriateNode)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* AreaA = NODE_SYSTEM.CreateNodeArea();
 	NodeArea* AreaB = NODE_SYSTEM.CreateNodeArea();
 
@@ -342,12 +366,13 @@ TEST(NodeAreaGeneralTests, AddSelected_Reject_InAppropriateNode)
 	// Destructor is private, so we need to add nodes to an area to be able to delete them.
 	AreaB->AddNode(NodeB);
 
-	NODE_SYSTEM.DeleteNodeArea(AreaA);
-	NODE_SYSTEM.DeleteNodeArea(AreaB);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaGeneralTests, Delete_SelectedNode_IsRemovedFromSelection)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
 	Node* NodeA = new Node();
 	Area->AddNode(NodeA);
@@ -358,11 +383,13 @@ TEST(NodeAreaGeneralTests, Delete_SelectedNode_IsRemovedFromSelection)
 	Area->Delete(NodeA);
 	EXPECT_EQ(Area->GetSelected().size(), 0);
 
-	NODE_SYSTEM.DeleteNodeArea(Area);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaGeneralTests, AddSelected_Reject_InAppropriateGroupComment)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* AreaA = NODE_SYSTEM.CreateNodeArea();
 	NodeArea* AreaB = NODE_SYSTEM.CreateNodeArea();
 
@@ -379,12 +406,13 @@ TEST(NodeAreaGeneralTests, AddSelected_Reject_InAppropriateGroupComment)
 	EXPECT_FALSE(AreaB->IsSelected(AnotherNewGroupComment));
 
 	delete AnotherNewGroupComment;
-	NODE_SYSTEM.DeleteNodeArea(AreaA);
-	NODE_SYSTEM.DeleteNodeArea(AreaB);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaGeneralTests, Delete_GroupComment_IsRemovedFromSelection)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
 	GroupComment* NewGroupComment = new GroupComment();
 	Area->AddGroupComment(NewGroupComment);
@@ -395,11 +423,13 @@ TEST(NodeAreaGeneralTests, Delete_GroupComment_IsRemovedFromSelection)
 	Area->Delete(NewGroupComment);
 	EXPECT_FALSE(Area->IsSelected(NewGroupComment));
 
-	NODE_SYSTEM.DeleteNodeArea(Area);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaGeneralTests, AddNode_RejectNode_AlreadyInAnotherArea)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* AreaA = NODE_SYSTEM.CreateNodeArea();
 	NodeArea* AreaB = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(AreaA, nullptr);
@@ -423,6 +453,8 @@ TEST(NodeAreaGeneralTests, AddNode_RejectNode_AlreadyInAnotherArea)
 
 TEST(NodeAreaGeneralTests, AddGroupComment_RejectGroupComment_AlreadyInAnotherArea)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* AreaA = NODE_SYSTEM.CreateNodeArea();
 	NodeArea* AreaB = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(AreaA, nullptr);
@@ -446,6 +478,8 @@ TEST(NodeAreaGeneralTests, AddGroupComment_RejectGroupComment_AlreadyInAnotherAr
 
 TEST(NodeAreaGeneralTests, AddSelected_Reject_InAppropriateRerouteNode)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* AreaA = NODE_SYSTEM.CreateNodeArea();
 	NodeArea* AreaB = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(AreaA, nullptr);
@@ -473,6 +507,8 @@ TEST(NodeAreaGeneralTests, AddSelected_Reject_InAppropriateRerouteNode)
 
 TEST(NodeAreaGeneralTests, Delete_Reject_InAppropriateRerouteNode)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* AreaA = NODE_SYSTEM.CreateNodeArea();
 	NodeArea* AreaB = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(AreaA, nullptr);
@@ -499,6 +535,8 @@ TEST(NodeAreaGeneralTests, Delete_Reject_InAppropriateRerouteNode)
 
 TEST(NodeAreaGeneralTests, SocketToPosition_InvalidInputs_DoNotCrash)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(Area, nullptr);
 

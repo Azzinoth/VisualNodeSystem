@@ -3,6 +3,8 @@ using namespace VisNodeSys;
 
 TEST(SubAreaNodeTests, Basic_Creation)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* ParentArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(ParentArea, nullptr);
 
@@ -48,10 +50,14 @@ TEST(SubAreaNodeTests, Basic_Creation)
 
 	// Owned area should be cleaned up along with the parent.
 	EXPECT_EQ(NODE_SYSTEM.GetNodeAreaByID(OwnedAreaID), nullptr);
+
+	NODE_SYSTEM.Clear();
 }
 
 TEST(SubAreaNodeTests, Basic_Sockets)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* ParentArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(ParentArea, nullptr);
 
@@ -89,11 +95,13 @@ TEST(SubAreaNodeTests, Basic_Sockets)
 	EXPECT_FALSE(InputNode->CouldBeDestroyed());
 	EXPECT_FALSE(OutputNode->CouldBeDestroyed());
 
-	NODE_SYSTEM.DeleteNodeArea(ParentArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(SubAreaNodeTests, Basic_AddSockets)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* ParentArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(ParentArea, nullptr);
 	ParentArea->SetSaveExecutedNodes(true);
@@ -202,11 +210,13 @@ TEST(SubAreaNodeTests, Basic_AddSockets)
 	EXPECT_FALSE(InputNode->AddSocket(new NodeSocket(SubArea, { std::string("FLOAT") }, "IncompatibleSocket", NodeSocket::SocketFlow::Input)));
 	EXPECT_FALSE(OutputNode->AddSocket(new NodeSocket(SubArea, { std::string("FLOAT") }, "IncompatibleSocket", NodeSocket::SocketFlow::Output)));
 
-	NODE_SYSTEM.DeleteNodeArea(ParentArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(SubAreaNodeTests, DeleteSocket_OnlyRemoves_CorrespondingDirection_From_PartnerMirrorNode)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* ParentArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(ParentArea, nullptr);
 
@@ -257,11 +267,13 @@ TEST(SubAreaNodeTests, DeleteSocket_OnlyRemoves_CorrespondingDirection_From_Part
 	EXPECT_EQ(SubArea->GetOutputSocketCount(), 1);
 	EXPECT_EQ(OutputNode->GetInputSocketCount(), 1);
 
-	NODE_SYSTEM.DeleteNodeArea(ParentArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(SubAreaNodeTests, RenameSocket_PropagatesPartnerName)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* ParentArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(ParentArea, nullptr);
 
@@ -359,11 +371,13 @@ TEST(SubAreaNodeTests, RenameSocket_PropagatesPartnerName)
 	EXPECT_EQ(SubAreaInputSocket->GetName(), SubAreaInputSocketNameBefore);
 	EXPECT_EQ(InputNodeMirrorSocket->GetName(), InputNodeMirrorSocketNameBefore);
 
-	NODE_SYSTEM.DeleteNodeArea(ParentArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(SubAreaNodeTests, CopyPaste_CreatesIndependentOwnedArea)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* ParentArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(ParentArea, nullptr);
 
@@ -422,10 +436,14 @@ TEST(SubAreaNodeTests, CopyPaste_CreatesIndependentOwnedArea)
 	EXPECT_EQ(NODE_SYSTEM.GetNodeAreaByID(OriginalOwnedAreaID), nullptr);
 	EXPECT_EQ(NODE_SYSTEM.GetNodeAreaByID(PastedOwnedAreaID), nullptr);
 	EXPECT_EQ(NODE_SYSTEM.GetNodeAreaCount(), 0);
+
+	NODE_SYSTEM.Clear();
 }
 
 TEST(SubAreaNodeTests, CopyPaste_CreatesIndependentCopy)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* ParentArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(ParentArea, nullptr);
 	ParentArea->SetSaveExecutedNodes(true);
@@ -618,10 +636,14 @@ TEST(SubAreaNodeTests, CopyPaste_CreatesIndependentCopy)
 	EXPECT_EQ(NODE_SYSTEM.GetNodeAreaByID(OriginalOwnedAreaID), nullptr);
 	EXPECT_EQ(NODE_SYSTEM.GetNodeAreaByID(PastedOwnedAreaID), nullptr);
 	EXPECT_EQ(NODE_SYSTEM.GetNodeAreaCount(), 0);
+
+	NODE_SYSTEM.Clear();
 }
 
 TEST(SubAreaNodeTests, MultipleSockets_ExecutionAndData)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* ParentArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(ParentArea, nullptr);
 	ParentArea->SetSaveExecutedNodes(true);
@@ -709,11 +731,13 @@ TEST(SubAreaNodeTests, MultipleSockets_ExecutionAndData)
 	EXPECT_FALSE(BoolOutput->GetData());
 	EXPECT_EQ(FloatOutput->GetData(), 0.0f);
 
-	NODE_SYSTEM.DeleteNodeArea(ParentArea);
+	NODE_SYSTEM.Clear();
 }
 
-TEST(SubAreaNodeTests, SetSocketAllowedTypes_DisconnectsIncompatible)  // FAIL
+TEST(SubAreaNodeTests, SetSocketAllowedTypes_DisconnectsIncompatible)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* ParentArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(ParentArea, nullptr);
 	ParentArea->SetSaveExecutedNodes(true);
@@ -819,11 +843,13 @@ TEST(SubAreaNodeTests, SetSocketAllowedTypes_DisconnectsIncompatible)  // FAIL
 	// Inner connection (InnerBoolNode => OutputNode data) should also be severed.
 	EXPECT_FALSE(OwnedArea->IsConnected(InnerBoolNode, 1, OutputNode, 1));
 
-	NODE_SYSTEM.DeleteNodeArea(ParentArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(SubAreaNodeTests, SetSocketAllowedTypes_KeepsCompatible)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* ParentArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(ParentArea, nullptr);
 	ParentArea->SetSaveExecutedNodes(true);
@@ -886,7 +912,7 @@ TEST(SubAreaNodeTests, SetSocketAllowedTypes_KeepsCompatible)
 	ASSERT_TRUE(ParentArea->ExecuteNodeNetwork());
 	EXPECT_EQ(IntOutput->GetData(), 42);
 
-	NODE_SYSTEM.DeleteNodeArea(ParentArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(SubAreaNodeTests, SaveLoad_WithExecutionAndData)
@@ -1109,6 +1135,8 @@ TEST(SubAreaNodeTests, FromJson_OnEstablishedNode_ReleasesPreviousOwnedArea)
 
 TEST(SubAreaNodeTests, MultipleSubAreasInParent_BothExecute)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* ParentArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(ParentArea, nullptr);
 	ParentArea->SetSaveExecutedNodes(true);
@@ -1197,11 +1225,13 @@ TEST(SubAreaNodeTests, MultipleSubAreasInParent_BothExecute)
 	EXPECT_GT(OwnedAreaA->GetLastExecutedNodes().size(), 0);
 	EXPECT_GT(OwnedAreaB->GetLastExecutedNodes().size(), 0);
 
-	NODE_SYSTEM.DeleteNodeArea(ParentArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(SubAreaNodeTests, NestedSubArea_BasicExecution)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* OuterParentArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(OuterParentArea, nullptr);
 	OuterParentArea->SetSaveExecutedNodes(true);
@@ -1281,11 +1311,13 @@ TEST(SubAreaNodeTests, NestedSubArea_BasicExecution)
 	EXPECT_GT(OuterOwnedArea->GetLastExecutedNodes().size(), 0);
 	EXPECT_GT(InnerOwnedArea->GetLastExecutedNodes().size(), 0);
 
-	NODE_SYSTEM.DeleteNodeArea(OuterParentArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(SubAreaNodeTests, SocketIndexRoutesDataCorrectly)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* ParentArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(ParentArea, nullptr);
 	ParentArea->SetSaveExecutedNodes(true);
@@ -1363,11 +1395,13 @@ TEST(SubAreaNodeTests, SocketIndexRoutesDataCorrectly)
 	ASSERT_TRUE(ParentArea->ExecuteNodeNetwork());
 	EXPECT_EQ(IntResult->GetData(), 99);
 
-	NODE_SYSTEM.DeleteNodeArea(ParentArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(SubAreaNodeTests, ExecSocket_CannotBeDeletedOrRetyped)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* ParentArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(ParentArea, nullptr);
 
@@ -1423,7 +1457,7 @@ TEST(SubAreaNodeTests, ExecSocket_CannotBeDeletedOrRetyped)
 	EXPECT_EQ(InputNode->GetOutputSocketCount(), 1);
 	EXPECT_EQ(OutputNode->GetInputSocketCount(), 1);
 
-	NODE_SYSTEM.DeleteNodeArea(ParentArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(SubAreaNodeTests, Small_Graph)
@@ -1836,6 +1870,8 @@ TEST(SubAreaNodeTests, SaveLoad_With_Execute_Connections_Small)
 
 TEST(SubAreaNodeTests, DeleteOwnedArea_Removes_OrphanedSubAreaNode_From_Parent)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* ParentArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(ParentArea, nullptr);
 
@@ -1860,7 +1896,7 @@ TEST(SubAreaNodeTests, DeleteOwnedArea_Removes_OrphanedSubAreaNode_From_Parent)
 	EXPECT_EQ(ParentArea->GetNodeCount(), 0);
 	EXPECT_EQ(ParentArea->GetNodeByID(SubNodeID), nullptr);
 
-	NODE_SYSTEM.DeleteNodeArea(ParentArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(SubAreaNodeTests, DeleteOwnedArea_OnNonDestroyableSubAreaOwner_DeletesArea)
@@ -1904,6 +1940,8 @@ TEST(SubAreaNodeTests, DeleteOwnedArea_OnNonDestroyableSubAreaOwner_DeletesArea)
 
 TEST(SubAreaNodeTests, AddSocket_FromSubArea_Input_Output_Nodes_PropagatesToSubAreaNode_Correctly)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* ParentArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(ParentArea, nullptr);
 
@@ -1941,11 +1979,13 @@ TEST(SubAreaNodeTests, AddSocket_FromSubArea_Input_Output_Nodes_PropagatesToSubA
 	EXPECT_EQ(SubArea->GetInputSocketCount(), 2);
 	EXPECT_EQ(SubArea->GetOutputSocketCount(), 2);
 
-	NODE_SYSTEM.DeleteNodeArea(ParentArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(SubAreaNodeTests, Looped_SubAreaNode_Accumulates_OwnedArea_ExecutedNodes)
 {
+	NODE_SYSTEM.Clear();
+
 	const int IterationCount = 5;
 
 	NodeArea* ParentArea = NODE_SYSTEM.CreateNodeArea();
@@ -2007,11 +2047,13 @@ TEST(SubAreaNodeTests, Looped_SubAreaNode_Accumulates_OwnedArea_ExecutedNodes)
 	ASSERT_TRUE(ParentArea->ExecuteNodeNetwork());
 	EXPECT_EQ(OwnedArea->GetLastExecutedNodes().size(), OwnedTracePerIteration * IterationCount);
 
-	NODE_SYSTEM.DeleteNodeArea(ParentArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(SubAreaNodeTests, OwnedAreaCleared_GetDataReturnsNull_SubAreaNode_BecomesDangling)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* ParentArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(ParentArea, nullptr);
 
@@ -2039,11 +2081,13 @@ TEST(SubAreaNodeTests, OwnedAreaCleared_GetDataReturnsNull_SubAreaNode_BecomesDa
 	// SubAreaNode should be dangling now.
 	EXPECT_TRUE(SubArea->IsDangling());
 
-	NODE_SYSTEM.DeleteNodeArea(ParentArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(SubAreaNodeTests, SetName_OnSubAreaNode_PropagatesTo_OwnedArea_AndIONodes)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* ParentArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(ParentArea, nullptr);
 
@@ -2073,11 +2117,13 @@ TEST(SubAreaNodeTests, SetName_OnSubAreaNode_PropagatesTo_OwnedArea_AndIONodes)
 	EXPECT_EQ(InputNode->GetName(), SecondName + " Input");
 	EXPECT_EQ(OutputNode->GetName(), SecondName + " Output");
 
-	NODE_SYSTEM.DeleteNodeArea(ParentArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(SubAreaNodeTests, SetName_OnOwnedArea_PropagatesTo_SubAreaNode_AndIONodes)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* ParentArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(ParentArea, nullptr);
 
@@ -2099,11 +2145,13 @@ TEST(SubAreaNodeTests, SetName_OnOwnedArea_PropagatesTo_SubAreaNode_AndIONodes)
 	EXPECT_EQ(InputNode->GetName(), NewName + " Input");
 	EXPECT_EQ(OutputNode->GetName(), NewName + " Output");
 
-	NODE_SYSTEM.DeleteNodeArea(ParentArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(SubAreaNodeTests, SetName_OnInputOrOutputNode_DoesNotPropagateUpward)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* ParentArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(ParentArea, nullptr);
 
@@ -2134,11 +2182,13 @@ TEST(SubAreaNodeTests, SetName_OnInputOrOutputNode_DoesNotPropagateUpward)
 	EXPECT_EQ(OwnedArea->GetName(), OwnedAreaNameBefore);
 	EXPECT_EQ(InputNode->GetName(), "CustomInputName");
 
-	NODE_SYSTEM.DeleteNodeArea(ParentArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(SubAreaNodeTests, SetName_OnTopLevelArea_DoesNotAffectUnrelatedSubAreaNode)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* ParentArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(ParentArea, nullptr);
 
@@ -2159,11 +2209,13 @@ TEST(SubAreaNodeTests, SetName_OnTopLevelArea_DoesNotAffectUnrelatedSubAreaNode)
 	EXPECT_EQ(SubArea->GetSubAreaOutputNode()->GetName(), OutputNameBefore);
 	EXPECT_EQ(SubArea->GetOwnedArea()->GetName(), OwnedNameBefore);
 
-	NODE_SYSTEM.DeleteNodeArea(ParentArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(SubAreaNodeTests, SetName_MultipleSubAreasInParent_NamesAreIndependent)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* ParentArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(ParentArea, nullptr);
 
@@ -2197,11 +2249,13 @@ TEST(SubAreaNodeTests, SetName_MultipleSubAreasInParent_NamesAreIndependent)
 	EXPECT_EQ(SubB->GetSubAreaInputNode()->GetName(), "Beta Input");
 	EXPECT_EQ(SubB->GetSubAreaOutputNode()->GetName(), "Beta Output");
 
-	NODE_SYSTEM.DeleteNodeArea(ParentArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(SubAreaNodeTests, SetName_NestedSubAreas_NamesPropagateIndependently)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* ParentArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(ParentArea, nullptr);
 
@@ -2242,11 +2296,13 @@ TEST(SubAreaNodeTests, SetName_NestedSubAreas_NamesPropagateIndependently)
 	EXPECT_EQ(InnerSubArea->GetSubAreaInputNode()->GetName(), "Inner Input");
 	EXPECT_EQ(InnerSubArea->GetSubAreaOutputNode()->GetName(), "Inner Output");
 
-	NODE_SYSTEM.DeleteNodeArea(ParentArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(SubAreaNodeTests, CopyPaste_PreservesPropagatedNames)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* ParentArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(ParentArea, nullptr);
 
@@ -2289,7 +2345,7 @@ TEST(SubAreaNodeTests, CopyPaste_PreservesPropagatedNames)
 	EXPECT_EQ(SubArea->GetSubAreaInputNode()->GetName(), "Original Input");
 	EXPECT_EQ(SubArea->GetSubAreaOutputNode()->GetName(), "Original Output");
 
-	NODE_SYSTEM.DeleteNodeArea(ParentArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(SubAreaNodeTests, SetName_Propagation_SurvivesSaveLoad)

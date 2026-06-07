@@ -4,6 +4,8 @@ using namespace VisNodeSys;
 
 TEST(NodeAreaEventSystemTests, Node_Events)
 {
+	NODE_SYSTEM.Clear();
+
 	std::vector<std::string> NodesIDList;
 	std::vector<std::string> GroupCommentsIDList;
 
@@ -152,18 +154,62 @@ TEST(NodeAreaEventSystemTests, Node_Events)
 	ASSERT_TRUE(bNodeDestroyedEventCalled);
 }
 
+TEST(NodeAreaEventSystemTests, ReentrantConnectionDelete_FromBeforeDisconnectedCallback_IsSafe)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(LocalNodeArea, nullptr);
+
+	IntegerLiteralNode* OutNode = new IntegerLiteralNode();
+	ASSERT_TRUE(LocalNodeArea->AddNode(OutNode));
+
+	IntegerVariableNode* InNode = new IntegerVariableNode();
+	ASSERT_TRUE(LocalNodeArea->AddNode(InNode));
+
+	// Integer data connection: OutNode output => InNode input.
+	ASSERT_TRUE(LocalNodeArea->TryToConnect(OutNode, 0, InNode, 1));
+	ASSERT_EQ(LocalNodeArea->GetConnectionCount(), 1);
+
+	const std::string InNodeID = InNode->GetID();
+
+	// A callback that deletes one of the connection's endpoint.
+	bool bBeforeDisconnectedCalled = false;
+	LocalNodeArea->AddNodeEventCallback([&](Node*, NODE_EVENT EventType) {
+		if (EventType == NODE_EVENT::BEFORE_DISCONNECTED && !bBeforeDisconnectedCalled)
+		{
+			bBeforeDisconnectedCalled = true;
+			LocalNodeArea->Delete(InNode);
+		}
+	});
+
+	ASSERT_TRUE(LocalNodeArea->TryToDisconnect(OutNode, 0, InNode, 1));
+
+	EXPECT_TRUE(bBeforeDisconnectedCalled);
+	EXPECT_EQ(LocalNodeArea->GetConnectionCount(), 0);
+	EXPECT_EQ(LocalNodeArea->GetNodeByID(InNodeID), nullptr);
+
+	NODE_SYSTEM.Clear();
+}
+
 TEST(NodeAreaEventSystemTests, Node_CanConnect_Functionality)
 {
+	NODE_SYSTEM.Clear();
+
 	// To-Do
 }
 
 TEST(NodeAreaEventSystemTests, Node_SocketEvent_Functionality)
 {
+	NODE_SYSTEM.Clear();
+
 	// To-Do
 }
 
 TEST(NodeAreaEventSystemTests, RunOnEachNode_VisitsAllNodes)
 {
+	NODE_SYSTEM.Clear();
+
 	std::vector<std::string> NodesIDList;
 	std::vector<std::string> GroupCommentsIDList;
 
@@ -194,11 +240,13 @@ TEST(NodeAreaEventSystemTests, RunOnEachNode_VisitsAllNodes)
 		}
 	}
 
-	NODE_SYSTEM.DeleteNodeArea(LocalNodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaEventSystemTests, RunOnEachConnectedNode_FollowsOutputConnections)
 {
+	NODE_SYSTEM.Clear();
+
 	std::vector<std::string> NodesIDList;
 
 	NodeArea* LocalNodeArea = TEST_TOOLS.CreateSmallConnectedNodeArea(NodesIDList);
@@ -482,11 +530,13 @@ TEST(NodeAreaEventSystemTests, RunOnEachConnectedNode_FollowsOutputConnections)
 		ASSERT_EQ(VisitedNodesIDList.size(), 0);
 	}
 
-	NODE_SYSTEM.DeleteNodeArea(LocalNodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaEventSystemTests, LastExecutedNodes_IsInExecutionOrder_Manual)
 {
+	NODE_SYSTEM.Clear();
+
 	std::vector<std::string> NodesIDList;
 	std::vector<std::string> GroupCommentsIDList;
 
@@ -517,11 +567,13 @@ TEST(NodeAreaEventSystemTests, LastExecutedNodes_IsInExecutionOrder_Manual)
 	EXPECT_EQ(ExecutedNodes[1]->GetID(), SecondNode->GetID());
 	EXPECT_EQ(ExecutedNodes[2]->GetID(), ThirdNode->GetID());
 
-	NODE_SYSTEM.DeleteNodeArea(LocalNodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaEventSystemTests, LastExecutedNodes_IsInExecutionOrder_ThroughConnections)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(LocalNodeArea, nullptr);
 	LocalNodeArea->SetSaveExecutedNodes(true);
@@ -550,11 +602,13 @@ TEST(NodeAreaEventSystemTests, LastExecutedNodes_IsInExecutionOrder_ThroughConne
 	EXPECT_EQ(ExecutedNodes[1]->GetID(), NodeB->GetID());
 	EXPECT_EQ(ExecutedNodes[2]->GetID(), NodeC->GetID());
 
-	NODE_SYSTEM.DeleteNodeArea(LocalNodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaEventSystemTests, LastExecutedNodes_ExcludesDeletedNode)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(LocalNodeArea, nullptr);
 	LocalNodeArea->SetSaveExecutedNodes(true);
@@ -577,18 +631,20 @@ TEST(NodeAreaEventSystemTests, LastExecutedNodes_ExcludesDeletedNode)
 	std::vector<Node*> After = LocalNodeArea->GetLastExecutedNodes();
 	EXPECT_EQ(std::find(After.begin(), After.end(), ExecutedPtr), After.end());
 
-	NODE_SYSTEM.DeleteNodeArea(LocalNodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaEventSystemTests, RunOnEachConnectedNode_NullStartNode_DoesNotCrash)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
 
 	int Counter = 0;
 	Area->RunOnEachConnectedNode(nullptr, [&](Node*) { Counter++; });
 	EXPECT_EQ(Counter, 0);
 
-	NODE_SYSTEM.DeleteNodeArea(Area);
+	NODE_SYSTEM.Clear();
 }
 
 //                  A
@@ -598,6 +654,8 @@ TEST(NodeAreaEventSystemTests, RunOnEachConnectedNode_NullStartNode_DoesNotCrash
 //           C (shared)
 TEST(NodeAreaEventSystemTests, RunOnEachConnectedNode_SharedNode_VisitsAllNodesExactlyOnce)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
 
 	// NodeA: 3 outputs, 0 inputs
@@ -644,7 +702,7 @@ TEST(NodeAreaEventSystemTests, RunOnEachConnectedNode_SharedNode_VisitsAllNodesE
 	EXPECT_TRUE(WasVisited(NodeC));
 	EXPECT_TRUE(WasVisited(NodeD));
 
-	NODE_SYSTEM.DeleteNodeArea(Area);
+	NODE_SYSTEM.Clear();
 }
 
 //              A
@@ -655,6 +713,8 @@ TEST(NodeAreaEventSystemTests, RunOnEachConnectedNode_SharedNode_VisitsAllNodesE
 //
 TEST(NodeAreaEventSystemTests, RunOnEachConnectedNode_Diamond_VisitsEachOnce)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
 
 	Node* NodeA = new Node();
@@ -697,11 +757,13 @@ TEST(NodeAreaEventSystemTests, RunOnEachConnectedNode_Diamond_VisitsEachOnce)
 	EXPECT_TRUE(WasVisited(NodeC));
 	EXPECT_TRUE(WasVisited(NodeD));
 
-	NODE_SYSTEM.DeleteNodeArea(Area);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaEventSystemTests, Delete_Connection_OutSocketNodeReceivesDisconnectedEvent)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
 
 	EventCountingNode* OutNode = new EventCountingNode();
@@ -728,11 +790,13 @@ TEST(NodeAreaEventSystemTests, Delete_Connection_OutSocketNodeReceivesDisconnect
 	// Out socket's parent should also receive DISCONNECTED.
 	EXPECT_EQ(OutNode->GetDisconnectedCount(), 1);
 
-	NODE_SYSTEM.DeleteNodeArea(Area);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaEventSystemTests, Clear_EveryNodeReceivesDestroyed_EvenWhenCallbackDeletesOthers)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(Area, nullptr);
 
@@ -768,11 +832,13 @@ TEST(NodeAreaEventSystemTests, Clear_EveryNodeReceivesDestroyed_EvenWhenCallback
 	EXPECT_NE(std::find(DestroyedIDs.begin(), DestroyedIDs.end(), NodeBID), DestroyedIDs.end());
 	EXPECT_NE(std::find(DestroyedIDs.begin(), DestroyedIDs.end(), NodeCID), DestroyedIDs.end());
 
-	NODE_SYSTEM.DeleteNodeArea(Area);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeAreaEventSystemTests, TriggerOrphanSocketEvent_Reject_ForeignNode)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* AreaA = NODE_SYSTEM.CreateNodeArea();
 	NodeArea* AreaB = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(AreaA, nullptr);
@@ -792,6 +858,8 @@ TEST(NodeAreaEventSystemTests, TriggerOrphanSocketEvent_Reject_ForeignNode)
 
 TEST(NodeAreaEventSystemTests, Delete_CallbackDeletesAnotherNode_DoesNotCrash)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(Area, nullptr);
 
@@ -812,5 +880,5 @@ TEST(NodeAreaEventSystemTests, Delete_CallbackDeletesAnotherNode_DoesNotCrash)
 	EXPECT_TRUE(Area->Delete(NodeB));
 	EXPECT_EQ(Area->GetNodeCount(), 0);
 
-	NODE_SYSTEM.DeleteNodeArea(Area);
+	NODE_SYSTEM.Clear();
 }

@@ -3,6 +3,8 @@ using namespace VisNodeSys;
 
 TEST(LinkNodeTests, Basic_EstablishConnection)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* UpstreamArea = NODE_SYSTEM.CreateNodeArea();
 	std::string UpstreamAreaID = UpstreamArea->GetID();
 	ASSERT_NE(UpstreamArea, nullptr);
@@ -33,11 +35,13 @@ TEST(LinkNodeTests, Basic_EstablishConnection)
 
 	NODE_SYSTEM.DeleteNodeArea(UpstreamArea);
 	EXPECT_EQ(DownstreamArea->GetNodeByID(LinkResult.second), nullptr);
-	NODE_SYSTEM.DeleteNodeArea(DownstreamArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(LinkNodeTests, Basic_AddSockets)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* UpstreamArea = NODE_SYSTEM.CreateNodeArea();
 	std::string UpstreamAreaID = UpstreamArea->GetID();
 	ASSERT_NE(UpstreamArea, nullptr);
@@ -92,12 +96,13 @@ TEST(LinkNodeTests, Basic_AddSockets)
 	// Try to add incompatible socket type to the link, should fail.
 	EXPECT_FALSE(UpstreamLinkNode->AddSocket(new NodeSocket(UpstreamLinkNode, { std::string("FLOAT") }, "IncompatibleSocket", NodeSocket::SocketFlow::Output)));
 
-	NODE_SYSTEM.DeleteNodeArea(UpstreamArea);
-	NODE_SYSTEM.DeleteNodeArea(DownstreamArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(LinkNodeTests, MultipleSockets)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* UpstreamArea = NODE_SYSTEM.CreateNodeArea();
 	std::string UpstreamAreaID = UpstreamArea->GetID();
 	UpstreamArea->SetSaveExecutedNodes(true);
@@ -154,12 +159,13 @@ TEST(LinkNodeTests, MultipleSockets)
 	EXPECT_TRUE(DownstreamBoolNode->GetData());
 	EXPECT_EQ(DownstreamFloatNode->GetData(), 4.2f);
 
-	NODE_SYSTEM.DeleteNodeArea(UpstreamArea);
-	NODE_SYSTEM.DeleteNodeArea(DownstreamArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(LinkNodeTests, ArithmeticAcrossLink)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* UpstreamArea = NODE_SYSTEM.CreateNodeArea();
 	std::string UpstreamAreaID = UpstreamArea->GetID();
 	UpstreamArea->SetSaveExecutedNodes(true);
@@ -211,12 +217,13 @@ TEST(LinkNodeTests, ArithmeticAcrossLink)
 	ASSERT_TRUE(UpstreamArea->ExecuteNodeNetwork());
 	EXPECT_EQ(ResultNode->GetData(), 30);
 
-	NODE_SYSTEM.DeleteNodeArea(UpstreamArea);
-	NODE_SYSTEM.DeleteNodeArea(DownstreamArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(LinkNodeTests, SocketIndexRoutesDataCorrectly)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* UpstreamArea = NODE_SYSTEM.CreateNodeArea();
 	std::string UpstreamAreaID = UpstreamArea->GetID();
 	UpstreamArea->SetSaveExecutedNodes(true);
@@ -293,12 +300,13 @@ TEST(LinkNodeTests, SocketIndexRoutesDataCorrectly)
 	ASSERT_TRUE(UpstreamArea->ExecuteNodeNetwork());
 	EXPECT_EQ(IntegerB->GetData(), 0);
 
-	NODE_SYSTEM.DeleteNodeArea(UpstreamArea);
-	NODE_SYSTEM.DeleteNodeArea(DownstreamArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(LinkNodeTests, SocketIndexRoutesDataCorrectly_AfterDeletion)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* UpstreamArea = NODE_SYSTEM.CreateNodeArea();
 	std::string UpstreamAreaID = UpstreamArea->GetID();
 	UpstreamArea->SetSaveExecutedNodes(true);
@@ -366,12 +374,13 @@ TEST(LinkNodeTests, SocketIndexRoutesDataCorrectly_AfterDeletion)
 	ASSERT_TRUE(UpstreamArea->ExecuteNodeNetwork());
 	EXPECT_EQ(IntegerB->GetData(), 1);
 
-	NODE_SYSTEM.DeleteNodeArea(UpstreamArea);
-	NODE_SYSTEM.DeleteNodeArea(DownstreamArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(LinkNodeTests, ReExecuteWithChangedData)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* UpstreamArea = NODE_SYSTEM.CreateNodeArea();
 	std::string UpstreamAreaID = UpstreamArea->GetID();
 	UpstreamArea->SetSaveExecutedNodes(true);
@@ -414,12 +423,56 @@ TEST(LinkNodeTests, ReExecuteWithChangedData)
 	ASSERT_TRUE(UpstreamArea->ExecuteNodeNetwork());
 	EXPECT_EQ(DownstreamFloatNode->GetData(), 999.0f);
 
-	NODE_SYSTEM.DeleteNodeArea(UpstreamArea);
-	NODE_SYSTEM.DeleteNodeArea(DownstreamArea);
+	NODE_SYSTEM.Clear();
+}
+
+TEST(LinkNodeTests, ReExecute_DownstreamLastExecutedNodesDoNotAccumulate)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* UpstreamArea = NODE_SYSTEM.CreateNodeArea();
+	std::string UpstreamAreaID = UpstreamArea->GetID();
+	UpstreamArea->SetSaveExecutedNodes(true);
+
+	// The execution entry point lives only in the upstream area.
+	Node* BeginNode = NODE_FACTORY.CreateNode("BeginNode");
+	UpstreamArea->AddNode(BeginNode);
+	UpstreamArea->SetExecutionEntryNode(BeginNode);
+
+	NodeArea* DownstreamArea = NODE_SYSTEM.CreateNodeArea();
+	std::string DownstreamAreaID = DownstreamArea->GetID();
+	DownstreamArea->SetSaveExecutedNodes(true);
+
+	// A sink node in the downstream area. BoolVariableNode has an EXECUTE input at socket 0.
+	BoolVariableNode* DownstreamBoolNode = new BoolVariableNode();
+	DownstreamArea->AddNode(DownstreamBoolNode);
+
+	std::pair<std::string, std::string> LinkResult;
+	ASSERT_TRUE(NODE_SYSTEM.LinkNodeAreas(UpstreamAreaID, DownstreamAreaID, &LinkResult));
+
+	Node* UpstreamLinkNode = UpstreamArea->GetNodeByID(LinkResult.first);
+	Node* DownstreamLinkNode = DownstreamArea->GetNodeByID(LinkResult.second);
+
+	ASSERT_EQ(UpstreamArea->TryToConnect(BeginNode, 0, UpstreamLinkNode, 0), true);
+	ASSERT_EQ(DownstreamArea->TryToConnect(DownstreamLinkNode, 0, DownstreamBoolNode, 0), true);
+
+	// First execution.
+	ASSERT_TRUE(UpstreamArea->ExecuteNodeNetwork());
+	EXPECT_EQ(UpstreamArea->GetLastExecutedNodes().size(), 2);
+	EXPECT_EQ(DownstreamArea->GetLastExecutedNodes().size(), 2);
+
+	// Second execution.
+	ASSERT_TRUE(UpstreamArea->ExecuteNodeNetwork());
+	EXPECT_EQ(UpstreamArea->GetLastExecutedNodes().size(), 2);
+	EXPECT_EQ(DownstreamArea->GetLastExecutedNodes().size(), 2);
+
+	NODE_SYSTEM.Clear();
 }
 
 TEST(LinkNodeTests, Deletion_Basic)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* UpstreamArea = NODE_SYSTEM.CreateNodeArea();
 	std::string UpstreamAreaID = UpstreamArea->GetID();
 	ASSERT_NE(UpstreamArea, nullptr);
@@ -442,12 +495,13 @@ TEST(LinkNodeTests, Deletion_Basic)
 	std::vector<std::pair<std::string, std::string>> LinkingNodes = NODE_SYSTEM.GetLinkingNodesForAreas(UpstreamAreaID, DownstreamAreaID);
 	EXPECT_EQ(LinkingNodes.size(), 0);
 
-	NODE_SYSTEM.DeleteNodeArea(UpstreamArea);
-	NODE_SYSTEM.DeleteNodeArea(DownstreamArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(LinkNodeTests, DeletingDownstreamArea_RemovesUpstreamLinkNode)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* UpstreamArea = NODE_SYSTEM.CreateNodeArea();
 	std::string UpstreamAreaID = UpstreamArea->GetID();
 	UpstreamArea->SetSaveExecutedNodes(true);
@@ -472,7 +526,7 @@ TEST(LinkNodeTests, DeletingDownstreamArea_RemovesUpstreamLinkNode)
 
 	ASSERT_TRUE(UpstreamArea->ExecuteNodeNetwork());
 
-	NODE_SYSTEM.DeleteNodeArea(UpstreamArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(LinkNodeTests, Deletion_FiresDestroyedCallbackOncePerNode)
@@ -519,6 +573,8 @@ TEST(LinkNodeTests, Deletion_FiresDestroyedCallbackOncePerNode)
 
 TEST(LinkNodeTests, Basic_Tiny_Graph)
 {
+	NODE_SYSTEM.Clear();
+
 	// Create a 3-level hierarchy (Parent => Child => Grandchild).
 	NodeArea* UpstreamArea = NODE_SYSTEM.CreateNodeArea();
 	std::string UpstreamAreaID = UpstreamArea->GetID();
@@ -568,12 +624,13 @@ TEST(LinkNodeTests, Basic_Tiny_Graph)
 	EXPECT_TRUE(TEST_TOOLS.VerifyNoLinkNodes(UpstreamArea));
 	EXPECT_TRUE(TEST_TOOLS.VerifyNoLinkNodes(GrandDownstreamArea));
 
-	NODE_SYSTEM.DeleteNodeArea(UpstreamArea);
-	NODE_SYSTEM.DeleteNodeArea(GrandDownstreamArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(LinkNodeTests, InfiniteLoop)
 {
+	NODE_SYSTEM.Clear();
+
 	// Create a loop (Parent => Child => Grandchild => Parent).
 	NodeArea* UpstreamArea = NODE_SYSTEM.CreateNodeArea();
 	std::string UpstreamAreaID = UpstreamArea->GetID();
@@ -634,8 +691,7 @@ TEST(LinkNodeTests, InfiniteLoop)
 	EXPECT_TRUE(TEST_TOOLS.VerifyNoDanglingLinkNodes(UpstreamArea));
 	EXPECT_TRUE(TEST_TOOLS.VerifyNoDanglingLinkNodes(GrandDownstreamArea));
 
-	NODE_SYSTEM.DeleteNodeArea(UpstreamArea);
-	NODE_SYSTEM.DeleteNodeArea(GrandDownstreamArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(LinkNodeTests, Small_Graph)
@@ -995,6 +1051,8 @@ TEST(LinkNodeTests, SaveLoad_With_Execute_And_Integer_Connections_Small)
 
 TEST(LinkNodeTests, SetSocketAllowedTypes_DisconnectsIncompatible)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* UpstreamArea = NODE_SYSTEM.CreateNodeArea();
 	std::string UpstreamAreaID = UpstreamArea->GetID();
 	UpstreamArea->SetSaveExecutedNodes(true);
@@ -1057,12 +1115,13 @@ TEST(LinkNodeTests, SetSocketAllowedTypes_DisconnectsIncompatible)
 	// Downstream connection from the BOOL socket should also be severed.
 	ASSERT_FALSE(DownstreamArea->IsConnected(DownstreamLinkNode, 1, DownstreamBoolNode, 1));
 
-	NODE_SYSTEM.DeleteNodeArea(UpstreamArea);
-	NODE_SYSTEM.DeleteNodeArea(DownstreamArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(LinkNodeTests, SetSocketAllowedTypes_KeepsCompatible)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* UpstreamArea = NODE_SYSTEM.CreateNodeArea();
 	std::string UpstreamAreaID = UpstreamArea->GetID();
 	UpstreamArea->SetSaveExecutedNodes(true);
@@ -1115,12 +1174,13 @@ TEST(LinkNodeTests, SetSocketAllowedTypes_KeepsCompatible)
 	ASSERT_TRUE(UpstreamArea->ExecuteNodeNetwork());
 	EXPECT_EQ(DownstreamIntNode->GetData(), 42);
 
-	NODE_SYSTEM.DeleteNodeArea(UpstreamArea);
-	NODE_SYSTEM.DeleteNodeArea(DownstreamArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(LinkNodeTests, SetSocketAllowedTypes_PartialDisconnect_MultipleSockets)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* UpstreamArea = NODE_SYSTEM.CreateNodeArea();
 	std::string UpstreamAreaID = UpstreamArea->GetID();
 	UpstreamArea->SetSaveExecutedNodes(true);
@@ -1192,12 +1252,13 @@ TEST(LinkNodeTests, SetSocketAllowedTypes_PartialDisconnect_MultipleSockets)
 	ASSERT_TRUE(UpstreamArea->IsConnected(UpstreamFloatNode, UpstreamLinkNode));
 	ASSERT_TRUE(DownstreamArea->IsConnected(DownstreamLinkNode, 2, DownstreamFloatNode, 1));
 
-	NODE_SYSTEM.DeleteNodeArea(UpstreamArea);
-	NODE_SYSTEM.DeleteNodeArea(DownstreamArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(LinkNodeTests, RenameSocket_PropagatesPartnerName)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* UpstreamArea = NODE_SYSTEM.CreateNodeArea();
 	std::string UpstreamAreaID = UpstreamArea->GetID();
 
@@ -1241,12 +1302,13 @@ TEST(LinkNodeTests, RenameSocket_PropagatesPartnerName)
 	EXPECT_EQ(DownstreamSocket->GetName(), AnotherName);
 	EXPECT_EQ(UpstreamSocket->GetName(), AnotherName);
 
-	NODE_SYSTEM.DeleteNodeArea(UpstreamArea);
-	NODE_SYSTEM.DeleteNodeArea(DownstreamArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(LinkNodeTests, Copy_Paste_Dangling)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* UpstreamArea = NODE_SYSTEM.CreateNodeArea();
 	std::string UpstreamAreaID = UpstreamArea->GetID();
 
@@ -1413,8 +1475,7 @@ TEST(LinkNodeTests, Copy_Paste_Dangling)
 				(DownstreamExecutedNodes[1]->GetID() == DownstreamLinkNode->GetID()));
 	DownstreamIntNode->SetData(0);
 
-	NODE_SYSTEM.DeleteNodeArea(UpstreamArea);
-	NODE_SYSTEM.DeleteNodeArea(DownstreamArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(LinkNodeTests, GetImmediateDownstreamAreas_Deduplicates_DuplicateLinks)

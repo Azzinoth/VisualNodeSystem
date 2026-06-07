@@ -3,6 +3,8 @@ using namespace VisNodeSys;
 
 TEST(NodeSystemTests, CreateAndDelete)
 {
+	NODE_SYSTEM.Clear();
+
 	std::vector<std::string> NodeAreaIDs = NODE_SYSTEM.GetNodeAreaIDList();
 	EXPECT_EQ(NodeAreaIDs.size(), 0);
 
@@ -13,7 +15,7 @@ TEST(NodeSystemTests, CreateAndDelete)
 	EXPECT_EQ(NodeAreaIDs.size(), 1);
 	EXPECT_EQ(NodeAreaIDs[0] == NewNodeArea->GetID(), true);
 
-	NODE_SYSTEM.DeleteNodeArea(NewNodeArea);
+	NODE_SYSTEM.Clear();
 
 	NodeAreaIDs = NODE_SYSTEM.GetNodeAreaIDList();
 	EXPECT_EQ(NodeAreaIDs.size(), 0);
@@ -57,6 +59,8 @@ TEST(NodeSystemTests, LoadShouldClear)
 
 TEST(NodeSystemTests, TryToConnect_CrossArea_IsRejected)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* AreaA = NODE_SYSTEM.CreateNodeArea();
 	NodeArea* AreaB = NODE_SYSTEM.CreateNodeArea();
 
@@ -72,12 +76,13 @@ TEST(NodeSystemTests, TryToConnect_CrossArea_IsRejected)
 	EXPECT_EQ(AreaA->GetConnectionCount(), 0);
 	EXPECT_EQ(AreaB->GetConnectionCount(), 0);
 
-	NODE_SYSTEM.DeleteNodeArea(AreaA);
-	NODE_SYSTEM.DeleteNodeArea(AreaB);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeSystemTests, TryToConnect_CorrectConnection_ButWrongArea_IsRejected)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* AreaA = NODE_SYSTEM.CreateNodeArea();
 	NodeArea* AreaB = NODE_SYSTEM.CreateNodeArea();
 
@@ -94,12 +99,13 @@ TEST(NodeSystemTests, TryToConnect_CorrectConnection_ButWrongArea_IsRejected)
 	EXPECT_EQ(AreaA->GetConnectionCount(), 0);
 	EXPECT_EQ(AreaB->GetConnectionCount(), 0);
 
-	NODE_SYSTEM.DeleteNodeArea(AreaA);
-	NODE_SYSTEM.DeleteNodeArea(AreaB);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeSystemTests, TryToConnect_NodesWithNoParent_IsRejected)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* AreaA = NODE_SYSTEM.CreateNodeArea();
 	BoolLiteralNode* NodeA = new BoolLiteralNode();
 	BoolVariableNode* NodeB = new BoolVariableNode();
@@ -109,11 +115,13 @@ TEST(NodeSystemTests, TryToConnect_NodesWithNoParent_IsRejected)
 
 	// No new connection should appear.
 	EXPECT_EQ(AreaA->GetConnectionCount(), 0);
-	NODE_SYSTEM.DeleteNodeArea(AreaA);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(NodeSystemTests, MoveNodesTo_SameSourceAndTarget_Will_Do_Nothing)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(Area, nullptr);
 
@@ -126,7 +134,7 @@ TEST(NodeSystemTests, MoveNodesTo_SameSourceAndTarget_Will_Do_Nothing)
 	EXPECT_FALSE(NODE_SYSTEM.MoveNodesTo(Area, Area));
 	EXPECT_EQ(Area->GetNodeCount(), 2);
 
-	NODE_SYSTEM.DeleteNodeArea(Area);
+	NODE_SYSTEM.Clear();
 }
 
 // When target's AddNode refuses a node MoveNodesTo must leave that node in source.

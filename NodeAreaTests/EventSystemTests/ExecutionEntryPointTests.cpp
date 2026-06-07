@@ -3,6 +3,8 @@ using namespace VisNodeSys;
 
 TEST(ExecutionEntryPointTests, RejectsNodeWithoutExecuteOutput)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* TestArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(TestArea, nullptr);
 
@@ -11,11 +13,13 @@ TEST(ExecutionEntryPointTests, RejectsNodeWithoutExecuteOutput)
 
 	EXPECT_FALSE(TestArea->SetExecutionEntryNode(LiteralNode));
 
-	NODE_SYSTEM.DeleteNodeArea(TestArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(ExecutionEntryPointTests, RejectsNodeWithNoSockets)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* TestArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(TestArea, nullptr);
 
@@ -24,11 +28,13 @@ TEST(ExecutionEntryPointTests, RejectsNodeWithNoSockets)
 
 	EXPECT_FALSE(TestArea->SetExecutionEntryNode(CountingNode));
 
-	NODE_SYSTEM.DeleteNodeArea(TestArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(ExecutionEntryPointTests, SubAreaInputNodeAsEntryDoesNotCrash)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* ParentArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(ParentArea, nullptr);
 
@@ -45,11 +51,13 @@ TEST(ExecutionEntryPointTests, SubAreaInputNodeAsEntryDoesNotCrash)
 	EXPECT_TRUE(OwnedArea->SetExecutionEntryNode(InputNode));
 	EXPECT_NO_FATAL_FAILURE(OwnedArea->ExecuteNodeNetwork());
 
-	NODE_SYSTEM.DeleteNodeArea(ParentArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(ExecutionEntryPointTests, SubAreaInputNodeAsEntryPropagatesDownstream)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* ParentArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(ParentArea, nullptr);
 
@@ -80,13 +88,15 @@ TEST(ExecutionEntryPointTests, SubAreaInputNodeAsEntryPropagatesDownstream)
 	}
 	EXPECT_TRUE(bDownstreamRan);
 
-	NODE_SYSTEM.DeleteNodeArea(ParentArea);
+	NODE_SYSTEM.Clear();
 }
 
 // "Run From Here" use case: pick a mid-graph execution flow node as the entry.
 // Begin -> A -> B -> C, set B as entry. Expectation: B and C execute, A and Begin do not.
 TEST(ExecutionEntryPointTests, MidGraphIntegerVariableNodeAsEntry)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* TestArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(TestArea, nullptr);
 	TestArea->SetSaveExecutedNodes(true);
@@ -121,7 +131,7 @@ TEST(ExecutionEntryPointTests, MidGraphIntegerVariableNodeAsEntry)
 	EXPECT_TRUE(WasExecuted(B));
 	EXPECT_TRUE(WasExecuted(C));
 
-	NODE_SYSTEM.DeleteNodeArea(TestArea);
+	NODE_SYSTEM.Clear();
 }
 
 namespace
@@ -153,6 +163,8 @@ namespace
 
 TEST(ExecutionEntryPointTests, OrphanTriggerPassesFirstExecuteInputAsOwnSocket)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* TestArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(TestArea, nullptr);
 
@@ -179,7 +191,7 @@ TEST(ExecutionEntryPointTests, OrphanTriggerPassesFirstExecuteInputAsOwnSocket)
 	EXPECT_EQ(Entry->ExecuteCallCount, 1);
 	EXPECT_EQ(Entry->LastReceivedOwnSocket, ExpectedSocket);
 
-	NODE_SYSTEM.DeleteNodeArea(TestArea);
+	NODE_SYSTEM.Clear();
 }
 
 namespace
@@ -240,6 +252,8 @@ namespace
 
 TEST(ExecutionEntryPointTests, OrphanTriggerFallbackToFirstExecuteOutputWhenNoExecuteInput)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* TestArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(TestArea, nullptr);
 
@@ -255,11 +269,13 @@ TEST(ExecutionEntryPointTests, OrphanTriggerFallbackToFirstExecuteOutputWhenNoEx
 	EXPECT_EQ(Entry->ExecuteCallCount, 1);
 	EXPECT_EQ(Entry->LastReceivedOwnSocket, ExpectedSocket);
 
-	NODE_SYSTEM.DeleteNodeArea(TestArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(ExecutionEntryPointTests, OrphanTriggerSkipsNonExecuteInputsToFindFirstExecuteInput)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* TestArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(TestArea, nullptr);
 
@@ -278,12 +294,14 @@ TEST(ExecutionEntryPointTests, OrphanTriggerSkipsNonExecuteInputsToFindFirstExec
 	EXPECT_NE(Entry->LastReceivedOwnSocket, IntInput);
 	EXPECT_EQ(Entry->LastReceivedOwnSocket, ExecuteInput);
 
-	NODE_SYSTEM.DeleteNodeArea(TestArea);
+	NODE_SYSTEM.Clear();
 }
 
 // Successive runs with different entries should each work cleanly.
 TEST(ExecutionEntryPointTests, RunFromHereThenFullRun_BothWork)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* TestArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(TestArea, nullptr);
 	TestArea->SetSaveExecutedNodes(true);
@@ -331,11 +349,13 @@ TEST(ExecutionEntryPointTests, RunFromHereThenFullRun_BothWork)
 	EXPECT_TRUE(bARan);
 	EXPECT_TRUE(bBRan);
 
-	NODE_SYSTEM.DeleteNodeArea(TestArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(ExecutionEntryPointTests, NestedSubAreaInputNodeAsEntryPropagates)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* TopArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(TopArea, nullptr);
 
@@ -372,11 +392,13 @@ TEST(ExecutionEntryPointTests, NestedSubAreaInputNodeAsEntryPropagates)
 	}
 	EXPECT_TRUE(bDownstreamRan);
 
-	NODE_SYSTEM.DeleteNodeArea(TopArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(ExecutionEntryPointTests, SubAreaNodeAsEntryPropagatesIntoChildArea)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* ParentArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(ParentArea, nullptr);
 	ParentArea->SetSaveExecutedNodes(true);
@@ -424,5 +446,5 @@ TEST(ExecutionEntryPointTests, SubAreaNodeAsEntryPropagatesIntoChildArea)
 	}
 	EXPECT_TRUE(bInnerRan);
 
-	NODE_SYSTEM.DeleteNodeArea(ParentArea);
+	NODE_SYSTEM.Clear();
 }

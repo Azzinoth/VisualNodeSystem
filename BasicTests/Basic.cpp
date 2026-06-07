@@ -3,6 +3,8 @@ using namespace VisNodeSys;
 
 TEST(Basic, NodeTesting)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(LocalNodeArea, nullptr);
 	ASSERT_EQ(LocalNodeArea->GetNodeCount(), 0);
@@ -29,11 +31,13 @@ TEST(Basic, NodeTesting)
 	ASSERT_EQ(ListOfNodes.size(), 0);
 	ASSERT_EQ(LocalNodeArea->GetNodeCount(), 0);
 
-	NODE_SYSTEM.DeleteNodeArea(LocalNodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(Basic, NodeArea_TryToConnect_CheckProperFailures)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(LocalNodeArea, nullptr);
 	ASSERT_EQ(LocalNodeArea->GetNodeCount(), 0);
@@ -48,11 +52,13 @@ TEST(Basic, NodeArea_TryToConnect_CheckProperFailures)
 	ASSERT_FALSE(LocalNodeArea->TryToConnect(SomeNode, 0, SomeNode, 0));
 	ASSERT_FALSE(LocalNodeArea->TryToConnect(SomeNode, -1, SomeNode, -1));
 
-	NODE_SYSTEM.DeleteNodeArea(LocalNodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(Basic, NodeSockets)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(LocalNodeArea, nullptr);
 	ASSERT_EQ(LocalNodeArea->GetNodeCount(), 0);
@@ -138,11 +144,13 @@ TEST(Basic, NodeSockets)
 	ConnectedNodes = ThirdNode->GetNodesConnectedToOutput();
 	ASSERT_EQ(ConnectedNodes.size(), 0);
 
-	NODE_SYSTEM.DeleteNodeArea(LocalNodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(Basic, NodeSocketDeletion)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(LocalNodeArea, nullptr);
 	ASSERT_EQ(LocalNodeArea->GetNodeCount(), 0);
@@ -178,11 +186,13 @@ TEST(Basic, NodeSocketDeletion)
 	FirstNode->DeleteSocket(FirstNode->GetSocketIDByIndex(0, NodeSocket::SocketFlow::Output));
 	ASSERT_FALSE(LocalNodeArea->IsConnected(FirstNode, SecondNode));
 
-	NODE_SYSTEM.DeleteNodeArea(LocalNodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(Basic, NonDestractableNode)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(LocalNodeArea, nullptr);
 	ASSERT_EQ(LocalNodeArea->GetNodeCount(), 0);
@@ -206,11 +216,13 @@ TEST(Basic, NonDestractableNode)
 	LocalNodeArea->Delete(OrdinaryNode);
 	ASSERT_EQ(LocalNodeArea->GetNodeCount(), 1);
 
-	NODE_SYSTEM.DeleteNodeArea(LocalNodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(Basic, Save_And_Load_NodeArea)
 {
+	NODE_SYSTEM.Clear();
+
 	std::vector<std::string> NodesIDList;
 	std::vector<std::string> GroupCommentsIDList;
 
@@ -359,11 +371,13 @@ TEST(Basic, Save_And_Load_NodeArea)
 	ASSERT_EQ(Nodes[2]->GetID(), NodesIDList[2]);
 	ASSERT_EQ(Nodes[3]->GetID(), NodesIDList[5]);
 
-	NODE_SYSTEM.DeleteNodeArea(LocalNodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(Basic, SetAllowedTypes_DisconnectsIncompatible)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(LocalNodeArea, nullptr);
 
@@ -392,11 +406,13 @@ TEST(Basic, SetAllowedTypes_DisconnectsIncompatible)
 	ASSERT_EQ(SecondNode->GetNodesConnectedToInput().size(), 0);
 	ASSERT_FALSE(LocalNodeArea->IsConnected(FirstNode, SecondNode));
 
-	NODE_SYSTEM.DeleteNodeArea(LocalNodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(Basic, SetAllowedTypes_KeepsCompatible)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(LocalNodeArea, nullptr);
 
@@ -423,11 +439,13 @@ TEST(Basic, SetAllowedTypes_KeepsCompatible)
 	ASSERT_EQ(SecondNode->GetNodesConnectedToInput().size(), 1);
 	ASSERT_TRUE(LocalNodeArea->IsConnected(FirstNode, SecondNode));
 
-	NODE_SYSTEM.DeleteNodeArea(LocalNodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(Basic, SetAllowedTypes_PartialDisconnect)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(LocalNodeArea, nullptr);
 
@@ -459,11 +477,13 @@ TEST(Basic, SetAllowedTypes_PartialDisconnect)
 	ASSERT_FALSE(LocalNodeArea->IsConnected(NodeB, Receiver));
 	ASSERT_EQ(Receiver->GetNodesConnectedToInput().size(), 1);
 
-	NODE_SYSTEM.DeleteNodeArea(LocalNodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(Basic, DuplicateConnection_IsRejected)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
 
 	BoolLiteralNode* NodeA = TEST_TOOLS.CreateBoolLiteralNode(true);
@@ -479,11 +499,13 @@ TEST(Basic, DuplicateConnection_IsRejected)
 	EXPECT_FALSE(Area->TryToConnect(NodeA, 0, NodeB, 1));
 	EXPECT_EQ(Area->GetConnectionCount(), 1);
 
-	NODE_SYSTEM.DeleteNodeArea(Area);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(Basic, CouldBeDestroyed_RegularNode_ReturnsTrue)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
 
 	Node* RegularNode = new Node();
@@ -492,22 +514,26 @@ TEST(Basic, CouldBeDestroyed_RegularNode_ReturnsTrue)
 	// A plain node with no protection should report that it can be destroyed.
 	EXPECT_TRUE(RegularNode->CouldBeDestroyed());
 
-	NODE_SYSTEM.DeleteNodeArea(Area);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(Basic, Delete_NullptrNode_DoesNotCrash)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
 
 	EXPECT_FALSE(Area->Delete(static_cast<Node*>(nullptr)));
 	EXPECT_FALSE(Area->Delete(static_cast<GroupComment*>(nullptr)));
 	EXPECT_FALSE(Area->Delete(static_cast<RerouteNode*>(nullptr)));
 
-	NODE_SYSTEM.DeleteNodeArea(Area);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(Basic, NodeCopyConstructor_GeneratesNewID)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(LocalNodeArea, nullptr);
 
@@ -520,11 +546,13 @@ TEST(Basic, NodeCopyConstructor_GeneratesNewID)
 	ASSERT_NE(Copy->GetID(), Original->GetID());
 	ASSERT_FALSE(Copy->GetID().empty());
 
-	NODE_SYSTEM.DeleteNodeArea(LocalNodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(Basic, NodeCopyConstructor_CopiesGeometry)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(LocalNodeArea, nullptr);
 
@@ -539,11 +567,13 @@ TEST(Basic, NodeCopyConstructor_CopiesGeometry)
 	ASSERT_EQ(Copy->GetPosition(), ImVec2(123.0f, 456.0f));
 	ASSERT_EQ(Copy->GetSize(), ImVec2(321.0f, 654.0f));
 
-	NODE_SYSTEM.DeleteNodeArea(LocalNodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(Basic, NodeCopyConstructor_CopiesNameAndType)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(LocalNodeArea, nullptr);
 
@@ -558,11 +588,13 @@ TEST(Basic, NodeCopyConstructor_CopiesNameAndType)
 	ASSERT_EQ(Copy->GetName(), "MyCustomName");
 	ASSERT_EQ(Copy->GetType(), OriginalType);
 
-	NODE_SYSTEM.DeleteNodeArea(LocalNodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(Basic, NodeCopyConstructor_CopiesStyle)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(LocalNodeArea, nullptr);
 
@@ -576,11 +608,13 @@ TEST(Basic, NodeCopyConstructor_CopiesStyle)
 
 	ASSERT_EQ(Copy->GetStyle(), CIRCLE);
 
-	NODE_SYSTEM.DeleteNodeArea(LocalNodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(Basic, NodeCopyConstructor_PreservesCouldBeMovedFlag)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(LocalNodeArea, nullptr);
 
@@ -594,11 +628,13 @@ TEST(Basic, NodeCopyConstructor_PreservesCouldBeMovedFlag)
 
 	ASSERT_FALSE(Copy->CouldBeMoved());
 
-	NODE_SYSTEM.DeleteNodeArea(LocalNodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(Basic, NodeCopyConstructor_PreservesRenderTitleBarFlag)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(LocalNodeArea, nullptr);
 
@@ -612,11 +648,13 @@ TEST(Basic, NodeCopyConstructor_PreservesRenderTitleBarFlag)
 
 	ASSERT_FALSE(Copy->GetRenderTitleBar());
 
-	NODE_SYSTEM.DeleteNodeArea(LocalNodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(Basic, NodeCopyConstructor_PreservesCouldBeDestroyedFlag)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(LocalNodeArea, nullptr);
 
@@ -629,11 +667,13 @@ TEST(Basic, NodeCopyConstructor_PreservesCouldBeDestroyedFlag)
 
 	ASSERT_EQ(Copy->CouldBeDestroyed(), Original->CouldBeDestroyed());
 
-	NODE_SYSTEM.DeleteNodeArea(LocalNodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(Basic, NodeCopyConstructor_DeepCopiesSockets)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(LocalNodeArea, nullptr);
 
@@ -681,11 +721,13 @@ TEST(Basic, NodeCopyConstructor_DeepCopiesSockets)
 	ASSERT_EQ(InSocket->GetParent(), Original);
 	ASSERT_EQ(OutSocket->GetParent(), Original);
 
-	NODE_SYSTEM.DeleteNodeArea(LocalNodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(Basic, NodeCopyConstructor_CopiesZeroSocketsCleanly)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(LocalNodeArea, nullptr);
 
@@ -698,11 +740,13 @@ TEST(Basic, NodeCopyConstructor_CopiesZeroSocketsCleanly)
 	ASSERT_EQ(Copy->GetInputSocketCount(), 0);
 	ASSERT_EQ(Copy->GetOutputSocketCount(), 0);
 
-	NODE_SYSTEM.DeleteNodeArea(LocalNodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(Basic, DeleteSocket_OnOrphanNode)
 {
+	NODE_SYSTEM.Clear();
+
 	Node* NewNode = new Node();
 	NewNode->AddSocket(new NodeSocket(NewNode, "TEST", "test", NodeSocket::SocketFlow::Input));
 	ASSERT_EQ(NewNode->GetInputSocketCount(), 1);
@@ -713,11 +757,13 @@ TEST(Basic, DeleteSocket_OnOrphanNode)
 
 	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
 	LocalNodeArea->AddNode(NewNode);
-	NODE_SYSTEM.DeleteNodeArea(LocalNodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(Basic, SetCaption_RejectsStringLongerThanMaxLength)
 {
+	NODE_SYSTEM.Clear();
+
 	// Build a string that is exactly one character over the limit.
 	const std::string OversizedCaption(NODE_NAME_MAX_LENGTH + 1, 'X');
 
@@ -727,11 +773,13 @@ TEST(Basic, SetCaption_RejectsStringLongerThanMaxLength)
 
 	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
 	LocalNodeArea->AddNode(NewNode);
-	NODE_SYSTEM.DeleteNodeArea(LocalNodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(Basic, SetFunctionToOutputData_EmptyFunction_GetDataReturnsNullptr)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
 
 	Node* SomeNode = new Node();
@@ -745,11 +793,13 @@ TEST(Basic, SetFunctionToOutputData_EmptyFunction_GetDataReturnsNullptr)
 
 	EXPECT_EQ(Socket->GetData(), nullptr);
 
-	NODE_SYSTEM.DeleteNodeArea(Area);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(Basic, UnsetFunction_GetData_ReturnsNullptr)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
 
 	Node* SomeNode = new Node();
@@ -761,11 +811,13 @@ TEST(Basic, UnsetFunction_GetData_ReturnsNullptr)
 
 	EXPECT_EQ(Socket->GetData(), nullptr);
 
-	NODE_SYSTEM.DeleteNodeArea(Area);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(Basic, SetThenEmpty_GetData_ReturnsNullptr)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
 
 	Node* SomeNode = new Node();
@@ -783,11 +835,13 @@ TEST(Basic, SetThenEmpty_GetData_ReturnsNullptr)
 
 	EXPECT_EQ(Socket->GetData(), nullptr);
 
-	NODE_SYSTEM.DeleteNodeArea(Area);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(Basic, OverwriteFunction_GetData_ReturnsLatest)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
 
 	Node* SomeNode = new Node();
@@ -807,7 +861,7 @@ TEST(Basic, OverwriteFunction_GetData_ReturnsLatest)
 
 	EXPECT_EQ(Socket->GetData(), &SecondValue);
 
-	NODE_SYSTEM.DeleteNodeArea(Area);
+	NODE_SYSTEM.Clear();
 }
 
 #define EXPECT_NO_EMPTY_STRING_IN_TYPES(socket) \
@@ -820,6 +874,8 @@ TEST(Basic, OverwriteFunction_GetData_ReturnsLatest)
 
 TEST(Basic, NodeSocketConstructor_EmptyType_StripsEmpty)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
 
 	Node* Owner = new Node();
@@ -829,11 +885,13 @@ TEST(Basic, NodeSocketConstructor_EmptyType_StripsEmpty)
 
 	EXPECT_NO_EMPTY_STRING_IN_TYPES(Socket);
 
-	NODE_SYSTEM.DeleteNodeArea(Area);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(Basic, NodeSocketConstructor_VectorOnlyEmpty_StripsAll)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
 
 	Node* Owner = new Node();
@@ -843,11 +901,13 @@ TEST(Basic, NodeSocketConstructor_VectorOnlyEmpty_StripsAll)
 
 	EXPECT_NO_EMPTY_STRING_IN_TYPES(Socket);
 
-	NODE_SYSTEM.DeleteNodeArea(Area);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(Basic, NodeSocketConstructor_VectorWithEmpty_StripsEmpty)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
 
 	Node* Owner = new Node();
@@ -857,11 +917,13 @@ TEST(Basic, NodeSocketConstructor_VectorWithEmpty_StripsEmpty)
 
 	EXPECT_NO_EMPTY_STRING_IN_TYPES(Socket);
 
-	NODE_SYSTEM.DeleteNodeArea(Area);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(Basic, SetAllowedTypes_OnlyEmpty_StripsAll)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
 
 	Node* Owner = new Node();
@@ -873,11 +935,13 @@ TEST(Basic, SetAllowedTypes_OnlyEmpty_StripsAll)
 
 	EXPECT_NO_EMPTY_STRING_IN_TYPES(Socket);
 
-	NODE_SYSTEM.DeleteNodeArea(Area);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(Basic, SetAllowedTypes_WithEmpty_StripsEmpty)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
 
 	Node* Owner = new Node();
@@ -889,11 +953,13 @@ TEST(Basic, SetAllowedTypes_WithEmpty_StripsEmpty)
 
 	EXPECT_NO_EMPTY_STRING_IN_TYPES(Socket);
 
-	NODE_SYSTEM.DeleteNodeArea(Area);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(Basic, SubAreaNode_AddSocketWithEmpty_StripsEmpty)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* Parent = NODE_SYSTEM.CreateNodeArea();
 	SubAreaNode* SubArea = NODE_SYSTEM.CreateSubAreaNode(Parent->GetID());
 	ASSERT_NE(SubArea, nullptr);
@@ -913,11 +979,13 @@ TEST(Basic, SubAreaNode_AddSocketWithEmpty_StripsEmpty)
 			EXPECT_NO_EMPTY_STRING_IN_TYPES(InputNode->GetSocketByIndex(i, NodeSocket::SocketFlow::Output));
 	}
 
-	NODE_SYSTEM.DeleteNodeArea(Parent);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(Basic, Node_AddSocketWithTaintedTypes_StripsEmpty)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
 
 	Node* Owner = new Node();
@@ -931,7 +999,7 @@ TEST(Basic, Node_AddSocketWithTaintedTypes_StripsEmpty)
 	for (size_t i = 0; i < Owner->GetOutputSocketCount(); i++)
 		EXPECT_NO_EMPTY_STRING_IN_TYPES(Owner->GetSocketByIndex(i, NodeSocket::SocketFlow::Output));
 
-	NODE_SYSTEM.DeleteNodeArea(Area);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(Basic, LoadFromJson_EmptyTypeInPayload_StripsEmpty)
@@ -976,6 +1044,8 @@ TEST(Basic, LoadFromJson_EmptyTypeInPayload_StripsEmpty)
 
 TEST(Basic, SubAreaInputNode_AddSocketWithEmpty_PartnerAlsoStripped)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* Parent = NODE_SYSTEM.CreateNodeArea();
 	SubAreaNode* SubArea = NODE_SYSTEM.CreateSubAreaNode(Parent->GetID());
 	ASSERT_NE(SubArea, nullptr);
@@ -990,11 +1060,13 @@ TEST(Basic, SubAreaInputNode_AddSocketWithEmpty_PartnerAlsoStripped)
 	for (size_t i = 0; i < SubArea->GetInputSocketCount(); i++)
 		EXPECT_NO_EMPTY_STRING_IN_TYPES(SubArea->GetSocketByIndex(i, NodeSocket::SocketFlow::Input));
 
-	NODE_SYSTEM.DeleteNodeArea(Parent);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(Basic, SetAllowedTypes_OnMirrorSocket_PartnerAlsoStripped)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* Parent = NODE_SYSTEM.CreateNodeArea();
 	SubAreaNode* SubArea = NODE_SYSTEM.CreateSubAreaNode(Parent->GetID());
 	ASSERT_NE(SubArea, nullptr);
@@ -1013,11 +1085,13 @@ TEST(Basic, SetAllowedTypes_OnMirrorSocket_PartnerAlsoStripped)
 	ASSERT_NE(InputMirrorSocket, nullptr);
 	EXPECT_NO_EMPTY_STRING_IN_TYPES(InputMirrorSocket);
 
-	NODE_SYSTEM.DeleteNodeArea(Parent);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(Basic, CopyPaste_TaintedSource_CopyStripsEmpty)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
 
 	Node* TaintedSource = new Node();
@@ -1037,11 +1111,13 @@ TEST(Basic, CopyPaste_TaintedSource_CopyStripsEmpty)
 			EXPECT_NO_EMPTY_STRING_IN_TYPES(AnyNode->GetSocketByIndex(i, NodeSocket::SocketFlow::Output));
 	}
 
-	NODE_SYSTEM.DeleteNodeArea(Area);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(Basic, NodeSocket_NullOutputDataFunction)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(Area, nullptr);
 
@@ -1054,11 +1130,13 @@ TEST(Basic, NodeSocket_NullOutputDataFunction)
 
 	EXPECT_EQ(Socket->GetData(), nullptr);
 
-	NODE_SYSTEM.DeleteNodeArea(Area);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(Basic, NodeSocket_CanBeDeletedByUser_DefaultsTrue_SetterAndGetterWork)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
 	Node* Owner = new Node();
 	NodeSocket* Socket = new NodeSocket(Owner, "INT", "x", NodeSocket::SocketFlow::Input);
@@ -1073,11 +1151,13 @@ TEST(Basic, NodeSocket_CanBeDeletedByUser_DefaultsTrue_SetterAndGetterWork)
 	Socket->SetCanBeDeletedByUser(true);
 	EXPECT_TRUE(Socket->CanBeDeletedByUser());
 
-	NODE_SYSTEM.DeleteNodeArea(Area);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(Basic, Node_DeleteSocket_RespectsCanBeDeletedByUserFlag)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
 	Node* Owner = new Node();
 	NodeSocket* Socket = new NodeSocket(Owner, "INT", "x", NodeSocket::SocketFlow::Input);
@@ -1094,11 +1174,13 @@ TEST(Basic, Node_DeleteSocket_RespectsCanBeDeletedByUserFlag)
 	EXPECT_TRUE(Owner->DeleteSocket(Socket));
 	EXPECT_EQ(Owner->GetInputSocketCount(), 0);
 
-	NODE_SYSTEM.DeleteNodeArea(Area);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(Basic, Node_CopyCtor_PreservesCanBeDeletedByUserFlag)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
 	Node* Source = new Node();
 
@@ -1121,11 +1203,13 @@ TEST(Basic, Node_CopyCtor_PreservesCanBeDeletedByUserFlag)
 	EXPECT_TRUE(CopiedIn->CanBeDeletedByUser());
 	EXPECT_FALSE(CopiedOut->CanBeDeletedByUser());
 
-	NODE_SYSTEM.DeleteNodeArea(Area);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(Basic, NodeSocket_Persistence_RoundTripPreservesCanBeDeletedByUserFlag)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
 	Node* Source = new Node();
 
@@ -1156,11 +1240,13 @@ TEST(Basic, NodeSocket_Persistence_RoundTripPreservesCanBeDeletedByUserFlag)
 	EXPECT_TRUE (Loaded->GetSocketByIndex(0, NodeSocket::SocketFlow::Output)->CanBeDeletedByUser());
 	EXPECT_FALSE(Loaded->GetSocketByIndex(1, NodeSocket::SocketFlow::Output)->CanBeDeletedByUser());
 
-	NODE_SYSTEM.DeleteNodeArea(Area);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(Basic, NodeSocket_Persistence_OldSaveWithoutField_KeepsDefaultTrue)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
 	Node* Source = new Node();
 	NodeSocket* Socket = new NodeSocket(Source, "INT", "x", NodeSocket::SocketFlow::Output);
@@ -1182,11 +1268,13 @@ TEST(Basic, NodeSocket_Persistence_OldSaveWithoutField_KeepsDefaultTrue)
 	// Missing field => framework default (true), not a crash.
 	EXPECT_TRUE(LoadedSocket->CanBeDeletedByUser());
 
-	NODE_SYSTEM.DeleteNodeArea(Area);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(Basic, NodeSocket_Persistence_WrongTypeForField_IsIgnored_NotCrashing)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
 	Node* Source = new Node();
 	NodeSocket* Socket = new NodeSocket(Source, "INT", "x", NodeSocket::SocketFlow::Output);
@@ -1206,5 +1294,5 @@ TEST(Basic, NodeSocket_Persistence_WrongTypeForField_IsIgnored_NotCrashing)
 	// Wrong type => treated as missing, fall back to framework default.
 	EXPECT_TRUE(LoadedSocket->CanBeDeletedByUser());
 
-	NODE_SYSTEM.DeleteNodeArea(Area);
+	NODE_SYSTEM.Clear();
 }

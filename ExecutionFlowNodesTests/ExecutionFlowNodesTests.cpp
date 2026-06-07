@@ -7,6 +7,8 @@ using namespace VisNodeSys;
 
 TEST(ExecutionFlowNodesTests, LogicalOperators)
 {
+	NODE_SYSTEM.Clear();
+
 	const std::unordered_map<std::string, bool> ExpectedNodeValues = {
 		// AND part.
 		{"5818753A73201D630F6C7E1D", false},
@@ -86,11 +88,13 @@ TEST(ExecutionFlowNodesTests, LogicalOperators)
 		ASSERT_EQ(BoolVariableValue, NodeToCheck.second);
 	}
 
-	NODE_SYSTEM.DeleteNodeArea(TestNodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(ExecutionFlowNodesTests, LogicalOperatorsRandom)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* TestNodeArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(TestNodeArea, nullptr);
 	TestNodeArea->SetSaveExecutedNodes(true);
@@ -152,6 +156,8 @@ TEST(ExecutionFlowNodesTests, LogicalOperatorsRandom)
 
 TEST(ExecutionFlowNodesTests, LogicalOperators_ExecuteWithDisconnectedInputs_IsSafe)
 {
+	NODE_SYSTEM.Clear();
+
 	const LogicalNodeOperatorType AllOperatorTypes[] = {
 		LogicalNodeOperatorType::AND,
 		LogicalNodeOperatorType::NOT,
@@ -211,6 +217,8 @@ static void ExpectStandardNodeSurvivesMissingDataInputsOnExecute(const std::stri
 
 TEST(ExecutionFlowNodesTests, StandardNodes_LoadedWithMissingDataInputs_ExecuteWithoutCrashing)
 {
+	NODE_SYSTEM.Clear();
+
 	const std::vector<std::string> NodeTypes = {
 		"IntegerVariableNode", "FloatVariableNode", "BoolVariableNode",
 		"Vec2VariableNode", "Vec3VariableNode", "Vec4VariableNode",
@@ -226,6 +234,8 @@ TEST(ExecutionFlowNodesTests, StandardNodes_LoadedWithMissingDataInputs_ExecuteW
 
 TEST(ExecutionFlowNodesTests, CompareOperatorsRandom)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* TestNodeArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(TestNodeArea, nullptr);
 	TestNodeArea->SetSaveExecutedNodes(true);
@@ -380,6 +390,8 @@ TEST(ExecutionFlowNodesTests, CompareOperatorsRandom)
 
 TEST(ExecutionFlowNodesTests, ArithmeticOperatorsRandom)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* TestNodeArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(TestNodeArea, nullptr);
 	TestNodeArea->SetSaveExecutedNodes(true);
@@ -539,6 +551,8 @@ TEST(ExecutionFlowNodesTests, ArithmeticOperatorsRandom)
 
 TEST(ExecutionFlowNodesTests, ControlFlow)
 {
+	NODE_SYSTEM.Clear();
+
 	NodeArea* TestNodeArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(TestNodeArea, nullptr);
 
@@ -625,11 +639,13 @@ TEST(ExecutionFlowNodesTests, ControlFlow)
 	bVariableValue = CurrentBoolVariableNode->GetData();
 	ASSERT_EQ(bVariableValue, true);
 
-	NODE_SYSTEM.DeleteNodeArea(TestNodeArea);
+	NODE_SYSTEM.Clear();
 }
 
 TEST(ExecutionFlowNodesTests, SavingLoading_RandomArithmetic_Calculation)
 {
+	NODE_SYSTEM.Clear();
+
 	srand(RANDOM_SEED);
 
 	for (int i = 0; i < RANDOM_ACTIONS_ITERATIONS / 20; i++)
