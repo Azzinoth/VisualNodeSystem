@@ -161,9 +161,21 @@ void NodeArea::Delete(Connection* Connection)
 	if (!bClearing)
 	{
 		for (size_t i = 0; i < NodesToNotify.size(); i++)
-		{
 			PropagateNodeEventsCallbacks(NodesToNotify[i], BEFORE_DISCONNECTED);
+
+		// A BEFORE_DISCONNECTED callback may have caused the connection to be deleted already.
+		bool bConnectionStillAlive = false;
+		for (size_t i = 0; i < Connections.size(); i++)
+		{
+			if (Connections[i] == Connection)
+			{
+				bConnectionStillAlive = true;
+				break;
+			}
 		}
+
+		if (!bConnectionStillAlive)
+			return;
 	}
 
 	for (int i = 0; i < static_cast<int>(Connection->In->ConnectedSockets.size()); i++)
@@ -201,9 +213,7 @@ void NodeArea::Delete(Connection* Connection)
 	if (!bClearing)
 	{
 		for (size_t i = 0; i < NodesToNotify.size(); i++)
-		{
 			PropagateNodeEventsCallbacks(NodesToNotify[i], AFTER_DISCONNECTED);
-		}
 	}
 }
 

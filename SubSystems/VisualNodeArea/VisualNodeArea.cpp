@@ -902,6 +902,13 @@ bool NodeArea::ExecuteNodeNetwork()
 	for (NodeArea* CurrentChildren : GetRecursiveChildren())
 		CurrentChildren->LastExecutedNodes.clear();
 
+	// Clear all downstream connections.
+	for (NodeArea* DownstreamArea : NODE_SYSTEM.GetAllDownstreamAreas(GetID()))
+	{
+		if (DownstreamArea != nullptr && DownstreamArea != this)
+			DownstreamArea->LastExecutedNodes.clear();
+	}
+
 	Node* EntryNode = GetExecutionEntryNode();
 	if (EntryNode == nullptr)
 		return false;
