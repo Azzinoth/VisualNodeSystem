@@ -164,6 +164,82 @@ TEST(NodeSystemTests, MoveNodesTo_AddNodeRejection_NodeIsRetained_InSource)
 	NODE_SYSTEM.Clear();
 }
 
+TEST(NodeSystemTests, MoveNodesTo_StraddlingConnection_IsSevered)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* SourceArea = NODE_SYSTEM.CreateNodeArea();
+	NodeArea* TargetArea = NODE_SYSTEM.CreateNodeArea();
+
+	Node* CollidingNode = new Node("DuplicateID");
+	CollidingNode->AddSocket(new NodeSocket(CollidingNode, "T", "out", NodeSocket::SocketFlow::Output));
+	ASSERT_TRUE(SourceArea->AddNode(CollidingNode));
+
+	Node* NodeThatWillChangeArea = new Node();
+	NodeThatWillChangeArea->AddSocket(new NodeSocket(NodeThatWillChangeArea, "T", "in", NodeSocket::SocketFlow::Input));
+	ASSERT_TRUE(SourceArea->AddNode(NodeThatWillChangeArea));
+
+	ASSERT_TRUE(SourceArea->TryToConnect(CollidingNode, 0, NodeThatWillChangeArea, 0));
+	ASSERT_EQ(SourceArea->GetConnectionCount(), 1);
+
+	// TargetArea already owns a node with the same ID, so it will be rejectd.
+	Node* BlockerNode = new Node("DuplicateID");
+	ASSERT_TRUE(TargetArea->AddNode(BlockerNode));
+
+	ASSERT_TRUE(NODE_SYSTEM.MoveNodesTo(SourceArea, TargetArea));
+
+	EXPECT_EQ(CollidingNode->GetParentArea(), SourceArea);
+	EXPECT_EQ(NodeThatWillChangeArea->GetParentArea(), TargetArea);
+
+	// The straddling connection is deleted, both at the area level and at the
+	// socket level (the sockets must no longer reference each other across areas).
+	EXPECT_EQ(SourceArea->GetConnectionCount(), 0);
+	EXPECT_FALSE(SourceArea->IsConnected(CollidingNode, NodeThatWillChangeArea));
+	EXPECT_TRUE(CollidingNode->GetNodesConnectedToOutput().empty());
+	EXPECT_TRUE(NodeThatWillChangeArea->GetNodesConnectedToInput().empty());
+
+	NODE_SYSTEM.Clear();
+}
+
+TEST(NodeSystemTests, MoveNodesTo_DropsMovedElementsFromSourceSelection)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* SourceArea = NODE_SYSTEM.CreateNodeArea();
+	NodeArea* TargetArea = NODE_SYSTEM.CreateNodeArea();
+
+	Node* OutputNode = new Node();
+	OutputNode->AddSocket(new NodeSocket(OutputNode, "T", "out", NodeSocket::SocketFlow::Output));
+	ASSERT_TRUE(SourceArea->AddNode(OutputNode));
+
+	Node* InputNode = new Node();
+	InputNode->AddSocket(new NodeSocket(InputNode, "T", "in", NodeSocket::SocketFlow::Input));
+	ASSERT_TRUE(SourceArea->AddNode(InputNode));
+
+	ASSERT_TRUE(SourceArea->TryToConnect(OutputNode, 0, InputNode, 0));
+
+	// Select a node and a reroute on the connection, both of which will move.
+	RerouteNode* Reroute = SourceArea->AddRerouteNodeToConnection(OutputNode, 0, InputNode, 0, 0, ImVec2(10.0f, 10.0f));
+	ASSERT_NE(Reroute, nullptr);
+	ASSERT_TRUE(SourceArea->AddSelected(OutputNode));
+	ASSERT_TRUE(SourceArea->AddSelected(Reroute));
+	ASSERT_TRUE(SourceArea->IsSelected(OutputNode));
+	ASSERT_TRUE(SourceArea->IsSelected(Reroute));
+
+	ASSERT_TRUE(NODE_SYSTEM.MoveNodesTo(SourceArea, TargetArea, false));
+
+	// Both the node and its connection (with the reroute) moved to the target.
+	EXPECT_EQ(OutputNode->GetParentArea(), TargetArea);
+	EXPECT_EQ(SourceArea->GetConnectionCount(), 0);
+
+	// The source area no longer references the moved node or reroute in its selection.
+	EXPECT_FALSE(SourceArea->IsSelected(OutputNode));
+	EXPECT_FALSE(SourceArea->IsSelected(Reroute));
+	EXPECT_TRUE(SourceArea->GetSelected().empty());
+
+	NODE_SYSTEM.Clear();
+}
+
 TEST(NodeSystemTests, MoveNodesTo_AllNodesAccepted_TransfersThemAndPreservesPartialSelection)
 {
 	NODE_SYSTEM.Clear();

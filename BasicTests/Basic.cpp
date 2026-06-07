@@ -189,6 +189,71 @@ TEST(Basic, NodeSocketDeletion)
 	NODE_SYSTEM.Clear();
 }
 
+TEST(Basic, AddSocket_RejectsForeignAndDuplicateSockets)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(LocalNodeArea, nullptr);
+
+	Node* FirstNode = new Node();
+	ASSERT_NE(FirstNode, nullptr);
+	LocalNodeArea->AddNode(FirstNode);
+
+	Node* SecondNode = new Node();
+	ASSERT_NE(SecondNode, nullptr);
+	LocalNodeArea->AddNode(SecondNode);
+
+	// A socket can be added to the node that owns it.
+	NodeSocket* OwnSocket = new NodeSocket(FirstNode, "EXECUTE", "out", NodeSocket::SocketFlow::Output);
+	ASSERT_TRUE(FirstNode->AddSocket(OwnSocket));
+	ASSERT_EQ(FirstNode->GetOutputSocketCount(), 1);
+
+	// Adding the same socket again is rejected.
+	ASSERT_FALSE(FirstNode->AddSocket(OwnSocket));
+	ASSERT_EQ(FirstNode->GetOutputSocketCount(), 1);
+
+	// A node can not adopt a socket owned by another node.
+	ASSERT_FALSE(SecondNode->AddSocket(OwnSocket));
+	ASSERT_EQ(SecondNode->GetOutputSocketCount(), 0);
+	ASSERT_EQ(SecondNode->GetSocketByID(OwnSocket->GetID()), nullptr);
+
+	// A null socket is rejected.
+	ASSERT_FALSE(FirstNode->AddSocket(nullptr));
+
+	NODE_SYSTEM.Clear();
+}
+
+TEST(Basic, DeleteSocket_RejectsForeignSocket)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(LocalNodeArea, nullptr);
+
+	Node* FirstNode = new Node();
+	ASSERT_NE(FirstNode, nullptr);
+	LocalNodeArea->AddNode(FirstNode);
+
+	Node* SecondNode = new Node();
+	ASSERT_NE(SecondNode, nullptr);
+	LocalNodeArea->AddNode(SecondNode);
+
+	NodeSocket* OwnedSocket = new NodeSocket(SecondNode, "INT", "in", NodeSocket::SocketFlow::Input);
+	ASSERT_TRUE(SecondNode->AddSocket(OwnedSocket));
+
+	// A node can not delete a socket owned by another node.
+	ASSERT_FALSE(FirstNode->DeleteSocket(OwnedSocket));
+	ASSERT_NE(SecondNode->GetSocketByID(OwnedSocket->GetID()), nullptr);
+
+	// The owning node can delete its own socket.
+	std::string OwnedSocketID = OwnedSocket->GetID();
+	ASSERT_TRUE(SecondNode->DeleteSocket(OwnedSocket));
+	ASSERT_EQ(SecondNode->GetSocketByID(OwnedSocketID), nullptr);
+
+	NODE_SYSTEM.Clear();
+}
+
 TEST(Basic, NonDestractableNode)
 {
 	NODE_SYSTEM.Clear();

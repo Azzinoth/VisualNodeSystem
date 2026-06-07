@@ -192,6 +192,133 @@ TEST(NodeAreaEventSystemTests, ReentrantConnectionDelete_FromBeforeDisconnectedC
 	NODE_SYSTEM.Clear();
 }
 
+TEST(NodeAreaEventSystemTests, SiblingConnectionDelete_FromBeforeDisconnectedCallback_IsSafe)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(LocalNodeArea, nullptr);
+
+	Node* SourceNode = new Node();
+	SourceNode->AddSocket(new NodeSocket(SourceNode, "T", "out", NodeSocket::SocketFlow::Output));
+	ASSERT_TRUE(LocalNodeArea->AddNode(SourceNode));
+
+	Node* FirstTarget = new Node();
+	FirstTarget->AddSocket(new NodeSocket(FirstTarget, "T", "in", NodeSocket::SocketFlow::Input));
+	ASSERT_TRUE(LocalNodeArea->AddNode(FirstTarget));
+
+	Node* SecondTarget = new Node();
+	SecondTarget->AddSocket(new NodeSocket(SecondTarget, "T", "in", NodeSocket::SocketFlow::Input));
+	ASSERT_TRUE(LocalNodeArea->AddNode(SecondTarget));
+
+	// Two connections share SourceNode's output socket.
+	ASSERT_TRUE(LocalNodeArea->TryToConnect(SourceNode, 0, FirstTarget, 0));
+	ASSERT_TRUE(LocalNodeArea->TryToConnect(SourceNode, 0, SecondTarget, 0));
+	ASSERT_EQ(LocalNodeArea->GetConnectionCount(), 2);
+
+	// During the first disconnect, the callback disconnects the SIBLING connection, which the outer snapshot loop still references.
+	bool bSiblingDisconnected = false;
+	LocalNodeArea->AddNodeEventCallback([&](Node*, NODE_EVENT EventType) {
+		if (EventType == NODE_EVENT::BEFORE_DISCONNECTED && !bSiblingDisconnected)
+		{
+			bSiblingDisconnected = true;
+			LocalNodeArea->TryToDisconnect(SourceNode, 0, SecondTarget, 0);
+		}
+	});
+
+	// Disconnect everything on SourceNode's output socket.
+	const std::string SocketID = SourceNode->GetSocketByIndex(0, NodeSocket::SocketFlow::Output)->GetID();
+	ASSERT_TRUE(LocalNodeArea->TryToDisconnect(SourceNode, SocketID));
+
+	// The reentrancy ran and the area is left consistent, with no dangling sockets.
+	EXPECT_TRUE(bSiblingDisconnected);
+	EXPECT_EQ(LocalNodeArea->GetConnectionCount(), 0);
+	EXPECT_TRUE(SourceNode->GetNodesConnectedToOutput().empty());
+	EXPECT_TRUE(FirstTarget->GetNodesConnectedToInput().empty());
+	EXPECT_TRUE(SecondTarget->GetNodesConnectedToInput().empty());
+
+	NODE_SYSTEM.Clear();
+}
+
+TEST(NodeAreaEventSystemTests, ReentrantNodeDelete_FromDestroyedCallback_IsSafe)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(LocalNodeArea, nullptr);
+
+	Node* TargetNode = new Node();
+	TargetNode->AddSocket(new NodeSocket(TargetNode, "T", "in", NodeSocket::SocketFlow::Input));
+	ASSERT_TRUE(LocalNodeArea->AddNode(TargetNode));
+
+	Node* OtherNode = new Node();
+	OtherNode->AddSocket(new NodeSocket(OtherNode, "T", "out", NodeSocket::SocketFlow::Output));
+	ASSERT_TRUE(LocalNodeArea->AddNode(OtherNode));
+
+	ASSERT_TRUE(LocalNodeArea->TryToConnect(OtherNode, 0, TargetNode, 0));
+	ASSERT_EQ(LocalNodeArea->GetConnectionCount(), 1);
+
+	const std::string TargetNodeID = TargetNode->GetID();
+
+	// The DESTROYED callback re-enters Delete on the same node, freeing it before the outer Delete continues.
+	bool bReentered = false;
+	LocalNodeArea->AddNodeEventCallback([&](Node* EventNode, NODE_EVENT EventType) {
+		if (EventType == NODE_EVENT::DESTROYED && !bReentered)
+		{
+			bReentered = true;
+			LocalNodeArea->Delete(EventNode);
+		}
+	});
+
+	LocalNodeArea->Delete(TargetNode);
+
+	// The reentrancy ran, the node was deleted exactly once and the area is intact.
+	EXPECT_TRUE(bReentered);
+	EXPECT_EQ(LocalNodeArea->GetNodeByID(TargetNodeID), nullptr);
+	EXPECT_EQ(LocalNodeArea->GetNodeCount(), 1);
+	EXPECT_EQ(LocalNodeArea->GetConnectionCount(), 0);
+	EXPECT_TRUE(OtherNode->GetNodesConnectedToOutput().empty());
+
+	NODE_SYSTEM.Clear();
+}
+
+TEST(NodeAreaEventSystemTests, PropagateUpdate_NotifiesNeighborsNotCaller)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(LocalNodeArea, nullptr);
+
+	EventCountingNode* UpstreamNode = new EventCountingNode();
+	UpstreamNode->AddSocket(new NodeSocket(UpstreamNode, "T", "out", NodeSocket::SocketFlow::Output));
+	ASSERT_TRUE(LocalNodeArea->AddNode(UpstreamNode));
+
+	EventCountingNode* CallerNode = new EventCountingNode();
+	CallerNode->AddSocket(new NodeSocket(CallerNode, "T", "in", NodeSocket::SocketFlow::Input));
+	CallerNode->AddSocket(new NodeSocket(CallerNode, "T", "out", NodeSocket::SocketFlow::Output));
+	ASSERT_TRUE(LocalNodeArea->AddNode(CallerNode));
+
+	EventCountingNode* DownstreamNode = new EventCountingNode();
+	DownstreamNode->AddSocket(new NodeSocket(DownstreamNode, "T", "in", NodeSocket::SocketFlow::Input));
+	ASSERT_TRUE(LocalNodeArea->AddNode(DownstreamNode));
+
+	// Upstream => Caller (input side) and Caller => Downstream (output side).
+	ASSERT_TRUE(LocalNodeArea->TryToConnect(UpstreamNode, 0, CallerNode, 0));
+	ASSERT_TRUE(LocalNodeArea->TryToConnect(CallerNode, 0, DownstreamNode, 0));
+
+	UpstreamNode->ResetCounters();
+	CallerNode->ResetCounters();
+	DownstreamNode->ResetCounters();
+	LocalNodeArea->PropagateUpdateToConnectedNodes(CallerNode);
+
+	// Both neighbors are notified exactly once, the caller never notifies itself.
+	EXPECT_EQ(UpstreamNode->GetUpdateCount(), 1);
+	EXPECT_EQ(DownstreamNode->GetUpdateCount(), 1);
+	EXPECT_EQ(CallerNode->GetUpdateCount(), 0);
+
+	NODE_SYSTEM.Clear();
+}
+
 TEST(NodeAreaEventSystemTests, Node_CanConnect_Functionality)
 {
 	NODE_SYSTEM.Clear();

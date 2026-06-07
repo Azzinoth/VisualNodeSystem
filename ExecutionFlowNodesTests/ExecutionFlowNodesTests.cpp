@@ -839,3 +839,181 @@ TEST(ExecutionFlowNodesTests, DeleteSocket_OnUndeletableStandardNodeSocket_IsRej
 	NODE_SYSTEM.DeleteNodeArea(Area);
 	NODE_SYSTEM.Clear();
 }
+
+TEST(ExecutionFlowNodesTests, IntegerDivide_IntMinByNegativeOne_SaturatesWithoutCrashing)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(LocalNodeArea, nullptr);
+
+	IntegerLiteralNode* IntegerA = new IntegerLiteralNode();
+	IntegerA->SetData(INT_MIN);
+	IntegerLiteralNode* IntegerB = new IntegerLiteralNode();
+	IntegerB->SetData(-1);
+	ArithmeticDivideNode* DivideNode = new ArithmeticDivideNode();
+	ASSERT_TRUE(LocalNodeArea->AddNode(IntegerA));
+	ASSERT_TRUE(LocalNodeArea->AddNode(IntegerB));
+	ASSERT_TRUE(LocalNodeArea->AddNode(DivideNode));
+
+	ASSERT_TRUE(LocalNodeArea->TryToConnect(IntegerA, 0, DivideNode, 1));
+	ASSERT_TRUE(LocalNodeArea->TryToConnect(IntegerB, 0, DivideNode, 2));
+	ASSERT_TRUE(LocalNodeArea->SetExecutionEntryNode(DivideNode));
+	LocalNodeArea->ExecuteNodeNetwork();
+
+	NodeSocket* ResultSocket = DivideNode->GetSocketByIndex(1, NodeSocket::SocketFlow::Output);
+	ASSERT_NE(ResultSocket, nullptr);
+	int Result = *reinterpret_cast<int*>(ResultSocket->GetData());
+	EXPECT_EQ(Result, INT_MAX);
+
+	NODE_SYSTEM.Clear();
+}
+
+TEST(ExecutionFlowNodesTests, IntegerModulus_IntMinByNegativeOne_ReturnsZeroWithoutCrashing)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(LocalNodeArea, nullptr);
+
+	IntegerLiteralNode* IntegerA = new IntegerLiteralNode();
+	IntegerA->SetData(INT_MIN);
+	IntegerLiteralNode* IntegerB = new IntegerLiteralNode();
+	IntegerB->SetData(-1);
+	ArithmeticModulusNode* ModulusNode = new ArithmeticModulusNode();
+	ASSERT_TRUE(LocalNodeArea->AddNode(IntegerA));
+	ASSERT_TRUE(LocalNodeArea->AddNode(IntegerB));
+	ASSERT_TRUE(LocalNodeArea->AddNode(ModulusNode));
+
+	ASSERT_TRUE(LocalNodeArea->TryToConnect(IntegerA, 0, ModulusNode, 1));
+	ASSERT_TRUE(LocalNodeArea->TryToConnect(IntegerB, 0, ModulusNode, 2));
+	ASSERT_TRUE(LocalNodeArea->SetExecutionEntryNode(ModulusNode));
+	LocalNodeArea->ExecuteNodeNetwork();
+
+	NodeSocket* ResultSocket = ModulusNode->GetSocketByIndex(1, NodeSocket::SocketFlow::Output);
+	ASSERT_NE(ResultSocket, nullptr);
+	int Result = *reinterpret_cast<int*>(ResultSocket->GetData());
+	EXPECT_EQ(Result, 0);
+
+	NODE_SYSTEM.Clear();
+}
+
+TEST(ExecutionFlowNodesTests, ArithmeticChain_DownstreamOperatorInheritsUpstreamActiveType)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(LocalNodeArea, nullptr);
+
+	FloatLiteralNode* FloatA = new FloatLiteralNode();
+	FloatA->SetData(2.0f);
+	FloatLiteralNode* FloatB = new FloatLiteralNode();
+	FloatB->SetData(3.0f);
+	ArithmeticMultiplyNode* MultiplyNode = new ArithmeticMultiplyNode();
+	ArithmeticAddNode* AdditionNode = new ArithmeticAddNode();
+	ASSERT_TRUE(LocalNodeArea->AddNode(FloatA));
+	ASSERT_TRUE(LocalNodeArea->AddNode(FloatB));
+	ASSERT_TRUE(LocalNodeArea->AddNode(MultiplyNode));
+	ASSERT_TRUE(LocalNodeArea->AddNode(AdditionNode));
+
+	ASSERT_TRUE(LocalNodeArea->TryToConnect(FloatA, 0, MultiplyNode, 1));
+	ASSERT_TRUE(LocalNodeArea->TryToConnect(FloatB, 0, MultiplyNode, 2));
+	// Multiply's Result feeds Addition's A input, and its execution drives Addition.
+	ASSERT_TRUE(LocalNodeArea->TryToConnect(MultiplyNode, 1, AdditionNode, 1));
+	ASSERT_TRUE(LocalNodeArea->TryToConnect(MultiplyNode, 0, AdditionNode, 0));
+
+	// Both operators resolve to FLOAT.
+	EXPECT_EQ(MultiplyNode->GetActiveINDataType(), "FLOAT");
+	EXPECT_EQ(AdditionNode->GetActiveINDataType(), "FLOAT");
+
+	ASSERT_TRUE(LocalNodeArea->SetExecutionEntryNode(MultiplyNode));
+	LocalNodeArea->ExecuteNodeNetwork();
+
+	// Multiply = 2 * 3 = 6; Addition reads that 6.0 as a float (B disconnected = 0) = 6.0.
+	NodeSocket* AdditionResultSocket = AdditionNode->GetSocketByIndex(1, NodeSocket::SocketFlow::Output);
+	ASSERT_NE(AdditionResultSocket, nullptr);
+	float AdditionResult = *reinterpret_cast<float*>(AdditionResultSocket->GetData());
+	EXPECT_FLOAT_EQ(AdditionResult, 6.0f);
+
+	NODE_SYSTEM.Clear();
+}
+
+TEST(ExecutionFlowNodesTests, VectorModulus_ComputesComponentWiseRemainder)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(LocalNodeArea, nullptr);
+
+	Vec2LiteralNode* FirstVector = new Vec2LiteralNode();
+	FirstVector->SetData(glm::vec2(7.0f, 5.0f));
+	Vec2LiteralNode* SecondVector = new Vec2LiteralNode();
+	SecondVector->SetData(glm::vec2(3.0f, 2.0f));
+	ArithmeticModulusNode* ModulusNode = new ArithmeticModulusNode();
+	ASSERT_TRUE(LocalNodeArea->AddNode(FirstVector));
+	ASSERT_TRUE(LocalNodeArea->AddNode(SecondVector));
+	ASSERT_TRUE(LocalNodeArea->AddNode(ModulusNode));
+
+	ASSERT_TRUE(LocalNodeArea->TryToConnect(FirstVector, 0, ModulusNode, 1));
+	ASSERT_TRUE(LocalNodeArea->TryToConnect(SecondVector, 0, ModulusNode, 2));
+	ASSERT_EQ(ModulusNode->GetActiveINDataType(), "VEC2");
+
+	ASSERT_TRUE(LocalNodeArea->SetExecutionEntryNode(ModulusNode));
+	LocalNodeArea->ExecuteNodeNetwork();
+
+	NodeSocket* ResultSocket = ModulusNode->GetSocketByIndex(1, NodeSocket::SocketFlow::Output);
+	ASSERT_NE(ResultSocket, nullptr);
+	glm::vec2 Result = *reinterpret_cast<glm::vec2*>(ResultSocket->GetData());
+
+	// 7 mod 3 = 1, 5 mod 2 = 1.
+	EXPECT_FLOAT_EQ(Result.x, 1.0f);
+	EXPECT_FLOAT_EQ(Result.y, 1.0f);
+
+	NODE_SYSTEM.Clear();
+}
+
+TEST(ExecutionFlowNodesTests, BranchNode_ConditionRejectsVectorComparison_AcceptsBool)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(LocalNodeArea, nullptr);
+
+	// VEC2-mode comparison: its Result is a bvec, so the bool condition must reject it.
+	Vec2LiteralNode* FirstVector = new Vec2LiteralNode();
+	FirstVector->SetData(glm::vec2(0.0f, 5.0f));
+	Vec2LiteralNode* SecondVector = new Vec2LiteralNode();
+	SecondVector->SetData(glm::vec2(1.0f, 1.0f));
+	GreaterThanNode* VectorComparison = new GreaterThanNode();
+	BranchNode* VectorBranch = new BranchNode();
+	ASSERT_TRUE(LocalNodeArea->AddNode(FirstVector));
+	ASSERT_TRUE(LocalNodeArea->AddNode(SecondVector));
+	ASSERT_TRUE(LocalNodeArea->AddNode(VectorComparison));
+	ASSERT_TRUE(LocalNodeArea->AddNode(VectorBranch));
+
+	ASSERT_TRUE(LocalNodeArea->TryToConnect(FirstVector, 0, VectorComparison, 1));
+	ASSERT_TRUE(LocalNodeArea->TryToConnect(SecondVector, 0, VectorComparison, 2));
+	ASSERT_EQ(VectorComparison->GetActiveINDataType(), "VEC2");
+
+	EXPECT_FALSE(LocalNodeArea->TryToConnect(VectorComparison, 1, VectorBranch, 1));
+
+	// INT-mode comparison: its Result is BOOL, a valid branch condition.
+	IntegerLiteralNode* FirstInt = new IntegerLiteralNode();
+	FirstInt->SetData(5);
+	IntegerLiteralNode* SecondInt = new IntegerLiteralNode();
+	SecondInt->SetData(1);
+	GreaterThanNode* ScalarComparison = new GreaterThanNode();
+	BranchNode* ScalarBranch = new BranchNode();
+	ASSERT_TRUE(LocalNodeArea->AddNode(FirstInt));
+	ASSERT_TRUE(LocalNodeArea->AddNode(SecondInt));
+	ASSERT_TRUE(LocalNodeArea->AddNode(ScalarComparison));
+	ASSERT_TRUE(LocalNodeArea->AddNode(ScalarBranch));
+
+	ASSERT_TRUE(LocalNodeArea->TryToConnect(FirstInt, 0, ScalarComparison, 1));
+	ASSERT_TRUE(LocalNodeArea->TryToConnect(SecondInt, 0, ScalarComparison, 2));
+	ASSERT_EQ(ScalarComparison->GetActiveINDataType(), "INT");
+
+	EXPECT_TRUE(LocalNodeArea->TryToConnect(ScalarComparison, 1, ScalarBranch, 1));
+
+	NODE_SYSTEM.Clear();
+}

@@ -1696,3 +1696,44 @@ TEST(LinkNodeTests, CopyArea_IntoLinkedArea_RejectedLinkNode_SkipsConnection)
 
 	NODE_SYSTEM.Clear();
 }
+
+TEST(LinkNodeTests, DeleteSocket_IsAtomicAcrossMirrorPartners)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* SourceArea = NODE_SYSTEM.CreateNodeArea();
+	NodeArea* TargetArea = NODE_SYSTEM.CreateNodeArea();
+
+	std::pair<std::string, std::string> LinkIDs;
+	ASSERT_TRUE(NODE_SYSTEM.LinkNodeAreas(SourceArea->GetID(), TargetArea->GetID(), &LinkIDs));
+	LinkNode* UpstreamLink = dynamic_cast<LinkNode*>(NODE_SYSTEM.GetNodeByID(LinkIDs.first));
+	LinkNode* DownstreamLink = dynamic_cast<LinkNode*>(NODE_SYSTEM.GetNodeByID(LinkIDs.second));
+	ASSERT_NE(UpstreamLink, nullptr);
+	ASSERT_NE(DownstreamLink, nullptr);
+
+	const size_t UpstreamInputsBefore = UpstreamLink->GetInputSocketCount();
+	const size_t DownstreamOutputsBefore = DownstreamLink->GetOutputSocketCount();
+
+	// Adding a mirrored socket gives the partner a matching one.
+	ASSERT_TRUE(UpstreamLink->AddSocket({ "INT" }, "a", NodeSocket::SocketFlow::Input));
+	ASSERT_EQ(UpstreamLink->GetInputSocketCount(), UpstreamInputsBefore + 1);
+	ASSERT_EQ(DownstreamLink->GetOutputSocketCount(), DownstreamOutputsBefore + 1);
+
+	NodeSocket* AddedSocket = UpstreamLink->GetSocketByIndex(UpstreamLink->GetInputSocketCount() - 1, NodeSocket::SocketFlow::Input);
+	ASSERT_NE(AddedSocket, nullptr);
+	const std::string AddedSocketID = AddedSocket->GetID();
+
+	// A non-user-deletable socket can not be deleted, and neither side changes.
+	AddedSocket->SetCanBeDeletedByUser(false);
+	EXPECT_FALSE(UpstreamLink->DeleteSocket(AddedSocketID));
+	EXPECT_EQ(UpstreamLink->GetInputSocketCount(), UpstreamInputsBefore + 1);
+	EXPECT_EQ(DownstreamLink->GetOutputSocketCount(), DownstreamOutputsBefore + 1);
+
+	// Once deletable, deleting it removes it from BOTH sides.
+	AddedSocket->SetCanBeDeletedByUser(true);
+	EXPECT_TRUE(UpstreamLink->DeleteSocket(AddedSocketID));
+	EXPECT_EQ(UpstreamLink->GetInputSocketCount(), UpstreamInputsBefore);
+	EXPECT_EQ(DownstreamLink->GetOutputSocketCount(), DownstreamOutputsBefore);
+
+	NODE_SYSTEM.Clear();
+}
