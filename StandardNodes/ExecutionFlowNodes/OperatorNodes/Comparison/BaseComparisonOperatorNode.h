@@ -17,6 +17,8 @@ class BaseComparisonOperatorNode : public BaseExecutionFlowNode
 	bool CanConnect(VisNodeSys::NodeSocket* OwnSocket, VisNodeSys::NodeSocket* CandidateSocket, char** MsgToUser);
 	void SocketEvent(VisNodeSys::NodeSocket* OwnSocket, VisNodeSys::NodeSocket* ConnectedSocket, VisNodeSys::NODE_SOCKET_EVENT EventType);
 
+	std::string ResolveConnectedSocketType(VisNodeSys::NodeSocket* ConnectedSocket) const;
+
 protected:
 	ComparisonNodeOperatorType OperatorType = ComparisonNodeOperatorType::EQUAL;
 private:

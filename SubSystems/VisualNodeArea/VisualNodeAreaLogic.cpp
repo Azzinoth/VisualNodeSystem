@@ -123,10 +123,10 @@ Connection* NodeArea::GetConnection(const NodeSocket* FirstSocket, const NodeSoc
 	return nullptr;
 }
 
-void NodeArea::Delete(Connection* Connection)
+bool NodeArea::Delete(Connection* Connection)
 {
 	if (Connection == nullptr)
-		return;
+		return false;
 
 	bool bOwnedByThis = false;
 	for (size_t i = 0; i < Connections.size(); i++)
@@ -139,7 +139,7 @@ void NodeArea::Delete(Connection* Connection)
 	}
 
 	if (!bOwnedByThis)
-		return;
+		return false;
 
 	if (HoveredConnection == Connection)
 		HoveredConnection = nullptr;
@@ -188,7 +188,7 @@ void NodeArea::Delete(Connection* Connection)
 		}
 
 		if (!bConnectionStillAlive)
-			return;
+			return true;
 	}
 
 	for (int i = 0; i < static_cast<int>(Connection->In->ConnectedSockets.size()); i++)
@@ -228,6 +228,8 @@ void NodeArea::Delete(Connection* Connection)
 		for (size_t i = 0; i < NodesToNotify.size(); i++)
 			PropagateNodeEventsCallbacks(NodesToNotify[i], AFTER_DISCONNECTED);
 	}
+
+	return true;
 }
 
 bool NodeArea::Delete(RerouteNode* RerouteNode)
@@ -446,8 +448,8 @@ void NodeArea::RemoveStaleSelectionAndHoverReferences()
 		}
 	}
 
-	if (HoveredNode != nullptr && GetNodeByID(HoveredNode->GetID()) == nullptr)
-		HoveredNode = nullptr;
+	if (!HoveredNodeID.empty() && GetNodeByID(HoveredNodeID) == nullptr)
+		HoveredNodeID.clear();
 
 	if (HoveredConnection != nullptr)
 	{
@@ -588,8 +590,28 @@ bool NodeArea::TryToConnect(const Node* OutNode, const size_t OutNodeSocketIndex
 	const bool bResult = InSocket->GetParent()->CanConnect(InSocket, OutSocket, &Message);
 	if (bResult)
 	{
+		// The BEFORE_CONNECTED callbacks may delete a involved nodes.
+		const std::string OutNodeID = OutSocket->GetParent()->GetID();
+		const std::string InNodeID = InSocket->GetParent()->GetID();
+		const std::string OutSocketID = OutSocket->GetID();
+		const std::string InSocketID = InSocket->GetID();
+
+		auto RevalidateSockets = [&]() -> bool {
+			Node* CurrentOutNode = GetNodeByID(OutNodeID);
+			Node* CurrentInNode = GetNodeByID(InNodeID);
+			OutSocket = CurrentOutNode != nullptr ? CurrentOutNode->GetSocketByID(OutSocketID) : nullptr;
+			InSocket = CurrentInNode != nullptr ? CurrentInNode->GetSocketByID(InSocketID) : nullptr;
+
+			return OutSocket != nullptr && InSocket != nullptr;
+		};
+
 		PropagateNodeEventsCallbacks(OutSocket->GetParent(), BEFORE_CONNECTED);
+		if (!RevalidateSockets())
+			return false;
+
 		PropagateNodeEventsCallbacks(InSocket->GetParent(), BEFORE_CONNECTED);
+		if (!RevalidateSockets())
+			return false;
 
 		OutSocket->ConnectedSockets.push_back(InSocket);
 		InSocket->ConnectedSockets.push_back(OutSocket);
@@ -1171,18 +1193,31 @@ std::vector<GroupComment*> NodeArea::GetGroupCommentsInGroupComment(GroupComment
 	return Result;
 }
 
-void NodeArea::AttachElementsToGroupComment(GroupComment* GroupComment)
+void NodeArea::AttachElementsToGroupComment(GroupComment* Comment)
 {
-	GroupComment->AttachedNodes.clear();
-	GroupComment->AttachedRerouteNodes.clear();
-	GroupComment->AttachedGroupComments.clear();
+	Comment->AttachedNodeIDs.clear();
+	Comment->AttachedRerouteNodeIDs.clear();
+	Comment->AttachedGroupCommentIDs.clear();
 
-	if (!GroupComment->bMoveElementsWithComment)
+	if (!Comment->bMoveElementsWithComment)
 		return;
 
-	GroupComment->AttachedNodes = GetNodesInGroupComment(GroupComment);
-	GroupComment->AttachedRerouteNodes = GetRerouteNodesInGroupComment(GroupComment);
-	GroupComment->AttachedGroupComments = GetGroupCommentsInGroupComment(GroupComment);
+	for (Node* CurrentNode : GetNodesInGroupComment(Comment))
+		Comment->AttachedNodeIDs.push_back(CurrentNode->GetID());
+
+	for (RerouteNode* CurrentReroute : GetRerouteNodesInGroupComment(Comment))
+		Comment->AttachedRerouteNodeIDs.push_back(CurrentReroute->GetID());
+
+	for (GroupComment* CurrentComment : GetGroupCommentsInGroupComment(Comment))
+		Comment->AttachedGroupCommentIDs.push_back(CurrentComment->GetID());
+}
+
+size_t NodeArea::GetGroupCommentAttachedNodeCount(const GroupComment* GroupComment) const
+{
+	if (GroupComment == nullptr)
+		return 0;
+
+	return GroupComment->AttachedNodeIDs.size();
 }
 
 size_t NodeArea::GetRerouteConnectionCount() const

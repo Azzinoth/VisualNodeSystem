@@ -48,7 +48,7 @@ void NodeArea::RenderNode(Node* Node) const
 	ImGui::SetCursorScreenPos(Node->LeftTop);
 
 	// Drawing node background layer.
-	const ImU32 NodeBackgroundColor = (HoveredNode == Node || IsSelected(Node)) ? ImGui::GetColorU32(Settings.Style.NodeBackgroundColor) : ImGui::GetColorU32(Settings.Style.HoveredNodeBackgroundColor);
+	const ImU32 NodeBackgroundColor = (HoveredNodeID == Node->GetID() || IsSelected(Node)) ? ImGui::GetColorU32(Settings.Style.NodeBackgroundColor) : ImGui::GetColorU32(Settings.Style.HoveredNodeBackgroundColor);
 	if (Node->GetStyle() == DEFAULT)
 	{
 		CurrentDrawList->AddRectFilled(Node->LeftTop, Node->RightBottom, NodeBackgroundColor, 8.0f * Zoom);
@@ -68,7 +68,7 @@ void NodeArea::RenderNode(Node* Node) const
 			// Drawing caption area.
 			ImVec2 TitleArea = Node->RightBottom;
 			TitleArea.y = Node->LeftTop.y + GetNodeTitleHeight(Node);
-			const ImU32 NodeTitleBackgroundColor = (HoveredNode == Node || IsSelected(Node)) ? Node->TitleBackgroundColorHovered : Node->TitleBackgroundColor;
+			const ImU32 NodeTitleBackgroundColor = (HoveredNodeID == Node->GetID() || IsSelected(Node)) ? Node->TitleBackgroundColorHovered : Node->TitleBackgroundColor;
 
 			CurrentDrawList->AddRectFilled(Node->LeftTop + ImVec2(1, 1), TitleArea, NodeTitleBackgroundColor, 8.0f * Zoom);
 			CurrentDrawList->AddRect(Node->LeftTop, Node->RightBottom, ImColor(100, 100, 100), 8.0f * Zoom);

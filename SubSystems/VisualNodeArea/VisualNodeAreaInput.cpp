@@ -237,7 +237,7 @@ void NodeArea::LeftMouseReleasedGroupCommentUpdate()
 
 void NodeArea::MouseInputUpdateNodes()
 {
-	HoveredNode = nullptr;
+	HoveredNodeID.clear();
 	SocketHovered = nullptr;
 
 	for (size_t i = 0; i < Nodes.size(); i++)
@@ -246,13 +246,15 @@ void NodeArea::MouseInputUpdateNodes()
 	for (size_t i = 0; i < Nodes.size(); i++)
 	{
 		InputUpdateNode(Nodes[i]);
-		if (HoveredNode != nullptr)
+		if (!HoveredNodeID.empty())
 			break;
 	}
 }
 
 void NodeArea::MouseInputUpdateGroupComments()
 {
+	Node* HoveredNode = GetNodeByID(HoveredNodeID);
+
 	GroupCommentHovered = nullptr;
 	for (size_t i = 0; i < GroupComments.size(); i++)
 	{
@@ -289,6 +291,7 @@ void NodeArea::LeftMouseClick()
 
 void NodeArea::LeftMouseClickNodesUpdate()
 {
+	Node* HoveredNode = GetNodeByID(HoveredNodeID);
 	bool bNothingElseIsSelected = SelectedNodes.size() == 0 && SelectedRerouteNodes.size() == 0 && SelectedGroupComments.size() == 0;
 	bool bCtrlPressed = ImGui::IsKeyDown(ImGuiKey_LeftCtrl) || ImGui::IsKeyDown(ImGuiKey_RightCtrl);
 	bool bHoveredCorrectly = HoveredNode != nullptr;
@@ -374,6 +377,7 @@ void NodeArea::LeftMouseClickRerouteUpdate()
 
 void NodeArea::LeftMouseClickGroupCommentsUpdate()
 {
+	Node* HoveredNode = GetNodeByID(HoveredNodeID);
 	if (HoveredNode == nullptr && RerouteNodeHovered == nullptr)
 	{
 		if (!IsAnyGroupCommentInResizeMode())
@@ -425,6 +429,7 @@ void NodeArea::LeftMouseClickGroupCommentsUpdate()
 
 void NodeArea::RightMouseClick()
 {
+	Node* HoveredNode = GetNodeByID(HoveredNodeID);
 	if (HoveredNode == nullptr)
 		UnSelectAllNodes();
 
@@ -446,6 +451,7 @@ NodeAreaContextMenuOpenState NodeArea::GetContextMenuOpenState() const
 
 void NodeArea::RightMouseClickNodesUpdate()
 {
+	Node* HoveredNode = GetNodeByID(HoveredNodeID);
 	if (HoveredNode != nullptr)
 	{
 		if (SelectedNodes.size() <= 1)
@@ -730,29 +736,54 @@ void NodeArea::MouseDraggingGroupCommentUpdate()
 	}
 }
 
-void NodeArea::MoveGroupComment(GroupComment* GroupComment, ImVec2 Delta)
+void NodeArea::MoveGroupComment(GroupComment* Comment, ImVec2 Delta)
 {
-	GroupComment->Position += Delta;
+	Comment->Position += Delta;
 
-	if (!GroupComment->bMoveElementsWithComment)
+	if (!Comment->bMoveElementsWithComment)
 		return;
 
-	for (size_t i = 0; i < GroupComment->AttachedNodes.size(); i++)
+	for (size_t i = 0; i < Comment->AttachedNodeIDs.size(); i++)
 	{
-		if (!IsSelected(GroupComment->AttachedNodes[i]))
-			GroupComment->AttachedNodes[i]->SetPosition(GroupComment->AttachedNodes[i]->GetPosition() + Delta);
+		Node* AttachedNode = GetNodeByID(Comment->AttachedNodeIDs[i]);
+		// The element was deleted since the snapshot, drop the stale ID.
+		if (AttachedNode == nullptr)
+		{
+			Comment->AttachedNodeIDs.erase(Comment->AttachedNodeIDs.begin() + i);
+			i--;
+			continue;
+		}
+
+		if (!IsSelected(AttachedNode))
+			AttachedNode->SetPosition(AttachedNode->GetPosition() + Delta);
 	}
 
-	for (size_t i = 0; i < GroupComment->AttachedRerouteNodes.size(); i++)
+	for (size_t i = 0; i < Comment->AttachedRerouteNodeIDs.size(); i++)
 	{
-		if (!IsSelected(GroupComment->AttachedRerouteNodes[i]))
-			GroupComment->AttachedRerouteNodes[i]->Position += Delta;
+		RerouteNode* AttachedReroute = GetRerouteNodeByID(Comment->AttachedRerouteNodeIDs[i]);
+		if (AttachedReroute == nullptr)
+		{
+			Comment->AttachedRerouteNodeIDs.erase(Comment->AttachedRerouteNodeIDs.begin() + i);
+			i--;
+			continue;
+		}
+
+		if (!IsSelected(AttachedReroute))
+			AttachedReroute->Position += Delta;
 	}
 
-	for (size_t i = 0; i < GroupComment->AttachedGroupComments.size(); i++)
+	for (size_t i = 0; i < Comment->AttachedGroupCommentIDs.size(); i++)
 	{
-		if (!IsSelected(GroupComment->AttachedGroupComments[i]))
-			GroupComment->AttachedGroupComments[i]->SetPosition(GroupComment->AttachedGroupComments[i]->GetPosition() + Delta);
+		GroupComment* AttachedComment = GetGroupCommentByID(Comment->AttachedGroupCommentIDs[i]);
+		if (AttachedComment == nullptr)
+		{
+			Comment->AttachedGroupCommentIDs.erase(Comment->AttachedGroupCommentIDs.begin() + i);
+			i--;
+			continue;
+		}
+
+		if (!IsSelected(AttachedComment))
+			AttachedComment->SetPosition(AttachedComment->GetPosition() + Delta);
 	}
 }
 
@@ -776,8 +807,8 @@ void NodeArea::KeyboardInputUpdate()
 
 		for (size_t i = 0; i < SelectedConnections.size(); i++)
 		{
-			Delete(SelectedConnections[i]);
-			i--;
+			if (Delete(SelectedConnections[i]))
+				i--;
 		}
 
 		for (size_t i = 0; i < SelectedRerouteNodes.size(); i++)
@@ -916,7 +947,7 @@ void NodeArea::KeyboardInputUpdate()
 
 Node* NodeArea::GetHovered() const
 {
-	return HoveredNode;
+	return GetNodeByID(HoveredNodeID);
 }
 
 NodeSocket* NodeArea::GetHoveredSocket() const
@@ -1083,9 +1114,9 @@ bool NodeArea::UnSelect(GroupComment* GroupComment)
 			SelectedGroupComments[i]->bSelected = false;
 			SelectedGroupComments.erase(SelectedGroupComments.begin() + i);
 
-			GroupComment->AttachedNodes.clear();
-			GroupComment->AttachedRerouteNodes.clear();
-			GroupComment->AttachedGroupComments.clear();
+			GroupComment->AttachedNodeIDs.clear();
+			GroupComment->AttachedRerouteNodeIDs.clear();
+			GroupComment->AttachedGroupCommentIDs.clear();
 
 			return true;
 		}
@@ -1180,7 +1211,7 @@ void NodeArea::InputUpdateNode(Node* Node)
 	{
 		if (IsRectUnderMouse(Node->LeftTop, Node->GetSize() * Zoom))
 		{
-			HoveredNode = Node;
+			HoveredNodeID = Node->GetID();
 			Node->SetIsHovered(true);
 		}
 	}
@@ -1189,7 +1220,7 @@ void NodeArea::InputUpdateNode(Node* Node)
 		if (glm::distance(glm::vec2(Node->LeftTop.x + NODE_DIAMETER / 2.0f * Zoom, Node->LeftTop.y + NODE_DIAMETER / 2.0f * Zoom),
 						  glm::vec2(MouseCursorPosition.x, MouseCursorPosition.y)) <= NODE_DIAMETER * Zoom)
 		{
-			HoveredNode = Node;
+			HoveredNodeID = Node->GetID();
 			Node->SetIsHovered(true);
 		}
 	}
@@ -1387,6 +1418,8 @@ bool NodeArea::IsMouseRegionSelectionActive() const
 
 void NodeArea::MouseInputUpdateConnections()
 {
+	Node* HoveredNode = GetNodeByID(HoveredNodeID);
+
 	for (size_t i = 0; i < Connections.size(); i++)
 		Connections[i]->bHovered = false;
 	HoveredConnection = nullptr;
@@ -1549,6 +1582,7 @@ void NodeArea::GroupCommentDoubleMouseClick()
 
 bool NodeArea::IsMouseAboveSomethingSelected() const
 {
+	Node* HoveredNode = GetNodeByID(HoveredNodeID);
 	if (HoveredNode != nullptr && IsSelected(HoveredNode))
 		return true;
 

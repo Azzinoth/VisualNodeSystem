@@ -199,6 +199,10 @@ bool SocketMirrorNode::AddSocket(NodeSocket* Socket)
 	if (Socket == nullptr || (Socket->GetFlowDirection() == NodeSocket::SocketFlow::Input && !bHaveInput) || (Socket->GetFlowDirection() == NodeSocket::SocketFlow::Output && !bHaveOutput))
 		return false;
 
+	// Node::AddSocket would reject a foreign or duplicate socket.
+	if (Socket->GetParent() != this || GetSocketByID(Socket->GetID()) != nullptr)
+		return false;
+
 	SocketIDBeingModified = Socket->GetID();
 	if (!NODE_SYSTEM.AddSocketToMirrorNode(ID, Socket->GetAllowedTypes(), Socket->GetName(), Socket->GetFlowDirection()))
 	{
@@ -206,7 +210,7 @@ bool SocketMirrorNode::AddSocket(NodeSocket* Socket)
 		return false;
 	}
 
-	Node::AddSocket(Socket);
+	const bool bLocalAdded = Node::AddSocket(Socket);
 	SetCorrectSize();
 
 	if (Socket->GetFlowDirection() == NodeSocket::SocketFlow::Output && bHaveOutput)
@@ -216,7 +220,7 @@ bool SocketMirrorNode::AddSocket(NodeSocket* Socket)
 	}
 
 	SocketIDBeingModified = "";
-	return true;
+	return bLocalAdded;
 }
 
 bool SocketMirrorNode::DeleteSocket(std::string SocketID)

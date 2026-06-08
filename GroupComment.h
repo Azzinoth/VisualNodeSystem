@@ -37,10 +37,10 @@ namespace VisNodeSys
 		float GetCaptionHeight(float Zoom) const;
 		ImVec2 GetCaptionSize(float Zoom) const;
 
-		// Temporary storage for moving.
-		std::vector<Node*> AttachedNodes;
-		std::vector<RerouteNode*> AttachedRerouteNodes;
-		std::vector<GroupComment*> AttachedGroupComments;
+		// IDs of the elements captured when a move-with-comment drag starts.
+		std::vector<std::string> AttachedNodeIDs;
+		std::vector<std::string> AttachedRerouteNodeIDs;
+		std::vector<std::string> AttachedGroupCommentIDs;
 
 		ImVec4 BackgroundColor = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
 

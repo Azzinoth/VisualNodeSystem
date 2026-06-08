@@ -628,6 +628,14 @@ void NodeSystem::CopyNodesInternal(const std::vector<Node*>& SourceNodes, NodeAr
 		if (CopyOfNode == nullptr)
 			CopyOfNode = new Node(*SourceNodes[i]);
 
+		// If copy constructor creted node with different count of sockets, we should not proceed.
+		if (CopyOfNode->GetInputSocketCount() != SourceNodes[i]->GetInputSocketCount() || CopyOfNode->GetOutputSocketCount() != SourceNodes[i]->GetOutputSocketCount())
+		{
+			// FE_TO_DO: Notify the user that this node type has a faulty copy constructor.
+			delete CopyOfNode;
+			continue;
+		}
+
 		if (!TargetArea->AddNode(CopyOfNode))
 		{
 			delete CopyOfNode;
@@ -638,14 +646,10 @@ void NodeSystem::CopyNodesInternal(const std::vector<Node*>& SourceNodes, NodeAr
 		OldToNewNode[SourceNodes[i]] = CopyOfNode;
 
 		for (size_t j = 0; j < SourceNodes[i]->Input.size(); j++)
-		{
 			OldToNewSocket[SourceNodes[i]->Input[j]] = CopyOfNode->Input[j];
-		}
 
 		for (size_t j = 0; j < SourceNodes[i]->Output.size(); j++)
-		{
 			OldToNewSocket[SourceNodes[i]->Output[j]] = CopyOfNode->Output[j];
-		}
 	}
 
 	// Recreate all connections.

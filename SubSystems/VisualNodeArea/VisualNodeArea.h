@@ -259,6 +259,9 @@ namespace VisNodeSys
 		std::vector<GroupComment*> GetGroupCommentsInGroupComment(GroupComment* GroupCommentToCheck) const;
 
 		GroupComment* GetHoveredGroupComment() const;
+		void MoveGroupComment(GroupComment* GroupComment, ImVec2 Delta);
+		// Number of nodes currently captured in a group comment's move-with-comment cache.
+		size_t GetGroupCommentAttachedNodeCount(const GroupComment* GroupComment) const;
 		// *********************** Connections ************************
 		size_t GetConnectionCount() const;
 
@@ -355,7 +358,7 @@ namespace VisNodeSys
 		std::vector<Node*> LastExecutedNodes;
 #endif
 
-		Node* HoveredNode = nullptr;
+		std::string HoveredNodeID;
 		NodeSocket* SocketLookingForConnection = nullptr;
 		Connection* HoveredConnection = nullptr;
 		NodeSocket* SocketHovered = nullptr;
@@ -399,7 +402,7 @@ namespace VisNodeSys
 		std::vector<Connection*> GetAllConnections(const NodeSocket* Socket) const;
 		std::vector<Connection*> GetAllConnections(const Node* Node) const;
 		Connection* GetConnection(const NodeSocket* FirstSocket, const NodeSocket* SecondSocket) const;
-		void Delete(Connection* Connection);
+		bool Delete(Connection* Connection);
 
 		bool IsThisAreaResponsibleFor(const Node* NodeToCheck) const;
 		bool IsThisAreaResponsibleFor(const Node* OutNode, const Node* InNode) const;
@@ -470,7 +473,6 @@ namespace VisNodeSys
 
 		void GroupCommentDoubleMouseClick();
 		void AttachElementsToGroupComment(GroupComment* GroupComment);
-		void MoveGroupComment(GroupComment* GroupComment, ImVec2 Delta);
 
 		void Render();
 		void RenderGrid(ImVec2 CurrentPosition) const;

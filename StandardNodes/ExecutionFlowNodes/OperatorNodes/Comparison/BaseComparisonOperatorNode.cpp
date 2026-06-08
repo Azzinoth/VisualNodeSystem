@@ -130,6 +130,27 @@ void BaseComparisonOperatorNode::Draw()
 	ImGui::Text(Text.c_str());
 }
 
+std::string BaseComparisonOperatorNode::ResolveConnectedSocketType(NodeSocket* ConnectedSocket) const
+{
+	const std::vector<std::string>& AllowedTypes = ConnectedSocket->GetAllowedTypes();
+	if (AllowedTypes.empty())
+		return "";
+
+	if (AllowedTypes.size() == 1)
+		return AllowedTypes[0];
+
+	// Multi type producer connected, resolve its actual type.
+	BaseArithmeticOperatorNode* ArithmeticProducer = dynamic_cast<BaseArithmeticOperatorNode*>(ConnectedSocket->GetParent());
+	if (ArithmeticProducer != nullptr)
+		return ArithmeticProducer->GetActiveINDataType();
+
+	BaseComparisonOperatorNode* ComparisonProducer = dynamic_cast<BaseComparisonOperatorNode*>(ConnectedSocket->GetParent());
+	if (ComparisonProducer != nullptr)
+		return ComparisonProducer->GetActiveOUTDataType();
+
+	return AllowedTypes[0];
+}
+
 std::string BaseComparisonOperatorNode::GetActiveOUTDataType()
 {
 	if (Input.size() <= 2)
@@ -139,14 +160,14 @@ std::string BaseComparisonOperatorNode::GetActiveOUTDataType()
 		return "";
 
 	if (Input[1]->GetConnectedSockets().empty() && !Input[2]->GetConnectedSockets().empty())
-		return Input[2]->GetConnectedSockets()[0]->GetAllowedTypes()[0];
+		return ResolveConnectedSocketType(Input[2]->GetConnectedSockets()[0]);
 
 	if (!Input[1]->GetConnectedSockets().empty() && Input[2]->GetConnectedSockets().empty())
-		return Input[1]->GetConnectedSockets()[0]->GetAllowedTypes()[0];
+		return ResolveConnectedSocketType(Input[1]->GetConnectedSockets()[0]);
 
 	// If we have both A and B inputs connected, we can check their types.
-	std::string AInputType = Input[1]->GetConnectedSockets()[0]->GetAllowedTypes()[0];
-	std::string BInputType = Input[2]->GetConnectedSockets()[0]->GetAllowedTypes()[0];
+	std::string AInputType = ResolveConnectedSocketType(Input[1]->GetConnectedSockets()[0]);
+	std::string BInputType = ResolveConnectedSocketType(Input[2]->GetConnectedSockets()[0]);
 
 	if (AInputType == BInputType)
 	{
@@ -174,14 +195,14 @@ std::string BaseComparisonOperatorNode::GetActiveINDataType()
 		return "";
 
 	if (Input[1]->GetConnectedSockets().empty() && !Input[2]->GetConnectedSockets().empty())
-		return Input[2]->GetConnectedSockets()[0]->GetAllowedTypes()[0];
+		return ResolveConnectedSocketType(Input[2]->GetConnectedSockets()[0]);
 
 	if (!Input[1]->GetConnectedSockets().empty() && Input[2]->GetConnectedSockets().empty())
-		return Input[1]->GetConnectedSockets()[0]->GetAllowedTypes()[0];
+		return ResolveConnectedSocketType(Input[1]->GetConnectedSockets()[0]);
 
 	// If we have both A and B inputs connected, we can check their types.
-	std::string AInputType = Input[1]->GetConnectedSockets()[0]->GetAllowedTypes()[0];
-	std::string BInputType = Input[2]->GetConnectedSockets()[0]->GetAllowedTypes()[0];
+	std::string AInputType = ResolveConnectedSocketType(Input[1]->GetConnectedSockets()[0]);
+	std::string BInputType = ResolveConnectedSocketType(Input[2]->GetConnectedSockets()[0]);
 
 	if (AInputType == BInputType)
 		return AInputType;
