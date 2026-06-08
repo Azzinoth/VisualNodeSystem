@@ -1,5 +1,6 @@
 #include "NodeSystemTests.h"
 using namespace VisNodeSys;
+#include "../CustomNodes/DivergentCopyNode.h"
 
 TEST(NodeSystemTests, CreateAndDelete)
 {
@@ -511,6 +512,58 @@ TEST(NodeSystemTests, CopyNodesTo_SourceEqualsTarget_IsNoOp)
 
 	NODE_SYSTEM.CopyNodesTo(Area, Area);
 	EXPECT_EQ(Area->GetNodeCount(), NodeCountBefore);
+
+	NODE_SYSTEM.Clear();
+}
+
+TEST(NodeSystemTests, CopyNodesTo_NodeWithFaultyCopyConstructor_IsRejected)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* SourceNodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(SourceNodeArea, nullptr);
+	NodeArea* TargetNodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(TargetNodeArea, nullptr);
+
+	DivergentCopyNode* DivergentNode = new DivergentCopyNode();
+	ASSERT_EQ(DivergentNode->GetInputSocketCount(), 2);
+	ASSERT_TRUE(SourceNodeArea->AddNode(DivergentNode));
+
+	// The copy has fewer sockets than the source, so it is rejected, not copied.
+	NODE_SYSTEM.CopyNodesTo(SourceNodeArea, TargetNodeArea);
+	EXPECT_EQ(TargetNodeArea->GetNodeCount(), 0);
+
+	NODE_SYSTEM.Clear();
+}
+
+TEST(NodeSystemTests, CopyNodesTo_AfterSocketDeleted_CopyKeepsRemainingSockets)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* SourceNodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(SourceNodeArea, nullptr);
+	NodeArea* TargetNodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(TargetNodeArea, nullptr);
+
+	// Node created with three input sockets.
+	Node* OriginalNode = new Node();
+	NodeSocket* FirstSocket = new NodeSocket(OriginalNode, "INT", "A", NodeSocket::SocketFlow::Input);
+	OriginalNode->AddSocket(FirstSocket);
+	OriginalNode->AddSocket(new NodeSocket(OriginalNode, "INT", "B", NodeSocket::SocketFlow::Input));
+	OriginalNode->AddSocket(new NodeSocket(OriginalNode, "INT", "C", NodeSocket::SocketFlow::Input));
+	ASSERT_TRUE(SourceNodeArea->AddNode(OriginalNode));
+	ASSERT_EQ(OriginalNode->GetInputSocketCount(), 3);
+
+	// One socket is deleted, leaving two.
+	ASSERT_TRUE(OriginalNode->DeleteSocket(FirstSocket));
+	ASSERT_EQ(OriginalNode->GetInputSocketCount(), 2);
+
+	NODE_SYSTEM.CopyNodesTo(SourceNodeArea, TargetNodeArea);
+	ASSERT_EQ(TargetNodeArea->GetNodeCount(), 1);
+
+	std::vector<Node*> CopiedNodes = TargetNodeArea->GetNodesByStringType("VisualNode");
+	ASSERT_EQ(CopiedNodes.size(), 1);
+	EXPECT_EQ(CopiedNodes[0]->GetInputSocketCount(), 2);
 
 	NODE_SYSTEM.Clear();
 }

@@ -77,6 +77,8 @@ file(GLOB CustomNodes_SRC
 	"CustomNodes/BeginNode.cpp"
 	"CustomNodes/EventCountingNode.h"
 	"CustomNodes/EventCountingNode.cpp"
+	"CustomNodes/DivergentCopyNode.h"
+	"CustomNodes/DivergentCopyNode.cpp"
 )
 
 file(GLOB Basic_SRC

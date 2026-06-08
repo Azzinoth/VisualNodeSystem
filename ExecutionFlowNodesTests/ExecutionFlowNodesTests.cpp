@@ -1017,3 +1017,51 @@ TEST(ExecutionFlowNodesTests, BranchNode_ConditionRejectsVectorComparison_Accept
 
 	NODE_SYSTEM.Clear();
 }
+
+TEST(ExecutionFlowNodesTests, ComparisonNode_MultiTypeProducer_ResolvesProducerType)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(LocalNodeArea, nullptr);
+
+	// Two arithmetic producers, each outputting a negative FLOAT.
+	FloatLiteralNode* FloatA = new FloatLiteralNode();
+	FloatA->SetData(-2.0f);
+	FloatLiteralNode* FloatB = new FloatLiteralNode();
+	FloatB->SetData(-1.0f);
+	ArithmeticAddNode* FirstAddNode = new ArithmeticAddNode();  // Result = -2.0 (B disconnected = 0).
+	ArithmeticAddNode* SecondAddNode = new ArithmeticAddNode(); // Result = -1.0.
+	LessThanNode* CompareNode = new LessThanNode();
+
+	ASSERT_TRUE(LocalNodeArea->AddNode(FloatA));
+	ASSERT_TRUE(LocalNodeArea->AddNode(FloatB));
+	ASSERT_TRUE(LocalNodeArea->AddNode(FirstAddNode));
+	ASSERT_TRUE(LocalNodeArea->AddNode(SecondAddNode));
+	ASSERT_TRUE(LocalNodeArea->AddNode(CompareNode));
+
+	// Data: literal => add node A input.
+	ASSERT_TRUE(LocalNodeArea->TryToConnect(FloatA, 0, FirstAddNode, 1));
+	ASSERT_TRUE(LocalNodeArea->TryToConnect(FloatB, 0, SecondAddNode, 1));
+	// Data: add node Result -> comparison A and B inputs.
+	ASSERT_TRUE(LocalNodeArea->TryToConnect(FirstAddNode, 1, CompareNode, 1));
+	ASSERT_TRUE(LocalNodeArea->TryToConnect(SecondAddNode, 1, CompareNode, 2));
+	// Execution chain: FirstAddNode => SecondAddNode => CompareNode.
+	ASSERT_TRUE(LocalNodeArea->TryToConnect(FirstAddNode, 0, SecondAddNode, 0));
+	ASSERT_TRUE(LocalNodeArea->TryToConnect(SecondAddNode, 0, CompareNode, 0));
+
+	// Producers correctly self-identify as FLOAT.
+	EXPECT_EQ(FirstAddNode->GetActiveINDataType(), "FLOAT");
+	EXPECT_EQ(SecondAddNode->GetActiveINDataType(), "FLOAT");
+	EXPECT_EQ(CompareNode->GetActiveINDataType(), "FLOAT");
+
+	ASSERT_TRUE(LocalNodeArea->SetExecutionEntryNode(FirstAddNode));
+	LocalNodeArea->ExecuteNodeNetwork();
+
+	NodeSocket* ComparisonResultSocket = CompareNode->GetSocketByIndex(1, NodeSocket::SocketFlow::Output);
+	ASSERT_NE(ComparisonResultSocket, nullptr);
+	bool ComparisonResult = *reinterpret_cast<bool*>(ComparisonResultSocket->GetData());
+	EXPECT_TRUE(ComparisonResult);
+
+	NODE_SYSTEM.Clear();
+}

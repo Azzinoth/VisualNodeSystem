@@ -2611,3 +2611,33 @@ TEST(SubAreaNodeTests, CopyNodesTo_OwnedAreaToUnrelatedArea_DoesNotCreatePhantom
 
 	NODE_SYSTEM.Clear();
 }
+
+TEST(SubAreaNodeTests, SocketMirrorAddSocket_ForeignSocket_IsRejectedWithoutDesync)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(LocalNodeArea, nullptr);
+
+	SubAreaNode* SubArea = NODE_SYSTEM.CreateSubAreaNode(LocalNodeArea->GetID());
+	ASSERT_NE(SubArea, nullptr);
+	SubAreaInputNode* InputNode = SubArea->GetSubAreaInputNode();
+	ASSERT_NE(InputNode, nullptr);
+
+	const size_t InputNodeOutputCountBefore = InputNode->GetOutputSocketCount();
+	const size_t SubAreaInputCountBefore = SubArea->GetInputSocketCount();
+
+	// A socket owned by some other node (so ForeignNode cleans it up on Clear).
+	Node* ForeignNode = new Node();
+	ASSERT_TRUE(LocalNodeArea->AddNode(ForeignNode));
+	NodeSocket* ForeignSocket = new NodeSocket(ForeignNode, std::vector<std::string>{ "BOOL" }, "x", NodeSocket::SocketFlow::Output);
+	ASSERT_TRUE(ForeignNode->AddSocket(ForeignSocket));
+
+	// The foreign socket is rejected.
+	EXPECT_FALSE(InputNode->AddSocket(ForeignSocket));
+	// Neither the local node nor its partner gained a socket.
+	EXPECT_EQ(InputNode->GetOutputSocketCount(), InputNodeOutputCountBefore);
+	EXPECT_EQ(SubArea->GetInputSocketCount(), SubAreaInputCountBefore);
+
+	NODE_SYSTEM.Clear();
+}

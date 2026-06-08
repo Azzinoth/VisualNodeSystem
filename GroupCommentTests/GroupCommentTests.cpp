@@ -428,3 +428,41 @@ TEST(NodeAreaGroupComment, GetNodesInGroupComment_ForeignGroupComment_ReturnsEmp
 
 	NODE_SYSTEM.Clear();
 }
+
+TEST(GroupComment, MoveGroupComment_AfterAttachedNodeDeleted_DropsStaleAndMovesSurvivor)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(LocalNodeArea, nullptr);
+
+	GroupComment* Comment = new GroupComment();
+	Comment->SetSize(ImVec2(500, 500));
+	ASSERT_TRUE(LocalNodeArea->AddGroupComment(Comment));
+
+	// Two nodes fully inside the comment's rectangle.
+	Node* DoomedNode = new Node();
+	DoomedNode->SetPosition(ImVec2(50, 50));
+	DoomedNode->SetSize(ImVec2(50, 50));
+	ASSERT_TRUE(LocalNodeArea->AddNode(DoomedNode));
+
+	Node* SurvivorNode = new Node();
+	SurvivorNode->SetPosition(ImVec2(200, 200));
+	SurvivorNode->SetSize(ImVec2(50, 50));
+	ASSERT_TRUE(LocalNodeArea->AddNode(SurvivorNode));
+
+	// Drag start: selecting the comment snapshots the IDs of the elements inside it.
+	ASSERT_TRUE(LocalNodeArea->AddSelected(Comment));
+	ASSERT_EQ(LocalNodeArea->GetGroupCommentAttachedNodeCount(Comment), 2);
+
+	// An attached node is deleted before the move, leaving a stale cached ID.
+	ASSERT_TRUE(LocalNodeArea->Delete(DoomedNode));
+
+	// The move resolves each cached ID, drops the stale one, and moves the survivor.
+	const ImVec2 SurvivorBefore = SurvivorNode->GetPosition();
+	LocalNodeArea->MoveGroupComment(Comment, ImVec2(10, 10));
+	EXPECT_EQ(LocalNodeArea->GetGroupCommentAttachedNodeCount(Comment), 1);
+	EXPECT_EQ(SurvivorNode->GetPosition(), SurvivorBefore + ImVec2(10, 10));
+
+	NODE_SYSTEM.Clear();
+}

@@ -1009,3 +1009,39 @@ TEST(NodeAreaEventSystemTests, Delete_CallbackDeletesAnotherNode_DoesNotCrash)
 
 	NODE_SYSTEM.Clear();
 }
+
+TEST(NodeAreaEventSystemTests, TryToConnect_CallbackDeletesNode_AbortsSafely)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(LocalNodeArea, nullptr);
+
+	Node* OutputNode = new Node();
+	OutputNode->AddSocket(new NodeSocket(OutputNode, "INT", "out", NodeSocket::SocketFlow::Output));
+	ASSERT_TRUE(LocalNodeArea->AddNode(OutputNode));
+
+	Node* InputNode = new Node();
+	InputNode->AddSocket(new NodeSocket(InputNode, "INT", "in", NodeSocket::SocketFlow::Input));
+	ASSERT_TRUE(LocalNodeArea->AddNode(InputNode));
+
+	const std::string InputNodeID = InputNode->GetID();
+
+	// User callback that deletes the input node during the connect handshake.
+	LocalNodeArea->AddNodeEventCallback([LocalNodeArea, InputNodeID](Node* CurrentNode, NODE_EVENT EventType) {
+		if (EventType == BEFORE_CONNECTED)
+		{
+			Node* NodeToDelete = LocalNodeArea->GetNodeByID(InputNodeID);
+			if (NodeToDelete != nullptr)
+				LocalNodeArea->Delete(NodeToDelete);
+		}
+	});
+
+	// The connection is abandoned safely.
+	EXPECT_FALSE(LocalNodeArea->TryToConnect(OutputNode, 0, InputNode, 0));
+	EXPECT_EQ(LocalNodeArea->GetNodeByID(InputNodeID), nullptr);
+	EXPECT_EQ(LocalNodeArea->GetConnectionCount(), 0);
+	EXPECT_TRUE(OutputNode->GetNodesConnectedToOutput().empty());
+
+	NODE_SYSTEM.Clear();
+}
