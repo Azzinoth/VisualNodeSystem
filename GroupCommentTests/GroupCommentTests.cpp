@@ -363,6 +363,28 @@ TEST(GroupComment, SetCaption_RejectsStringLongerThanMaxLength)
 	delete NewGroupComment;
 }
 
+TEST(GroupComment, SetCaption_LeavesRoomForNullTerminator)
+{
+	NODE_SYSTEM.Clear();
+
+	GroupComment* NewGroupComment = new GroupComment();
+
+	// A caption of exactly the buffer size must be truncated by one character.
+	NewGroupComment->SetCaption(std::string(GROUP_COMMENT_CAPTION_MAX_LENGTH, 'X'));
+	EXPECT_EQ(NewGroupComment->GetCaption().size(), static_cast<size_t>(GROUP_COMMENT_CAPTION_MAX_LENGTH - 1));
+
+	// A much longer caption is clamped the same way.
+	NewGroupComment->SetCaption(std::string(GROUP_COMMENT_CAPTION_MAX_LENGTH * 2, 'X'));
+	EXPECT_EQ(NewGroupComment->GetCaption().size(), static_cast<size_t>(GROUP_COMMENT_CAPTION_MAX_LENGTH - 1));
+
+	// A caption that fits together with the null terminator is preserved unchanged.
+	const std::string MaxFittingCaption(GROUP_COMMENT_CAPTION_MAX_LENGTH - 1, 'X');
+	NewGroupComment->SetCaption(MaxFittingCaption);
+	EXPECT_EQ(NewGroupComment->GetCaption(), MaxFittingCaption);
+
+	delete NewGroupComment;
+}
+
 TEST(GroupComment, FromJson_EmptyObject_Returns_False)
 {
 	NODE_SYSTEM.Clear();
@@ -463,6 +485,89 @@ TEST(GroupComment, MoveGroupComment_AfterAttachedNodeDeleted_DropsStaleAndMovesS
 	LocalNodeArea->MoveGroupComment(Comment, ImVec2(10, 10));
 	EXPECT_EQ(LocalNodeArea->GetGroupCommentAttachedNodeCount(Comment), 1);
 	EXPECT_EQ(SurvivorNode->GetPosition(), SurvivorBefore + ImVec2(10, 10));
+
+	NODE_SYSTEM.Clear();
+}
+
+TEST(GroupComment, MoveGroupComment_NullGroupComment_IsIgnored)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(LocalNodeArea, nullptr);
+
+	// Must not crash.
+	LocalNodeArea->MoveGroupComment(nullptr, ImVec2(10, 10));
+
+	NODE_SYSTEM.Clear();
+}
+
+TEST(GroupComment, MoveGroupComment_NestedGroupComment_MovesSharedNodeOnce)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(LocalNodeArea, nullptr);
+
+	GroupComment* OuterComment = new GroupComment();
+	OuterComment->SetPosition(ImVec2(0.0f, 0.0f));
+	OuterComment->SetSize(ImVec2(500.0f, 500.0f));
+	ASSERT_TRUE(LocalNodeArea->AddGroupComment(OuterComment));
+
+	GroupComment* InnerComment = new GroupComment();
+	InnerComment->SetPosition(ImVec2(50.0f, 50.0f));
+	InnerComment->SetSize(ImVec2(300.0f, 300.0f));
+	ASSERT_TRUE(LocalNodeArea->AddGroupComment(InnerComment));
+
+	// The node is inside the inner comment, and therefore also inside the outer one.
+	Node* SharedNode = new Node();
+	SharedNode->SetPosition(ImVec2(100.0f, 100.0f));
+	SharedNode->SetSize(ImVec2(50.0f, 50.0f));
+	ASSERT_TRUE(LocalNodeArea->AddNode(SharedNode));
+
+	const ImVec2 OuterBefore = OuterComment->GetPosition();
+	const ImVec2 NodeBefore = SharedNode->GetPosition();
+	const ImVec2 InnerBefore = InnerComment->GetPosition();
+	const ImVec2 Delta = ImVec2(10.0f, 20.0f);
+
+	OuterComment->SetPosition(OuterComment->GetPosition() + Delta);
+
+	// Each element moves exactly once.
+	EXPECT_EQ(OuterComment->GetPosition(), OuterBefore + Delta);
+	EXPECT_EQ(InnerComment->GetPosition(), InnerBefore + Delta);
+	EXPECT_EQ(SharedNode->GetPosition(), NodeBefore + Delta);
+
+	// A second move accumulates correctly, the inner comment's fresh snapshot must not double-move either.
+	OuterComment->SetPosition(OuterComment->GetPosition() + Delta);
+	EXPECT_EQ(OuterComment->GetPosition(), OuterBefore + Delta + Delta);
+	EXPECT_EQ(InnerComment->GetPosition(), InnerBefore + Delta + Delta);
+	EXPECT_EQ(SharedNode->GetPosition(), NodeBefore + Delta + Delta);
+
+	NODE_SYSTEM.Clear();
+}
+
+TEST(GroupComment, MoveGroupComment_IdenticalRectComments_ZeroDeltaMove_Terminates)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(LocalNodeArea, nullptr);
+
+	GroupComment* FirstComment = new GroupComment();
+	FirstComment->SetPosition(ImVec2(0.0f, 0.0f));
+	FirstComment->SetSize(ImVec2(200.0f, 200.0f));
+	ASSERT_TRUE(LocalNodeArea->AddGroupComment(FirstComment));
+
+	GroupComment* SecondComment = new GroupComment();
+	SecondComment->SetPosition(ImVec2(0.0f, 0.0f));
+	SecondComment->SetSize(ImVec2(200.0f, 200.0f));
+	ASSERT_TRUE(LocalNodeArea->AddGroupComment(SecondComment));
+
+	// Completing the call without exhausting the stack is the pass criterion.
+	FirstComment->SetPosition(FirstComment->GetPosition());
+
+	EXPECT_EQ(FirstComment->GetPosition(), ImVec2(0.0f, 0.0f));
+	EXPECT_EQ(SecondComment->GetPosition(), ImVec2(0.0f, 0.0f));
 
 	NODE_SYSTEM.Clear();
 }

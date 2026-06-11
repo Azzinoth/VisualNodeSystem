@@ -2641,3 +2641,24 @@ TEST(SubAreaNodeTests, SocketMirrorAddSocket_ForeignSocket_IsRejectedWithoutDesy
 
 	NODE_SYSTEM.Clear();
 }
+
+
+TEST(SubAreaNodeTests, TriggerOrphanSocketEvent_SubAreaInputNodeWithoutSockets_IsSafe)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(LocalNodeArea, nullptr);
+
+	// A factory created sub area input node has no sockets at all.
+	Node* BareInputNode = NODE_FACTORY.CreateNode("SubAreaInputNode");
+	ASSERT_NE(BareInputNode, nullptr);
+	ASSERT_EQ(BareInputNode->GetInputSocketCount(), 0);
+	ASSERT_EQ(BareInputNode->GetOutputSocketCount(), 0);
+	ASSERT_TRUE(LocalNodeArea->AddNode(BareInputNode));
+
+	// Must not crash.
+	EXPECT_TRUE(LocalNodeArea->TriggerOrphanSocketEvent(BareInputNode, EXECUTE));
+
+	NODE_SYSTEM.Clear();
+}

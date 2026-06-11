@@ -567,3 +567,64 @@ TEST(NodeSystemTests, CopyNodesTo_AfterSocketDeleted_CopyKeepsRemainingSockets)
 
 	NODE_SYSTEM.Clear();
 }
+
+TEST(NodeSystemTests, CopyNodesTo_CallbackConnectsOtherPair_ReroutesStayOnCopiedConnection)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* SourceArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(SourceArea, nullptr);
+
+	Node* NodeA = new Node();
+	NodeA->SetName("NodeA");
+	NodeA->AddSocket(new NodeSocket(NodeA, "T", "out", NodeSocket::SocketFlow::Output));
+	ASSERT_TRUE(SourceArea->AddNode(NodeA));
+
+	Node* NodeB = new Node();
+	NodeB->SetName("NodeB");
+	NodeB->AddSocket(new NodeSocket(NodeB, "T", "in", NodeSocket::SocketFlow::Input));
+	ASSERT_TRUE(SourceArea->AddNode(NodeB));
+
+	ASSERT_TRUE(SourceArea->TryToConnect(NodeA, 0, NodeB, 0));
+	ASSERT_NE(SourceArea->AddRerouteNodeToConnection(NodeA, 0, NodeB, 0, 0, ImVec2(100.0f, 100.0f)), nullptr);
+	ASSERT_EQ(SourceArea->GetRerouteConnectionCount(), 1);
+
+	NodeArea* TargetArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(TargetArea, nullptr);
+
+	// Two unconnected nodes that the callback will connect during the copy.
+	Node* NodeX = new Node();
+	NodeX->SetName("NodeX");
+	NodeX->AddSocket(new NodeSocket(NodeX, "T", "out", NodeSocket::SocketFlow::Output));
+	ASSERT_TRUE(TargetArea->AddNode(NodeX));
+
+	Node* NodeY = new Node();
+	NodeY->SetName("NodeY");
+	NodeY->AddSocket(new NodeSocket(NodeY, "T", "in", NodeSocket::SocketFlow::Input));
+	ASSERT_TRUE(TargetArea->AddNode(NodeY));
+
+	bool bCallbackConnectIssued = false;
+	TargetArea->AddNodeEventCallback([&](Node*, NODE_EVENT EventType) {
+		if (EventType == NODE_EVENT::AFTER_CONNECTED && !bCallbackConnectIssued)
+		{
+			bCallbackConnectIssued = true;
+			TargetArea->TryToConnect(NodeX, 0, NodeY, 0);
+		}
+	});
+
+	NODE_SYSTEM.CopyNodesTo(SourceArea, TargetArea);
+	EXPECT_TRUE(bCallbackConnectIssued);
+	EXPECT_EQ(TargetArea->GetConnectionCount(), 2);
+
+	std::vector<Node*> CopiedANodes = TargetArea->GetNodesByName("NodeA");
+	std::vector<Node*> CopiedBNodes = TargetArea->GetNodesByName("NodeB");
+	ASSERT_EQ(CopiedANodes.size(), 1);
+	ASSERT_EQ(CopiedBNodes.size(), 1);
+
+	// The copied reroute belongs to the copied connection, segment count = reroutes + 1.
+	EXPECT_EQ(TargetArea->GetConnectionSegments(CopiedANodes[0], 0, CopiedBNodes[0], 0).size(), 2);
+	EXPECT_EQ(TargetArea->GetConnectionSegments(NodeX, 0, NodeY, 0).size(), 1);
+	EXPECT_EQ(TargetArea->GetRerouteConnectionCount(), 1);
+
+	NODE_SYSTEM.Clear();
+}

@@ -1478,6 +1478,99 @@ TEST(LinkNodeTests, Copy_Paste_Dangling)
 	NODE_SYSTEM.Clear();
 }
 
+TEST(LinkNodeTests, TryToFixDanglingLinkNode_RestoredPartner_CanMirrorSockets)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* UpstreamArea = NODE_SYSTEM.CreateNodeArea();
+	std::string UpstreamAreaID = UpstreamArea->GetID();
+
+	Node* BeginNode = NODE_FACTORY.CreateNode("BeginNode");
+	UpstreamArea->AddNode(BeginNode);
+	UpstreamArea->SetExecutionEntryNode(BeginNode);
+
+	IntegerLiteralNode* UpstreamIntNode = new IntegerLiteralNode();
+	UpstreamIntNode->SetData(7);
+	UpstreamArea->AddNode(UpstreamIntNode);
+
+	NodeArea* DownstreamArea = NODE_SYSTEM.CreateNodeArea();
+	std::string DownstreamAreaID = DownstreamArea->GetID();
+
+	IntegerVariableNode* DownstreamIntNode = new IntegerVariableNode();
+	DownstreamIntNode->SetData(0);
+	DownstreamArea->AddNode(DownstreamIntNode);
+
+	std::pair<std::string, std::string> LinkResult;
+	ASSERT_TRUE(NODE_SYSTEM.LinkNodeAreas(UpstreamAreaID, DownstreamAreaID, &LinkResult));
+	LinkNode* UpstreamLinkNode = dynamic_cast<LinkNode*>(NODE_SYSTEM.GetNodeByID(LinkResult.first));
+	ASSERT_NE(UpstreamLinkNode, nullptr);
+	ASSERT_TRUE(UpstreamLinkNode->AddSocket({ "INT" }));
+
+	// Simulate copying and pasting the upstream link node to get a dangling link node.
+	TEST_TOOLS.SimulateCopyPasteNodes({ UpstreamLinkNode }, UpstreamArea);
+
+	// Get pasted node (should be the only other link node in the area).
+	LinkNode* PastedLinkNode = nullptr;
+	std::vector<LinkNode*> UpstreamAreaNodes = UpstreamArea->GetNodesByType<LinkNode>();
+	for (auto Node : UpstreamAreaNodes)
+	{
+		if (Node->GetID() != UpstreamLinkNode->GetID())
+		{
+			PastedLinkNode = Node;
+			break;
+		}
+	}
+
+	ASSERT_NE(PastedLinkNode, nullptr);
+	ASSERT_EQ(PastedLinkNode->IsDangling(), true);
+
+	// Restore the partner node.
+	ASSERT_TRUE(NODE_SYSTEM.TryToFixDanglingLinkNode(PastedLinkNode, true));
+	ASSERT_EQ(PastedLinkNode->IsDangling(), false);
+
+	LinkNode* RestoredPartnerNode = dynamic_cast<LinkNode*>(PastedLinkNode->GetPartnerNode());
+	ASSERT_NE(RestoredPartnerNode, nullptr);
+	ASSERT_EQ(RestoredPartnerNode->GetParentArea(), DownstreamArea);
+
+	// The restored pair should mirror sockets exactly like a pair created by LinkNodeAreas:
+	// adding a socket to the fixed node should add a partner socket on the restored node.
+	size_t PartnerOutputCountBeforeAdd = RestoredPartnerNode->GetOutputSocketCount();
+	ASSERT_TRUE(PastedLinkNode->AddSocket({ "INT" }));
+	ASSERT_EQ(RestoredPartnerNode->GetOutputSocketCount(), PartnerOutputCountBeforeAdd + 1);
+
+	// Data should flow through the newly mirrored socket pair.
+	ASSERT_EQ(UpstreamArea->TryToConnect(BeginNode, 0, PastedLinkNode, 0), true);
+	ASSERT_EQ(UpstreamArea->TryToConnect(UpstreamIntNode, 0, PastedLinkNode, 2), true);
+	ASSERT_EQ(DownstreamArea->TryToConnect(RestoredPartnerNode, 0, DownstreamIntNode, 0), true);
+	ASSERT_EQ(DownstreamArea->TryToConnect(RestoredPartnerNode, 2, DownstreamIntNode, 1), true);
+
+	EXPECT_EQ(DownstreamIntNode->GetData(), 0);
+	ASSERT_TRUE(UpstreamArea->ExecuteNodeNetwork());
+	EXPECT_EQ(DownstreamIntNode->GetData(), 7);
+
+	NODE_SYSTEM.Clear();
+}
+
+TEST(LinkNodeTests, TriggerOrphanSocketEvent_LinkNodeWithoutSockets_IsSafe)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(LocalNodeArea, nullptr);
+
+	// A factory created link node has no sockets at all.
+	Node* BareLinkNode = NODE_FACTORY.CreateNode("LinkNode");
+	ASSERT_NE(BareLinkNode, nullptr);
+	ASSERT_EQ(BareLinkNode->GetInputSocketCount(), 0);
+	ASSERT_EQ(BareLinkNode->GetOutputSocketCount(), 0);
+	ASSERT_TRUE(LocalNodeArea->AddNode(BareLinkNode));
+
+	// Must not crash.
+	EXPECT_TRUE(LocalNodeArea->TriggerOrphanSocketEvent(BareLinkNode, EXECUTE));
+
+	NODE_SYSTEM.Clear();
+}
+
 TEST(LinkNodeTests, GetImmediateDownstreamAreas_Deduplicates_DuplicateLinks)
 {
 	NODE_SYSTEM.Clear();
@@ -1731,6 +1824,50 @@ TEST(LinkNodeTests, DeleteSocket_IsAtomicAcrossMirrorPartners)
 
 	// Once deletable, deleting it removes it from BOTH sides.
 	AddedSocket->SetCanBeDeletedByUser(true);
+	EXPECT_TRUE(UpstreamLink->DeleteSocket(AddedSocketID));
+	EXPECT_EQ(UpstreamLink->GetInputSocketCount(), UpstreamInputsBefore);
+	EXPECT_EQ(DownstreamLink->GetOutputSocketCount(), DownstreamOutputsBefore);
+
+	NODE_SYSTEM.Clear();
+}
+
+TEST(LinkNodeTests, DeleteSocket_PartnerRefusal_KeepsPairInSync)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* SourceArea = NODE_SYSTEM.CreateNodeArea();
+	NodeArea* TargetArea = NODE_SYSTEM.CreateNodeArea();
+
+	std::pair<std::string, std::string> LinkIDs;
+	ASSERT_TRUE(NODE_SYSTEM.LinkNodeAreas(SourceArea->GetID(), TargetArea->GetID(), &LinkIDs));
+	LinkNode* UpstreamLink = dynamic_cast<LinkNode*>(NODE_SYSTEM.GetNodeByID(LinkIDs.first));
+	LinkNode* DownstreamLink = dynamic_cast<LinkNode*>(NODE_SYSTEM.GetNodeByID(LinkIDs.second));
+	ASSERT_NE(UpstreamLink, nullptr);
+	ASSERT_NE(DownstreamLink, nullptr);
+
+	const size_t UpstreamInputsBefore = UpstreamLink->GetInputSocketCount();
+	const size_t DownstreamOutputsBefore = DownstreamLink->GetOutputSocketCount();
+
+	ASSERT_TRUE(UpstreamLink->AddSocket({ "INT" }, "a", NodeSocket::SocketFlow::Input));
+	ASSERT_EQ(UpstreamLink->GetInputSocketCount(), UpstreamInputsBefore + 1);
+	ASSERT_EQ(DownstreamLink->GetOutputSocketCount(), DownstreamOutputsBefore + 1);
+
+	NodeSocket* AddedSocket = UpstreamLink->GetSocketByIndex(UpstreamLink->GetInputSocketCount() - 1, NodeSocket::SocketFlow::Input);
+	ASSERT_NE(AddedSocket, nullptr);
+	const std::string AddedSocketID = AddedSocket->GetID();
+
+	// Lock the PARTNER's mirrored socket, the local one stays deletable.
+	NodeSocket* PartnerSocket = DownstreamLink->GetSocketByIndex(DownstreamLink->GetOutputSocketCount() - 1, NodeSocket::SocketFlow::Output);
+	ASSERT_NE(PartnerSocket, nullptr);
+	PartnerSocket->SetCanBeDeletedByUser(false);
+
+	// The partner refuses, so the local deletion is refused as well and neither side changes.
+	EXPECT_FALSE(UpstreamLink->DeleteSocket(AddedSocketID));
+	EXPECT_EQ(UpstreamLink->GetInputSocketCount(), UpstreamInputsBefore + 1);
+	EXPECT_EQ(DownstreamLink->GetOutputSocketCount(), DownstreamOutputsBefore + 1);
+
+	// Once the partner socket is unlocked, deleting removes it from BOTH sides.
+	PartnerSocket->SetCanBeDeletedByUser(true);
 	EXPECT_TRUE(UpstreamLink->DeleteSocket(AddedSocketID));
 	EXPECT_EQ(UpstreamLink->GetInputSocketCount(), UpstreamInputsBefore);
 	EXPECT_EQ(DownstreamLink->GetOutputSocketCount(), DownstreamOutputsBefore);

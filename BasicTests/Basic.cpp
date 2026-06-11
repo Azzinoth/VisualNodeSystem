@@ -590,7 +590,7 @@ TEST(Basic, Delete_NullptrNode_DoesNotCrash)
 
 	EXPECT_FALSE(Area->Delete(static_cast<Node*>(nullptr)));
 	EXPECT_FALSE(Area->Delete(static_cast<GroupComment*>(nullptr)));
-	EXPECT_FALSE(Area->Delete(static_cast<RerouteNode*>(nullptr)));
+	EXPECT_FALSE(Area->DeleteRerouteNodeByID(""));
 
 	NODE_SYSTEM.Clear();
 }
@@ -785,6 +785,36 @@ TEST(Basic, NodeCopyConstructor_DeepCopiesSockets)
 	// Source's sockets still point at the source.
 	ASSERT_EQ(InSocket->GetParent(), Original);
 	ASSERT_EQ(OutSocket->GetParent(), Original);
+
+	NODE_SYSTEM.Clear();
+}
+
+TEST(Basic, NodeCopyConstructor_DoesNotCopySocketDataGetter)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(Area, nullptr);
+
+	Node* Original = new Node();
+	NodeSocket* OutSocket = new NodeSocket(Original, "TYPE_A", "out", NodeSocket::SocketFlow::Output);
+	ASSERT_TRUE(Original->AddSocket(OutSocket));
+	ASSERT_TRUE(Area->AddNode(Original));
+
+	// A getter that captures the source node and exposes it through GetData().
+	OutSocket->SetFunctionToOutputData([Original]() -> void* { return Original; });
+	ASSERT_EQ(OutSocket->GetData(), Original);
+
+	Node* Copy = new Node(*Original);
+	ASSERT_TRUE(Area->AddNode(Copy));
+
+	NodeSocket* CopiedSocket = Copy->GetSocketByIndex(0, NodeSocket::SocketFlow::Output);
+	ASSERT_NE(CopiedSocket, nullptr);
+
+	// The copy must not inherit a getter that references the source node.
+	EXPECT_EQ(CopiedSocket->GetData(), nullptr);
+	// The source keeps its own getter.
+	EXPECT_EQ(OutSocket->GetData(), Original);
 
 	NODE_SYSTEM.Clear();
 }

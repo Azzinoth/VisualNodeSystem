@@ -527,8 +527,50 @@ TEST(NodeAreaGeneralTests, Delete_Reject_InAppropriateRerouteNode)
 	ASSERT_NE(CrossAreaRerouteNode, nullptr);
 	ASSERT_EQ(AreaA->GetRerouteConnectionCount(), 1);
 
-	EXPECT_FALSE(AreaB->Delete(CrossAreaRerouteNode));
+	EXPECT_FALSE(AreaB->DeleteRerouteNodeByID(CrossAreaRerouteNode->GetID()));
 	EXPECT_EQ(AreaA->GetRerouteConnectionCount(), 1);
+
+	NODE_SYSTEM.Clear();
+}
+
+TEST(NodeAreaGeneralTests, DeleteRerouteNodeByID_ValidStaleAndUnknownIDs)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(Area, nullptr);
+
+	Node* NodeA = new Node();
+	NodeA->AddSocket(new NodeSocket(NodeA, "TYPE_A", "out", NodeSocket::SocketFlow::Output));
+	Area->AddNode(NodeA);
+
+	Node* NodeB = new Node();
+	NodeB->AddSocket(new NodeSocket(NodeB, "TYPE_A", "in", NodeSocket::SocketFlow::Input));
+	Area->AddNode(NodeB);
+
+	ASSERT_TRUE(Area->TryToConnect(NodeA, 0, NodeB, 0));
+
+	// Three reroutes so the deletion exercises the middle-of-chain relink.
+	RerouteNode* FirstReroute = Area->AddRerouteNodeToConnection(NodeA, 0, NodeB, 0, 0, ImVec2(100.0f, 100.0f));
+	ASSERT_NE(FirstReroute, nullptr);
+	RerouteNode* MiddleReroute = Area->AddRerouteNodeToConnection(NodeA, 0, NodeB, 0, 1, ImVec2(200.0f, 100.0f));
+	ASSERT_NE(MiddleReroute, nullptr);
+	RerouteNode* LastReroute = Area->AddRerouteNodeToConnection(NodeA, 0, NodeB, 0, 2, ImVec2(300.0f, 100.0f));
+	ASSERT_NE(LastReroute, nullptr);
+	ASSERT_EQ(Area->GetRerouteConnectionCount(), 3);
+
+	const std::string MiddleRerouteID = MiddleReroute->GetID();
+
+	EXPECT_TRUE(Area->DeleteRerouteNodeByID(MiddleRerouteID));
+	EXPECT_EQ(Area->GetRerouteConnectionCount(), 2);
+
+	// The same ID is now stale, the lookup fails and nothing is freed or relinked twice.
+	EXPECT_FALSE(Area->DeleteRerouteNodeByID(MiddleRerouteID));
+	EXPECT_EQ(Area->GetRerouteConnectionCount(), 2);
+
+	// Unknown IDs are rejected the same way.
+	EXPECT_FALSE(Area->DeleteRerouteNodeByID("DOES_NOT_EXIST"));
+	EXPECT_EQ(Area->GetRerouteConnectionCount(), 2);
 
 	NODE_SYSTEM.Clear();
 }

@@ -840,6 +840,59 @@ TEST(ExecutionFlowNodesTests, DeleteSocket_OnUndeletableStandardNodeSocket_IsRej
 	NODE_SYSTEM.Clear();
 }
 
+TEST(ExecutionFlowNodesTests, DeleteSocket_OnAllVariableNodesAndSequence_IsRejected)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(Area, nullptr);
+
+	auto ExpectAllSocketsUndeletable = [](Node* TestNode)
+	{
+		ASSERT_NE(TestNode, nullptr);
+		const size_t InputCountBefore  = TestNode->GetInputSocketCount();
+		const size_t OutputCountBefore = TestNode->GetOutputSocketCount();
+
+		for (size_t Index = 0; Index < InputCountBefore; ++Index)
+			EXPECT_FALSE(TestNode->DeleteSocket(TestNode->GetSocketByIndex(Index, NodeSocket::SocketFlow::Input)));
+
+		for (size_t Index = 0; Index < OutputCountBefore; ++Index)
+			EXPECT_FALSE(TestNode->DeleteSocket(TestNode->GetSocketByIndex(Index, NodeSocket::SocketFlow::Output)));
+
+		EXPECT_EQ(TestNode->GetInputSocketCount(),  InputCountBefore);
+		EXPECT_EQ(TestNode->GetOutputSocketCount(), OutputCountBefore);
+	};
+
+	const char* VariableTypes[] = {
+		"BoolVariableNode", "IntegerVariableNode",
+		"Vec2VariableNode", "Vec3VariableNode", "Vec4VariableNode",
+		"BoolVec2VariableNode", "BoolVec3VariableNode", "BoolVec4VariableNode"
+	};
+
+	for (const char* TypeName : VariableTypes)
+	{
+		Node* Variable = NODE_FACTORY.CreateNode(TypeName);
+		ASSERT_NE(Variable, nullptr) << TypeName;
+		ASSERT_TRUE(Area->AddNode(Variable)) << TypeName;
+		ASSERT_EQ(Variable->GetInputSocketCount(), 2) << TypeName;
+		ExpectAllSocketsUndeletable(Variable);
+	}
+
+	// SequenceNode: the EXECUTE input is locked.
+	SequenceNode* Sequence = new SequenceNode();
+	ASSERT_TRUE(Area->AddNode(Sequence));
+	EXPECT_FALSE(Sequence->DeleteSocket(Sequence->GetSocketIDByIndex(0, NodeSocket::SocketFlow::Input)));
+	EXPECT_EQ(Sequence->GetInputSocketCount(), 1);
+
+	// The first sequence output is locked, extra ones stay user-deletable by design.
+	const size_t SequenceOutputsBefore = Sequence->GetOutputSocketCount();
+	EXPECT_FALSE(Sequence->DeleteSocket(Sequence->GetSocketIDByIndex(0, NodeSocket::SocketFlow::Output)));
+	EXPECT_TRUE(Sequence->DeleteSocket(Sequence->GetSocketIDByIndex(1, NodeSocket::SocketFlow::Output)));
+	EXPECT_EQ(Sequence->GetOutputSocketCount(), SequenceOutputsBefore - 1);
+
+	NODE_SYSTEM.Clear();
+}
+
 TEST(ExecutionFlowNodesTests, IntegerDivide_IntMinByNegativeOne_SaturatesWithoutCrashing)
 {
 	NODE_SYSTEM.Clear();

@@ -1045,3 +1045,103 @@ TEST(NodeAreaEventSystemTests, TryToConnect_CallbackDeletesNode_AbortsSafely)
 
 	NODE_SYSTEM.Clear();
 }
+
+TEST(NodeAreaEventSystemTests, DeleteConnection_CallbackDeletesNode_DoesNotNotifyDeletedNode)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(LocalNodeArea, nullptr);
+
+	BoolLiteralNode* Literal = TEST_TOOLS.CreateBoolLiteralNode(true);
+	BoolVariableNode* Variable = TEST_TOOLS.CreateBoolVariableNode(false);
+	ASSERT_NE(Literal, nullptr);
+	ASSERT_NE(Variable, nullptr);
+
+	LocalNodeArea->AddNode(Literal);
+	LocalNodeArea->AddNode(Variable);
+	ASSERT_TRUE(LocalNodeArea->TryToConnect(Literal, 0, Variable, 1));
+
+	Node* LiteralPtr = Literal;
+	Node* VariablePtr = Variable;
+	bool bDeleteIssued = false;
+	bool bVariableDeleted = false;
+	bool bCallbackReceivedDeletedNode = false;
+	bool bSurvivorWasNotified = false;
+
+	LocalNodeArea->AddNodeEventCallback([&](Node* CallbackNode, NODE_EVENT EventType) {
+		if (bVariableDeleted && CallbackNode == VariablePtr)
+		{
+			bCallbackReceivedDeletedNode = true;
+			return;
+		}
+
+		if (CallbackNode == LiteralPtr && EventType == NODE_EVENT::BEFORE_DISCONNECTED)
+		{
+			bSurvivorWasNotified = true;
+
+			if (!bDeleteIssued)
+			{
+				// React to the disconnect by deleting the other endpoint.
+				bDeleteIssued = true;
+				LocalNodeArea->Delete(VariablePtr);
+				bVariableDeleted = true;
+			}
+		}
+	});
+
+	LocalNodeArea->TryToDisconnect(Literal, 0, Variable, 1);
+
+	// The surviving endpoint was notified, the deleted one was skipped.
+	EXPECT_TRUE(bSurvivorWasNotified);
+	EXPECT_FALSE(bCallbackReceivedDeletedNode);
+	EXPECT_EQ(LocalNodeArea->GetConnectionCount(), 0);
+	EXPECT_EQ(LocalNodeArea->GetNodeCount(), 1);
+
+	NODE_SYSTEM.Clear();
+}
+
+TEST(NodeAreaEventSystemTests, TryToConnect_CallbackConnectsSamePair_DoesNotDuplicateConnection)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(LocalNodeArea, nullptr);
+
+	Node* OutNode = new Node();
+	OutNode->AddSocket(new NodeSocket(OutNode, "T", "out", NodeSocket::SocketFlow::Output));
+	ASSERT_TRUE(LocalNodeArea->AddNode(OutNode));
+
+	Node* InNode = new Node();
+	InNode->AddSocket(new NodeSocket(InNode, "T", "in", NodeSocket::SocketFlow::Input));
+	ASSERT_TRUE(LocalNodeArea->AddNode(InNode));
+
+	// The callback reentrantly connects the same pair.
+	bool bReentrantConnectIssued = false;
+	bool bReentrantConnectResult = false;
+	LocalNodeArea->AddNodeEventCallback([&](Node*, NODE_EVENT EventType) {
+		if (EventType == NODE_EVENT::BEFORE_CONNECTED && !bReentrantConnectIssued)
+		{
+			bReentrantConnectIssued = true;
+			bReentrantConnectResult = LocalNodeArea->TryToConnect(OutNode, 0, InNode, 0);
+		}
+	});
+
+	// The reentrant call wins and creates the connection, the outer call detects the duplicate.
+	EXPECT_FALSE(LocalNodeArea->TryToConnect(OutNode, 0, InNode, 0));
+	EXPECT_TRUE(bReentrantConnectIssued);
+	EXPECT_TRUE(bReentrantConnectResult);
+
+	EXPECT_EQ(LocalNodeArea->GetConnectionCount(), 1);
+	EXPECT_TRUE(LocalNodeArea->IsConnected(OutNode, 0, InNode, 0));
+
+	// Exactly one entry per socket for the single logical edge.
+	NodeSocket* OutSocket = OutNode->GetSocketByIndex(0, NodeSocket::SocketFlow::Output);
+	NodeSocket* InSocket = InNode->GetSocketByIndex(0, NodeSocket::SocketFlow::Input);
+	ASSERT_NE(OutSocket, nullptr);
+	ASSERT_NE(InSocket, nullptr);
+	EXPECT_EQ(OutSocket->GetConnectedSockets().size(), 1);
+	EXPECT_EQ(InSocket->GetConnectedSockets().size(), 1);
+
+	NODE_SYSTEM.Clear();
+}
