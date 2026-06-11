@@ -1,4 +1,5 @@
 #include "VisualNodeArea.h"
+#include "../../VisualNodeSystem.h"
 using namespace VisNodeSys;
 
 NodeArea::NodeArea(std::string ID)
@@ -513,7 +514,8 @@ bool NodeArea::WorkOnLoadedConnection(Json::Value& Root, const Json::Value& Conn
 	if (!TryToConnect(LoadedNodes[OutNodeID], OutSocketID, LoadedNodes[InNodeID], InSocketID))
 		return false;
 
-	Connection* NewConnection = Connections.back();
+	// AFTER_CONNECTED callbacks, inside TryToConnect, may have created or deleted connections.
+	Connection* NewConnection = GetConnection(LoadedNodes[OutNodeID]->GetSocketByID(OutSocketID), LoadedNodes[InNodeID]->GetSocketByID(InSocketID));
 	if (NewConnection == nullptr)
 		return false;
 

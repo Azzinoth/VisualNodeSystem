@@ -116,6 +116,9 @@ bool SocketMirrorNode::IsDangling() const
 
 void SocketMirrorNode::SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSocket, NODE_SOCKET_EVENT EventType)
 {
+	if (OwnSocket == nullptr)
+		return;
+
 	Node::SocketEvent(OwnSocket, ConnectedSocket, EventType);
 
 	int SocketIndex = -1;
@@ -242,7 +245,14 @@ bool SocketMirrorNode::DeleteSocket(NodeSocket* Socket)
 
 	NodeSocket::SocketFlow DeletedSocketFlow = Socket->GetFlowDirection();
 	SocketIDBeingModified = Socket->GetID();
-	NODE_SYSTEM.DeleteSocketFromMirrorNode(ID, Socket->GetID());
+	// If the partner refused to delete its mirrored socket, do not delete the local one either.
+	// Dangling nodes have no partner to sync with, their sockets are deleted locally.
+	if (!NODE_SYSTEM.DeleteSocketFromMirrorNode(ID, Socket->GetID()) && !IsDangling())
+	{
+		SocketIDBeingModified = "";
+		return false;
+	}
+
 	const bool bLocalDeleted = Node::DeleteSocket(Socket);
 	SetCorrectSize();
 

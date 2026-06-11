@@ -738,6 +738,16 @@ void NodeArea::MouseDraggingGroupCommentUpdate()
 
 void NodeArea::MoveGroupComment(GroupComment* Comment, ImVec2 Delta)
 {
+	if (Comment == nullptr)
+		return;
+
+	std::unordered_set<std::string> MovedElementIDs;
+	MovedElementIDs.insert(Comment->GetID());
+	MoveGroupCommentInternal(Comment, Delta, MovedElementIDs);
+}
+
+void NodeArea::MoveGroupCommentInternal(GroupComment* Comment, ImVec2 Delta, std::unordered_set<std::string>& MovedElementIDs)
+{
 	Comment->Position += Delta;
 
 	if (!Comment->bMoveElementsWithComment)
@@ -754,8 +764,12 @@ void NodeArea::MoveGroupComment(GroupComment* Comment, ImVec2 Delta)
 			continue;
 		}
 
-		if (!IsSelected(AttachedNode))
+		// An element shared between nested comments must be moved only once per pass.
+		if (!IsSelected(AttachedNode) && MovedElementIDs.find(AttachedNode->GetID()) == MovedElementIDs.end())
+		{
+			MovedElementIDs.insert(AttachedNode->GetID());
 			AttachedNode->SetPosition(AttachedNode->GetPosition() + Delta);
+		}
 	}
 
 	for (size_t i = 0; i < Comment->AttachedRerouteNodeIDs.size(); i++)
@@ -768,8 +782,11 @@ void NodeArea::MoveGroupComment(GroupComment* Comment, ImVec2 Delta)
 			continue;
 		}
 
-		if (!IsSelected(AttachedReroute))
+		if (!IsSelected(AttachedReroute) && MovedElementIDs.find(AttachedReroute->GetID()) == MovedElementIDs.end())
+		{
+			MovedElementIDs.insert(AttachedReroute->GetID());
 			AttachedReroute->Position += Delta;
+		}
 	}
 
 	for (size_t i = 0; i < Comment->AttachedGroupCommentIDs.size(); i++)
@@ -782,8 +799,13 @@ void NodeArea::MoveGroupComment(GroupComment* Comment, ImVec2 Delta)
 			continue;
 		}
 
-		if (!IsSelected(AttachedComment))
-			AttachedComment->SetPosition(AttachedComment->GetPosition() + Delta);
+		if (!IsSelected(AttachedComment) && MovedElementIDs.find(AttachedComment->GetID()) == MovedElementIDs.end())
+		{
+			MovedElementIDs.insert(AttachedComment->GetID());
+			// Move directly instead of going through SetPosition so the set of already moved elements is carried through the whole pass.
+			AttachElementsToGroupComment(AttachedComment);
+			MoveGroupCommentInternal(AttachedComment, Delta, MovedElementIDs);
+		}
 	}
 }
 
@@ -813,7 +835,7 @@ void NodeArea::KeyboardInputUpdate()
 
 		for (size_t i = 0; i < SelectedRerouteNodes.size(); i++)
 		{
-			if (Delete(SelectedRerouteNodes[i]))
+			if (DeleteRerouteNodeByID(SelectedRerouteNodes[i]->GetID()))
 				i--;
 		}
 

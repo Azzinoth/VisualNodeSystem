@@ -920,7 +920,7 @@ void NodeArea::RenderGroupComment(GroupComment* GroupComment)
 		ImGui::SetItemDefaultFocus();
 		GroupComment->bLastFrameRenameEditWasVisible = true;
 
-		snprintf(VisNodeSys::GroupComment::GroupCommentRename,GroupComment->GetCaption().size() + 1, "%s", GroupComment->GetCaption().c_str());
+		snprintf(VisNodeSys::GroupComment::GroupCommentRename, sizeof(VisNodeSys::GroupComment::GroupCommentRename), "%s", GroupComment->GetCaption().c_str());
 	}
 
 	ImVec2 TextOffset = ImVec2(4.0f, 10.0f) * Zoom;

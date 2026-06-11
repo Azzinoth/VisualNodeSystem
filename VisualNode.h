@@ -13,6 +13,7 @@ namespace VisNodeSys
 #define NODE_NAME_MAX_LENGTH 1024
 #define NODE_TITLE_HEIGHT 30.0f
 #define NODE_DIAMETER 72.0f
+#define NODE_HEIGHT_PER_SOCKET 40
 
 	enum NODE_SOCKET_EVENT
 	{

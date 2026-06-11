@@ -148,33 +148,32 @@ bool NodeArea::Delete(Connection* Connection)
 
 	for (size_t i = 0; i < Connection->RerouteNodes.size(); i++)
 	{
-		if (Delete(Connection->RerouteNodes[i]))
+		if (DeleteRerouteNodeByID(Connection->RerouteNodes[i]->GetID()))
 			i--;
 	}
 
-	std::vector<Node*> NodesToNotify;
+	// Callbacks may delete the nodes, so they are stored as IDs and resolved before each use.
+	std::vector<std::string> NodesToNotifyIDs;
 	for (int i = 0; i < static_cast<int>(Connection->In->ConnectedSockets.size()); i++)
 	{
 		if (Connection->In->ConnectedSockets[i] == Connection->Out)
-		{
-			Node* Parent = Connection->In->ConnectedSockets[i]->Parent;
-			NodesToNotify.push_back(Parent);
-		}
+			NodesToNotifyIDs.push_back(Connection->In->ConnectedSockets[i]->Parent->GetID());
 	}
 
 	for (int i = 0; i < static_cast<int>(Connection->Out->ConnectedSockets.size()); i++)
 	{
 		if (Connection->Out->ConnectedSockets[i] == Connection->In)
-		{
-			Node* Parent = Connection->Out->ConnectedSockets[i]->Parent;
-			NodesToNotify.push_back(Parent);
-		}
+			NodesToNotifyIDs.push_back(Connection->Out->ConnectedSockets[i]->Parent->GetID());
 	}
 
 	if (!bClearing)
 	{
-		for (size_t i = 0; i < NodesToNotify.size(); i++)
-			PropagateNodeEventsCallbacks(NodesToNotify[i], BEFORE_DISCONNECTED);
+		for (size_t i = 0; i < NodesToNotifyIDs.size(); i++)
+		{
+			Node* NodeToNotify = GetNodeByID(NodesToNotifyIDs[i]);
+			if (NodeToNotify != nullptr)
+				PropagateNodeEventsCallbacks(NodeToNotify, BEFORE_DISCONNECTED);
+		}
 
 		// A BEFORE_DISCONNECTED callback may have caused the connection to be deleted already.
 		bool bConnectionStillAlive = false;
@@ -225,29 +224,37 @@ bool NodeArea::Delete(Connection* Connection)
 
 	if (!bClearing)
 	{
-		for (size_t i = 0; i < NodesToNotify.size(); i++)
-			PropagateNodeEventsCallbacks(NodesToNotify[i], AFTER_DISCONNECTED);
+		for (size_t i = 0; i < NodesToNotifyIDs.size(); i++)
+		{
+			Node* NodeToNotify = GetNodeByID(NodesToNotifyIDs[i]);
+			if (NodeToNotify != nullptr)
+				PropagateNodeEventsCallbacks(NodeToNotify, AFTER_DISCONNECTED);
+		}
 	}
 
 	return true;
 }
 
-bool NodeArea::Delete(RerouteNode* RerouteNode)
+bool NodeArea::DeleteRerouteNodeByID(std::string RerouteNodeID)
 {
-	if (RerouteNode == nullptr)
-		return false;
-
-	// Reject reroutes whose parent Connection does not live in this area.
-	bool bOwnedHere = false;
-	for (size_t i = 0; i < Connections.size(); i++)
+	Connection* OwnerConnection = nullptr;
+	RerouteNode* RerouteNode = nullptr;
+	size_t IndexOfRerouteNode = 0;
+	for (size_t i = 0; i < Connections.size() && RerouteNode == nullptr; i++)
 	{
-		if (Connections[i] == RerouteNode->Parent)
+		for (size_t j = 0; j < Connections[i]->RerouteNodes.size(); j++)
 		{
-			bOwnedHere = true;
-			break;
+			if (Connections[i]->RerouteNodes[j]->GetID() == RerouteNodeID)
+			{
+				OwnerConnection = Connections[i];
+				RerouteNode = Connections[i]->RerouteNodes[j];
+				IndexOfRerouteNode = j;
+				break;
+			}
 		}
 	}
-	if (!bOwnedHere)
+
+	if (RerouteNode == nullptr)
 		return false;
 
 	if (RerouteNodeHovered == RerouteNode)
@@ -255,17 +262,7 @@ bool NodeArea::Delete(RerouteNode* RerouteNode)
 
 	UnSelect(RerouteNode);
 
-	Connection* Connection = RerouteNode->Parent;
-	size_t IndexOfRerouteNode = 0;
-	for (size_t i = 0; i < Connection->RerouteNodes.size(); i++)
-	{
-		if (Connection->RerouteNodes[i] == RerouteNode)
-		{
-			IndexOfRerouteNode = i;
-			break;
-		}
-	}
-
+	Connection* Connection = OwnerConnection;
 	if (Connection->RerouteNodes.size() > 1)
 	{
 		// If the reroute node is the first one, we need to update the begin socket of the next one
@@ -382,6 +379,7 @@ void NodeArea::DeleteNodeInternal(const Node* Node, int Index)
 	if (Index < 0 || Index >= Nodes.size())
 		return;
 
+#ifdef VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES
 	// Remove node from LastExecutedNodes vector.
 	for (size_t i = 0; i < LastExecutedNodes.size(); i++)
 	{
@@ -391,6 +389,7 @@ void NodeArea::DeleteNodeInternal(const Node* Node, int Index)
 			i--;
 		}
 	}
+#endif
 
 	delete Nodes[Index];
 	Nodes.erase(Nodes.begin() + Index, Nodes.begin() + Index + 1);
@@ -611,6 +610,10 @@ bool NodeArea::TryToConnect(const Node* OutNode, const size_t OutNodeSocketIndex
 
 		PropagateNodeEventsCallbacks(InSocket->GetParent(), BEFORE_CONNECTED);
 		if (!RevalidateSockets())
+			return false;
+
+		// Callbacks may have altered the graph, the connection must still be valid.
+		if (!InSocket->GetParent()->CanConnect(InSocket, OutSocket, nullptr))
 			return false;
 
 		OutSocket->ConnectedSockets.push_back(InSocket);
@@ -1268,14 +1271,7 @@ bool NodeArea::DeleteByID(std::string ID)
 		return true;
 	}
 
-	RerouteNode* FoundRerouteNode = GetRerouteNodeByID(ID);
-	if (FoundRerouteNode != nullptr)
-	{
-		Delete(FoundRerouteNode);
-		return true;
-	}
-
-	return false;
+	return DeleteRerouteNodeByID(ID);
 }
 
 NodeArea* NodeArea::GetParent() const

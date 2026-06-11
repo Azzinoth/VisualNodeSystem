@@ -44,15 +44,17 @@ Node::Node(const Node& Other)
 	TitleBackgroundColor = Other.TitleBackgroundColor;
 	TitleBackgroundColorHovered = Other.TitleBackgroundColorHovered;
 
+	// Data getters are not copied, they usually capture the source node.
+	// Each node type's copy constructor must install its own getters.
 	for (size_t i = 0; i < Other.Input.size(); i++)
 	{
-		Input.push_back(new NodeSocket(this, Other.Input[i]->GetAllowedTypes(), Other.Input[i]->GetName(), NodeSocket::SocketFlow::Input, Other.Input[i]->OutputData));
+		Input.push_back(new NodeSocket(this, Other.Input[i]->GetAllowedTypes(), Other.Input[i]->GetName(), NodeSocket::SocketFlow::Input));
 		Input.back()->SetCanBeDeletedByUser(Other.Input[i]->CanBeDeletedByUser());
 	}
 
 	for (size_t i = 0; i < Other.Output.size(); i++)
 	{
-		Output.push_back(new NodeSocket(this, Other.Output[i]->GetAllowedTypes(), Other.Output[i]->GetName(), NodeSocket::SocketFlow::Output, Other.Output[i]->OutputData));
+		Output.push_back(new NodeSocket(this, Other.Output[i]->GetAllowedTypes(), Other.Output[i]->GetName(), NodeSocket::SocketFlow::Output));
 		Output.back()->SetCanBeDeletedByUser(Other.Output[i]->CanBeDeletedByUser());
 	}
 

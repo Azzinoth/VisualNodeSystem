@@ -1,4 +1,5 @@
 #pragma once
+#include <unordered_set>
 #include "../../GroupComment.h"
 #include "../../StandardNodes/BoundaryNodes/LinkNode/LinkNode.h"
 #include "../../StandardNodes/BoundaryNodes/SubAreaNode/SubAreaNode.h"
@@ -281,7 +282,7 @@ namespace VisNodeSys
 		RerouteNode* AddRerouteNodeToConnection(const Node* OutNode, size_t OutNodeSocketIndex, const Node* InNode, size_t InNodeSocketIndex, size_t SegmentToDivide, ImVec2 Position);
 		RerouteNode* AddRerouteNodeToConnection(const Node* OutNode, std::string OutSocketID, const Node* InNode, std::string InSocketID, size_t SegmentToDivide, ImVec2 Position);
 		RerouteNode* GetRerouteNodeByID(std::string ID) const;
-		bool Delete(RerouteNode* RerouteNode);
+		bool DeleteRerouteNodeByID(std::string RerouteNodeID);
 
 		bool GetConnectionStyle(Node* Node, bool bOutputSocket, size_t SocketIndex, ConnectionStyle& Style) const;
 		void SetConnectionStyle(Node* Node, bool bOutputSocket, size_t SocketIndex, ConnectionStyle NewStyle);
@@ -473,6 +474,7 @@ namespace VisNodeSys
 
 		void GroupCommentDoubleMouseClick();
 		void AttachElementsToGroupComment(GroupComment* GroupComment);
+		void MoveGroupCommentInternal(GroupComment* GroupComment, ImVec2 Delta, std::unordered_set<std::string>& MovedElementIDs);
 
 		void Render();
 		void RenderGrid(ImVec2 CurrentPosition) const;

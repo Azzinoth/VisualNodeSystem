@@ -189,9 +189,8 @@ std::string NodeCore::GetClipboardText()
 
 		if (data != nullptr)
 		{
-			text = reinterpret_cast<char*>(data);
+			Text = reinterpret_cast<char*>(data);
 			XFree(data);
-			return text;
 		}
 	}
 

@@ -232,6 +232,9 @@ void SubAreaNode::Draw()
 
 void SubAreaNode::SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSocket, NODE_SOCKET_EVENT EventType)
 {
+	if (OwnSocket == nullptr)
+		return;
+
 	if (OwnSocket->GetFlowDirection() == NodeSocket::SocketFlow::Output)
 	{
 		for (size_t i = 0; i < OwnSocket->GetConnectedSockets().size(); i++)

@@ -565,7 +565,11 @@ void NodeSystem::ProcessConnections(const std::vector<NodeSocket*>& Sockets,
 					if (!TargetArea->TryToConnect(NewCurrentSocket->GetParent(), NewCurrentSocket->GetID(), NewConnectedSocket->GetParent(), NewConnectedSocket->GetID()))
 						continue;
 
-					Connection* NewConnection = TargetArea->Connections.back();
+					// AFTER_CONNECTED callbacks, inside TryToConnect may, have created or deleted connections.
+					Connection* NewConnection = TargetArea->GetConnection(NewCurrentSocket, NewConnectedSocket);
+					if (NewConnection == nullptr)
+						continue;
+
 					// Only copy reroute nodes if the original connection was located.
 					if (OldConnection != nullptr)
 					{
@@ -1637,6 +1641,7 @@ bool NodeSystem::TryToFixDanglingLinkNode(LinkNode* LinkNodeToFix, bool bForceRe
 
 		bool bIsInputNode = LinkNodeToFix->IsInputNode();
 		LinkNode* PartnerNode = CreateLinkNodeInternal(!bIsInputNode);
+		PartnerNode->bHaveOutput = bIsInputNode;
 		if (!PartnerNodeArea->AddNode(PartnerNode))
 		{
 			delete PartnerNode;
@@ -1930,7 +1935,7 @@ bool NodeSystem::DeleteSocketFromMirrorNode(const std::string& NodeID, std::stri
 		return false;
 
 	if (PartnerData.first->SocketIDBeingModified != PartnerData.second->GetID())
-		PartnerData.first->DeleteSocket(PartnerData.second->GetID());
+		return PartnerData.first->DeleteSocket(PartnerData.second->GetID());
 
 	return true;
 }

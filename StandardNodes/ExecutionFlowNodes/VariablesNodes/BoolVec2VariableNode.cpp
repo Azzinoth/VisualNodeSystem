@@ -21,12 +21,11 @@ BoolVec2VariableNode::BoolVec2VariableNode() : BaseExecutionFlowNode()
 	if (Output.size() > 1)
 		Output[1]->SetFunctionToOutputData(DataGetter);
 
-	if (!Input.empty())
-		Input[0]->SetCanBeDeletedByUser(false);
-	if (!Output.empty())
-		Output[0]->SetCanBeDeletedByUser(false);
-	if (Output.size() > 1)
-		Output[1]->SetCanBeDeletedByUser(false);
+	// All sockets are structural and must not be user deletable.
+	for (NodeSocket* Socket : Input)
+		Socket->SetCanBeDeletedByUser(false);
+	for (NodeSocket* Socket : Output)
+		Socket->SetCanBeDeletedByUser(false);
 }
 
 BoolVec2VariableNode::BoolVec2VariableNode(const BoolVec2VariableNode& Other) : BaseExecutionFlowNode(Other)

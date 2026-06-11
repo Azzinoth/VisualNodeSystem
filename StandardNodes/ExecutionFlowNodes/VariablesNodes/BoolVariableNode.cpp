@@ -21,12 +21,11 @@ BoolVariableNode::BoolVariableNode() : BaseExecutionFlowNode()
 	if (Output.size() > 1)
 		Output[1]->SetFunctionToOutputData(BoolDataGetter);
 
-	if (!Input.empty())
-		Input[0]->SetCanBeDeletedByUser(false);
-	if (!Output.empty())
-		Output[0]->SetCanBeDeletedByUser(false);
-	if (Output.size() > 1)
-		Output[1]->SetCanBeDeletedByUser(false);
+	// All sockets are structural and must not be user deletable.
+	for (NodeSocket* Socket : Input)
+		Socket->SetCanBeDeletedByUser(false);
+	for (NodeSocket* Socket : Output)
+		Socket->SetCanBeDeletedByUser(false);
 }
 
 BoolVariableNode::BoolVariableNode(const BoolVariableNode& Other) : BaseExecutionFlowNode(Other)

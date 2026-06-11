@@ -22,7 +22,7 @@ FloatVariableNode::FloatVariableNode() : BaseExecutionFlowNode()
 	if (Output.size() > 1)
 		Output[1]->SetFunctionToOutputData(FloatDataGetter);
 
-	// All sockets are structural and must not be user-deletable.
+	// All sockets are structural and must not be user deletable.
 	for (NodeSocket* Socket : Input)
 		Socket->SetCanBeDeletedByUser(false);
 	for (NodeSocket* Socket : Output)

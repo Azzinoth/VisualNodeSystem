@@ -125,6 +125,9 @@ void SubAreaInputNode::Draw()
 
 void SubAreaInputNode::SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSocket, NODE_SOCKET_EVENT EventType)
 {
+	if (OwnSocket == nullptr || ParentArea == nullptr)
+		return;
+
 	for (size_t i = 0; i < OwnSocket->GetConnectedSockets().size(); i++)
 		ParentArea->TriggerSocketEvent(OwnSocket, OwnSocket->GetConnectedSockets()[i], EventType);
 }

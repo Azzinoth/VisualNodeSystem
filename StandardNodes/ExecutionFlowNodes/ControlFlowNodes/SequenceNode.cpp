@@ -16,6 +16,10 @@ SequenceNode::SequenceNode() : BaseExecutionFlowNode()
 	Output.back()->SetCanBeDeletedByUser(false);
 	AddSequenceOutput();
 
+	// Extra sequence outputs are user-deletable by design, the EXECUTE input is not.
+	for (NodeSocket* Socket : Input)
+		Socket->SetCanBeDeletedByUser(false);
+
 	SetSize(ImVec2(150.0f, static_cast<float>(NODE_HEIGHT_PER_SOCKET * std::max(Input.size(), Output.size()))));
 }
 
