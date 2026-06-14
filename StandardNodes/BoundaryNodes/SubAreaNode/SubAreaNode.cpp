@@ -69,7 +69,20 @@ SubAreaNode::SubAreaNode(const SubAreaNode& Other) : VisNodeSys::SocketMirrorNod
 
 	NodeArea* NewOwnedArea = NODE_SYSTEM.CreateNodeArea();
 	OwnedAreaID = NewOwnedArea->GetID();
-	NODE_SYSTEM.CopyNodesTo(OtherOwnedArea, NewOwnedArea);
+
+	SubAreaInputNode* OtherInputNode = Other.GetSubAreaInputNode();
+	SubAreaOutputNode* OtherOutputNode = Other.GetSubAreaOutputNode();
+	if (OtherInputNode != nullptr)
+		OtherInputNode->bCouldBeCopiedByUser = true;
+	if (OtherOutputNode != nullptr)
+		OtherOutputNode->bCouldBeCopiedByUser = true;
+
+	NODE_SYSTEM.CopyElementsTo(OtherOwnedArea, NewOwnedArea);
+
+	if (OtherInputNode != nullptr)
+		OtherInputNode->bCouldBeCopiedByUser = false;
+	if (OtherOutputNode != nullptr)
+		OtherOutputNode->bCouldBeCopiedByUser = false;
 
 	// Find the copied SubAreaInputNode and SubAreaOutputNode in the new area and relink IDs.
 	auto InputNodes = NewOwnedArea->GetNodesByType<SubAreaInputNode>();
@@ -198,6 +211,15 @@ bool SubAreaNode::FromJson(Json::Value Json)
 
 	SubAreaInputNodeID = Json["SubAreaInputNodeID"].asString();
 	SubAreaOutputNodeID = Json["SubAreaOutputNodeID"].asString();
+
+	// The serialized OwnerSubAreaNodeID refers to the node that produced the JSON.
+	SubAreaInputNode* InputNode = GetSubAreaInputNode();
+	if (InputNode != nullptr)
+		InputNode->OwnerSubAreaNodeID = GetID();
+
+	SubAreaOutputNode* OutputNode = GetSubAreaOutputNode();
+	if (OutputNode != nullptr)
+		OutputNode->OwnerSubAreaNodeID = GetID();
 
 	return true;
 }

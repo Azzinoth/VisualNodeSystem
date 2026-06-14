@@ -728,10 +728,13 @@ void NodeArea::MouseDraggingGroupCommentUpdate()
 		}
 		else
 		{
+			// One shared set for the whole selection, so an element attached to several selected comments moves only once.
+			std::unordered_set<std::string> MovedElementIDs;
 			for (size_t i = 0; i < SelectedGroupComments.size(); i++)
-			{
-				MoveGroupComment(SelectedGroupComments[i], GetMouseDelta());
-			}
+				MovedElementIDs.insert(SelectedGroupComments[i]->GetID());
+
+			for (size_t i = 0; i < SelectedGroupComments.size(); i++)
+				MoveGroupCommentInternal(SelectedGroupComments[i], GetMouseDelta(), MovedElementIDs);
 		}
 	}
 }
@@ -938,7 +941,7 @@ void NodeArea::KeyboardInputUpdate()
 				const size_t ConnectionCountBefore = Connections.size();
 				const size_t GroupCommentCountBefore = GroupComments.size();
 
-				NODE_SYSTEM.CopyNodesTo(NewNodeArea, this);
+				NODE_SYSTEM.CopyElementsTo(NewNodeArea, this);
 
 				// Unselect all elements.
 				UnSelectAll();

@@ -892,17 +892,23 @@ bool NodeArea::SetExecutionEntryNodeByID(std::string NewEntryNodeID)
 
 bool NodeArea::ExecuteNodeNetwork()
 {
-	LastExecutedNodes.clear();
-
-	// Clear all children.
-	for (NodeArea* CurrentChildren : GetRecursiveChildren())
-		CurrentChildren->LastExecutedNodes.clear();
-
-	// Clear all downstream connections.
-	for (NodeArea* DownstreamArea : NODE_SYSTEM.GetAllDownstreamAreas(GetID()))
+	// Clear this area and every area reachable from it through sub-area ownership and link connections.
+	std::vector<NodeArea*> ToVisit = { this };
+	std::vector<NodeArea*> Visited;
+	for (size_t i = 0; i < ToVisit.size(); i++)
 	{
-		if (DownstreamArea != nullptr && DownstreamArea != this)
-			DownstreamArea->LastExecutedNodes.clear();
+		NodeArea* CurrentArea = ToVisit[i];
+		if (CurrentArea == nullptr || NODE_SYSTEM.IsInAListOfAreas(CurrentArea, Visited))
+			continue;
+
+		Visited.push_back(CurrentArea);
+		CurrentArea->LastExecutedNodes.clear();
+
+		std::vector<NodeArea*> Children = CurrentArea->GetImediateChildren();
+		ToVisit.insert(ToVisit.end(), Children.begin(), Children.end());
+
+		std::vector<NodeArea*> DownstreamAreas = NODE_SYSTEM.GetImmediateDownstreamAreas(CurrentArea->GetID());
+		ToVisit.insert(ToVisit.end(), DownstreamAreas.begin(), DownstreamAreas.end());
 	}
 
 	Node* EntryNode = GetExecutionEntryNode();

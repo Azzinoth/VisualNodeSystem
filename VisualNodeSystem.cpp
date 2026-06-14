@@ -627,6 +627,10 @@ void NodeSystem::CopyNodesInternal(const std::vector<Node*>& SourceNodes, NodeAr
 		if (SourceNodes[i] == nullptr)
 			continue;
 
+		// Nodes the user cannot copy must not be duplicated into another area.
+		if (!SourceNodes[i]->bCouldBeCopiedByUser)
+			continue;
+
 		Node* CopyOfNode = NODE_FACTORY.CopyNode(SourceNodes[i]->GetType(), *SourceNodes[i]);
 
 		if (CopyOfNode == nullptr)
@@ -683,7 +687,7 @@ NodeArea* NodeSystem::CreateNodeArea(const std::vector<Node*> Nodes, const std::
 	return NewArea;
 }
 
-void NodeSystem::CopyNodesTo(NodeArea* SourceNodeArea, NodeArea* TargetNodeArea)
+void NodeSystem::CopyElementsTo(NodeArea* SourceNodeArea, NodeArea* TargetNodeArea)
 {
 	if (SourceNodeArea == nullptr || TargetNodeArea == nullptr || SourceNodeArea == TargetNodeArea)
 		return;
@@ -1649,13 +1653,11 @@ bool NodeSystem::TryToFixDanglingLinkNode(LinkNode* LinkNodeToFix, bool bForceRe
 		}
 
 		// Recreate all sockets for partner node based on the current link node.
+		// Skip the sockets CreateLinkNodeInternal already created on the partner.
 		std::vector<NodeSocket*>& SocketsToCopy = bIsInputNode ? LinkNodeToFix->Input : LinkNodeToFix->Output;
 		std::vector<NodeSocket*>& PartnerNodeSockets = bIsInputNode ? PartnerNode->Output : PartnerNode->Input;
-		for (size_t i = 0; i < SocketsToCopy.size(); i++)
+		for (size_t i = PartnerNodeSockets.size(); i < SocketsToCopy.size(); i++)
 		{
-			if (i == 0)
-				continue;
-
 			PartnerNode->AddSocketInternal(SocketsToCopy[i]->GetAllowedTypes(), SocketsToCopy[i]->GetName(), SocketsToCopy[i]->GetFlowDirection());
 		}
 

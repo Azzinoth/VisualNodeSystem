@@ -332,19 +332,19 @@ bool NodeArea::Delete(const Node* NodeToDelete)
 	if (CheckNode == nullptr)
 		return false;
 
-	// The DESTROYED callback above may have deleted or reordered nodes, so the cached Index is no longer trustworthy.
-	for (size_t i = 0; i < CheckNode->Input.size(); i++)
+	// Tear down the node's connections. A BEFORE/AFTER_DISCONNECTED callback may re-enter
+	// Delete and free this node, so check node by ID each pass and stop once it is gone.
+	while (true)
 	{
-		auto Connections = GetAllConnections(CheckNode->Input[i]);
-		for (size_t j = 0; j < Connections.size(); j++)
-			Delete(Connections[j]);
-	}
+		CheckNode = GetNodeByID(NodeToDeleteID);
+		if (CheckNode == nullptr)
+			return true;
 
-	for (size_t i = 0; i < CheckNode->Output.size(); i++)
-	{
-		auto Connections = GetAllConnections(CheckNode->Output[i]);
-		for (size_t j = 0; j < Connections.size(); j++)
-			Delete(Connections[j]);
+		std::vector<Connection*> NodeConnections = GetAllConnections(CheckNode);
+		if (NodeConnections.empty())
+			break;
+
+		Delete(NodeConnections[0]);
 	}
 
 	NODE_SYSTEM.OnNodeDeletion(CheckNode);
@@ -621,11 +621,16 @@ bool NodeArea::TryToConnect(const Node* OutNode, const size_t OutNodeSocketIndex
 
 		Connections.push_back(new Connection(OutSocket, InSocket));
 
-		OutSocket->GetParent()->SocketEvent(OutSocket, InSocket, CONNECTED);
-		InSocket->GetParent()->SocketEvent(InSocket, OutSocket, CONNECTED);
+		// Revalidate before each notification, a callback or SocketEvent may delete a node and free its socket.
+		if (RevalidateSockets())
+			OutSocket->GetParent()->SocketEvent(OutSocket, InSocket, CONNECTED);
+		if (RevalidateSockets())
+			InSocket->GetParent()->SocketEvent(InSocket, OutSocket, CONNECTED);
 
-		PropagateNodeEventsCallbacks(OutSocket->GetParent(), AFTER_CONNECTED);
-		PropagateNodeEventsCallbacks(InSocket->GetParent(), AFTER_CONNECTED);
+		if (RevalidateSockets())
+			PropagateNodeEventsCallbacks(OutSocket->GetParent(), AFTER_CONNECTED);
+		if (RevalidateSockets())
+			PropagateNodeEventsCallbacks(InSocket->GetParent(), AFTER_CONNECTED);
 	}
 
 	return bResult;

@@ -92,7 +92,7 @@ namespace VisNodeSys
 		std::vector<NodeArea*> GetNodeAreasByName(const std::string& Name) const;
 		void DeleteNodeArea(const NodeArea* NodeAreaToDelete);
 		void DeleteNodeAreaByID(const std::string& NodeAreaID);
-		void CopyNodesTo(NodeArea* SourceNodeArea, NodeArea* TargetNodeArea);
+		void CopyElementsTo(NodeArea* SourceNodeArea, NodeArea* TargetNodeArea);
 
 		size_t GetNodeAreaCount() const;
 		size_t GetTotalNodeCount(std::vector<std::string> AreaIDFilter = {}) const;

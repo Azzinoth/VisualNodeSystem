@@ -53,7 +53,9 @@ LinkNode::LinkNode(const LinkNode& Other) : VisNodeSys::SocketMirrorNode(Other)
 
 LinkNode::~LinkNode()
 {
-	NODE_SYSTEM.DeleteLinkRecord(ID);
+	auto* Record = NODE_SYSTEM.GetLinkDataByNodeID(ID);
+	if (Record != nullptr)
+		NODE_SYSTEM.DeleteLinkRecord(Record->ID);
 }
 
 void LinkNode::SetCorrectSize()
