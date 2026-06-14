@@ -1133,6 +1133,46 @@ TEST(SubAreaNodeTests, FromJson_OnEstablishedNode_ReleasesPreviousOwnedArea)
 	NODE_SYSTEM.Clear();
 }
 
+TEST(SubAreaNodeTests, FromJson_WithForeignSourceID_RepointsOwnedAreaIONodeOwners)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* ParentArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(ParentArea, nullptr);
+
+	SubAreaNode* SubArea = NODE_SYSTEM.CreateSubAreaNode(ParentArea->GetID());
+	ASSERT_NE(SubArea, nullptr);
+
+	// Build a valid SubAreaNode JSON describing a different owned area, then delete its source
+	// so the described area ID is free and unowned at FromJson time.
+	NodeArea* OtherParentArea = NODE_SYSTEM.CreateNodeArea();
+	SubAreaNode* OtherSubArea = NODE_SYSTEM.CreateSubAreaNode(OtherParentArea->GetID());
+	Json::Value OtherJson = OtherSubArea->ToJson();
+	NODE_SYSTEM.DeleteNodeArea(OtherParentArea);
+
+	ASSERT_TRUE(SubArea->FromJson(OtherJson));
+
+	// Forward link (SubAreaNode => IO node) resolves.
+	SubAreaInputNode* InputNode = SubArea->GetSubAreaInputNode();
+	SubAreaOutputNode* OutputNode = SubArea->GetSubAreaOutputNode();
+	ASSERT_NE(InputNode, nullptr);
+	ASSERT_NE(OutputNode, nullptr);
+
+	NodeArea* OwnedArea = SubArea->GetOwnedArea();
+	ASSERT_NE(OwnedArea, nullptr);
+
+	// The boundary nodes point back at the loading node, so they are not dangling
+	// and the owned area resolves its parent, keeping the ownership cycle guard working.
+	EXPECT_EQ(InputNode->GetOwnerSubAreaNode(), static_cast<Node*>(SubArea));
+	EXPECT_EQ(OutputNode->GetOwnerSubAreaNode(), static_cast<Node*>(SubArea));
+	EXPECT_FALSE(InputNode->IsDangling());
+	EXPECT_FALSE(OutputNode->IsDangling());
+	EXPECT_EQ(OwnedArea->GetParent(), ParentArea);
+	EXPECT_TRUE(OwnedArea->IsChildOf(ParentArea));
+
+	NODE_SYSTEM.Clear();
+}
+
 TEST(SubAreaNodeTests, MultipleSubAreasInParent_BothExecute)
 {
 	NODE_SYSTEM.Clear();
@@ -2562,7 +2602,7 @@ TEST(SubAreaNodeTests, MoveNodesTo_DoesNotMoveSubAreaBoundaryNodes)
 	NODE_SYSTEM.Clear();
 }
 
-TEST(SubAreaNodeTests, CopyNodesTo_OwnedAreaToParentArea_DoesNotCreateSelfParentingArea)
+TEST(SubAreaNodeTests, CopyElementsTo_OwnedAreaToParentArea_DoesNotCreateSelfParentingArea)
 {
 	NODE_SYSTEM.Clear();
 
@@ -2575,7 +2615,7 @@ TEST(SubAreaNodeTests, CopyNodesTo_OwnedAreaToParentArea_DoesNotCreateSelfParent
 	NodeArea* OwnedArea = SubArea->GetOwnedArea();
 	ASSERT_NE(OwnedArea, nullptr);
 
-	NODE_SYSTEM.CopyNodesTo(OwnedArea, ParentArea);
+	NODE_SYSTEM.CopyElementsTo(OwnedArea, ParentArea);
 
 	EXPECT_EQ(ParentArea->GetParent(), nullptr);
 
@@ -2587,7 +2627,7 @@ TEST(SubAreaNodeTests, CopyNodesTo_OwnedAreaToParentArea_DoesNotCreateSelfParent
 	NODE_SYSTEM.Clear();
 }
 
-TEST(SubAreaNodeTests, CopyNodesTo_OwnedAreaToUnrelatedArea_DoesNotCreatePhantomParent)
+TEST(SubAreaNodeTests, CopyElementsTo_OwnedAreaToUnrelatedArea_DoesNotCreatePhantomParent)
 {
 	NODE_SYSTEM.Clear();
 
@@ -2603,11 +2643,36 @@ TEST(SubAreaNodeTests, CopyNodesTo_OwnedAreaToUnrelatedArea_DoesNotCreatePhantom
 	NodeArea* UnrelatedArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(UnrelatedArea, nullptr);
 
-	NODE_SYSTEM.CopyNodesTo(OwnedArea, UnrelatedArea);
+	NODE_SYSTEM.CopyElementsTo(OwnedArea, UnrelatedArea);
 
 	EXPECT_EQ(UnrelatedArea->GetParent(), nullptr);
 	EXPECT_FALSE(UnrelatedArea->IsChildOf(ParentArea));
 	EXPECT_FALSE(ParentArea->IsParentOf(UnrelatedArea));
+
+	NODE_SYSTEM.Clear();
+}
+
+TEST(SubAreaNodeTests, CopyElementsTo_OwnedAreaToUnrelatedArea_DoesNotDuplicateBoundaryNodes)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* ParentArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(ParentArea, nullptr);
+
+	SubAreaNode* SubArea = NODE_SYSTEM.CreateSubAreaNode(ParentArea->GetID());
+	ASSERT_NE(SubArea, nullptr);
+
+	NodeArea* OwnedArea = SubArea->GetOwnedArea();
+	ASSERT_NE(OwnedArea, nullptr);
+
+	NodeArea* UnrelatedArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(UnrelatedArea, nullptr);
+
+	NODE_SYSTEM.CopyElementsTo(OwnedArea, UnrelatedArea);
+
+	// The hidden SubAreaInput/Output boundary nodes must not be duplicated into another area.
+	EXPECT_EQ(UnrelatedArea->GetNodesByType<SubAreaInputNode>().size(), 0);
+	EXPECT_EQ(UnrelatedArea->GetNodesByType<SubAreaOutputNode>().size(), 0);
 
 	NODE_SYSTEM.Clear();
 }
@@ -2641,7 +2706,6 @@ TEST(SubAreaNodeTests, SocketMirrorAddSocket_ForeignSocket_IsRejectedWithoutDesy
 
 	NODE_SYSTEM.Clear();
 }
-
 
 TEST(SubAreaNodeTests, TriggerOrphanSocketEvent_SubAreaInputNodeWithoutSockets_IsSafe)
 {

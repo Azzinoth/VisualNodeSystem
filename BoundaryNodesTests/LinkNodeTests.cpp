@@ -469,6 +469,56 @@ TEST(LinkNodeTests, ReExecute_DownstreamLastExecutedNodesDoNotAccumulate)
 	NODE_SYSTEM.Clear();
 }
 
+TEST(LinkNodeTests, ReExecute_DownstreamFromInsideSubArea_LastExecutedNodesDoNotAccumulate)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* ParentArea = NODE_SYSTEM.CreateNodeArea();
+	ParentArea->SetSaveExecutedNodes(true);
+
+	// The execution entry point lives in the parent area.
+	Node* BeginNode = NODE_FACTORY.CreateNode("BeginNode");
+	ParentArea->AddNode(BeginNode);
+	ParentArea->SetExecutionEntryNode(BeginNode);
+
+	// The link originates inside an owned subarea, so its downstream area is reachable only through a link in subarea.
+	SubAreaNode* SubArea = NODE_SYSTEM.CreateSubAreaNode(ParentArea->GetID());
+	ASSERT_NE(SubArea, nullptr);
+	NodeArea* OwnedArea = SubArea->GetOwnedArea();
+	ASSERT_NE(OwnedArea, nullptr);
+	OwnedArea->SetSaveExecutedNodes(true);
+	SubAreaInputNode* OwnedAreaInputNode = SubArea->GetSubAreaInputNode();
+	ASSERT_NE(OwnedAreaInputNode, nullptr);
+
+	NodeArea* DownstreamArea = NODE_SYSTEM.CreateNodeArea();
+	DownstreamArea->SetSaveExecutedNodes(true);
+
+	BoolVariableNode* DownstreamBoolNode = new BoolVariableNode();
+	DownstreamArea->AddNode(DownstreamBoolNode);
+
+	std::pair<std::string, std::string> LinkResult;
+	ASSERT_TRUE(NODE_SYSTEM.LinkNodeAreas(OwnedArea->GetID(), DownstreamArea->GetID(), &LinkResult));
+
+	Node* OwnedAreaLinkNode = OwnedArea->GetNodeByID(LinkResult.first);
+	Node* DownstreamLinkNode = DownstreamArea->GetNodeByID(LinkResult.second);
+
+	// Execution path: BeginNode => SubArea; inside the owned area the input node
+	// drives the link node; in the downstream area the link node drives the sink.
+	ASSERT_EQ(ParentArea->TryToConnect(BeginNode, 0, SubArea, 0), true);
+	ASSERT_EQ(OwnedArea->TryToConnect(OwnedAreaInputNode, 0, OwnedAreaLinkNode, 0), true);
+	ASSERT_EQ(DownstreamArea->TryToConnect(DownstreamLinkNode, 0, DownstreamBoolNode, 0), true);
+
+	// First execution.
+	ASSERT_TRUE(ParentArea->ExecuteNodeNetwork());
+	EXPECT_EQ(DownstreamArea->GetLastExecutedNodes().size(), 2);
+
+	// Second execution must clear the previous trace, not accumulate it.
+	ASSERT_TRUE(ParentArea->ExecuteNodeNetwork());
+	EXPECT_EQ(DownstreamArea->GetLastExecutedNodes().size(), 2);
+
+	NODE_SYSTEM.Clear();
+}
+
 TEST(LinkNodeTests, Deletion_Basic)
 {
 	NODE_SYSTEM.Clear();
@@ -1779,12 +1829,12 @@ TEST(LinkNodeTests, CopyArea_IntoLinkedArea_RejectedLinkNode_SkipsConnection)
 	ASSERT_GT(SourceArea->GetConnectionCount(), 0);
 
 	// Copying SourceArea into LinkedArea: the LinkNode's copy (LinkedAreaID == LinkedArea) is
-	// rejected by AddNode while the BeginNode copies fine. ProcessConnections must skip the
-	// unrecreatable connection instead of dereferencing a null mapped socket.
-	NODE_SYSTEM.CopyNodesTo(SourceArea, LinkedArea);
+	// rejected by AddNode and the BeginNode is skipped (non-copyable). ProcessConnections must
+	// skip the unrecreatable connection instead of dereferencing a null mapped socket.
+	NODE_SYSTEM.CopyElementsTo(SourceArea, LinkedArea);
 
-	// The BeginNode was copied, the rejected LinkNode's connection was not recreated.
-	EXPECT_EQ(LinkedArea->GetNodesByType<BeginNode>().size(), 1);
+	// Non-copyable nodes are not duplicated and the unrecreatable connection was skipped.
+	EXPECT_EQ(LinkedArea->GetNodesByType<BeginNode>().size(), 0);
 	EXPECT_EQ(LinkedArea->GetConnectionCount(), 0);
 
 	NODE_SYSTEM.Clear();

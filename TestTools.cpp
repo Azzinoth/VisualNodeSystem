@@ -1611,6 +1611,6 @@ void TestTools::SimulateCopyPasteNodes(std::vector<VisNodeSys::Node*> NodesToCop
 	TemporaryNodeArea = NODE_SYSTEM.CreateNodeArea();
 	TemporaryNodeArea->LoadFromJson(Json);
 	
-	NODE_SYSTEM.CopyNodesTo(TemporaryNodeArea, TargetArea);
+	NODE_SYSTEM.CopyElementsTo(TemporaryNodeArea, TargetArea);
 	NODE_SYSTEM.DeleteNodeArea(TemporaryNodeArea);
 }

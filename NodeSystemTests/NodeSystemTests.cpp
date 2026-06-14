@@ -450,7 +450,7 @@ TEST(NodeSystemTests, CreateNodeArea_NodesSpanningMultipleAreas_RecreatesAllConn
 	NODE_SYSTEM.Clear();
 }
 
-TEST(NodeSystemTests, CopyNodesTo_CopiesGroupComments_To_Target)
+TEST(NodeSystemTests, CopyElementsTo_CopiesGroupComments_To_Target)
 {
 	NODE_SYSTEM.Clear();
 
@@ -462,7 +462,7 @@ TEST(NodeSystemTests, CopyNodesTo_CopiesGroupComments_To_Target)
 	ASSERT_TRUE(SourceArea->AddGroupComment(Original));
 	ASSERT_EQ(SourceArea->GetGroupCommentCount(), 1);
 
-	NODE_SYSTEM.CopyNodesTo(SourceArea, TargetArea);
+	NODE_SYSTEM.CopyElementsTo(SourceArea, TargetArea);
 
 	EXPECT_EQ(SourceArea->GetGroupCommentCount(), 1);
 	EXPECT_EQ(TargetArea->GetGroupCommentCount(), 1);
@@ -490,7 +490,7 @@ TEST(NodeSystemTests, Paste_AllNodesRejectedByTarget_TargetNeverShrinksBelowSour
 
 	// LinkedAreaID matches TargetArea, so AddNode rejects the copy.
 	const size_t TargetNodeCountBefore = TargetArea->GetNodeCount();
-	NODE_SYSTEM.CopyNodesTo(NewNodeArea, TargetArea);
+	NODE_SYSTEM.CopyElementsTo(NewNodeArea, TargetArea);
 	EXPECT_EQ(TargetArea->GetNodeCount(), TargetNodeCountBefore);
 	EXPECT_EQ(NewNodeArea->GetNodeCount(), 1);
 
@@ -499,7 +499,7 @@ TEST(NodeSystemTests, Paste_AllNodesRejectedByTarget_TargetNeverShrinksBelowSour
 	NODE_SYSTEM.Clear();
 }
 
-TEST(NodeSystemTests, CopyNodesTo_SourceEqualsTarget_IsNoOp)
+TEST(NodeSystemTests, CopyElementsTo_SourceEqualsTarget_IsNoOp)
 {
 	NODE_SYSTEM.Clear();
 
@@ -510,13 +510,13 @@ TEST(NodeSystemTests, CopyNodesTo_SourceEqualsTarget_IsNoOp)
 	ASSERT_TRUE(Area->AddNode(NodeInArea));
 	const size_t NodeCountBefore = Area->GetNodeCount();
 
-	NODE_SYSTEM.CopyNodesTo(Area, Area);
+	NODE_SYSTEM.CopyElementsTo(Area, Area);
 	EXPECT_EQ(Area->GetNodeCount(), NodeCountBefore);
 
 	NODE_SYSTEM.Clear();
 }
 
-TEST(NodeSystemTests, CopyNodesTo_NodeWithFaultyCopyConstructor_IsRejected)
+TEST(NodeSystemTests, CopyElementsTo_NodeWithFaultyCopyConstructor_IsRejected)
 {
 	NODE_SYSTEM.Clear();
 
@@ -530,13 +530,13 @@ TEST(NodeSystemTests, CopyNodesTo_NodeWithFaultyCopyConstructor_IsRejected)
 	ASSERT_TRUE(SourceNodeArea->AddNode(DivergentNode));
 
 	// The copy has fewer sockets than the source, so it is rejected, not copied.
-	NODE_SYSTEM.CopyNodesTo(SourceNodeArea, TargetNodeArea);
+	NODE_SYSTEM.CopyElementsTo(SourceNodeArea, TargetNodeArea);
 	EXPECT_EQ(TargetNodeArea->GetNodeCount(), 0);
 
 	NODE_SYSTEM.Clear();
 }
 
-TEST(NodeSystemTests, CopyNodesTo_AfterSocketDeleted_CopyKeepsRemainingSockets)
+TEST(NodeSystemTests, CopyElementsTo_AfterSocketDeleted_CopyKeepsRemainingSockets)
 {
 	NODE_SYSTEM.Clear();
 
@@ -558,7 +558,7 @@ TEST(NodeSystemTests, CopyNodesTo_AfterSocketDeleted_CopyKeepsRemainingSockets)
 	ASSERT_TRUE(OriginalNode->DeleteSocket(FirstSocket));
 	ASSERT_EQ(OriginalNode->GetInputSocketCount(), 2);
 
-	NODE_SYSTEM.CopyNodesTo(SourceNodeArea, TargetNodeArea);
+	NODE_SYSTEM.CopyElementsTo(SourceNodeArea, TargetNodeArea);
 	ASSERT_EQ(TargetNodeArea->GetNodeCount(), 1);
 
 	std::vector<Node*> CopiedNodes = TargetNodeArea->GetNodesByStringType("VisualNode");
@@ -568,7 +568,7 @@ TEST(NodeSystemTests, CopyNodesTo_AfterSocketDeleted_CopyKeepsRemainingSockets)
 	NODE_SYSTEM.Clear();
 }
 
-TEST(NodeSystemTests, CopyNodesTo_CallbackConnectsOtherPair_ReroutesStayOnCopiedConnection)
+TEST(NodeSystemTests, CopyElementsTo_CallbackConnectsOtherPair_ReroutesStayOnCopiedConnection)
 {
 	NODE_SYSTEM.Clear();
 
@@ -612,7 +612,7 @@ TEST(NodeSystemTests, CopyNodesTo_CallbackConnectsOtherPair_ReroutesStayOnCopied
 		}
 	});
 
-	NODE_SYSTEM.CopyNodesTo(SourceArea, TargetArea);
+	NODE_SYSTEM.CopyElementsTo(SourceArea, TargetArea);
 	EXPECT_TRUE(bCallbackConnectIssued);
 	EXPECT_EQ(TargetArea->GetConnectionCount(), 2);
 

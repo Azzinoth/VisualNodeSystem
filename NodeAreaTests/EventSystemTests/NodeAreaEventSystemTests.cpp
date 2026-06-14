@@ -282,6 +282,51 @@ TEST(NodeAreaEventSystemTests, ReentrantNodeDelete_FromDestroyedCallback_IsSafe)
 	NODE_SYSTEM.Clear();
 }
 
+TEST(NodeAreaEventSystemTests, ReentrantNodeDelete_FromBeforeDisconnectedCallback_IsSafe)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(LocalNodeArea, nullptr);
+
+	Node* TargetNode = new Node();
+	TargetNode->AddSocket(new NodeSocket(TargetNode, "T", "in", NodeSocket::SocketFlow::Input));
+	ASSERT_TRUE(LocalNodeArea->AddNode(TargetNode));
+
+	Node* OtherNode = new Node();
+	OtherNode->AddSocket(new NodeSocket(OtherNode, "T", "out", NodeSocket::SocketFlow::Output));
+	ASSERT_TRUE(LocalNodeArea->AddNode(OtherNode));
+
+	ASSERT_TRUE(LocalNodeArea->TryToConnect(OtherNode, 0, TargetNode, 0));
+	ASSERT_EQ(LocalNodeArea->GetConnectionCount(), 1);
+
+	const std::string TargetNodeID = TargetNode->GetID();
+
+	// A BEFORE_DISCONNECTED callback fires while the node's connections are torn down inside Delete.
+	// re-deleting the same node there must not leave the teardown loop operating on the freed node.
+	bool bReentered = false;
+	LocalNodeArea->AddNodeEventCallback([&](Node* EventNode, NODE_EVENT EventType) {
+		if (EventType == NODE_EVENT::BEFORE_DISCONNECTED && !bReentered)
+		{
+			bReentered = true;
+			Node* NodeToDelete = LocalNodeArea->GetNodeByID(TargetNodeID);
+			if (NodeToDelete != nullptr)
+				LocalNodeArea->Delete(NodeToDelete);
+		}
+	});
+
+	LocalNodeArea->Delete(TargetNode);
+
+	// The reentrancy ran, the node was deleted exactly once and the area is intact.
+	EXPECT_TRUE(bReentered);
+	EXPECT_EQ(LocalNodeArea->GetNodeByID(TargetNodeID), nullptr);
+	EXPECT_EQ(LocalNodeArea->GetNodeCount(), 1);
+	EXPECT_EQ(LocalNodeArea->GetConnectionCount(), 0);
+	EXPECT_TRUE(OtherNode->GetNodesConnectedToOutput().empty());
+
+	NODE_SYSTEM.Clear();
+}
+
 TEST(NodeAreaEventSystemTests, PropagateUpdate_NotifiesNeighborsNotCaller)
 {
 	NODE_SYSTEM.Clear();
@@ -1042,6 +1087,56 @@ TEST(NodeAreaEventSystemTests, TryToConnect_CallbackDeletesNode_AbortsSafely)
 	EXPECT_EQ(LocalNodeArea->GetNodeByID(InputNodeID), nullptr);
 	EXPECT_EQ(LocalNodeArea->GetConnectionCount(), 0);
 	EXPECT_TRUE(OutputNode->GetNodesConnectedToOutput().empty());
+
+	NODE_SYSTEM.Clear();
+}
+
+TEST(NodeAreaEventSystemTests, TryToConnect_CallbackDeletesInNode_FromAfterConnected_IsSafe)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* LocalNodeArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(LocalNodeArea, nullptr);
+
+	Node* OutputNode = new Node();
+	OutputNode->AddSocket(new NodeSocket(OutputNode, "INT", "out", NodeSocket::SocketFlow::Output));
+	ASSERT_TRUE(LocalNodeArea->AddNode(OutputNode));
+
+	Node* InputNode = new Node();
+	InputNode->AddSocket(new NodeSocket(InputNode, "INT", "in", NodeSocket::SocketFlow::Input));
+	ASSERT_TRUE(LocalNodeArea->AddNode(InputNode));
+
+	const std::string OutputNodeID = OutputNode->GetID();
+	const std::string InputNodeID = InputNode->GetID();
+
+	// A callback that inspects the node it is notified about and deletes the input node
+	// during the AFTER_CONNECTED handshake. The connect path must not deliver a second
+	// AFTER_CONNECTED for the just-deleted node, otherwise it reads the freed input
+	// socket to resolve its parent and hands a dangling node to this callback.
+	int AfterConnectedCount = 0;
+	LocalNodeArea->AddNodeEventCallback([&](Node* CurrentNode, NODE_EVENT EventType) {
+		if (EventType != NODE_EVENT::AFTER_CONNECTED)
+			return;
+
+		AfterConnectedCount++;
+		CurrentNode->GetID();
+
+		if (AfterConnectedCount == 1)
+		{
+			Node* NodeToDelete = LocalNodeArea->GetNodeByID(InputNodeID);
+			if (NodeToDelete != nullptr)
+				LocalNodeArea->Delete(NodeToDelete);
+		}
+	});
+
+	LocalNodeArea->TryToConnect(OutputNode, 0, InputNode, 0);
+
+	// The input node and its connection are gone, the output node survives, and the
+	// callback was notified exactly once (never for the deleted node).
+	EXPECT_EQ(LocalNodeArea->GetNodeByID(InputNodeID), nullptr);
+	EXPECT_EQ(LocalNodeArea->GetConnectionCount(), 0);
+	EXPECT_NE(LocalNodeArea->GetNodeByID(OutputNodeID), nullptr);
+	EXPECT_EQ(AfterConnectedCount, 1);
 
 	NODE_SYSTEM.Clear();
 }
