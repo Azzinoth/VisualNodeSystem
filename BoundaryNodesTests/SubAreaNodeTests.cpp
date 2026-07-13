@@ -2726,3 +2726,322 @@ TEST(SubAreaNodeTests, TriggerOrphanSocketEvent_SubAreaInputNodeWithoutSockets_I
 
 	NODE_SYSTEM.Clear();
 }
+
+TEST(SubAreaNodeTests, ConvertNodesToSubArea_Validation)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* FirstArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(FirstArea, nullptr);
+	NodeArea* SecondArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(SecondArea, nullptr);
+
+	BoolVariableNode* NodeInSecondArea = new BoolVariableNode();
+	ASSERT_TRUE(SecondArea->AddNode(NodeInSecondArea));
+
+	// Null parent area.
+	EXPECT_EQ(NODE_SYSTEM.ConvertNodesToSubArea(nullptr, { NodeInSecondArea }), nullptr);
+	// Empty and null-only node lists.
+	EXPECT_EQ(NODE_SYSTEM.ConvertNodesToSubArea(FirstArea, {}), nullptr);
+	EXPECT_EQ(NODE_SYSTEM.ConvertNodesToSubArea(FirstArea, { nullptr }), nullptr);
+	// Node that belongs to a different area.
+	EXPECT_EQ(NODE_SYSTEM.ConvertNodesToSubArea(FirstArea, { NodeInSecondArea }), nullptr);
+
+	// Boundary nodes alone cannot be converted.
+	SubAreaNode* SubArea = NODE_SYSTEM.CreateSubAreaNode(FirstArea->GetID());
+	ASSERT_NE(SubArea, nullptr);
+	NodeArea* OwnedArea = SubArea->GetOwnedArea();
+	ASSERT_NE(OwnedArea, nullptr);
+	std::vector<Node*> BoundaryNodes = { SubArea->GetSubAreaInputNode(), SubArea->GetSubAreaOutputNode() };
+	EXPECT_EQ(NODE_SYSTEM.ConvertNodesToSubArea(OwnedArea, BoundaryNodes), nullptr);
+
+	// Nothing should have changed.
+	EXPECT_EQ(FirstArea->GetNodeCount(), 1);
+	EXPECT_EQ(SecondArea->GetNodeCount(), 1);
+	EXPECT_EQ(OwnedArea->GetNodeCount(), 2);
+
+	NODE_SYSTEM.Clear();
+}
+
+TEST(SubAreaNodeTests, ConvertNodesToSubArea_SingleNodeFlow)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* ParentArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(ParentArea, nullptr);
+	ParentArea->SetSaveExecutedNodes(true);
+
+	Node* ExecutionBeginNode = new BeginNode();
+	ASSERT_TRUE(ParentArea->AddNode(ExecutionBeginNode));
+	ParentArea->SetExecutionEntryNode(ExecutionBeginNode);
+
+	BoolLiteralNode* ParentBoolLiteral = new BoolLiteralNode();
+	ParentBoolLiteral->SetData(true);
+	ASSERT_TRUE(ParentArea->AddNode(ParentBoolLiteral));
+
+	BoolVariableNode* MiddleBoolNode = new BoolVariableNode();
+	MiddleBoolNode->SetName("MiddleBoolNode");
+	ASSERT_TRUE(ParentArea->AddNode(MiddleBoolNode));
+
+	BoolVariableNode* ParentBoolResult = new BoolVariableNode();
+	ParentBoolResult->SetName("ParentBoolResult");
+	ASSERT_TRUE(ParentArea->AddNode(ParentBoolResult));
+
+	// Flat graph: BeginNode => MiddleBoolNode => ParentBoolResult (execution),
+	// ParentBoolLiteral => MiddleBoolNode => ParentBoolResult (data).
+	ASSERT_TRUE(ParentArea->TryToConnect(ExecutionBeginNode, 0, MiddleBoolNode, 0));
+	ASSERT_TRUE(ParentArea->TryToConnect(MiddleBoolNode, 0, ParentBoolResult, 0));
+	ASSERT_TRUE(ParentArea->TryToConnect(ParentBoolLiteral, 0, MiddleBoolNode, 1));
+	ASSERT_TRUE(ParentArea->TryToConnect(MiddleBoolNode, 1, ParentBoolResult, 1));
+
+	SubAreaNode* SubArea = NODE_SYSTEM.ConvertNodesToSubArea(ParentArea, { MiddleBoolNode });
+	ASSERT_NE(SubArea, nullptr);
+	EXPECT_EQ(SubArea->GetParentArea(), ParentArea);
+
+	NodeArea* OwnedArea = SubArea->GetOwnedArea();
+	ASSERT_NE(OwnedArea, nullptr);
+	OwnedArea->SetSaveExecutedNodes(true);
+
+	// The converted node moved into the owned area.
+	EXPECT_EQ(ParentArea->GetNodeCount(), 4); // BeginNode, ParentBoolLiteral, ParentBoolResult, SubAreaNode.
+	EXPECT_EQ(ParentArea->GetNodeByID(MiddleBoolNode->GetID()), nullptr);
+	EXPECT_EQ(OwnedArea->GetNodeCount(), 3); // SubAreaInputNode, SubAreaOutputNode, MiddleBoolNode.
+	EXPECT_EQ(OwnedArea->GetNodeByID(MiddleBoolNode->GetID()), MiddleBoolNode);
+
+	// The default EXECUTE sockets are reused, one BOOL socket added per direction.
+	EXPECT_EQ(SubArea->GetInputSocketCount(), 2);
+	EXPECT_EQ(SubArea->GetOutputSocketCount(), 2);
+
+	SubAreaInputNode* InputNode = SubArea->GetSubAreaInputNode();
+	ASSERT_NE(InputNode, nullptr);
+	EXPECT_EQ(InputNode->GetOutputSocketCount(), 2);
+	SubAreaOutputNode* OutputNode = SubArea->GetSubAreaOutputNode();
+	ASSERT_NE(OutputNode, nullptr);
+	EXPECT_EQ(OutputNode->GetInputSocketCount(), 2);
+
+	// Outside wiring now goes through the SubAreaNode.
+	EXPECT_TRUE(ParentArea->IsConnected(ExecutionBeginNode, 0, SubArea, 0));
+	EXPECT_TRUE(ParentArea->IsConnected(ParentBoolLiteral, 0, SubArea, 1));
+	EXPECT_TRUE(ParentArea->IsConnected(SubArea, 0, ParentBoolResult, 0));
+	EXPECT_TRUE(ParentArea->IsConnected(SubArea, 1, ParentBoolResult, 1));
+
+	// Inside wiring goes through the boundary nodes.
+	EXPECT_TRUE(OwnedArea->IsConnected(InputNode, 0, MiddleBoolNode, 0));
+	EXPECT_TRUE(OwnedArea->IsConnected(InputNode, 1, MiddleBoolNode, 1));
+	EXPECT_TRUE(OwnedArea->IsConnected(MiddleBoolNode, 0, OutputNode, 0));
+	EXPECT_TRUE(OwnedArea->IsConnected(MiddleBoolNode, 1, OutputNode, 1));
+
+	EXPECT_EQ(NODE_SYSTEM.GetTotalConnectionCount({ ParentArea->GetID() }), 4);
+	EXPECT_EQ(NODE_SYSTEM.GetTotalConnectionCount({ OwnedArea->GetID() }), 4);
+
+	// Execute and verify the data flow survived the conversion.
+	EXPECT_FALSE(MiddleBoolNode->GetData());
+	EXPECT_FALSE(ParentBoolResult->GetData());
+	ASSERT_TRUE(ParentArea->ExecuteNodeNetwork());
+	EXPECT_TRUE(MiddleBoolNode->GetData());
+	EXPECT_TRUE(ParentBoolResult->GetData());
+
+	EXPECT_EQ(ParentArea->GetLastExecutedNodes().size(), 4); // BeginNode, SubAreaNode, SubAreaNode, ParentBoolResult.
+	EXPECT_EQ(OwnedArea->GetLastExecutedNodes().size(), 3);  // SubAreaInputNode, MiddleBoolNode, SubAreaOutputNode.
+
+	// Test with a different value to confirm it is not a default result.
+	ParentBoolLiteral->SetData(false);
+	MiddleBoolNode->SetData(true);
+	ParentBoolResult->SetData(true);
+	ASSERT_TRUE(ParentArea->ExecuteNodeNetwork());
+	EXPECT_FALSE(MiddleBoolNode->GetData());
+	EXPECT_FALSE(ParentBoolResult->GetData());
+
+	NODE_SYSTEM.Clear();
+}
+
+TEST(SubAreaNodeTests, ConvertNodesToSubArea_MultiNodeAndDeduplication)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* ParentArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(ParentArea, nullptr);
+	ParentArea->SetSaveExecutedNodes(true);
+
+	Node* ExecutionBeginNode = new BeginNode();
+	ASSERT_TRUE(ParentArea->AddNode(ExecutionBeginNode));
+	ParentArea->SetExecutionEntryNode(ExecutionBeginNode);
+
+	BoolLiteralNode* ParentBoolLiteral = new BoolLiteralNode();
+	ParentBoolLiteral->SetData(true);
+	ASSERT_TRUE(ParentArea->AddNode(ParentBoolLiteral));
+
+	BoolVariableNode* FirstConvertedNode = new BoolVariableNode();
+	FirstConvertedNode->SetName("FirstConvertedNode");
+	ASSERT_TRUE(ParentArea->AddNode(FirstConvertedNode));
+
+	BoolVariableNode* SecondConvertedNode = new BoolVariableNode();
+	SecondConvertedNode->SetName("SecondConvertedNode");
+	ASSERT_TRUE(ParentArea->AddNode(SecondConvertedNode));
+
+	BoolVariableNode* ParentBoolResult = new BoolVariableNode();
+	ParentBoolResult->SetName("ParentBoolResult");
+	ASSERT_TRUE(ParentArea->AddNode(ParentBoolResult));
+
+	// Execution: BeginNode => First => Second => ParentBoolResult.
+	ASSERT_TRUE(ParentArea->TryToConnect(ExecutionBeginNode, 0, FirstConvertedNode, 0));
+	ASSERT_TRUE(ParentArea->TryToConnect(FirstConvertedNode, 0, SecondConvertedNode, 0));
+	ASSERT_TRUE(ParentArea->TryToConnect(SecondConvertedNode, 0, ParentBoolResult, 0));
+	// Data: the literal feeds BOTH converted nodes from the same output socket.
+	ASSERT_TRUE(ParentArea->TryToConnect(ParentBoolLiteral, 0, FirstConvertedNode, 1));
+	ASSERT_TRUE(ParentArea->TryToConnect(ParentBoolLiteral, 0, SecondConvertedNode, 1));
+	// Data out: First => ParentBoolResult.
+	ASSERT_TRUE(ParentArea->TryToConnect(FirstConvertedNode, 1, ParentBoolResult, 1));
+
+	SubAreaNode* SubArea = NODE_SYSTEM.ConvertNodesToSubArea(ParentArea, { FirstConvertedNode, SecondConvertedNode });
+	ASSERT_NE(SubArea, nullptr);
+
+	NodeArea* OwnedArea = SubArea->GetOwnedArea();
+	ASSERT_NE(OwnedArea, nullptr);
+	OwnedArea->SetSaveExecutedNodes(true);
+
+	EXPECT_EQ(ParentArea->GetNodeCount(), 4); // BeginNode, ParentBoolLiteral, ParentBoolResult, SubAreaNode.
+	EXPECT_EQ(OwnedArea->GetNodeCount(), 4);  // Boundary nodes, FirstConvertedNode, SecondConvertedNode.
+
+	// Both crossing data connections share one producer socket, so only ONE BOOL input socket
+	// should exist on the SubAreaNode.
+	EXPECT_EQ(SubArea->GetInputSocketCount(), 2);  // EXECUTE + BOOL.
+	EXPECT_EQ(SubArea->GetOutputSocketCount(), 2); // EXECUTE + BOOL.
+
+	SubAreaInputNode* InputNode = SubArea->GetSubAreaInputNode();
+	ASSERT_NE(InputNode, nullptr);
+	// The mirrored BOOL output fans out to both converted nodes inside.
+	NodeSocket* MirroredDataSocket = InputNode->GetSocketByIndex(1, NodeSocket::SocketFlow::Output);
+	ASSERT_NE(MirroredDataSocket, nullptr);
+	EXPECT_EQ(MirroredDataSocket->GetConnectedSockets().size(), 2);
+
+	// The internal execution connection between the two converted nodes is preserved.
+	EXPECT_TRUE(OwnedArea->IsConnected(FirstConvertedNode, 0, SecondConvertedNode, 0));
+
+	// Execute and verify.
+	ASSERT_TRUE(ParentArea->ExecuteNodeNetwork());
+	EXPECT_TRUE(FirstConvertedNode->GetData());
+	EXPECT_TRUE(SecondConvertedNode->GetData());
+	EXPECT_TRUE(ParentBoolResult->GetData());
+
+	EXPECT_EQ(ParentArea->GetLastExecutedNodes().size(), 4); // BeginNode, SubAreaNode, SubAreaNode, ParentBoolResult.
+	EXPECT_EQ(OwnedArea->GetLastExecutedNodes().size(), 4);  // SubAreaInputNode, First, Second, SubAreaOutputNode.
+
+	NODE_SYSTEM.Clear();
+}
+
+TEST(SubAreaNodeTests, ConvertNodesToSubArea_SaveLoadCycle)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* ParentArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(ParentArea, nullptr);
+
+	Node* ExecutionBeginNode = new BeginNode();
+	ASSERT_TRUE(ParentArea->AddNode(ExecutionBeginNode));
+	ParentArea->SetExecutionEntryNode(ExecutionBeginNode);
+
+	BoolLiteralNode* ParentBoolLiteral = new BoolLiteralNode();
+	ParentBoolLiteral->SetData(true);
+	ASSERT_TRUE(ParentArea->AddNode(ParentBoolLiteral));
+
+	BoolVariableNode* MiddleBoolNode = new BoolVariableNode();
+	ASSERT_TRUE(ParentArea->AddNode(MiddleBoolNode));
+
+	BoolVariableNode* ParentBoolResult = new BoolVariableNode();
+	ASSERT_TRUE(ParentArea->AddNode(ParentBoolResult));
+
+	ASSERT_TRUE(ParentArea->TryToConnect(ExecutionBeginNode, 0, MiddleBoolNode, 0));
+	ASSERT_TRUE(ParentArea->TryToConnect(MiddleBoolNode, 0, ParentBoolResult, 0));
+	ASSERT_TRUE(ParentArea->TryToConnect(ParentBoolLiteral, 0, MiddleBoolNode, 1));
+	ASSERT_TRUE(ParentArea->TryToConnect(MiddleBoolNode, 1, ParentBoolResult, 1));
+
+	SubAreaNode* SubArea = NODE_SYSTEM.ConvertNodesToSubArea(ParentArea, { MiddleBoolNode });
+	ASSERT_NE(SubArea, nullptr);
+
+	const std::string ParentAreaID = ParentArea->GetID();
+	const std::string SubAreaNodeID = SubArea->GetID();
+	const std::string MiddleNodeID = MiddleBoolNode->GetID();
+	const std::string BeginNodeID = ExecutionBeginNode->GetID();
+	const std::string ResultNodeID = ParentBoolResult->GetID();
+
+	const std::string SavedJson = NODE_SYSTEM.ToJson();
+	NODE_SYSTEM.Clear();
+	ASSERT_TRUE(NODE_SYSTEM.LoadFromJson(SavedJson));
+
+	NodeArea* LoadedParentArea = NODE_SYSTEM.GetNodeAreaByID(ParentAreaID);
+	ASSERT_NE(LoadedParentArea, nullptr);
+
+	SubAreaNode* LoadedSubArea = dynamic_cast<SubAreaNode*>(NODE_SYSTEM.GetNodeByID(SubAreaNodeID));
+	ASSERT_NE(LoadedSubArea, nullptr);
+	EXPECT_FALSE(LoadedSubArea->IsDangling());
+
+	NodeArea* LoadedOwnedArea = LoadedSubArea->GetOwnedArea();
+	ASSERT_NE(LoadedOwnedArea, nullptr);
+	EXPECT_NE(LoadedOwnedArea->GetNodeByID(MiddleNodeID), nullptr);
+
+	// Boundary wiring survived the round trip.
+	Node* LoadedBeginNode = LoadedParentArea->GetNodeByID(BeginNodeID);
+	ASSERT_NE(LoadedBeginNode, nullptr);
+	Node* LoadedResultNode = LoadedParentArea->GetNodeByID(ResultNodeID);
+	ASSERT_NE(LoadedResultNode, nullptr);
+	EXPECT_TRUE(LoadedParentArea->IsConnected(LoadedBeginNode, 0, LoadedSubArea, 0));
+	EXPECT_TRUE(LoadedParentArea->IsConnected(LoadedSubArea, 1, LoadedResultNode, 1));
+
+	SubAreaInputNode* LoadedInputNode = LoadedSubArea->GetSubAreaInputNode();
+	ASSERT_NE(LoadedInputNode, nullptr);
+	Node* LoadedMiddleNode = LoadedOwnedArea->GetNodeByID(MiddleNodeID);
+	EXPECT_TRUE(LoadedOwnedArea->IsConnected(LoadedInputNode, 1, LoadedMiddleNode, 1));
+
+	EXPECT_EQ(NODE_SYSTEM.GetTotalConnectionCount({ ParentAreaID }), 4);
+	EXPECT_EQ(NODE_SYSTEM.GetTotalConnectionCount({ LoadedOwnedArea->GetID() }), 4);
+
+	// Execution still works after the round trip.
+	LoadedParentArea->SetExecutionEntryNode(LoadedBeginNode);
+	BoolVariableNode* LoadedResultVariable = dynamic_cast<BoolVariableNode*>(LoadedResultNode);
+	ASSERT_NE(LoadedResultVariable, nullptr);
+	EXPECT_FALSE(LoadedResultVariable->GetData());
+	ASSERT_TRUE(LoadedParentArea->ExecuteNodeNetwork());
+	EXPECT_TRUE(LoadedResultVariable->GetData());
+
+	NODE_SYSTEM.Clear();
+}
+
+TEST(SubAreaNodeTests, ConvertNodesToSubArea_NestedSubArea)
+{
+	NODE_SYSTEM.Clear();
+
+	NodeArea* ParentArea = NODE_SYSTEM.CreateNodeArea();
+	ASSERT_NE(ParentArea, nullptr);
+
+	SubAreaNode* InnerSubArea = NODE_SYSTEM.CreateSubAreaNode(ParentArea->GetID());
+	ASSERT_NE(InnerSubArea, nullptr);
+	NodeArea* InnerOwnedArea = InnerSubArea->GetOwnedArea();
+	ASSERT_NE(InnerOwnedArea, nullptr);
+
+	BoolVariableNode* CompanionNode = new BoolVariableNode();
+	ASSERT_TRUE(ParentArea->AddNode(CompanionNode));
+
+	SubAreaNode* NewSubArea = NODE_SYSTEM.ConvertNodesToSubArea(ParentArea, { InnerSubArea, CompanionNode });
+	ASSERT_NE(NewSubArea, nullptr);
+
+	NodeArea* NewOwnedArea = NewSubArea->GetOwnedArea();
+	ASSERT_NE(NewOwnedArea, nullptr);
+
+	// Both nodes moved into the new owned area.
+	EXPECT_EQ(NewOwnedArea->GetNodeByID(InnerSubArea->GetID()), InnerSubArea);
+	EXPECT_EQ(NewOwnedArea->GetNodeByID(CompanionNode->GetID()), CompanionNode);
+	EXPECT_EQ(ParentArea->GetNodeCount(), 1); // Only the new SubAreaNode.
+
+	// The moved SubAreaNode kept its owned area and boundary nodes.
+	EXPECT_EQ(InnerSubArea->GetOwnedArea(), InnerOwnedArea);
+	EXPECT_FALSE(InnerSubArea->IsDangling());
+	EXPECT_EQ(NODE_SYSTEM.FindOwnerSubAreaNode(InnerOwnedArea->GetID()), InnerSubArea);
+
+	// Ownership chain: InnerOwnedArea -> NewOwnedArea -> ParentArea.
+	EXPECT_TRUE(InnerOwnedArea->IsChildOf(NewOwnedArea));
+	EXPECT_TRUE(NewOwnedArea->IsChildOf(ParentArea));
+	EXPECT_TRUE(InnerOwnedArea->IsChildOf(ParentArea));
+
+	NODE_SYSTEM.Clear();
+}
