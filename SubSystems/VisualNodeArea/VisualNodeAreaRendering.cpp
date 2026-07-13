@@ -1,4 +1,5 @@
 #include "VisualNodeArea.h"
+#include "../VisualNodeSystem.h"
 using namespace VisNodeSys;
 
 void NodeArea::RenderNode(Node* Node) const
@@ -1133,6 +1134,23 @@ void NodeArea::RenderDefaultMainContextMenu()
 		if (bBreakAllConnectionsDisabled)
 			ImGui::EndDisabled();
 
+		bool bConvertDisabled = TargetNode->GetType() == "SubAreaInputNode" || TargetNode->GetType() == "SubAreaOutputNode";
+		if (bConvertDisabled)
+			ImGui::BeginDisabled();
+
+		if (ImGui::MenuItem("Convert Node To Sub Area"))
+		{
+			SubAreaNode* NewSubAreaNode = NODE_SYSTEM.ConvertNodesToSubArea(this, { TargetNode });
+			if (NewSubAreaNode != nullptr)
+			{
+				UnSelectAll();
+				AddSelected(NewSubAreaNode);
+			}
+		}
+
+		if (bConvertDisabled)
+			ImGui::EndDisabled();
+
 		if (ImGui::MenuItem("Delete Node"))
 		{
 			Delete(ContextMenuOpenState.GetNode());
@@ -1141,6 +1159,36 @@ void NodeArea::RenderDefaultMainContextMenu()
 	else if (GetSelected().size() > 1)
 	{
 		auto SelectedList = GetSelected();
+
+		bool bAnyConvertible = false;
+		for (size_t i = 0; i < SelectedList.size(); i++)
+		{
+			if (SelectedList[i] == nullptr)
+				continue;
+
+			if (SelectedList[i]->GetType() != "SubAreaInputNode" && SelectedList[i]->GetType() != "SubAreaOutputNode")
+			{
+				bAnyConvertible = true;
+				break;
+			}
+		}
+
+		if (!bAnyConvertible)
+			ImGui::BeginDisabled();
+
+		if (ImGui::MenuItem("Convert Selected Nodes To Sub Area"))
+		{
+			SubAreaNode* NewSubAreaNode = NODE_SYSTEM.ConvertNodesToSubArea(this, SelectedList);
+			if (NewSubAreaNode != nullptr)
+			{
+				UnSelectAll();
+				AddSelected(NewSubAreaNode);
+			}
+		}
+
+		if (!bAnyConvertible)
+			ImGui::EndDisabled();
+
 		if (ImGui::MenuItem("Delete Selected Nodes"))
 		{
 			for (size_t i = 0; i < SelectedList.size(); i++)

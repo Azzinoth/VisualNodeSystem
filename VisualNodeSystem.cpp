@@ -2066,6 +2066,393 @@ SubAreaNode* NodeSystem::CreateSubAreaNode(const std::string& ParentAreaID)
 	return Result;
 }
 
+SubAreaNode* NodeSystem::ConvertNodesToSubArea(NodeArea* ParentArea, const std::vector<Node*>& NodesToConvert)
+{
+	if (ParentArea == nullptr || GetNodeAreaByID(ParentArea->GetID()) != ParentArea)
+		return nullptr;
+
+	std::vector<Node*> NodesToMove;
+	std::unordered_set<Node*> MoveSet;
+	for (size_t i = 0; i < NodesToConvert.size(); i++)
+	{
+		Node* CurrentNode = NodesToConvert[i];
+		if (CurrentNode == nullptr || MoveSet.find(CurrentNode) != MoveSet.end())
+			continue;
+
+		if (CurrentNode->GetParentArea() != ParentArea)
+			return nullptr;
+
+		// SubAreaInput and SubAreaOutput nodes cannot be moved.
+		if (CurrentNode->GetType() == "SubAreaInputNode" || CurrentNode->GetType() == "SubAreaOutputNode")
+			continue;
+
+		// A SubAreaNode without an owned area is broken and would be rejected by AddNode.
+		if (CurrentNode->GetType() == "SubAreaNode" && static_cast<SubAreaNode*>(CurrentNode)->OwnedAreaID.empty())
+			continue;
+
+		NodesToMove.push_back(CurrentNode);
+		MoveSet.insert(CurrentNode);
+	}
+
+	if (NodesToMove.empty())
+		return nullptr;
+
+	// Each unique producing (output) socket that feeds across the selection boundary becomes
+	// one socket on the SubAreaNode, so a producer feeding several consumers keeps a single
+	// crossing point and separate producers stay separate (which preserves EXECUTE semantics).
+	struct CrossingGroup
+	{
+		std::string ProducerNodeID;
+		std::string ProducerSocketID;
+		// True if the producer is outside of the selection, false if it is inside.
+		bool bInbound = false;
+		std::vector<std::pair<std::string, std::string>> Consumers; // Node ID, socket ID.
+	};
+
+	std::vector<CrossingGroup> CrossingGroups;
+	std::unordered_map<std::string, size_t> ProducerSocketToGroupIndex;
+
+	auto IsCrossingConnection = [&](Connection* CurrentConnection, bool& bOutIsInbound) -> bool {
+		if (CurrentConnection == nullptr || CurrentConnection->Out == nullptr || CurrentConnection->In == nullptr)
+			return false;
+
+		Node* ProducerNode = CurrentConnection->Out->GetParent();
+		Node* ConsumerNode = CurrentConnection->In->GetParent();
+		if (ProducerNode == nullptr || ConsumerNode == nullptr)
+			return false;
+
+		const bool bProducerSelected = MoveSet.find(ProducerNode) != MoveSet.end();
+		const bool bConsumerSelected = MoveSet.find(ConsumerNode) != MoveSet.end();
+		if (bProducerSelected == bConsumerSelected)
+			return false;
+
+		bOutIsInbound = bConsumerSelected;
+		return true;
+	};
+
+	for (size_t i = 0; i < ParentArea->Connections.size(); i++)
+	{
+		Connection* CurrentConnection = ParentArea->Connections[i];
+
+		bool bInbound = false;
+		if (!IsCrossingConnection(CurrentConnection, bInbound))
+			continue;
+
+		const std::string ProducerSocketID = CurrentConnection->Out->GetID();
+		auto GroupIterator = ProducerSocketToGroupIndex.find(ProducerSocketID);
+		if (GroupIterator == ProducerSocketToGroupIndex.end())
+		{
+			CrossingGroup NewGroup;
+			NewGroup.ProducerNodeID = CurrentConnection->Out->GetParent()->GetID();
+			NewGroup.ProducerSocketID = ProducerSocketID;
+			NewGroup.bInbound = bInbound;
+			CrossingGroups.push_back(NewGroup);
+			GroupIterator = ProducerSocketToGroupIndex.insert(std::make_pair(ProducerSocketID, CrossingGroups.size() - 1)).first;
+		}
+
+		CrossingGroups[GroupIterator->second].Consumers.push_back(std::make_pair(CurrentConnection->In->GetParent()->GetID(), CurrentConnection->In->GetID()));
+	}
+
+	// Delete the crossing connections through the regular path so DISCONNECTED events and
+	// callbacks fire while both endpoints are still in the same area. Re-scan after every
+	// deletion, a callback may have altered the connection list.
+	bool bDeletedCrossingConnection = true;
+	while (bDeletedCrossingConnection)
+	{
+		bDeletedCrossingConnection = false;
+		for (size_t i = 0; i < ParentArea->Connections.size(); i++)
+		{
+			bool bInbound = false;
+			if (!IsCrossingConnection(ParentArea->Connections[i], bInbound))
+				continue;
+
+			ParentArea->Delete(ParentArea->Connections[i]);
+			bDeletedCrossingConnection = true;
+			break;
+		}
+	}
+
+	// Disconnect callbacks may have deleted nodes, keep only nodes that are still in the parent area.
+	std::vector<Node*> ValidatedNodesToMove;
+	for (size_t i = 0; i < ParentArea->Nodes.size(); i++)
+	{
+		if (ParentArea->Nodes[i] != nullptr && MoveSet.find(ParentArea->Nodes[i]) != MoveSet.end())
+			ValidatedNodesToMove.push_back(ParentArea->Nodes[i]);
+	}
+	NodesToMove = ValidatedNodesToMove;
+	MoveSet = std::unordered_set<Node*>(NodesToMove.begin(), NodesToMove.end());
+
+	if (NodesToMove.empty())
+		return nullptr;
+
+	ImVec2 SelectionMin = NodesToMove[0]->GetPosition();
+	ImVec2 SelectionMax = ImVec2(SelectionMin.x + NodesToMove[0]->GetSize().x, SelectionMin.y + NodesToMove[0]->GetSize().y);
+	for (size_t i = 1; i < NodesToMove.size(); i++)
+	{
+		ImVec2 CurrentMin = NodesToMove[i]->GetPosition();
+		ImVec2 CurrentMax = ImVec2(CurrentMin.x + NodesToMove[i]->GetSize().x, CurrentMin.y + NodesToMove[i]->GetSize().y);
+
+		SelectionMin.x = std::min(SelectionMin.x, CurrentMin.x);
+		SelectionMin.y = std::min(SelectionMin.y, CurrentMin.y);
+		SelectionMax.x = std::max(SelectionMax.x, CurrentMax.x);
+		SelectionMax.y = std::max(SelectionMax.y, CurrentMax.y);
+	}
+	const ImVec2 SelectionCenter = ImVec2((SelectionMin.x + SelectionMax.x) / 2.0f, (SelectionMin.y + SelectionMax.y) / 2.0f);
+
+	SubAreaNode* NewSubAreaNode = CreateSubAreaNode(ParentArea->GetID());
+	if (NewSubAreaNode == nullptr)
+		return nullptr;
+
+	NodeArea* OwnedArea = NewSubAreaNode->GetOwnedArea();
+	SubAreaInputNode* InputNode = NewSubAreaNode->GetSubAreaInputNode();
+	SubAreaOutputNode* OutputNode = NewSubAreaNode->GetSubAreaOutputNode();
+	if (OwnedArea == nullptr || InputNode == nullptr || OutputNode == nullptr)
+	{
+		if (OwnedArea != nullptr)
+			DeleteNodeArea(OwnedArea);
+		else
+			ParentArea->Delete(NewSubAreaNode);
+
+		return nullptr;
+	}
+
+	// AddNode rejects any node whose ParentArea is non-null, so clear it temporarily.
+	// On rejection the node stays in the parent area.
+	std::vector<Node*> RetainedInParent;
+	std::vector<Node*> MovedNodes;
+	for (size_t i = 0; i < ParentArea->Nodes.size(); i++)
+	{
+		Node* CurrentNode = ParentArea->Nodes[i];
+		if (CurrentNode == nullptr)
+			continue;
+
+		if (MoveSet.find(CurrentNode) == MoveSet.end())
+		{
+			RetainedInParent.push_back(CurrentNode);
+			continue;
+		}
+
+		CurrentNode->ParentArea = nullptr;
+		if (!OwnedArea->AddNode(CurrentNode))
+		{
+			CurrentNode->ParentArea = ParentArea;
+			RetainedInParent.push_back(CurrentNode);
+		}
+		else
+		{
+			MovedNodes.push_back(CurrentNode);
+
+			if (CurrentNode->GetType() == "LinkNode")
+			{
+				// Update NodeAreaLinkRecords and the partner LinkNode's LinkedAreaID.
+				NodeAreaLinkRecord* Record = GetLinkDataByNodeID(CurrentNode->GetID());
+				if (Record != nullptr)
+				{
+					std::string PartnerNodeID;
+					if (Record->InNodeID == CurrentNode->GetID())
+					{
+						Record->InAreaID = OwnedArea->GetID();
+						PartnerNodeID = Record->OutNodeID;
+					}
+					else if (Record->OutNodeID == CurrentNode->GetID())
+					{
+						Record->OutAreaID = OwnedArea->GetID();
+						PartnerNodeID = Record->InNodeID;
+					}
+
+					LinkNode* PartnerNode = dynamic_cast<LinkNode*>(GetNodeByID(PartnerNodeID));
+					if (PartnerNode != nullptr)
+						PartnerNode->LinkedAreaID = OwnedArea->GetID();
+				}
+			}
+		}
+	}
+	ParentArea->Nodes = RetainedInParent;
+
+	// All crossing connections are already deleted, so connections of moved nodes should have
+	// both ends in the owned area. Connections that still end up spanning areas (a node that
+	// AddNode rejected) must be deleted.
+	std::vector<Connection*> ConnectionsToKeep;
+	std::vector<Connection*> MovedConnections;
+	std::vector<Connection*> ConnectionsToDelete;
+	for (size_t i = 0; i < ParentArea->Connections.size(); i++)
+	{
+		Connection* CurrentConnection = ParentArea->Connections[i];
+		if (CurrentConnection == nullptr)
+			continue;
+
+		Node* OutParent = CurrentConnection->Out != nullptr ? CurrentConnection->Out->GetParent() : nullptr;
+		Node* InParent = CurrentConnection->In != nullptr ? CurrentConnection->In->GetParent() : nullptr;
+		const bool bOutInOwned = OutParent != nullptr && OutParent->GetParentArea() == OwnedArea;
+		const bool bInInOwned = InParent != nullptr && InParent->GetParentArea() == OwnedArea;
+
+		if (bOutInOwned && bInInOwned)
+		{
+			OwnedArea->Connections.push_back(CurrentConnection);
+			MovedConnections.push_back(CurrentConnection);
+		}
+		else if (!bOutInOwned && !bInInOwned)
+		{
+			ConnectionsToKeep.push_back(CurrentConnection);
+		}
+		else
+		{
+			ConnectionsToDelete.push_back(CurrentConnection);
+		}
+	}
+	ParentArea->Connections = ConnectionsToKeep;
+
+	for (size_t i = 0; i < ConnectionsToDelete.size(); i++)
+	{
+		Connection* CurrentConnectionToDelete = ConnectionsToDelete[i];
+
+		// Doing manual deletion, because Delete(Connection*) would not properly delete the connection.
+		if (CurrentConnectionToDelete->Out != nullptr)
+		{
+			std::vector<NodeSocket*>& OutConnected = CurrentConnectionToDelete->Out->ConnectedSockets;
+			for (size_t j = 0; j < OutConnected.size(); j++)
+			{
+				if (OutConnected[j] == CurrentConnectionToDelete->In)
+				{
+					OutConnected.erase(OutConnected.begin() + j);
+					break;
+				}
+			}
+		}
+
+		if (CurrentConnectionToDelete->In != nullptr)
+		{
+			std::vector<NodeSocket*>& InConnected = CurrentConnectionToDelete->In->ConnectedSockets;
+			for (size_t j = 0; j < InConnected.size(); j++)
+			{
+				if (InConnected[j] == CurrentConnectionToDelete->Out)
+				{
+					InConnected.erase(InConnected.begin() + j);
+					break;
+				}
+			}
+		}
+
+		delete CurrentConnectionToDelete;
+	}
+
+	// Re-center the moved content around the owned area's origin.
+	for (size_t i = 0; i < MovedNodes.size(); i++)
+	{
+		ImVec2 CurrentPosition = MovedNodes[i]->GetPosition();
+		MovedNodes[i]->SetPosition(ImVec2(CurrentPosition.x - SelectionCenter.x, CurrentPosition.y - SelectionCenter.y));
+	}
+
+	for (size_t i = 0; i < MovedConnections.size(); i++)
+	{
+		for (size_t j = 0; j < MovedConnections[i]->RerouteNodes.size(); j++)
+		{
+			RerouteNode* CurrentReroute = MovedConnections[i]->RerouteNodes[j];
+			if (CurrentReroute == nullptr)
+				continue;
+
+			CurrentReroute->Position = ImVec2(CurrentReroute->Position.x - SelectionCenter.x, CurrentReroute->Position.y - SelectionCenter.y);
+		}
+	}
+
+	const float DistanceFromInOutNodes = 100.0f;
+	InputNode->SetPosition(ImVec2(SelectionMin.x - SelectionCenter.x - DistanceFromInOutNodes - InputNode->GetSize().x, -InputNode->GetSize().y / 2.0f));
+	OutputNode->SetPosition(ImVec2(SelectionMax.x - SelectionCenter.x + DistanceFromInOutNodes, -OutputNode->GetSize().y / 2.0f));
+
+	// Recreate the crossing connections through the SubAreaNode boundary.
+	for (size_t i = 0; i < CrossingGroups.size(); i++)
+	{
+		CrossingGroup& CurrentGroup = CrossingGroups[i];
+
+		Node* ProducerNode = GetNodeByID(CurrentGroup.ProducerNodeID);
+		if (ProducerNode == nullptr)
+			continue;
+
+		// The producer must have ended up on the expected side of the boundary.
+		NodeArea* ExpectedProducerArea = CurrentGroup.bInbound ? ParentArea : OwnedArea;
+		if (ProducerNode->GetParentArea() != ExpectedProducerArea)
+			continue;
+
+		NodeSocket* ProducerSocket = ProducerNode->GetSocketByID(CurrentGroup.ProducerSocketID);
+		if (ProducerSocket == nullptr)
+			continue;
+
+		// Reuse an untouched boundary socket with identical allowed types (mainly the default
+		// EXECUTE sockets), otherwise add a new socket that mirrors the producer socket.
+		std::vector<NodeSocket*>& BoundarySockets = CurrentGroup.bInbound ? NewSubAreaNode->Input : NewSubAreaNode->Output;
+
+		NodeSocket* BoundarySocket = nullptr;
+		NodeSocket* MirroredSocket = nullptr;
+		SocketMirrorNode* MirroredNode = nullptr;
+		for (size_t j = 0; j < BoundarySockets.size(); j++)
+		{
+			NodeSocket* CandidateSocket = BoundarySockets[j];
+			if (CandidateSocket == nullptr || !CandidateSocket->GetConnectedSockets().empty())
+				continue;
+
+			if (CandidateSocket->GetAllowedTypes() != ProducerSocket->GetAllowedTypes())
+				continue;
+
+			std::pair<SocketMirrorNode*, NodeSocket*> PartnerData = GetAppropriatePartnerAndSocket(NewSubAreaNode, CandidateSocket);
+			if (PartnerData.second == nullptr || !PartnerData.second->GetConnectedSockets().empty())
+				continue;
+
+			BoundarySocket = CandidateSocket;
+			MirroredNode = PartnerData.first;
+			MirroredSocket = PartnerData.second;
+			break;
+		}
+
+		if (BoundarySocket == nullptr)
+		{
+			if (!NewSubAreaNode->AddSocket(ProducerSocket->GetAllowedTypes(), ProducerSocket->GetName(), CurrentGroup.bInbound ? NodeSocket::SocketFlow::Input : NodeSocket::SocketFlow::Output))
+				continue;
+
+			BoundarySocket = BoundarySockets.back();
+			std::pair<SocketMirrorNode*, NodeSocket*> PartnerData = GetAppropriatePartnerAndSocket(NewSubAreaNode, BoundarySocket);
+			if (PartnerData.second == nullptr)
+				continue;
+
+			MirroredNode = PartnerData.first;
+			MirroredSocket = PartnerData.second;
+		}
+
+		if (CurrentGroup.bInbound)
+		{
+			ParentArea->TryToConnect(ProducerNode, ProducerSocket->GetID(), NewSubAreaNode, BoundarySocket->GetID());
+
+			for (size_t j = 0; j < CurrentGroup.Consumers.size(); j++)
+			{
+				Node* ConsumerNode = OwnedArea->GetNodeByID(CurrentGroup.Consumers[j].first);
+				if (ConsumerNode == nullptr)
+					continue;
+
+				OwnedArea->TryToConnect(MirroredNode, MirroredSocket->GetID(), ConsumerNode, CurrentGroup.Consumers[j].second);
+			}
+		}
+		else
+		{
+			OwnedArea->TryToConnect(ProducerNode, ProducerSocket->GetID(), MirroredNode, MirroredSocket->GetID());
+
+			for (size_t j = 0; j < CurrentGroup.Consumers.size(); j++)
+			{
+				Node* ConsumerNode = ParentArea->GetNodeByID(CurrentGroup.Consumers[j].first);
+				if (ConsumerNode == nullptr)
+					continue;
+
+				ParentArea->TryToConnect(NewSubAreaNode, BoundarySocket->GetID(), ConsumerNode, CurrentGroup.Consumers[j].second);
+			}
+		}
+	}
+
+	// Adding sockets could have resized the SubAreaNode, so it is positioned only now.
+	NewSubAreaNode->SetPosition(ImVec2(SelectionCenter.x - NewSubAreaNode->GetSize().x / 2.0f, SelectionCenter.y - NewSubAreaNode->GetSize().y / 2.0f));
+
+	ParentArea->RemoveStaleSelectionAndHoverReferences();
+
+	return NewSubAreaNode;
+}
+
 void NodeSystem::BreakSubAreaOwnershipCycles()
 {
 	std::unordered_set<std::string> FullyVisited;

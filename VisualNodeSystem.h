@@ -135,6 +135,7 @@ namespace VisNodeSys
 
 		SubAreaNode* CreateSubAreaNode(const std::string& ParentAreaID);
 		SubAreaNode* FindOwnerSubAreaNode(const std::string& AreaID) const;
+		SubAreaNode* ConvertNodesToSubArea(NodeArea* ParentArea, const std::vector<Node*>& NodesToConvert);
 	};
 
 #ifdef VISUAL_NODE_SYSTEM_SHARED
