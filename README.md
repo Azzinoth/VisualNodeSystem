@@ -27,6 +27,18 @@ Master branch is free of tests to keep it lightweight. All test-related stuff (e
     <img src="https://github.com/Azzinoth/VisualNodeSystem/blob/media/Group Comments.png" width="100%">
 </div>
 
+- **Sub-Area Nodes**: Encapsulate part of a graph inside a single, self-contained, reusable node. A sub-area node owns its own nested node area, exposed to the parent graph through dedicated input and output boundary nodes, letting user build graphs hierarchically and keep complex logic readable. Sub-areas can be nested, and are fully copyable: duplicating one deep-copies its entire inner graph, so every copy is independent.
+<div align="center">
+    <img src="https://github.com/Azzinoth/VisualNodeSystem/blob/media/SubAreaNode_0.gif?raw=true" width="49%">
+    <img src="https://github.com/Azzinoth/VisualNodeSystem/blob/media/SubAreaNode_1.gif?raw=true" width="49%">
+</div>
+
+- **Link Nodes**: Connect two separate node areas by reference, so several places can share and reuse the same node or graph instead of duplicating it. Think of a link node as a tunnel between two different node areas.
+<div align="center">
+    <img src="https://github.com/Azzinoth/VisualNodeSystem/blob/media/LinkNode.png" width="60%">
+    <p><em>Text from a String Literal node is used in two node areas (graphs): it lives and is consumed in its own area (left), but it also enters a link node and comes out of its partner link node in a different area (right), where it drives other logic.</em></p>
+</div>
+
 - **Flexible Socket Management**: The library offers functionalities for managing node sockets (input/output). These sockets serve as points of data connection between different nodes.
 
 - **JSON Serialization**: The library provides functionalities to serialize/deserialize the node data to/from JSON format.
@@ -46,11 +58,11 @@ Master branch is free of tests to keep it lightweight. All test-related stuff (e
 
 I have personally used it in two of my projects:
 
+[Focal Engine Test Platform](https://github.com/Azzinoth/FocalEngineTestPlatform) makes extensive use of the multi node area capabilities: test logic is split across many node areas connected with link nodes and encapsulated in sub-area nodes. The panel on the left helps to manage that structure, it shows the hierarchy of all node areas, with indicators for parent/child relationships, the presence of link nodes, and whether a window is currently open for an area, while opened areas appear as tabs above the editor.
+![Focal Engine Test Platform](https://github.com/Azzinoth/VisualNodeSystem/blob/media/FocalEngineTestPlatform_Window.png)
+
 [Focal Engine Editor](https://github.com/Azzinoth/FocalEngineEditor)
 ![Focal Engine Editor material window](https://github.com/Azzinoth/VisualNodeSystem/blob/media/Focal%20Engine%20Editor%20example.png)
-
-[Focal Engine Test Platform](https://github.com/Azzinoth/FocalEngineTestPlatform)
-![Focal Engine Test Platform](https://github.com/Azzinoth/VisualNodeSystem/blob/media/Test%20Platform%20example.png)
 
 ## Usage
 
