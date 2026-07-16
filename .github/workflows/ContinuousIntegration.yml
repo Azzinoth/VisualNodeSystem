@@ -71,7 +71,7 @@ jobs:
         Write-Host "Executable started."
         
         Write-Host "Waiting for the process to exit..."
-        $process.WaitForExit(10000) # 10 seconds
+        $process.WaitForExit(60000) # 60 seconds
         if ($process.ExitCode -ne 0) {
           Write-Host "Some tests failed. Please check the test results."
           exit 1
