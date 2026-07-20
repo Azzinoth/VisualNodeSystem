@@ -280,6 +280,8 @@ else()
     add_library(VisualNodeSystem STATIC ${ALL_SOURCE_FILES})
 endif()
 
+target_include_directories(VisualNodeSystem PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/jsoncpp)
+
 source_group("Source Files" FILES ${VisualNodeSystem_SRC})
 source_group("Source Files/SubSystems/VisualNodeArea/" FILES ${VisualNodeArea_SRC})
 source_group("Source Files/SubSystems/TextInputPopup/" FILES ${TextInputPopup_SRC})
