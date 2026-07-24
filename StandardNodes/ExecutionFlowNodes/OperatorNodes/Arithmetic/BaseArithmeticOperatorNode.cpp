@@ -168,3 +168,92 @@ bool BaseArithmeticOperatorNode::CanConnect(NodeSocket* OwnSocket, NodeSocket* C
 	
 	return true;
 }
+
+void BaseArithmeticOperatorNode::Execute()
+{
+	// Both A and B input sockets are required to perform the operation.
+	if (Input.size() <= 2)
+		return;
+
+	std::string CurrentMode = GetActiveINDataType();
+	if (CurrentMode.empty())
+		return;
+
+	// If we don't have both A and B inputs connected, we can't do anything.
+	if (Input[1]->GetConnectedSockets().empty() &&
+		Input[2]->GetConnectedSockets().empty())
+		return;
+
+	void* AData = nullptr;
+	if (!Input[1]->GetConnectedSockets().empty())
+		AData = Input[1]->GetConnectedSockets()[0]->GetData();
+
+	void* BData = nullptr;
+	if (!Input[2]->GetConnectedSockets().empty())
+		BData = Input[2]->GetConnectedSockets()[0]->GetData();
+
+	if (AData == nullptr && BData == nullptr)
+		return;
+
+	// Call the appropriate operation method based on the data type.
+	if (CurrentMode == "INT")
+	{
+		int A = 0;
+		if (AData != nullptr)
+			A = *reinterpret_cast<int*>(AData);
+
+		int B = 0;
+		if (BData != nullptr)
+			B = *reinterpret_cast<int*>(BData);
+
+		LocalIntegerData = PerformOperation(A, B);
+	}
+	else if (CurrentMode == "FLOAT")
+	{
+		float A = 0.0f;
+		if (AData != nullptr)
+			A = *reinterpret_cast<float*>(AData);
+
+		float B = 0.0f;
+		if (BData != nullptr)
+			B = *reinterpret_cast<float*>(BData);
+
+		LocalFloatData = PerformOperation(A, B);
+	}
+	else if (CurrentMode == "VEC2")
+	{
+		glm::vec2 A = glm::vec2(0.0f);
+		if (AData != nullptr)
+			A = *reinterpret_cast<glm::vec2*>(AData);
+
+		glm::vec2 B = glm::vec2(0.0f);
+		if (BData != nullptr)
+			B = *reinterpret_cast<glm::vec2*>(BData);
+
+		LocalVec2Data = PerformOperation(A, B);
+	}
+	else if (CurrentMode == "VEC3")
+	{
+		glm::vec3 A = glm::vec3(0.0f);
+		if (AData != nullptr)
+			A = *reinterpret_cast<glm::vec3*>(AData);
+
+		glm::vec3 B = glm::vec3(0.0f);
+		if (BData != nullptr)
+			B = *reinterpret_cast<glm::vec3*>(BData);
+
+		LocalVec3Data = PerformOperation(A, B);
+	}
+	else if (CurrentMode == "VEC4")
+	{
+		glm::vec4 A = glm::vec4(0.0f);
+		if (AData != nullptr)
+			A = *reinterpret_cast<glm::vec4*>(AData);
+
+		glm::vec4 B = glm::vec4(0.0f);
+		if (BData != nullptr)
+			B = *reinterpret_cast<glm::vec4*>(BData);
+
+		LocalVec4Data = PerformOperation(A, B);
+	}
+}
