@@ -1211,7 +1211,7 @@ bool NodeSystem::UnlinkNodeAreas(const std::string& FirstAreaID, const std::stri
 			continue;
 
 		NodeAreaLinkRecord Record = LinkRecordIterator->second;
-		std::string RecordID = LinkRecordIterator->first;
+		std::string RecordIDLocal = LinkRecordIterator->first;
 		NodeArea* InArea = GetNodeAreaByID(Record.InAreaID);
 		if (InArea != nullptr)
 		{
@@ -1220,7 +1220,7 @@ bool NodeSystem::UnlinkNodeAreas(const std::string& FirstAreaID, const std::stri
 				InArea->Delete(InNode);
 		}
 
-		DeleteLinkRecord(RecordID);
+		DeleteLinkRecord(RecordIDLocal);
 	}
 
 	return !RecordIDsToRemove.empty();
