@@ -34,19 +34,19 @@
 namespace VisNodeSys
 {
 
-#define SINGLETON_PUBLIC_PART(CLASS_NAME)		\
-    static CLASS_NAME& GetInstance()			\
-    {											\
-		static CLASS_NAME* Instance = nullptr;	\
-        if (!Instance)							\
-            Instance = new CLASS_NAME();		\
-        return *Instance;						\
-    }											\
-												\
-	static CLASS_NAME* GetInstancePointer()		\
-	{											\
-		return &GetInstance();					\
+#define SINGLETON_PUBLIC_PART(CLASS_NAME)					\
+    static CLASS_NAME& GetInstance()						\
+    {														\
+		/* Thread safe initialization*/						\
+		static CLASS_NAME* Instance = new CLASS_NAME();		\
+        return *Instance;									\
+    }														\
+															\
+	static CLASS_NAME* GetInstancePointer()					\
+	{														\
+		return &GetInstance();								\
 	}
+
 
 #define SINGLETON_PRIVATE_PART(CLASS_NAME)	\
     CLASS_NAME();							\
