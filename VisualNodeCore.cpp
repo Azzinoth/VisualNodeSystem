@@ -382,18 +382,13 @@ std::string NodeCore::TruncateText(const std::string& Text, float MaxWidth, Elli
 
 void NodeCore::LoadTextureFromBase64(const std::string& Base64Data, ImTextureID& TextureID)
 {
-	std::string DecodedBytes = NODE_CORE.Base64Decode(Base64Data);
+	const std::string DecodedBytes = NODE_CORE.Base64Decode(Base64Data);
 
-	std::ofstream OutFile("TemporaryIcon.png", std::ios::binary);
-	OutFile.write(DecodedBytes.data(), DecodedBytes.size());
-	OutFile.close();
-
-	TextureID = TextureLoader("TemporaryIcon.png");
-
-	std::remove("TemporaryIcon.png");
+	TextureID = TextureLoader(reinterpret_cast<const unsigned char*>(DecodedBytes.data()),
+							  DecodedBytes.size());
 }
 
-void NodeCore::SetTextureLoader(std::function<ImTextureID(const std::string&)> Loader)
+void NodeCore::SetTextureLoader(std::function<ImTextureID(const unsigned char*, std::size_t)> Loader)
 {
 	TextureLoader = Loader;
 	if (TextureLoader != nullptr)
