@@ -6,6 +6,8 @@ set(CMAKE_CONFIGURATION_TYPES Debug Release)
 
 # set the project name
 project(VisualNodeSystem LANGUAGES CXX)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 option(VISUAL_NODE_SYSTEM_USE_EXTERNAL_IMGUI "Use an external ImGui library instead of compiling our own" OFF)
 option(VISUAL_NODE_SYSTEM_BUILD_SHARED_LIBS "Build VisualNodeSystem as a shared library" OFF)
