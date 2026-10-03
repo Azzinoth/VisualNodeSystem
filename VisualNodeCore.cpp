@@ -2,6 +2,14 @@
 #include "StandardNodes/BoundaryNodes/LinkNode/LinkNode.h"
 using namespace VisNodeSys;
 
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include "windows.h"
+#elif __linux__
+#include <X11/Xlib.h>
+#include <X11/Xatom.h>
+#endif
+
 #ifdef VISUAL_NODE_SYSTEM_SHARED
 extern "C" __declspec(dllexport) void* GetNodeCore()
 {
