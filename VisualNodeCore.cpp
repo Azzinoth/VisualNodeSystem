@@ -1,5 +1,6 @@
 #include "VisualNodeCore.h"
 #include "StandardNodes/BoundaryNodes/LinkNode/LinkNode.h"
+#include <filesystem>
 using namespace VisNodeSys;
 
 #ifdef _WIN32
@@ -390,39 +391,68 @@ std::string NodeCore::TruncateText(const std::string& Text, float MaxWidth, Elli
 
 void NodeCore::LoadTextureFromBase64(const std::string& Base64Data, ImTextureID& TextureID)
 {
-	std::string DecodedBytes = NODE_CORE.Base64Decode(Base64Data);
+	const std::string DecodedBytes = NODE_CORE.Base64Decode(Base64Data);
 
-	std::ofstream OutFile("TemporaryIcon.png", std::ios::binary);
+	if (TextureLoader != nullptr)
+	{
+		TextureID = TextureLoader(reinterpret_cast<const unsigned char*>(DecodedBytes.data()),
+								  DecodedBytes.size());
+		return;
+	}
+
+	if (FileTextureLoader == nullptr)
+		return;
+
+	std::error_code ErrorCode;
+	const std::filesystem::path TemporaryDirectory = std::filesystem::temp_directory_path(ErrorCode);
+	if (ErrorCode)
+		return;
+
+	const std::filesystem::path TemporaryFilePath = TemporaryDirectory / ("VisualNodeSystem_Icon_" + GetUniqueHexID() + ".png");
+	std::ofstream OutFile(TemporaryFilePath, std::ios::binary);
+	if (!OutFile.is_open())
+		return;
+
 	OutFile.write(DecodedBytes.data(), DecodedBytes.size());
 	OutFile.close();
 
-	TextureID = TextureLoader("TemporaryIcon.png");
+	TextureID = FileTextureLoader(TemporaryFilePath.string());
 
-	std::remove("TemporaryIcon.png");
+	std::filesystem::remove(TemporaryFilePath, ErrorCode);
+}
+
+void NodeCore::SetTextureLoader(std::function<ImTextureID(const unsigned char*, std::size_t)> Loader)
+{
+	TextureLoader = Loader;
+	if (TextureLoader != nullptr)
+		LoadBuiltInIcons();
 }
 
 void NodeCore::SetTextureLoader(std::function<ImTextureID(const std::string&)> Loader)
 {
-	TextureLoader = Loader;
-	if (TextureLoader != nullptr)
-	{
-		if (SocketMirrorNode::LinkIconTextureID == 0)
-			LoadTextureFromBase64(LinkIconBase64, SocketMirrorNode::LinkIconTextureID);
-		if (SocketMirrorNode::BrokenLinkIconTextureID == 0)
-			LoadTextureFromBase64(BrokenLinkIconBase64, SocketMirrorNode::BrokenLinkIconTextureID);
-		if (SocketMirrorNode::PlusIconTextureID == 0)
-			LoadTextureFromBase64(PlusIconBase64, SocketMirrorNode::PlusIconTextureID);
-		if (SocketMirrorNode::EditIconTextureID == 0)
-			LoadTextureFromBase64(EditIconBase64, SocketMirrorNode::EditIconTextureID);
-		if (SocketMirrorNode::TrashBinIconTextureID == 0)
-			LoadTextureFromBase64(TrashBinIconBase64, SocketMirrorNode::TrashBinIconTextureID);
-		if (SocketMirrorNode::RenameIconTextureID == 0)
-			LoadTextureFromBase64(RenameIconBase64, SocketMirrorNode::RenameIconTextureID);
-		if (SocketMirrorNode::ChangeAllowedTypesIconTextureID == 0)
-			LoadTextureFromBase64(ChangeAllowedTypesBase64, SocketMirrorNode::ChangeAllowedTypesIconTextureID);
-		if (SocketMirrorNode::SubAreaIconTextureID == 0)
-			LoadTextureFromBase64(SubNodeAreaIconBase64, SocketMirrorNode::SubAreaIconTextureID);
-	}
+	FileTextureLoader = Loader;
+	if (FileTextureLoader != nullptr)
+		LoadBuiltInIcons();
+}
+
+void NodeCore::LoadBuiltInIcons()
+{
+	if (SocketMirrorNode::LinkIconTextureID == 0)
+		LoadTextureFromBase64(LinkIconBase64, SocketMirrorNode::LinkIconTextureID);
+	if (SocketMirrorNode::BrokenLinkIconTextureID == 0)
+		LoadTextureFromBase64(BrokenLinkIconBase64, SocketMirrorNode::BrokenLinkIconTextureID);
+	if (SocketMirrorNode::PlusIconTextureID == 0)
+		LoadTextureFromBase64(PlusIconBase64, SocketMirrorNode::PlusIconTextureID);
+	if (SocketMirrorNode::EditIconTextureID == 0)
+		LoadTextureFromBase64(EditIconBase64, SocketMirrorNode::EditIconTextureID);
+	if (SocketMirrorNode::TrashBinIconTextureID == 0)
+		LoadTextureFromBase64(TrashBinIconBase64, SocketMirrorNode::TrashBinIconTextureID);
+	if (SocketMirrorNode::RenameIconTextureID == 0)
+		LoadTextureFromBase64(RenameIconBase64, SocketMirrorNode::RenameIconTextureID);
+	if (SocketMirrorNode::ChangeAllowedTypesIconTextureID == 0)
+		LoadTextureFromBase64(ChangeAllowedTypesBase64, SocketMirrorNode::ChangeAllowedTypesIconTextureID);
+	if (SocketMirrorNode::SubAreaIconTextureID == 0)
+		LoadTextureFromBase64(SubNodeAreaIconBase64, SocketMirrorNode::SubAreaIconTextureID);
 }
 
 void NodeCore::ShowToolTip(std::string Text) const
