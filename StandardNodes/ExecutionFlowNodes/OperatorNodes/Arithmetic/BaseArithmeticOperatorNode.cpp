@@ -224,8 +224,6 @@ void BaseArithmeticOperatorNode::Execute()
 	if (CurrentMode.empty())
 		return;
 
-	std::cout << "currentMode = " << CurrentMode << "\n";
-
 	// If we don't have both A and B inputs connected, we can't do anything.
 	if (Input[1]->GetConnectedSockets().empty() &&
 		Input[2]->GetConnectedSockets().empty())
