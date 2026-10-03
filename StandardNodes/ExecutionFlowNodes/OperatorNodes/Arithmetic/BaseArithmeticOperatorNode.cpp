@@ -213,7 +213,6 @@ bool BaseArithmeticOperatorNode::CanConnect(NodeSocket* OwnSocket, NodeSocket* C
 	return true;
 }
 
-#include <iostream>
 void BaseArithmeticOperatorNode::Execute()
 {
 	// Both A and B input sockets are required to perform the operation.
