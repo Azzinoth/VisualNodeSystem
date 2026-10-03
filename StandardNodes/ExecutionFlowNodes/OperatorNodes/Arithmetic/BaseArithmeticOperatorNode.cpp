@@ -2,7 +2,10 @@
 #include "../../../../SubSystems/VisualNodeArea/VisualNodeArea.h"
 using namespace VisNodeSys;
 
-BaseArithmeticOperatorNode::BaseArithmeticOperatorNode(std::vector<std::string> AllowedTypes) : BaseExecutionFlowNode()
+BaseArithmeticOperatorNode::BaseArithmeticOperatorNode(
+	std::vector<std::string> AllowedTypes
+) : BaseExecutionFlowNode(),
+	DefaultAllowedTypes(AllowedTypes)
 {
 	Type = "BaseArithmeticOperatorNode";
 
@@ -113,13 +116,54 @@ std::string BaseArithmeticOperatorNode::GetActiveINDataType()
 void BaseArithmeticOperatorNode::SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSocket, NODE_SOCKET_EVENT EventType)
 {
 	Node::SocketEvent(OwnSocket,  ConnectedSocket, EventType);
-
-	if (EventType == EXECUTE)
-	{
-		Execute();
-
-		if (Output.size() > 0 && Output[0]->GetConnectedSockets().size() > 0)
-			ParentArea->TriggerSocketEvent(Output[0], Output[0]->GetConnectedSockets()[0], EXECUTE);
+	if (OwnSocket->GetFlowDirection() == VisNodeSys::NodeSocket::SocketFlow::Input) {
+		switch (EventType) {
+		case VisNodeSys::CONNECTED: {
+			// socket is connected
+			Execute();
+			if (Output.size() > 1) {
+				for (size_t i = 0; i < Output[1]->GetConnectedSockets().size(); ++i) {
+					ParentArea->TriggerSocketEvent(Output[1], Output[1]->GetConnectedSockets()[i], UPDATE);
+				}
+			}
+			break;
+		}
+		case VisNodeSys::DISCONNECTED: {
+			// socket is disconnected
+			Execute();
+			if (Input[0]->GetConnectedSockets().empty() && Input[1]->GetConnectedSockets().empty()) {
+				Output[1]->SetAllowedTypes(DefaultAllowedTypes);
+			}
+			if (Output.size() > 1) {
+				for (size_t i = 0; i < Output[1]->GetConnectedSockets().size(); ++i) {
+					ParentArea->TriggerSocketEvent(Output[1], Output[1]->GetConnectedSockets()[i], UPDATE);
+				}
+			}
+			break;
+		}
+		case VisNodeSys::DESTRUCTION:
+			// when connected node is destroyed (probably should just disconnect...)
+			break;
+		case VisNodeSys::UPDATE:
+			// when connected node is updated
+			Execute();
+			if (Output.size() > 1) {
+				for (size_t i = 0; i < Output[1]->GetConnectedSockets().size(); ++i) {
+					ParentArea->TriggerSocketEvent(Output[1], Output[1]->GetConnectedSockets()[i], UPDATE);
+				}
+			}
+			break;
+		case VisNodeSys::EXECUTE:
+			// special operation when node operations are executed 
+			// (dont understand why this doesnt just happen on update...)
+			Execute();
+			if (Output.size() > 0) {
+				for (size_t i = 0; i < Output[0]->GetConnectedSockets().size(); ++i) {
+					ParentArea->TriggerSocketEvent(Output[0], Output[0]->GetConnectedSockets()[i], EXECUTE);
+				}
+			}
+			break;
+		}
 	}
 }
 
@@ -169,6 +213,7 @@ bool BaseArithmeticOperatorNode::CanConnect(NodeSocket* OwnSocket, NodeSocket* C
 	return true;
 }
 
+#include <iostream>
 void BaseArithmeticOperatorNode::Execute()
 {
 	// Both A and B input sockets are required to perform the operation.
@@ -178,6 +223,8 @@ void BaseArithmeticOperatorNode::Execute()
 	std::string CurrentMode = GetActiveINDataType();
 	if (CurrentMode.empty())
 		return;
+
+	std::cout << "currentMode = " << CurrentMode << "\n";
 
 	// If we don't have both A and B inputs connected, we can't do anything.
 	if (Input[1]->GetConnectedSockets().empty() &&
@@ -195,6 +242,7 @@ void BaseArithmeticOperatorNode::Execute()
 	if (AData == nullptr && BData == nullptr)
 		return;
 
+	Output[1]->SetAllowedTypes({CurrentMode});
 	// Call the appropriate operation method based on the data type.
 	if (CurrentMode == "INT")
 	{
@@ -207,6 +255,18 @@ void BaseArithmeticOperatorNode::Execute()
 			B = *reinterpret_cast<int*>(BData);
 
 		LocalIntegerData = PerformOperation(A, B);
+	}
+	if (CurrentMode == "UINT")
+	{
+		unsigned int A = 0;
+		if (AData != nullptr)
+			A = *reinterpret_cast<unsigned int*>(AData);
+
+		unsigned int B = 0;
+		if (BData != nullptr)
+			B = *reinterpret_cast<unsigned int*>(BData);
+
+		LocalUnsignedData = PerformOperation(A, B);
 	}
 	else if (CurrentMode == "FLOAT")
 	{

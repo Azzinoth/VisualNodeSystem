@@ -26,10 +26,12 @@ protected:
 private:
 	// TO-DO: use std::optional to save memory.
 	int LocalIntegerData = 0;
+	unsigned int LocalUnsignedData = 0;
 	float LocalFloatData = 0.0f;
 	glm::vec2 LocalVec2Data = glm::vec2(0.0f);
 	glm::vec3 LocalVec3Data = glm::vec3(0.0f);
 	glm::vec4 LocalVec4Data = glm::vec4(0.0f);
+	std::vector<std::string> DefaultAllowedTypes;
 
 	// Generic arithmetic function for basic types (int, float)
 	template <typename T>
@@ -71,6 +73,10 @@ private:
 		{
 			return &LocalIntegerData;
 		}
+		if (CurrentMode == "UINT")
+		{
+			return &LocalUnsignedData;
+		}
 		else if (CurrentMode == "FLOAT")
 		{
 			return &LocalFloatData;
@@ -92,7 +98,7 @@ private:
 	};
 
 public:
-	BaseArithmeticOperatorNode(std::vector<std::string> AllowedTypes = { "INT", "FLOAT", "VEC2", "VEC3", "VEC4" });
+	BaseArithmeticOperatorNode(std::vector<std::string> AllowedTypes = { "INT", "UINT", "FLOAT", "VEC2", "VEC3", "VEC4" });
 	BaseArithmeticOperatorNode(const BaseArithmeticOperatorNode& Other);
 
 	Json::Value ToJson();
@@ -145,6 +151,49 @@ inline int BaseArithmeticOperatorNode::PerformOperation<int>(const int& A, const
 			return INT_MIN;
 
 		return static_cast<int>(Result);
+	}
+	default:
+		return A;
+	}
+}
+// Specialization for unsigned type.
+template <>
+inline unsigned int BaseArithmeticOperatorNode::PerformOperation<unsigned int>(const unsigned int& A, const unsigned int& B)
+{
+	switch (OperatorType)
+	{
+	case ArithmeticOperationType::ADD:
+		return A + B;
+	case ArithmeticOperationType::SUBTRACT:
+		return A - B;
+	case ArithmeticOperationType::MULTIPLY:
+		return A * B;
+	case ArithmeticOperationType::DIVIDE:
+	{
+		if (B == 0)
+			return A;
+		return A / B;
+	}
+	case ArithmeticOperationType::MODULUS:
+	{
+		if (B == 0)
+			return A;
+		return A % B;
+	}
+	case ArithmeticOperationType::POWER:
+	{
+		const double Result = std::pow(static_cast<double>(A), static_cast<double>(B));
+
+		if (!std::isfinite(Result))
+			return 0;
+
+		if (Result >= static_cast<double>(INT_MAX))
+			return INT_MAX;
+
+		if (Result <= static_cast<double>(INT_MIN))
+			return INT_MIN;
+
+		return static_cast<unsigned int>(Result);
 	}
 	default:
 		return A;

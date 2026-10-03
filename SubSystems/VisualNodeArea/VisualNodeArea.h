@@ -11,6 +11,7 @@
 #include "../StandardNodes/ExecutionFlowNodes/LiteralsNodes/BoolLiteralNode.h"
 #include "../StandardNodes/ExecutionFlowNodes/LiteralsNodes/FloatLiteralNode.h"
 #include "../StandardNodes/ExecutionFlowNodes/LiteralsNodes/IntegerLiteralNode.h"
+#include "../StandardNodes/ExecutionFlowNodes/LiteralsNodes/UnsignedLiteralNode.h"
 #include "../StandardNodes/ExecutionFlowNodes/LiteralsNodes/Vec2LiteralNode.h"
 #include "../StandardNodes/ExecutionFlowNodes/LiteralsNodes/BoolVec2LiteralNode.h"
 #include "../StandardNodes/ExecutionFlowNodes/LiteralsNodes/Vec3LiteralNode.h"
@@ -22,6 +23,7 @@
 #include "../StandardNodes/ExecutionFlowNodes/VariablesNodes/BoolVariableNode.h"
 #include "../StandardNodes/ExecutionFlowNodes/VariablesNodes/FloatVariableNode.h"
 #include "../StandardNodes/ExecutionFlowNodes/VariablesNodes/IntegerVariableNode.h"
+#include "../StandardNodes/ExecutionFlowNodes/VariablesNodes/UnsignedVariableNode.h"
 #include "../StandardNodes/ExecutionFlowNodes/VariablesNodes/Vec2VariableNode.h"
 #include "../StandardNodes/ExecutionFlowNodes/VariablesNodes/BoolVec2VariableNode.h"
 #include "../StandardNodes/ExecutionFlowNodes/VariablesNodes/Vec3VariableNode.h"
@@ -231,6 +233,7 @@ namespace VisNodeSys
 
 		// *********************** Nodes ************************
 		Node* GetNodeByID(std::string NodeID) const;
+		Node* GetNodeByIdx(size_t Idx) const;
 		std::vector<Node*> GetNodesByName(std::string NodeName) const;
 		std::vector<Node*> GetNodesByStringType(std::string NodeType) const;
 		template<typename T>

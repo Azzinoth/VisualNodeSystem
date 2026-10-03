@@ -178,6 +178,8 @@ if(VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES)
 		"StandardNodes/ExecutionFlowNodes/LiteralsNodes/IntegerLiteralNode.h"
 		"StandardNodes/ExecutionFlowNodes/LiteralsNodes/IntegerLiteralNode.cpp"
 
+		"StandardNodes/ExecutionFlowNodes/LiteralsNodes/UnsignedLiteralNode.cpp"
+
 		"StandardNodes/ExecutionFlowNodes/LiteralsNodes/FloatLiteralNode.h"
 		"StandardNodes/ExecutionFlowNodes/LiteralsNodes/FloatLiteralNode.cpp"
 
@@ -206,6 +208,8 @@ if(VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES)
 
 		"StandardNodes/ExecutionFlowNodes/VariablesNodes/IntegerVariableNode.h"
 		"StandardNodes/ExecutionFlowNodes/VariablesNodes/IntegerVariableNode.cpp"
+
+		"StandardNodes/ExecutionFlowNodes/VariablesNodes/UnsignedVariableNode.cpp"
 
 		"StandardNodes/ExecutionFlowNodes/VariablesNodes/FloatVariableNode.h"
 		"StandardNodes/ExecutionFlowNodes/VariablesNodes/FloatVariableNode.cpp"

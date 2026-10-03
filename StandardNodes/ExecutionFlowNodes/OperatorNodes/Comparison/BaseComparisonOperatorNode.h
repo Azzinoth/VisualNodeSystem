@@ -111,6 +111,13 @@ private:
 
 			bLocalBool = CompareValues(A, B);
 		}
+		else if (CurrentMode == "UINT")
+		{
+			int A = *reinterpret_cast<unsigned int*>(AData);
+			int B = *reinterpret_cast<unsigned int*>(BData);
+
+			bLocalBool = CompareValues(A, B);
+		}
 		else if (CurrentMode == "FLOAT")
 		{
 			float A = *reinterpret_cast<float*>(AData);
@@ -151,6 +158,10 @@ private:
 			return &bLocalBool;
 		}
 		else if (CurrentMode == "INT")
+		{
+			return &bLocalBool;
+		}
+		else if (CurrentMode == "UINT") 
 		{
 			return &bLocalBool;
 		}
