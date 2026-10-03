@@ -1,6 +1,7 @@
 #include "VisualNode.h"
 #include "VisualNodeFactory.h"
 #include "VisualNodeSystem.h"
+#include "json/value.h"
 using namespace VisNodeSys;
 
 Node::Node(const std::string ID)
