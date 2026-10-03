@@ -656,6 +656,13 @@ Node* NodeArea::GetNodeByID(std::string NodeID) const
 	return nullptr;
 }
 
+Node* NodeArea::GetNodeByIdx(size_t Idx) const 
+{
+	if (Idx >= Nodes.size())
+		return nullptr;
+	return Nodes[Idx];
+}
+
 std::vector<Node*> NodeArea::GetNodesByName(const std::string NodeName) const
 {
 	std::vector<Node*> Result;
