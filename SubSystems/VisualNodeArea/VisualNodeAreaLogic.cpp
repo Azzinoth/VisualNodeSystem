@@ -190,13 +190,14 @@ bool NodeArea::Delete(Connection* Connection)
 			return true;
 	}
 
+	bool wasErased = false;
 	for (int i = 0; i < static_cast<int>(Connection->In->ConnectedSockets.size()); i++)
 	{
 		if (Connection->In->ConnectedSockets[i] == Connection->Out)
 		{
 			Connection->In->ConnectedSockets.erase(Connection->In->ConnectedSockets.begin() + i, Connection->In->ConnectedSockets.begin() + i + 1);
 			// FE_TO_DO : Add some variation of disconnected event, like DISCONNECTED_INCOMING
-			Connection->In->Parent->SocketEvent(Connection->In, Connection->Out, bClearing ? DESTRUCTION : DISCONNECTED);
+			wasErased = true;
 			i--;
 		}
 	}
@@ -207,9 +208,13 @@ bool NodeArea::Delete(Connection* Connection)
 		{
 			Connection->Out->ConnectedSockets.erase(Connection->Out->ConnectedSockets.begin() + i, Connection->Out->ConnectedSockets.begin() + i + 1);
 			// FE_TO_DO : Add some variation of disconnected event, like DISCONNECTED_OUTGOING
-			Connection->Out->Parent->SocketEvent(Connection->Out, Connection->In, bClearing ? DESTRUCTION : DISCONNECTED);
+			wasErased = true;
 			i--;
 		}
+	}
+	if (wasErased) 
+	{
+		Connection->Out->Parent->SocketEvent(Connection->Out, Connection->In, bClearing ? DESTRUCTION : DISCONNECTED);
 	}
 
 	for (size_t i = 0; i < Connections.size(); i++)
