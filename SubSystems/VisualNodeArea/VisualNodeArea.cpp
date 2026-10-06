@@ -642,6 +642,9 @@ bool NodeArea::LoadFromFile(std::string FilePath)
 	const std::string FileData((std::istreambuf_iterator<char>(NodesFile)), std::istreambuf_iterator<char>());
 	NodesFile.close();
 
+	SetZoomFactor(1);
+	SetPosition({0,0});
+
 	return LoadFromJson(FileData);
 }
 
@@ -654,6 +657,13 @@ Node* NodeArea::GetNodeByID(std::string NodeID) const
 	}
 
 	return nullptr;
+}
+
+Node* NodeArea::GetNodeByIdx(size_t Idx) const 
+{
+	if (Idx >= Nodes.size())
+		return nullptr;
+	return Nodes[Idx];
 }
 
 std::vector<Node*> NodeArea::GetNodesByName(const std::string NodeName) const

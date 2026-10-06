@@ -44,6 +44,17 @@ extern "C" __declspec(dllexport) void* GetNodeSystem()
 			}
 		);
 
+		NODE_FACTORY.RegisterNodeType("UnsignedLiteralNode",
+			[]() -> Node* {
+				return new UnsignedLiteralNode();
+			},
+
+			[](const Node& CurrentNode) -> Node* {
+				const UnsignedLiteralNode& NodeToCopy = static_cast<const UnsignedLiteralNode&>(CurrentNode);
+				return new UnsignedLiteralNode(NodeToCopy);
+			}
+		);
+
 		NODE_FACTORY.RegisterNodeType("FloatLiteralNode",
 			[]() -> Node* {
 				return new FloatLiteralNode();
@@ -135,6 +146,17 @@ extern "C" __declspec(dllexport) void* GetNodeSystem()
 			[](const Node& CurrentNode) -> Node* {
 				const IntegerVariableNode& NodeToCopy = static_cast<const IntegerVariableNode&>(CurrentNode);
 				return new IntegerVariableNode(NodeToCopy);
+			}
+		);
+
+		NODE_FACTORY.RegisterNodeType("UnsignedVariableNode",
+			[]() -> Node* {
+				return new UnsignedVariableNode();
+			},
+
+			[](const Node& CurrentNode) -> Node* {
+				const UnsignedVariableNode& NodeToCopy = static_cast<const UnsignedVariableNode&>(CurrentNode);
+				return new UnsignedVariableNode(NodeToCopy);
 			}
 		);
 
@@ -486,6 +508,7 @@ void NodeSystem::Initialize(bool bTestMode)
 	AssociateSocketTypeToColor("EXECUTE", ImColor(255, 255, 255));
 	AssociateSocketTypeToColor("BOOL", ImColor(148, 0, 0));
 	AssociateSocketTypeToColor("INT", ImColor(30, 221, 170));
+	AssociateSocketTypeToColor("UINT", ImColor(62, 221, 125));
 	AssociateSocketTypeToColor("FLOAT", ImColor(56, 210, 0));
 	AssociateSocketTypeToColor("VEC2", ImColor(244, 193, 34));
 	AssociateSocketTypeToColor("BVEC2", ImColor(125, 62, 11));
@@ -1211,7 +1234,7 @@ bool NodeSystem::UnlinkNodeAreas(const std::string& FirstAreaID, const std::stri
 			continue;
 
 		NodeAreaLinkRecord Record = LinkRecordIterator->second;
-		std::string RecordID = LinkRecordIterator->first;
+		std::string RecordIDLocal = LinkRecordIterator->first;
 		NodeArea* InArea = GetNodeAreaByID(Record.InAreaID);
 		if (InArea != nullptr)
 		{
@@ -1220,7 +1243,7 @@ bool NodeSystem::UnlinkNodeAreas(const std::string& FirstAreaID, const std::stri
 				InArea->Delete(InNode);
 		}
 
-		DeleteLinkRecord(RecordID);
+		DeleteLinkRecord(RecordIDLocal);
 	}
 
 	return !RecordIDsToRemove.empty();

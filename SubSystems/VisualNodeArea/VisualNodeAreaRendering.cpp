@@ -1226,6 +1226,11 @@ void NodeArea::RenderDefaultMainContextMenu()
 					NewNode = new IntegerLiteralNode();
 				}
 
+				if (ImGui::MenuItem("UInt"))
+				{
+					NewNode = new UnsignedLiteralNode();
+				}
+
 				if (ImGui::MenuItem("Float"))
 				{
 					NewNode = new FloatLiteralNode();
@@ -1274,6 +1279,11 @@ void NodeArea::RenderDefaultMainContextMenu()
 				if (ImGui::MenuItem("Int"))
 				{
 					NewNode = new IntegerVariableNode();
+				}
+
+				if (ImGui::MenuItem("UInt"))
+				{
+					NewNode = new UnsignedVariableNode();
 				}
 
 				if (ImGui::MenuItem("Float"))

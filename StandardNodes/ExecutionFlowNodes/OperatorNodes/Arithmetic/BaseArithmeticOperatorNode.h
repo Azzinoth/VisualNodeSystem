@@ -26,10 +26,12 @@ protected:
 private:
 	// TO-DO: use std::optional to save memory.
 	int LocalIntegerData = 0;
+	unsigned int LocalUnsignedData = 0;
 	float LocalFloatData = 0.0f;
 	glm::vec2 LocalVec2Data = glm::vec2(0.0f);
 	glm::vec3 LocalVec3Data = glm::vec3(0.0f);
 	glm::vec4 LocalVec4Data = glm::vec4(0.0f);
+	std::vector<std::string> DefaultAllowedTypes;
 
 	// Generic arithmetic function for basic types (int, float)
 	template <typename T>
@@ -59,169 +61,7 @@ private:
 		}
 	}
 
-	// Specialization for integer type.
-	template <>
-	int PerformOperation<int>(const int& A, const int& B)
-	{
-		switch (OperatorType)
-		{
-		case ArithmeticOperationType::ADD:
-			return A + B;
-		case ArithmeticOperationType::SUBTRACT:
-			return A - B;
-		case ArithmeticOperationType::MULTIPLY:
-			return A * B;
-		case ArithmeticOperationType::DIVIDE:
-		{
-			if (B == 0)
-				return A;
-			if (A == INT_MIN && B == -1)
-				return INT_MAX; // INT_MIN / -1 overflows int; saturate like the POWER case.
-			return A / B;
-		}
-		case ArithmeticOperationType::MODULUS:
-		{
-			if (B == 0)
-				return A;
-			if (A == INT_MIN && B == -1)
-				return 0; // INT_MIN % -1 is mathematically 0.
-			return A % B;
-		}
-		case ArithmeticOperationType::POWER:
-		{
-			const double Result = std::pow(static_cast<double>(A), static_cast<double>(B));
-
-			if (!std::isfinite(Result))
-				return 0;
-
-			if (Result >= static_cast<double>(INT_MAX))
-				return INT_MAX;
-
-			if (Result <= static_cast<double>(INT_MIN))
-				return INT_MIN;
-
-			return static_cast<int>(Result);
-		}
-		default:
-			return A;
-		}
-	}
-
-	// Specialization for floating-point type
-	template <>
-	float PerformOperation<float>(const float& A, const float& B)
-	{
-		switch (OperatorType)
-		{
-		case ArithmeticOperationType::ADD:
-			return A + B;
-		case ArithmeticOperationType::SUBTRACT:
-			return A - B;
-		case ArithmeticOperationType::MULTIPLY:
-			return A * B;
-		case ArithmeticOperationType::DIVIDE:
-			if (B == 0.0f)
-				return A;
-			return A / B;
-		case ArithmeticOperationType::POWER:
-			return std::pow(A, B);
-		case ArithmeticOperationType::MODULUS:
-			if (B == 0.0f)
-				return A;
-			return std::fmod(A, B);
-		default:
-			return A;
-		}
-	}
-
-	void Execute()
-	{
-		// Both A and B input sockets are required to perform the operation.
-		if (Input.size() <= 2)
-			return;
-
-		std::string CurrentMode = GetActiveINDataType();
-		if (CurrentMode.empty())
-			return;
-
-		// If we don't have both A and B inputs connected, we can't do anything.
-		if (Input[1]->GetConnectedSockets().empty() &&
-			Input[2]->GetConnectedSockets().empty())
-			return;
-
-		void* AData = nullptr;
-		if (!Input[1]->GetConnectedSockets().empty())
-			AData = Input[1]->GetConnectedSockets()[0]->GetData();
-
-		void* BData = nullptr;
-		if (!Input[2]->GetConnectedSockets().empty())
-			BData = Input[2]->GetConnectedSockets()[0]->GetData();
-
-		if (AData == nullptr && BData == nullptr)
-			return;
-
-		// Call the appropriate operation method based on the data type.
-		if (CurrentMode == "INT")
-		{
-			int A = 0;
-			if (AData != nullptr)
-				A = *reinterpret_cast<int*>(AData);
-
-			int B = 0;
-			if (BData != nullptr)
-				B = *reinterpret_cast<int*>(BData);
-
-			LocalIntegerData = PerformOperation(A, B);
-		}
-		else if (CurrentMode == "FLOAT")
-		{
-			float A = 0.0f;
-			if (AData != nullptr)
-				A = *reinterpret_cast<float*>(AData);
-
-			float B = 0.0f;
-			if (BData != nullptr)
-				B = *reinterpret_cast<float*>(BData);
-
-			LocalFloatData = PerformOperation(A, B);
-		}
-		else if (CurrentMode == "VEC2")
-		{
-			glm::vec2 A = glm::vec2(0.0f);
-			if (AData != nullptr)
-				A = *reinterpret_cast<glm::vec2*>(AData);
-
-			glm::vec2 B = glm::vec2(0.0f);
-			if (BData != nullptr)
-				B = *reinterpret_cast<glm::vec2*>(BData);
-
-			LocalVec2Data = PerformOperation(A, B);
-		}
-		else if (CurrentMode == "VEC3")
-		{
-			glm::vec3 A = glm::vec3(0.0f);
-			if (AData != nullptr)
-				A = *reinterpret_cast<glm::vec3*>(AData);
-
-			glm::vec3 B = glm::vec3(0.0f);
-			if (BData != nullptr)
-				B = *reinterpret_cast<glm::vec3*>(BData);
-
-			LocalVec3Data = PerformOperation(A, B);
-		}
-		else if (CurrentMode == "VEC4")
-		{
-			glm::vec4 A = glm::vec4(0.0f);
-			if (AData != nullptr)
-				A = *reinterpret_cast<glm::vec4*>(AData);
-
-			glm::vec4 B = glm::vec4(0.0f);
-			if (BData != nullptr)
-				B = *reinterpret_cast<glm::vec4*>(BData);
-
-			LocalVec4Data = PerformOperation(A, B);
-		}
-	}
+	void Execute();
 
 	std::function<void* ()> ResultDataGetter = [this]() -> void* {
 		std::string CurrentMode = GetActiveINDataType();
@@ -232,6 +72,10 @@ private:
 		if (CurrentMode == "INT")
 		{
 			return &LocalIntegerData;
+		}
+		if (CurrentMode == "UINT")
+		{
+			return &LocalUnsignedData;
 		}
 		else if (CurrentMode == "FLOAT")
 		{
@@ -254,7 +98,7 @@ private:
 	};
 
 public:
-	BaseArithmeticOperatorNode(std::vector<std::string> AllowedTypes = { "INT", "FLOAT", "VEC2", "VEC3", "VEC4" });
+	BaseArithmeticOperatorNode(std::vector<std::string> AllowedTypes = { "INT", "UINT", "FLOAT", "VEC2", "VEC3", "VEC4" });
 	BaseArithmeticOperatorNode(const BaseArithmeticOperatorNode& Other);
 
 	Json::Value ToJson();
@@ -264,3 +108,121 @@ public:
 
 	std::string GetActiveINDataType();
 };
+
+// Specialization for integer type.
+template <>
+inline int BaseArithmeticOperatorNode::PerformOperation<int>(const int& A, const int& B)
+{
+	switch (OperatorType)
+	{
+	case ArithmeticOperationType::ADD:
+		return A + B;
+	case ArithmeticOperationType::SUBTRACT:
+		return A - B;
+	case ArithmeticOperationType::MULTIPLY:
+		return A * B;
+	case ArithmeticOperationType::DIVIDE:
+	{
+		if (B == 0)
+			return A;
+		if (A == INT_MIN && B == -1)
+			return INT_MAX; // INT_MIN / -1 overflows int; saturate like the POWER case.
+		return A / B;
+	}
+	case ArithmeticOperationType::MODULUS:
+	{
+		if (B == 0)
+			return A;
+		if (A == INT_MIN && B == -1)
+			return 0; // INT_MIN % -1 is mathematically 0.
+		return A % B;
+	}
+	case ArithmeticOperationType::POWER:
+	{
+		const double Result = std::pow(static_cast<double>(A), static_cast<double>(B));
+
+		if (!std::isfinite(Result))
+			return 0;
+
+		if (Result >= static_cast<double>(INT_MAX))
+			return INT_MAX;
+
+		if (Result <= static_cast<double>(INT_MIN))
+			return INT_MIN;
+
+		return static_cast<int>(Result);
+	}
+	default:
+		return A;
+	}
+}
+// Specialization for unsigned type.
+template <>
+inline unsigned int BaseArithmeticOperatorNode::PerformOperation<unsigned int>(const unsigned int& A, const unsigned int& B)
+{
+	switch (OperatorType)
+	{
+	case ArithmeticOperationType::ADD:
+		return A + B;
+	case ArithmeticOperationType::SUBTRACT:
+		return A - B;
+	case ArithmeticOperationType::MULTIPLY:
+		return A * B;
+	case ArithmeticOperationType::DIVIDE:
+	{
+		if (B == 0)
+			return A;
+		return A / B;
+	}
+	case ArithmeticOperationType::MODULUS:
+	{
+		if (B == 0)
+			return A;
+		return A % B;
+	}
+	case ArithmeticOperationType::POWER:
+	{
+		const double Result = std::pow(static_cast<double>(A), static_cast<double>(B));
+
+		if (!std::isfinite(Result))
+			return 0;
+
+		if (Result >= static_cast<double>(INT_MAX))
+			return INT_MAX;
+
+		if (Result <= static_cast<double>(INT_MIN))
+			return INT_MIN;
+
+		return static_cast<unsigned int>(Result);
+	}
+	default:
+		return A;
+	}
+}
+
+// Specialization for floating-point type
+template <>
+inline float BaseArithmeticOperatorNode::PerformOperation<float>(const float& A, const float& B)
+{
+	switch (OperatorType)
+	{
+	case ArithmeticOperationType::ADD:
+		return A + B;
+	case ArithmeticOperationType::SUBTRACT:
+		return A - B;
+	case ArithmeticOperationType::MULTIPLY:
+		return A * B;
+	case ArithmeticOperationType::DIVIDE:
+		if (B == 0.0f)
+			return A;
+		return A / B;
+	case ArithmeticOperationType::POWER:
+		return std::pow(A, B);
+	case ArithmeticOperationType::MODULUS:
+		if (B == 0.0f)
+			return A;
+		return std::fmod(A, B);
+	default:
+		return A;
+	}
+}

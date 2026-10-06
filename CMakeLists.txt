@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
 set(BUILD_TYPE "Debug and Release" CACHE STRING "Choose Build type")
-set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_CONFIGURATION_TYPES Debug Release)
 
 # set the project name
@@ -103,7 +102,6 @@ set(VariablesNodes_SOURCE_FILES)
 set(ControlFlowNodes_SOURCE_FILES)
 
 if(VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /DVISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES")
 
 	# *************** EXECUTION_FLOW_NODES ***************
 	list(APPEND BaseExecutionFlowNodes_SOURCE_FILES
@@ -181,6 +179,8 @@ if(VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES)
 		"StandardNodes/ExecutionFlowNodes/LiteralsNodes/IntegerLiteralNode.h"
 		"StandardNodes/ExecutionFlowNodes/LiteralsNodes/IntegerLiteralNode.cpp"
 
+		"StandardNodes/ExecutionFlowNodes/LiteralsNodes/UnsignedLiteralNode.cpp"
+
 		"StandardNodes/ExecutionFlowNodes/LiteralsNodes/FloatLiteralNode.h"
 		"StandardNodes/ExecutionFlowNodes/LiteralsNodes/FloatLiteralNode.cpp"
 
@@ -209,6 +209,8 @@ if(VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES)
 
 		"StandardNodes/ExecutionFlowNodes/VariablesNodes/IntegerVariableNode.h"
 		"StandardNodes/ExecutionFlowNodes/VariablesNodes/IntegerVariableNode.cpp"
+
+		"StandardNodes/ExecutionFlowNodes/VariablesNodes/UnsignedVariableNode.cpp"
 
 		"StandardNodes/ExecutionFlowNodes/VariablesNodes/FloatVariableNode.h"
 		"StandardNodes/ExecutionFlowNodes/VariablesNodes/FloatVariableNode.cpp"
@@ -282,7 +284,10 @@ else()
     add_library(VisualNodeSystem STATIC ${ALL_SOURCE_FILES})
 endif()
 
-target_include_directories(VisualNodeSystem PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/jsoncpp)
+if(VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES)
+	#NOTE use cross platform method to set compile definitions
+    target_compile_definitions(VisualNodeSystem PRIVATE VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES)
+endif()
 
 source_group("Source Files" FILES ${VisualNodeSystem_SRC})
 source_group("Source Files/SubSystems/VisualNodeArea/" FILES ${VisualNodeArea_SRC})
@@ -303,6 +308,7 @@ endif()
 source_group("Source Files/ThirdParty/jsoncpp" FILES ${jsoncpp_SRC})
 
 set(VISUAL_NODE_SYSTEM_THIRDPARTY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty)
+set(VISUAL_NODE_SYSTEM_THIRDPARTY_JSONCPP_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/jsoncpp)
 
 # set the startup project
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT VisualNodeSystem)
@@ -338,6 +344,7 @@ endif()
 include_directories(
 	${DEAR_IMGUI_INCLUDE_DIR}
 	${VISUAL_NODE_SYSTEM_THIRDPARTY_DIR}
+	${VISUAL_NODE_SYSTEM_THIRDPARTY_JSONCPP_DIR}
 )
 
 set(VISUAL_NODE_SYSTEM_THIRDPARTY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty PARENT_SCOPE)
