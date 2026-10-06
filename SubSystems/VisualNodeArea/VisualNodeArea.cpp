@@ -642,6 +642,9 @@ bool NodeArea::LoadFromFile(std::string FilePath)
 	const std::string FileData((std::istreambuf_iterator<char>(NodesFile)), std::istreambuf_iterator<char>());
 	NodesFile.close();
 
+	SetZoomFactor(1);
+	SetPosition({0,0});
+
 	return LoadFromJson(FileData);
 }
 
