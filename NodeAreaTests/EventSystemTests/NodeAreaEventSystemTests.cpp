@@ -6,8 +6,8 @@ TEST(NodeAreaEventSystemTests, Node_Events)
 {
 	NODE_SYSTEM.Clear();
 
-	std::vector<std::string> NodesIDList;
-	std::vector<std::string> GroupCommentsIDList;
+	std::vector<FEUUID> NodesIDList;
+	std::vector<FEUUID> GroupCommentsIDList;
 
 	NodeArea* LocalNodeArea = TEST_TOOLS.CreateTinyPopulatedNodeArea(NodesIDList, GroupCommentsIDList);
 	ASSERT_NE(LocalNodeArea, nullptr);
@@ -171,7 +171,7 @@ TEST(NodeAreaEventSystemTests, ReentrantConnectionDelete_FromBeforeDisconnectedC
 	ASSERT_TRUE(LocalNodeArea->TryToConnect(OutNode, 0, InNode, 1));
 	ASSERT_EQ(LocalNodeArea->GetConnectionCount(), 1);
 
-	const std::string InNodeID = InNode->GetID();
+	const FEUUID InNodeID = InNode->GetID();
 
 	// A callback that deletes one of the connection's endpoint.
 	bool bBeforeDisconnectedCalled = false;
@@ -227,7 +227,7 @@ TEST(NodeAreaEventSystemTests, SiblingConnectionDelete_FromBeforeDisconnectedCal
 	});
 
 	// Disconnect everything on SourceNode's output socket.
-	const std::string SocketID = SourceNode->GetSocketByIndex(0, NodeSocket::SocketFlow::Output)->GetID();
+	const FEUUID SocketID = SourceNode->GetSocketByIndex(0, NodeSocket::SocketFlow::Output)->GetID();
 	ASSERT_TRUE(LocalNodeArea->TryToDisconnect(SourceNode, SocketID));
 
 	// The reentrancy ran and the area is left consistent, with no dangling sockets.
@@ -258,7 +258,7 @@ TEST(NodeAreaEventSystemTests, ReentrantNodeDelete_FromDestroyedCallback_IsSafe)
 	ASSERT_TRUE(LocalNodeArea->TryToConnect(OtherNode, 0, TargetNode, 0));
 	ASSERT_EQ(LocalNodeArea->GetConnectionCount(), 1);
 
-	const std::string TargetNodeID = TargetNode->GetID();
+	const FEUUID TargetNodeID = TargetNode->GetID();
 
 	// The DESTROYED callback re-enters Delete on the same node, freeing it before the outer Delete continues.
 	bool bReentered = false;
@@ -300,7 +300,7 @@ TEST(NodeAreaEventSystemTests, ReentrantNodeDelete_FromBeforeDisconnectedCallbac
 	ASSERT_TRUE(LocalNodeArea->TryToConnect(OtherNode, 0, TargetNode, 0));
 	ASSERT_EQ(LocalNodeArea->GetConnectionCount(), 1);
 
-	const std::string TargetNodeID = TargetNode->GetID();
+	const FEUUID TargetNodeID = TargetNode->GetID();
 
 	// A BEFORE_DISCONNECTED callback fires while the node's connections are torn down inside Delete.
 	// re-deleting the same node there must not leave the teardown loop operating on the freed node.
@@ -382,15 +382,15 @@ TEST(NodeAreaEventSystemTests, RunOnEachNode_VisitsAllNodes)
 {
 	NODE_SYSTEM.Clear();
 
-	std::vector<std::string> NodesIDList;
-	std::vector<std::string> GroupCommentsIDList;
+	std::vector<FEUUID> NodesIDList;
+	std::vector<FEUUID> GroupCommentsIDList;
 
 	NodeArea* LocalNodeArea = TEST_TOOLS.CreateTinyPopulatedNodeArea(NodesIDList, GroupCommentsIDList);
 	ASSERT_NE(LocalNodeArea, nullptr);
 	ASSERT_EQ(LocalNodeArea->GetNodeCount(), 11);
 
 	int VisitedCounter = 0;
-	std::vector<std::string> VisitedNodesIDList;
+	std::vector<FEUUID> VisitedNodesIDList;
 	auto RecordVisitedNodes = [&](Node* NodeToCount) {
 		VisitedCounter++;
 		VisitedNodesIDList.push_back(NodeToCount->GetID());
@@ -419,7 +419,7 @@ TEST(NodeAreaEventSystemTests, RunOnEachConnectedNode_FollowsOutputConnections)
 {
 	NODE_SYSTEM.Clear();
 
-	std::vector<std::string> NodesIDList;
+	std::vector<FEUUID> NodesIDList;
 
 	NodeArea* LocalNodeArea = TEST_TOOLS.CreateSmallConnectedNodeArea(NodesIDList);
 	ASSERT_NE(LocalNodeArea, nullptr);
@@ -438,13 +438,13 @@ TEST(NodeAreaEventSystemTests, RunOnEachConnectedNode_FollowsOutputConnections)
 	//  23    24    25    26      27 28  29
 
 	int VisitedCounter = 0;
-	std::vector<std::string> VisitedNodesIDList;
+	std::vector<FEUUID> VisitedNodesIDList;
 	auto RecordVisitedNodes = [&](Node* NodeToCount) {
 		VisitedCounter++;
 		VisitedNodesIDList.push_back(NodeToCount->GetID());
 	};
 
-	auto FoundNodeWithIDInList = [&](std::string ID) {
+	auto FoundNodeWithIDInList = [&](const FEUUID& ID) {
 		return std::find(VisitedNodesIDList.begin(), VisitedNodesIDList.end(), ID) != VisitedNodesIDList.end();
 	};
 
@@ -709,8 +709,8 @@ TEST(NodeAreaEventSystemTests, LastExecutedNodes_IsInExecutionOrder_Manual)
 {
 	NODE_SYSTEM.Clear();
 
-	std::vector<std::string> NodesIDList;
-	std::vector<std::string> GroupCommentsIDList;
+	std::vector<FEUUID> NodesIDList;
+	std::vector<FEUUID> GroupCommentsIDList;
 
 	NodeArea* LocalNodeArea = TEST_TOOLS.CreateTinyPopulatedNodeArea(NodesIDList, GroupCommentsIDList);
 	ASSERT_NE(LocalNodeArea, nullptr);
@@ -859,7 +859,7 @@ TEST(NodeAreaEventSystemTests, RunOnEachConnectedNode_SharedNode_VisitsAllNodesE
 	ASSERT_TRUE(Area->TryToConnect(NodeA, 2, NodeD, 0)); // A.outD => D.in
 	ASSERT_TRUE(Area->TryToConnect(NodeB, 0, NodeC, 1)); // B.out  => C.inB
 
-	std::vector<std::string> VisitedIDs;
+	std::vector<FEUUID> VisitedIDs;
 	Area->RunOnEachConnectedNode(NodeA, [&](Node* CurrentNode) {
 		VisitedIDs.push_back(CurrentNode->GetID());
 	});
@@ -914,7 +914,7 @@ TEST(NodeAreaEventSystemTests, RunOnEachConnectedNode_Diamond_VisitsEachOnce)
 	ASSERT_TRUE(Area->TryToConnect(NodeB, 0, NodeD, 0));
 	ASSERT_TRUE(Area->TryToConnect(NodeC, 0, NodeD, 1));
 
-	std::vector<std::string> VisitedIDs;
+	std::vector<FEUUID> VisitedIDs;
 	Area->RunOnEachConnectedNode(NodeA, [&](Node* CurrentNode) {
 		VisitedIDs.push_back(CurrentNode->GetID());
 	});
@@ -953,7 +953,7 @@ TEST(NodeAreaEventSystemTests, Delete_Connection_OutSocketNodeReceivesDisconnect
 	EXPECT_EQ(InNode->GetConnectedCount(), 1);
 	EXPECT_EQ(OutNode->GetConnectedCount(), 1);
 
-	std::string OutSocketID = OutNode->GetSocketIDByIndex(0, NodeSocket::SocketFlow::Output);
+	FEUUID OutSocketID = OutNode->GetSocketIDByIndex(0, NodeSocket::SocketFlow::Output);
 	ASSERT_TRUE(Area->TryToDisconnect(OutNode, OutSocketID));
 
 	// In socket's parent gets the event.
@@ -979,11 +979,11 @@ TEST(NodeAreaEventSystemTests, Clear_EveryNodeReceivesDestroyed_EvenWhenCallback
 	ASSERT_TRUE(Area->AddNode(NodeB));
 	ASSERT_TRUE(Area->AddNode(NodeC));
 
-	std::string NodeAID = NodeA->GetID();
-	std::string NodeBID = NodeB->GetID();
-	std::string NodeCID = NodeC->GetID();
+	FEUUID NodeAID = NodeA->GetID();
+	FEUUID NodeBID = NodeB->GetID();
+	FEUUID NodeCID = NodeC->GetID();
 
-	std::vector<std::string> DestroyedIDs;
+	std::vector<FEUUID> DestroyedIDs;
 	Area->AddNodeEventCallback([&](Node* Node, NODE_EVENT EventType) {
 		if (EventType == NODE_EVENT::DESTROYED)
 		{
@@ -1040,8 +1040,8 @@ TEST(NodeAreaEventSystemTests, Delete_CallbackDeletesAnotherNode_DoesNotCrash)
 	ASSERT_TRUE(Area->AddNode(NodeA));
 	ASSERT_TRUE(Area->AddNode(NodeB));
 
-	std::string NodeAID = NodeA->GetID();
-	std::string NodeBID = NodeB->GetID();
+	FEUUID NodeAID = NodeA->GetID();
+	FEUUID NodeBID = NodeB->GetID();
 
 	// When NodeB is being destroyed, delete NodeA, which sits earlier in the node list.
 	Area->AddNodeEventCallback([&](Node* Node, NODE_EVENT EventType) {
@@ -1070,7 +1070,7 @@ TEST(NodeAreaEventSystemTests, TryToConnect_CallbackDeletesNode_AbortsSafely)
 	InputNode->AddSocket(new NodeSocket(InputNode, "INT", "in", NodeSocket::SocketFlow::Input));
 	ASSERT_TRUE(LocalNodeArea->AddNode(InputNode));
 
-	const std::string InputNodeID = InputNode->GetID();
+	const FEUUID InputNodeID = InputNode->GetID();
 
 	// User callback that deletes the input node during the connect handshake.
 	LocalNodeArea->AddNodeEventCallback([LocalNodeArea, InputNodeID](Node* CurrentNode, NODE_EVENT EventType) {
@@ -1106,8 +1106,8 @@ TEST(NodeAreaEventSystemTests, TryToConnect_CallbackDeletesInNode_FromAfterConne
 	InputNode->AddSocket(new NodeSocket(InputNode, "INT", "in", NodeSocket::SocketFlow::Input));
 	ASSERT_TRUE(LocalNodeArea->AddNode(InputNode));
 
-	const std::string OutputNodeID = OutputNode->GetID();
-	const std::string InputNodeID = InputNode->GetID();
+	const FEUUID OutputNodeID = OutputNode->GetID();
+	const FEUUID InputNodeID = InputNode->GetID();
 
 	// A callback that inspects the node it is notified about and deletes the input node
 	// during the AFTER_CONNECTED handshake. The connect path must not deliver a second

@@ -7,7 +7,7 @@ TEST(NodeAreaLoadTest, BasicSaveLoad)
 
 	NodeArea* NodeArea = NODE_SYSTEM.CreateNodeArea();
 	ASSERT_NE(NodeArea, nullptr);
-	std::string NodeAreaID = NodeArea->GetID();
+	FEUUID NodeAreaID = NodeArea->GetID();
 	NodeArea->SetName("TestNodeArea");
 
 	EXPECT_TRUE(TEST_TOOLS.VerifyNodeAreaSaveLoadCycle_BasicChecks(NodeArea));
@@ -70,8 +70,8 @@ TEST(NodeAreaLoadTest, LoadShouldClear)
 {
 	NODE_SYSTEM.Clear();
 
-	std::vector<std::string> NodesIDList;
-	std::vector<std::string> GroupCommentsIDList;
+	std::vector<FEUUID> NodesIDList;
+	std::vector<FEUUID> GroupCommentsIDList;
 
 	NodeArea* NodeArea = TEST_TOOLS.CreateTinyPopulatedNodeArea(NodesIDList, GroupCommentsIDList);
 	ASSERT_NE(NodeArea, nullptr);
@@ -209,7 +209,7 @@ TEST(NodeAreaLoadTest, LoadNodeWithMoreInputsThanClassDefinition)
 	ASSERT_EQ(NodeArea->LoadFromJson(JsonString), true);
 	ASSERT_EQ(NodeArea->GetNodeCount(), 1);
 
-	const Node* LoadedNode = NodeArea->GetNodeByID("6621620F42545B420C103443");
+	const Node* LoadedNode = NodeArea->GetNodeByID(ConvertLegacyHexID("6621620F42545B420C103443"));
 	ASSERT_NE(LoadedNode, nullptr);
 	EXPECT_EQ(LoadedNode->GetInputSocketCount(), 2);
 	EXPECT_EQ(LoadedNode->GetOutputSocketCount(), 1);
@@ -245,7 +245,7 @@ TEST(NodeAreaLoadTest, LoadNodeWithFewerInputsThanClassDefinition)
 	ASSERT_EQ(NodeArea->LoadFromJson(JsonString), true);
 	ASSERT_EQ(NodeArea->GetNodeCount(), 1);
 
-	const Node* LoadedNode = NodeArea->GetNodeByID("6621620F42545B420C103443");
+	const Node* LoadedNode = NodeArea->GetNodeByID(ConvertLegacyHexID("6621620F42545B420C103443"));
 	ASSERT_NE(LoadedNode, nullptr);
 	EXPECT_EQ(LoadedNode->GetInputSocketCount(), 0);
 	EXPECT_EQ(LoadedNode->GetOutputSocketCount(), 1);
@@ -284,7 +284,7 @@ TEST(NodeAreaLoadTest, LoadNodeWithMoreOutputsThanClassDefinition)
 	ASSERT_EQ(NodeArea->LoadFromJson(JsonString), true);
 	ASSERT_EQ(NodeArea->GetNodeCount(), 1);
 
-	const Node* LoadedNode = NodeArea->GetNodeByID("6621620F42545B420C103443");
+	const Node* LoadedNode = NodeArea->GetNodeByID(ConvertLegacyHexID("6621620F42545B420C103443"));
 	ASSERT_NE(LoadedNode, nullptr);
 	EXPECT_EQ(LoadedNode->GetInputSocketCount(), 1);
 	EXPECT_EQ(LoadedNode->GetOutputSocketCount(), 3);
@@ -346,8 +346,8 @@ TEST(NodeAreaLoadTest, LoadNodeWithMismatchedSocketsAndConnections)
 	ASSERT_EQ(NodeArea->GetNodeCount(), 2);
 	ASSERT_EQ(NodeArea->GetConnectionCount(), 1);
 
-	const Node* SourceNode = NodeArea->GetNodeByID("0E341B791D445B0B2E5B7534");
-	const Node* DestNode = NodeArea->GetNodeByID("6D61442D3E48292F126B7E07");
+	const Node* SourceNode = NodeArea->GetNodeByID(ConvertLegacyHexID("0E341B791D445B0B2E5B7534"));
+	const Node* DestNode = NodeArea->GetNodeByID(ConvertLegacyHexID("6D61442D3E48292F126B7E07"));
 	ASSERT_NE(SourceNode, nullptr);
 	ASSERT_NE(DestNode, nullptr);
 
@@ -640,9 +640,9 @@ TEST(NodeAreaLoadTest, LoadConnectionFailedTryToConnect_IncompatibleSockets)
 	ASSERT_EQ(NodeArea->LoadFromJson(JsonString), true);
 
 	ASSERT_EQ(NodeArea->GetNodeCount(), 3);
-	ASSERT_NE(NodeArea->GetNodeByID("0E341B791D445B0B2E5B7534"), nullptr);
-	ASSERT_NE(NodeArea->GetNodeByID("6D61442D3E48292F126B7E07"), nullptr);
-	ASSERT_NE(NodeArea->GetNodeByID("72387012000A79220E2B0601"), nullptr);
+	ASSERT_NE(NodeArea->GetNodeByID(ConvertLegacyHexID("0E341B791D445B0B2E5B7534")), nullptr);
+	ASSERT_NE(NodeArea->GetNodeByID(ConvertLegacyHexID("6D61442D3E48292F126B7E07")), nullptr);
+	ASSERT_NE(NodeArea->GetNodeByID(ConvertLegacyHexID("72387012000A79220E2B0601")), nullptr);
 
 	ASSERT_EQ(NodeArea->GetConnectionCount(), 1);
 
@@ -747,8 +747,8 @@ TEST(NodeAreaLoadTest, LoadWhenRerouteConnectionsInfoIsNull)
 	ASSERT_EQ(NodeArea->LoadFromJson(JsonString), true);
 
 	ASSERT_EQ(NodeArea->GetNodeCount(), 2);
-	ASSERT_NE(NodeArea->GetNodeByID("6451100C0778214351766B7E"), nullptr);
-	ASSERT_NE(NodeArea->GetNodeByID("5C0E2E1D5D005C3E70421A67"), nullptr);
+	ASSERT_NE(NodeArea->GetNodeByID(ConvertLegacyHexID("6451100C0778214351766B7E")), nullptr);
+	ASSERT_NE(NodeArea->GetNodeByID(ConvertLegacyHexID("5C0E2E1D5D005C3E70421A67")), nullptr);
 
 	ASSERT_EQ(NodeArea->GetConnectionCount(), 1);
 
@@ -873,8 +873,8 @@ TEST(NodeAreaLoadTest, LoadWhenRerouteConnectionsInfoIsDamaged)
 	ASSERT_EQ(NodeArea->LoadFromJson(JsonString), true);
 
 	ASSERT_EQ(NodeArea->GetNodeCount(), 2);
-	ASSERT_NE(NodeArea->GetNodeByID("6451100C0778214351766B7E"), nullptr);
-	ASSERT_NE(NodeArea->GetNodeByID("5C0E2E1D5D005C3E70421A67"), nullptr);
+	ASSERT_NE(NodeArea->GetNodeByID(ConvertLegacyHexID("6451100C0778214351766B7E")), nullptr);
+	ASSERT_NE(NodeArea->GetNodeByID(ConvertLegacyHexID("5C0E2E1D5D005C3E70421A67")), nullptr);
 
 	ASSERT_EQ(NodeArea->GetConnectionCount(), 1);
 
@@ -999,8 +999,8 @@ TEST(NodeAreaLoadTest, LoadWhenRerouteConnectionsInfoIsDamaged_2)
 	ASSERT_EQ(NodeArea->LoadFromJson(JsonString), true);
 
 	ASSERT_EQ(NodeArea->GetNodeCount(), 2);
-	ASSERT_NE(NodeArea->GetNodeByID("6451100C0778214351766B7E"), nullptr);
-	ASSERT_NE(NodeArea->GetNodeByID("5C0E2E1D5D005C3E70421A67"), nullptr);
+	ASSERT_NE(NodeArea->GetNodeByID(ConvertLegacyHexID("6451100C0778214351766B7E")), nullptr);
+	ASSERT_NE(NodeArea->GetNodeByID(ConvertLegacyHexID("5C0E2E1D5D005C3E70421A67")), nullptr);
 
 	ASSERT_EQ(NodeArea->GetConnectionCount(), 1);
 
@@ -1125,8 +1125,8 @@ TEST(NodeAreaLoadTest, LoadWhenRerouteConnectionsInfoIsDamaged_3)
 	ASSERT_EQ(NodeArea->LoadFromJson(JsonString), true);
 
 	ASSERT_EQ(NodeArea->GetNodeCount(), 2);
-	ASSERT_NE(NodeArea->GetNodeByID("6451100C0778214351766B7E"), nullptr);
-	ASSERT_NE(NodeArea->GetNodeByID("5C0E2E1D5D005C3E70421A67"), nullptr);
+	ASSERT_NE(NodeArea->GetNodeByID(ConvertLegacyHexID("6451100C0778214351766B7E")), nullptr);
+	ASSERT_NE(NodeArea->GetNodeByID(ConvertLegacyHexID("5C0E2E1D5D005C3E70421A67")), nullptr);
 
 	ASSERT_EQ(NodeArea->GetConnectionCount(), 1);
 	ASSERT_EQ(NodeArea->GetGroupCommentCount(), 0);

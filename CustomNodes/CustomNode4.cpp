@@ -84,7 +84,7 @@ void CustomNode4::SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSocket
 		break;
 	}
 
-	LastSocketEventDiscription = "Node ID: " + ConnectedSocket->GetParent()->GetID() + "\nEvent type: " + EventTypeStr;
+	LastSocketEventDiscription = "Node ID: " + ToString(ConnectedSocket->GetParent()->GetID()) + "\nEvent type: " + EventTypeStr;
 }
 
 float CustomNode4::GetData()

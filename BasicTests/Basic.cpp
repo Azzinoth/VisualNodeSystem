@@ -247,7 +247,7 @@ TEST(Basic, DeleteSocket_RejectsForeignSocket)
 	ASSERT_NE(SecondNode->GetSocketByID(OwnedSocket->GetID()), nullptr);
 
 	// The owning node can delete its own socket.
-	std::string OwnedSocketID = OwnedSocket->GetID();
+	FEUUID OwnedSocketID = OwnedSocket->GetID();
 	ASSERT_TRUE(SecondNode->DeleteSocket(OwnedSocket));
 	ASSERT_EQ(SecondNode->GetSocketByID(OwnedSocketID), nullptr);
 
@@ -288,8 +288,8 @@ TEST(Basic, Save_And_Load_NodeArea)
 {
 	NODE_SYSTEM.Clear();
 
-	std::vector<std::string> NodesIDList;
-	std::vector<std::string> GroupCommentsIDList;
+	std::vector<FEUUID> NodesIDList;
+	std::vector<FEUUID> GroupCommentsIDList;
 
 	NodeArea* LocalNodeArea = TEST_TOOLS.CreateTinyPopulatedNodeArea(NodesIDList, GroupCommentsIDList);
 	ASSERT_NE(LocalNodeArea, nullptr);
@@ -459,7 +459,7 @@ TEST(Basic, SetAllowedTypes_DisconnectsIncompatible)
 	ASSERT_EQ(SecondNode->GetNodesConnectedToInput().size(), 1);
 
 	// Change the input socket type to something incompatible.
-	std::string SocketID = SecondNode->GetSocketIDByIndex(0, NodeSocket::SocketFlow::Input);
+	FEUUID SocketID = SecondNode->GetSocketIDByIndex(0, NodeSocket::SocketFlow::Input);
 	NodeSocket* Socket = SecondNode->GetSocketByID(SocketID);
 	ASSERT_NE(Socket, nullptr);
 
@@ -492,7 +492,7 @@ TEST(Basic, SetAllowedTypes_KeepsCompatible)
 	ASSERT_TRUE(LocalNodeArea->TryToConnect(FirstNode, 0, SecondNode, 0));
 
 	// Change type to a set that still includes the original type.
-	std::string SocketID = SecondNode->GetSocketIDByIndex(0, NodeSocket::SocketFlow::Input);
+	FEUUID SocketID = SecondNode->GetSocketIDByIndex(0, NodeSocket::SocketFlow::Input);
 	NodeSocket* Socket = SecondNode->GetSocketByID(SocketID);
 	ASSERT_NE(Socket, nullptr);
 
@@ -531,7 +531,7 @@ TEST(Basic, SetAllowedTypes_PartialDisconnect)
 	ASSERT_EQ(Receiver->GetNodesConnectedToInput().size(), 2);
 
 	// Narrow the input socket to only TYPE_A, should disconnect NodeB but keep NodeA.
-	std::string SocketID = Receiver->GetSocketIDByIndex(0, NodeSocket::SocketFlow::Input);
+	FEUUID SocketID = Receiver->GetSocketIDByIndex(0, NodeSocket::SocketFlow::Input);
 	NodeSocket* Socket = Receiver->GetSocketByID(SocketID);
 	ASSERT_NE(Socket, nullptr);
 
@@ -590,7 +590,7 @@ TEST(Basic, Delete_NullptrNode_DoesNotCrash)
 
 	EXPECT_FALSE(Area->Delete(static_cast<Node*>(nullptr)));
 	EXPECT_FALSE(Area->Delete(static_cast<GroupComment*>(nullptr)));
-	EXPECT_FALSE(Area->DeleteRerouteNodeByID(""));
+	EXPECT_FALSE(Area->DeleteRerouteNodeByID(FEUUID()));
 
 	NODE_SYSTEM.Clear();
 }
@@ -609,7 +609,7 @@ TEST(Basic, NodeCopyConstructor_GeneratesNewID)
 	LocalNodeArea->AddNode(Copy);
 
 	ASSERT_NE(Copy->GetID(), Original->GetID());
-	ASSERT_FALSE(Copy->GetID().empty());
+	ASSERT_FALSE(IsNull(Copy->GetID()));
 
 	NODE_SYSTEM.Clear();
 }
@@ -846,7 +846,7 @@ TEST(Basic, DeleteSocket_OnOrphanNode)
 	NewNode->AddSocket(new NodeSocket(NewNode, "TEST", "test", NodeSocket::SocketFlow::Input));
 	ASSERT_EQ(NewNode->GetInputSocketCount(), 1);
 
-	std::string SocketID = NewNode->GetSocketIDByIndex(0, NodeSocket::SocketFlow::Input);
+	FEUUID SocketID = NewNode->GetSocketIDByIndex(0, NodeSocket::SocketFlow::Input);
 	NewNode->DeleteSocket(SocketID);
 	EXPECT_EQ(NewNode->GetInputSocketCount(), 0);
 
@@ -1102,11 +1102,11 @@ TEST(Basic, LoadFromJson_EmptyTypeInPayload_StripsEmpty)
 	NODE_SYSTEM.Clear();
 
 	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
-	const std::string AreaID = Area->GetID();
+	const FEUUID AreaID = Area->GetID();
 	Node* Owner = new Node();
 	Owner->AddSocket(new NodeSocket(Owner, "INT", "x", NodeSocket::SocketFlow::Input));
 	Area->AddNode(Owner);
-	const std::string NodeID = Owner->GetID();
+	const FEUUID NodeID = Owner->GetID();
 
 	const std::string FilePath = "EmptyStringRejection_Load.json";
 	NODE_SYSTEM.SaveToFile(FilePath);

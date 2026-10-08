@@ -35,14 +35,14 @@ public:
 	// Will delete original NodeArea and create a new one from the saved file, then compare some of the properties of the new NodeArea to the original one.
 	bool VerifyNodeAreaSaveLoadCycle_BasicChecks(VisNodeSys::NodeArea* NodeArea);
 
-	VisNodeSys::NodeArea* CreateTinyPopulatedNodeArea(std::vector<std::string>& NodesIDList, std::vector<std::string>& GroupCommentsIDList);
+	VisNodeSys::NodeArea* CreateTinyPopulatedNodeArea(std::vector<VisNodeSys::FEUUID>& NodesIDList, std::vector<VisNodeSys::FEUUID>& GroupCommentsIDList);
 	// Creates a NodeArea with 30 nodes connected in a 5-level tree hierarchy.
-	VisNodeSys::NodeArea* CreateSmallConnectedNodeArea(std::vector<std::string>& NodesIDList);
+	VisNodeSys::NodeArea* CreateSmallConnectedNodeArea(std::vector<VisNodeSys::FEUUID>& NodesIDList);
 
 	void AddOutputSocketsToNode(VisNodeSys::Node* NodeToAddSockets, std::string SocketType, int OutputCount);
 
 	// Checks if all node IDs in the first list are present in the second list. Order does not matter.
-	bool IsFirstIDsListSubsetOfSecond(const std::vector<std::string>& FirstList, const std::vector<std::string>& SecondList);
+	bool IsFirstIDsListSubsetOfSecond(const std::vector<VisNodeSys::FEUUID>& FirstList, const std::vector<VisNodeSys::FEUUID>& SecondList);
 
 	// Verifies that Area directly references exactly the areas in expected list (order-independent).
 	bool VerifyImmediateDownstreamAreas(VisNodeSys::NodeArea* Area, const std::vector<VisNodeSys::NodeArea*>& Expected);

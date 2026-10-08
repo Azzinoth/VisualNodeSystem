@@ -42,7 +42,7 @@ TEST(ExecutionFlowNodesTests, LogicalOperators)
 	// First set all the nodes to check to false.
 	for (const auto& NodeToModify : ExpectedNodeValues)
 	{
-		Node* CurrentNodeToCheck = TestNodeArea->GetNodeByID(NodeToModify.first);
+		Node* CurrentNodeToCheck = TestNodeArea->GetNodeByID(ConvertLegacyHexID(NodeToModify.first));
 		ASSERT_NE(CurrentNodeToCheck, nullptr);
 		ASSERT_EQ(CurrentNodeToCheck->GetType(), "BoolVariableNode");
 		BoolVariableNode* CurrentBoolVariableNode = static_cast<BoolVariableNode*>(CurrentNodeToCheck);
@@ -55,7 +55,7 @@ TEST(ExecutionFlowNodesTests, LogicalOperators)
 
 	for (const auto& NodeToCheck : ExpectedNodeValues)
 	{
-		Node* CurrentNodeToCheck = TestNodeArea->GetNodeByID(NodeToCheck.first);
+		Node* CurrentNodeToCheck = TestNodeArea->GetNodeByID(ConvertLegacyHexID(NodeToCheck.first));
 		ASSERT_NE(CurrentNodeToCheck, nullptr);
 		ASSERT_EQ(CurrentNodeToCheck->GetType(), "BoolVariableNode");
 		BoolVariableNode* CurrentBoolVariableNode = static_cast<BoolVariableNode*>(CurrentNodeToCheck);
@@ -66,7 +66,7 @@ TEST(ExecutionFlowNodesTests, LogicalOperators)
 	// Now set all the nodes to check to true.
 	for (const auto& NodeToModify : ExpectedNodeValues)
 	{
-		Node* CurrentNodeToCheck = TestNodeArea->GetNodeByID(NodeToModify.first);
+		Node* CurrentNodeToCheck = TestNodeArea->GetNodeByID(ConvertLegacyHexID(NodeToModify.first));
 		ASSERT_NE(CurrentNodeToCheck, nullptr);
 		ASSERT_EQ(CurrentNodeToCheck->GetType(), "BoolVariableNode");
 		BoolVariableNode* CurrentBoolVariableNode = static_cast<BoolVariableNode*>(CurrentNodeToCheck);
@@ -80,7 +80,7 @@ TEST(ExecutionFlowNodesTests, LogicalOperators)
 
 	for (const auto& NodeToCheck : ExpectedNodeValues)
 	{
-		Node* CurrentNodeToCheck = TestNodeArea->GetNodeByID(NodeToCheck.first);
+		Node* CurrentNodeToCheck = TestNodeArea->GetNodeByID(ConvertLegacyHexID(NodeToCheck.first));
 		ASSERT_NE(CurrentNodeToCheck, nullptr);
 		ASSERT_EQ(CurrentNodeToCheck->GetType(), "BoolVariableNode");
 		BoolVariableNode* CurrentBoolVariableNode = static_cast<BoolVariableNode*>(CurrentNodeToCheck);
@@ -565,35 +565,35 @@ TEST(ExecutionFlowNodesTests, ControlFlow)
 	ASSERT_EQ(TestNodeArea->GetRerouteConnectionCount(), 7);
 
 	// Checking all values before execution.
-	Node* CurrentNodeToCheck = TestNodeArea->GetNodeByID("01346F1E415A11087D3C2B54");
+	Node* CurrentNodeToCheck = TestNodeArea->GetNodeByID(ConvertLegacyHexID("01346F1E415A11087D3C2B54"));
 	ASSERT_NE(CurrentNodeToCheck, nullptr);
 	ASSERT_EQ(CurrentNodeToCheck->GetType(), "IntegerVariableNode");
 	IntegerVariableNode* CurrentIntegerVariableNode = static_cast<IntegerVariableNode*>(CurrentNodeToCheck);
 	int IntegerVariableValue = CurrentIntegerVariableNode->GetData();
 	ASSERT_EQ(IntegerVariableValue, 0);
 
-	CurrentNodeToCheck = TestNodeArea->GetNodeByID("42342D5A04082E7864505104");
+	CurrentNodeToCheck = TestNodeArea->GetNodeByID(ConvertLegacyHexID("42342D5A04082E7864505104"));
 	ASSERT_NE(CurrentNodeToCheck, nullptr);
 	ASSERT_EQ(CurrentNodeToCheck->GetType(), "IntegerVariableNode");
 	CurrentIntegerVariableNode = static_cast<IntegerVariableNode*>(CurrentNodeToCheck);
 	IntegerVariableValue = CurrentIntegerVariableNode->GetData();
 	ASSERT_EQ(IntegerVariableValue, 0);
 
-	CurrentNodeToCheck = TestNodeArea->GetNodeByID("146417590D0A1B7C12085A1B");
+	CurrentNodeToCheck = TestNodeArea->GetNodeByID(ConvertLegacyHexID("146417590D0A1B7C12085A1B"));
 	ASSERT_NE(CurrentNodeToCheck, nullptr);
 	ASSERT_EQ(CurrentNodeToCheck->GetType(), "FloatVariableNode");
 	FloatVariableNode* CurrentFloatVariableNode = static_cast<FloatVariableNode*>(CurrentNodeToCheck);
 	float FloatVariableValue = CurrentFloatVariableNode->GetData();
 	ASSERT_EQ(FloatVariableValue, 1000.0f);
 
-	CurrentNodeToCheck = TestNodeArea->GetNodeByID("7D07343C414B192B543A575D");
+	CurrentNodeToCheck = TestNodeArea->GetNodeByID(ConvertLegacyHexID("7D07343C414B192B543A575D"));
 	ASSERT_NE(CurrentNodeToCheck, nullptr);
 	ASSERT_EQ(CurrentNodeToCheck->GetType(), "IntegerVariableNode");
 	CurrentIntegerVariableNode = static_cast<IntegerVariableNode*>(CurrentNodeToCheck);
 	IntegerVariableValue = CurrentIntegerVariableNode->GetData();
 	ASSERT_EQ(IntegerVariableValue, 0);
 
-	CurrentNodeToCheck = TestNodeArea->GetNodeByID("563A457101403D1361667231");
+	CurrentNodeToCheck = TestNodeArea->GetNodeByID(ConvertLegacyHexID("563A457101403D1361667231"));
 	ASSERT_NE(CurrentNodeToCheck, nullptr);
 	ASSERT_EQ(CurrentNodeToCheck->GetType(), "BoolVariableNode");
 	BoolVariableNode* CurrentBoolVariableNode = static_cast<BoolVariableNode*>(CurrentNodeToCheck);
@@ -604,35 +604,35 @@ TEST(ExecutionFlowNodesTests, ControlFlow)
 	ASSERT_EQ(TestNodeArea->GetLastExecutedNodes().size(), 68);
 
 	// Checking all values after execution.
-	CurrentNodeToCheck = TestNodeArea->GetNodeByID("01346F1E415A11087D3C2B54");
+	CurrentNodeToCheck = TestNodeArea->GetNodeByID(ConvertLegacyHexID("01346F1E415A11087D3C2B54"));
 	ASSERT_NE(CurrentNodeToCheck, nullptr);
 	ASSERT_EQ(CurrentNodeToCheck->GetType(), "IntegerVariableNode");
 	CurrentIntegerVariableNode = static_cast<IntegerVariableNode*>(CurrentNodeToCheck);
 	IntegerVariableValue = CurrentIntegerVariableNode->GetData();
 	ASSERT_EQ(IntegerVariableValue, 9);
 
-	CurrentNodeToCheck = TestNodeArea->GetNodeByID("42342D5A04082E7864505104");
+	CurrentNodeToCheck = TestNodeArea->GetNodeByID(ConvertLegacyHexID("42342D5A04082E7864505104"));
 	ASSERT_NE(CurrentNodeToCheck, nullptr);
 	ASSERT_EQ(CurrentNodeToCheck->GetType(), "IntegerVariableNode");
 	CurrentIntegerVariableNode = static_cast<IntegerVariableNode*>(CurrentNodeToCheck);
 	IntegerVariableValue = CurrentIntegerVariableNode->GetData();
 	ASSERT_EQ(IntegerVariableValue, 45);
 
-	CurrentNodeToCheck = TestNodeArea->GetNodeByID("146417590D0A1B7C12085A1B");
+	CurrentNodeToCheck = TestNodeArea->GetNodeByID(ConvertLegacyHexID("146417590D0A1B7C12085A1B"));
 	ASSERT_NE(CurrentNodeToCheck, nullptr);
 	ASSERT_EQ(CurrentNodeToCheck->GetType(), "FloatVariableNode");
 	CurrentFloatVariableNode = static_cast<FloatVariableNode*>(CurrentNodeToCheck);
 	FloatVariableValue = CurrentFloatVariableNode->GetData();
 	ASSERT_EQ(FloatVariableValue, 1.0f);
 
-	CurrentNodeToCheck = TestNodeArea->GetNodeByID("7D07343C414B192B543A575D");
+	CurrentNodeToCheck = TestNodeArea->GetNodeByID(ConvertLegacyHexID("7D07343C414B192B543A575D"));
 	ASSERT_NE(CurrentNodeToCheck, nullptr);
 	ASSERT_EQ(CurrentNodeToCheck->GetType(), "IntegerVariableNode");
 	CurrentIntegerVariableNode = static_cast<IntegerVariableNode*>(CurrentNodeToCheck);
 	IntegerVariableValue = CurrentIntegerVariableNode->GetData();
 	ASSERT_EQ(IntegerVariableValue, 3);
 
-	CurrentNodeToCheck = TestNodeArea->GetNodeByID("563A457101403D1361667231");
+	CurrentNodeToCheck = TestNodeArea->GetNodeByID(ConvertLegacyHexID("563A457101403D1361667231"));
 	ASSERT_NE(CurrentNodeToCheck, nullptr);
 	ASSERT_EQ(CurrentNodeToCheck->GetType(), "BoolVariableNode");
 	CurrentBoolVariableNode = static_cast<BoolVariableNode*>(CurrentNodeToCheck);
@@ -652,7 +652,7 @@ TEST(ExecutionFlowNodesTests, SavingLoading_RandomArithmetic_Calculation)
 	{
 		NodeArea* TestNodeArea = NODE_SYSTEM.CreateNodeArea();
 		ASSERT_NE(TestNodeArea, nullptr);
-		std::string NodeAreaID = TestNodeArea->GetID();
+		FEUUID NodeAreaID = TestNodeArea->GetID();
 		TestNodeArea->SetSaveExecutedNodes(true);
 
 		Node* BeginNode = NODE_FACTORY.CreateNode("BeginNode");
@@ -744,7 +744,7 @@ TEST(ExecutionFlowNodesTests, SavingLoading_RandomArithmetic_Calculation)
 		}
 
 		TestNodeArea->ExecuteNodeNetwork();
-		std::string FinalResultNodeID = CurrentResultNode->GetID();
+		FEUUID FinalResultNodeID = CurrentResultNode->GetID();
 		int FinalResultValue = CurrentResultNode->GetData();
 		size_t ExecutedNodesCount = TestNodeArea->GetLastExecutedNodes().size();
 

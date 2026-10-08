@@ -14,7 +14,7 @@ bool TestTools::VerifyNodeAreaSaveLoadCycle_BasicChecks(VisNodeSys::NodeArea* No
 	if (NodeArea == nullptr)
 		return false;
 
-	std::string NodeAreaID = NodeArea->GetID();
+	FEUUID NodeAreaID = NodeArea->GetID();
 	std::string NodeAreaName = NodeArea->GetName();
 	size_t NodeCount = NodeArea->GetNodeCount();
 	size_t ConnectionCount = NodeArea->GetConnectionCount();
@@ -57,7 +57,7 @@ void TestTools::AddOutputSocketsToNode(Node* NodeToAddSockets, std::string Socke
 		NodeToAddSockets->AddSocket(new NodeSocket(NodeToAddSockets, SocketType, "out_" + std::to_string(i), NodeSocket::SocketFlow::Output));
 }
 
-NodeArea* TestTools::CreateTinyPopulatedNodeArea(std::vector<std::string>& NodesIDList, std::vector<std::string>& GroupCommentsIDList)
+NodeArea* TestTools::CreateTinyPopulatedNodeArea(std::vector<FEUUID>& NodesIDList, std::vector<FEUUID>& GroupCommentsIDList)
 {
 	NodesIDList.clear();
 	GroupCommentsIDList.clear();
@@ -179,7 +179,7 @@ NodeArea* TestTools::CreateTinyPopulatedNodeArea(std::vector<std::string>& Nodes
 	return NodeArea;
 }
 
-VisNodeSys::NodeArea* TestTools::CreateSmallConnectedNodeArea(std::vector<std::string>& NodesIDList)
+VisNodeSys::NodeArea* TestTools::CreateSmallConnectedNodeArea(std::vector<FEUUID>& NodesIDList)
 {
 	NodesIDList.clear();
 	NodeArea* Area = NODE_SYSTEM.CreateNodeArea();
@@ -298,7 +298,7 @@ VisNodeSys::NodeArea* TestTools::CreateSmallConnectedNodeArea(std::vector<std::s
 	return Area;
 }
 
-bool TestTools::IsFirstIDsListSubsetOfSecond(const std::vector<std::string>& FirstList, const std::vector<std::string>& SecondList)
+bool TestTools::IsFirstIDsListSubsetOfSecond(const std::vector<FEUUID>& FirstList, const std::vector<FEUUID>& SecondList)
 {
 	for (size_t i = 0; i < FirstList.size(); i++)
 	{
@@ -460,8 +460,8 @@ void TestTools::ConnectSmallLinkedNodeAreaGraph()
 	LinkNode* CurrentUpstreamLinkNode = nullptr;
 	LinkNode* CurrentDownstreamLinkNode = nullptr;
 
-	std::vector<std::pair<std::string, std::string>> UpstreamLinkingNodes = {};
-	std::vector<std::pair<std::string, std::string>> DownstreamLinkingNodes = {};
+	std::vector<std::pair<FEUUID, FEUUID>> UpstreamLinkingNodes = {};
+	std::vector<std::pair<FEUUID, FEUUID>> DownstreamLinkingNodes = {};
 
 	Node* BeginNode = NODE_FACTORY.CreateNode("BeginNode");
 	ASSERT_NE(BeginNode, nullptr);
@@ -536,12 +536,12 @@ void TestTools::ConnectSmallLinkedNodeAreaGraph()
 std::vector<NodeArea*> TestTools::GetOrderedAreasFromSmallLinkedNodeAreaGraph()
 {
 	std::vector<NodeArea*> Result(30, nullptr);
-	std::vector<std::string> AreaIDs = NODE_SYSTEM.GetNodeAreaIDList();
+	std::vector<FEUUID> AreaIDs = NODE_SYSTEM.GetNodeAreaIDList();
 	if (AreaIDs.size() != 30)
 		return Result;
 
 	// We can not rely on order of areas in the list, so we need to find them by names (which we set to be the same as their index in the hierarchy).
-	for (const std::string& AreaID : AreaIDs)
+	for (const FEUUID& AreaID : AreaIDs)
 	{
 		NodeArea* Area = NODE_SYSTEM.GetNodeAreaByID(AreaID);
 		if (Area == nullptr)
@@ -922,13 +922,13 @@ std::vector<NodeArea*> TestTools::CreateSmallSubAreaNodeGraph()
 std::vector<NodeArea*> TestTools::GetOrderedAreasFromSmallSubAreaNodeGraph()
 {
 	std::vector<NodeArea*> Result(30, nullptr);
-	std::vector<std::string> AreaIDs = NODE_SYSTEM.GetNodeAreaIDList();
+	std::vector<FEUUID> AreaIDs = NODE_SYSTEM.GetNodeAreaIDList();
 	if (AreaIDs.size() != 30)
 		return Result;
 
 	// We can not rely on order of areas in the list, so we need to find them by names
 	// (which we set to be the same as their index in the hierarchy).
-	for (const std::string& AreaID : AreaIDs)
+	for (const FEUUID& AreaID : AreaIDs)
 	{
 		NodeArea* Area = NODE_SYSTEM.GetNodeAreaByID(AreaID);
 		if (Area == nullptr)

@@ -82,15 +82,15 @@ TEST(NodeAreaGeneralTests, GetNodesByStringType)
 {
 	NODE_SYSTEM.Clear();
 
-	std::vector<std::string> NodesIDList;
-	std::vector<std::string> GroupCommentsIDList;
+	std::vector<FEUUID> NodesIDList;
+	std::vector<FEUUID> GroupCommentsIDList;
 
 	NodeArea* LocalNodeArea = TEST_TOOLS.CreateTinyPopulatedNodeArea(NodesIDList, GroupCommentsIDList);
 	ASSERT_NE(LocalNodeArea, nullptr);
 	ASSERT_EQ(LocalNodeArea->GetNodeCount(), 11);
 
 	auto CheckIDsInList = [&](std::vector<Node*> NodesToCheck) {
-		std::vector<std::string> NodesToCheckIDList;
+		std::vector<FEUUID> NodesToCheckIDList;
 		for (size_t i = 0; i < NodesToCheck.size(); i++)
 			NodesToCheckIDList.push_back(NodesToCheck[i]->GetID());
 
@@ -128,15 +128,15 @@ TEST(NodeAreaGeneralTests, GetNodesByType)
 {
 	NODE_SYSTEM.Clear();
 
-	std::vector<std::string> NodesIDList;
-	std::vector<std::string> GroupCommentsIDList;
+	std::vector<FEUUID> NodesIDList;
+	std::vector<FEUUID> GroupCommentsIDList;
 
 	NodeArea* LocalNodeArea = TEST_TOOLS.CreateTinyPopulatedNodeArea(NodesIDList, GroupCommentsIDList);
 	ASSERT_NE(LocalNodeArea, nullptr);
 	ASSERT_EQ(LocalNodeArea->GetNodeCount(), 11);
 
 	auto CheckIDsInList = [&](std::vector<Node*> NodesToCheck) {
-		std::vector<std::string> NodesToCheckIDList;
+		std::vector<FEUUID> NodesToCheckIDList;
 		for (size_t i = 0; i < NodesToCheck.size(); i++)
 			NodesToCheckIDList.push_back(NodesToCheck[i]->GetID());
 
@@ -190,7 +190,7 @@ TEST(NodeAreaGeneralTests, TryToDisconnect_WithNonExistentSocketIDs)
 	ASSERT_TRUE(Area->TryToConnect(NodeA, 0, NodeB, 0));
 	ASSERT_EQ(Area->GetConnectionCount(), 1);
 
-	EXPECT_FALSE(Area->TryToDisconnect(NodeA, std::string("nonexistent_out"), NodeB, std::string("nonexistent_in")));
+	EXPECT_FALSE(Area->TryToDisconnect(NodeA, GenerateID(), NodeB, GenerateID()));
 	EXPECT_EQ(Area->GetConnectionCount(), 1);
 	EXPECT_TRUE(Area->IsConnected(NodeA, NodeB));
 	NODE_SYSTEM.Clear();
@@ -212,7 +212,7 @@ TEST(NodeAreaGeneralTests, IsConnected_WithNonExistentSocketIDs)
 	ASSERT_TRUE(Area->TryToConnect(NodeA, 0, NodeB, 0));
 	ASSERT_EQ(Area->GetConnectionCount(), 1);
 
-	EXPECT_FALSE(Area->IsConnected(NodeA, std::string("nonexistent_out"), NodeB, std::string("nonexistent_in")));
+	EXPECT_FALSE(Area->IsConnected(NodeA, GenerateID(), NodeB, GenerateID()));
 	NODE_SYSTEM.Clear();
 }
 
@@ -232,7 +232,7 @@ TEST(NodeAreaGeneralTests, AddRerouteNodeToConnection_WithNonExistentSocketIDs)
 	ASSERT_TRUE(Area->TryToConnect(NodeA, 0, NodeB, 0));
 	ASSERT_EQ(Area->GetConnectionCount(), 1);
 
-	EXPECT_FALSE(Area->AddRerouteNodeToConnection(NodeA, std::string("nonexistent_out"), NodeB, std::string("nonexistent_in"), 0, ImVec2(50.0f, 50.0f)));
+	EXPECT_FALSE(Area->AddRerouteNodeToConnection(NodeA, GenerateID(), NodeB, GenerateID(), 0, ImVec2(50.0f, 50.0f)));
 	EXPECT_EQ(Area->GetRerouteConnectionCount(), 0);
 	NODE_SYSTEM.Clear();
 }
@@ -257,10 +257,10 @@ TEST(NodeAreaGeneralTests, IsConnected_WithReversedDirectionSocketIDs_ReturnsFal
 	ASSERT_TRUE(Area->TryToConnect(NodeA, 0, NodeB, 0));
 	ASSERT_EQ(Area->GetConnectionCount(), 1);
 
-	std::string NodeAInSocketID = NodeA->GetSocketIDByIndex(0, NodeSocket::SocketFlow::Input);
-	std::string NodeAOutSocketID = NodeA->GetSocketIDByIndex(0, NodeSocket::SocketFlow::Output);
-	std::string NodeBInSocketID = NodeB->GetSocketIDByIndex(0, NodeSocket::SocketFlow::Input);
-	std::string NodeBOutSocketID = NodeB->GetSocketIDByIndex(0, NodeSocket::SocketFlow::Output);
+	FEUUID NodeAInSocketID = NodeA->GetSocketIDByIndex(0, NodeSocket::SocketFlow::Input);
+	FEUUID NodeAOutSocketID = NodeA->GetSocketIDByIndex(0, NodeSocket::SocketFlow::Output);
+	FEUUID NodeBInSocketID = NodeB->GetSocketIDByIndex(0, NodeSocket::SocketFlow::Input);
+	FEUUID NodeBOutSocketID = NodeB->GetSocketIDByIndex(0, NodeSocket::SocketFlow::Output);
 
 	EXPECT_TRUE(Area->IsConnected(NodeA, NodeAOutSocketID, NodeB, NodeBInSocketID));
 	// Socket IDs are passed in reversed direction, it should return false.
@@ -288,8 +288,8 @@ TEST(NodeAreaGeneralTests, TryToDisconnect_WithReversedDirectionSocketIDs_DoesNo
 	ASSERT_TRUE(Area->TryToConnect(NodeA, 0, NodeB, 0));
 	ASSERT_EQ(Area->GetConnectionCount(), 1);
 
-	std::string NodeAInSocketID = NodeA->GetSocketIDByIndex(0, NodeSocket::SocketFlow::Input);
-	std::string NodeBOutSocketID = NodeB->GetSocketIDByIndex(0, NodeSocket::SocketFlow::Output);
+	FEUUID NodeAInSocketID = NodeA->GetSocketIDByIndex(0, NodeSocket::SocketFlow::Input);
+	FEUUID NodeBOutSocketID = NodeB->GetSocketIDByIndex(0, NodeSocket::SocketFlow::Output);
 
 	// Socket IDs are passed in reversed direction, it should return false.
 	EXPECT_FALSE(Area->TryToDisconnect(NodeA, NodeAInSocketID, NodeB, NodeBOutSocketID));
@@ -317,8 +317,8 @@ TEST(NodeAreaGeneralTests, TryToConnect_WithReversedDirectionSocketIDs_ReturnsFa
 
 	ASSERT_EQ(Area->GetConnectionCount(), 0);
 
-	std::string NodeAInSocketID = NodeA->GetSocketIDByIndex(0, NodeSocket::SocketFlow::Input);
-	std::string NodeBOutSocketID = NodeB->GetSocketIDByIndex(0, NodeSocket::SocketFlow::Output);
+	FEUUID NodeAInSocketID = NodeA->GetSocketIDByIndex(0, NodeSocket::SocketFlow::Input);
+	FEUUID NodeBOutSocketID = NodeB->GetSocketIDByIndex(0, NodeSocket::SocketFlow::Output);
 
 	// Socket IDs are passed in reversed direction, it should return false.
 	EXPECT_FALSE(Area->TryToConnect(NodeA, NodeAInSocketID, NodeB, NodeBOutSocketID));
@@ -559,7 +559,7 @@ TEST(NodeAreaGeneralTests, DeleteRerouteNodeByID_ValidStaleAndUnknownIDs)
 	ASSERT_NE(LastReroute, nullptr);
 	ASSERT_EQ(Area->GetRerouteConnectionCount(), 3);
 
-	const std::string MiddleRerouteID = MiddleReroute->GetID();
+	const FEUUID MiddleRerouteID = MiddleReroute->GetID();
 
 	EXPECT_TRUE(Area->DeleteRerouteNodeByID(MiddleRerouteID));
 	EXPECT_EQ(Area->GetRerouteConnectionCount(), 2);
@@ -569,7 +569,7 @@ TEST(NodeAreaGeneralTests, DeleteRerouteNodeByID_ValidStaleAndUnknownIDs)
 	EXPECT_EQ(Area->GetRerouteConnectionCount(), 2);
 
 	// Unknown IDs are rejected the same way.
-	EXPECT_FALSE(Area->DeleteRerouteNodeByID("DOES_NOT_EXIST"));
+	EXPECT_FALSE(Area->DeleteRerouteNodeByID(GenerateID()));
 	EXPECT_EQ(Area->GetRerouteConnectionCount(), 2);
 
 	NODE_SYSTEM.Clear();
@@ -586,9 +586,9 @@ TEST(NodeAreaGeneralTests, SocketToPosition_InvalidInputs_DoNotCrash)
 	NodeA->AddSocket(new NodeSocket(NodeA, "TYPE_A", "out", NodeSocket::SocketFlow::Output));
 	Area->AddNode(NodeA);
 
-	Area->SocketToPosition(nullptr, "any");
-	Area->SocketToPosition(NodeA, "nonexistent_socket_id");
-	Area->SocketToPosition(NodeA, "");
+	Area->SocketToPosition(nullptr, GenerateID());
+	Area->SocketToPosition(NodeA, GenerateID());
+	Area->SocketToPosition(NodeA, FEUUID());
 
 	NODE_SYSTEM.Clear();
 }

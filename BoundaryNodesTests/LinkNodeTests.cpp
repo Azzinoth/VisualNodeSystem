@@ -6,27 +6,27 @@ TEST(LinkNodeTests, Basic_EstablishConnection)
 	NODE_SYSTEM.Clear();
 
 	NodeArea* UpstreamArea = NODE_SYSTEM.CreateNodeArea();
-	std::string UpstreamAreaID = UpstreamArea->GetID();
+	FEUUID UpstreamAreaID = UpstreamArea->GetID();
 	ASSERT_NE(UpstreamArea, nullptr);
 
 	NodeArea* DownstreamArea = NODE_SYSTEM.CreateNodeArea();
-	std::string DownstreamAreaID = DownstreamArea->GetID();
+	FEUUID DownstreamAreaID = DownstreamArea->GetID();
 	ASSERT_NE(DownstreamArea, nullptr);
 
 	// Invalid inputs should not cause a link to be created, and should return false.
-	EXPECT_EQ(NODE_SYSTEM.LinkNodeAreas("", ""), false);
-	EXPECT_EQ(NODE_SYSTEM.LinkNodeAreas(UpstreamAreaID, ""), false);
-	EXPECT_EQ(NODE_SYSTEM.LinkNodeAreas("", UpstreamAreaID), false);
+	EXPECT_EQ(NODE_SYSTEM.LinkNodeAreas(FEUUID(), FEUUID()), false);
+	EXPECT_EQ(NODE_SYSTEM.LinkNodeAreas(UpstreamAreaID, FEUUID()), false);
+	EXPECT_EQ(NODE_SYSTEM.LinkNodeAreas(FEUUID(), UpstreamAreaID), false);
 	EXPECT_EQ(NODE_SYSTEM.LinkNodeAreas(UpstreamAreaID, UpstreamAreaID), false);
 	EXPECT_EQ(NODE_SYSTEM.LinkNodeAreas(DownstreamAreaID, DownstreamAreaID), false);
 
 	// Valid inputs should create a link and return true, and output the IDs of the nodes involved in the link.
-	std::pair<std::string, std::string> LinkResult;
+	std::pair<FEUUID, FEUUID> LinkResult;
 	EXPECT_EQ(NODE_SYSTEM.LinkNodeAreas(UpstreamAreaID, DownstreamAreaID, &LinkResult), true);
-	ASSERT_NE(LinkResult.first, "");
-	ASSERT_NE(LinkResult.second, "");
+	ASSERT_FALSE(IsNull(LinkResult.first));
+	ASSERT_FALSE(IsNull(LinkResult.second));
 
-	std::vector<std::pair<std::string, std::string>> LinkingNodes = NODE_SYSTEM.GetLinkingNodesForAreas(UpstreamAreaID, DownstreamAreaID);
+	std::vector<std::pair<FEUUID, FEUUID>> LinkingNodes = NODE_SYSTEM.GetLinkingNodesForAreas(UpstreamAreaID, DownstreamAreaID);
 	EXPECT_EQ(LinkingNodes.size(), 1);
 
 	// GetLinkingNodesForAreas outputs the IDs of the nodes involved in the link, so they should match the IDs returned by LinkNodeAreas.
@@ -43,7 +43,7 @@ TEST(LinkNodeTests, Basic_AddSockets)
 	NODE_SYSTEM.Clear();
 
 	NodeArea* UpstreamArea = NODE_SYSTEM.CreateNodeArea();
-	std::string UpstreamAreaID = UpstreamArea->GetID();
+	FEUUID UpstreamAreaID = UpstreamArea->GetID();
 	ASSERT_NE(UpstreamArea, nullptr);
 
 	Node* ExecutionBeginNode = new BeginNode();
@@ -60,7 +60,7 @@ TEST(LinkNodeTests, Basic_AddSockets)
 	UpstreamArea->AddNode(UpstreamBoolNode);
 
 	NodeArea* DownstreamArea = NODE_SYSTEM.CreateNodeArea();
-	std::string DownstreamAreaID = DownstreamArea->GetID();
+	FEUUID DownstreamAreaID = DownstreamArea->GetID();
 	ASSERT_NE(DownstreamArea, nullptr);
 	DownstreamArea->SetSaveExecutedNodes(true);
 
@@ -69,10 +69,10 @@ TEST(LinkNodeTests, Basic_AddSockets)
 	EXPECT_FALSE(DownstreamBoolNode->GetData());
 	DownstreamArea->AddNode(DownstreamBoolNode);
 
-	std::pair<std::string, std::string> LinkResult;
+	std::pair<FEUUID, FEUUID> LinkResult;
 	EXPECT_EQ(NODE_SYSTEM.LinkNodeAreas(UpstreamAreaID, DownstreamAreaID, &LinkResult), true);
-	ASSERT_NE(LinkResult.first, "");
-	ASSERT_NE(LinkResult.second, "");
+	ASSERT_FALSE(IsNull(LinkResult.first));
+	ASSERT_FALSE(IsNull(LinkResult.second));
 	LinkNode* UpstreamLinkNode = dynamic_cast<LinkNode*>(NODE_SYSTEM.GetNodeByID(LinkResult.first));
 	EXPECT_TRUE(UpstreamLinkNode->AddSocket({ "BOOL" }));
 
@@ -104,7 +104,7 @@ TEST(LinkNodeTests, MultipleSockets)
 	NODE_SYSTEM.Clear();
 
 	NodeArea* UpstreamArea = NODE_SYSTEM.CreateNodeArea();
-	std::string UpstreamAreaID = UpstreamArea->GetID();
+	FEUUID UpstreamAreaID = UpstreamArea->GetID();
 	UpstreamArea->SetSaveExecutedNodes(true);
 
 	Node* BeginNode = NODE_FACTORY.CreateNode("BeginNode");
@@ -120,7 +120,7 @@ TEST(LinkNodeTests, MultipleSockets)
 	UpstreamArea->AddNode(UpstreamFloatNode);
 
 	NodeArea* DownstreamArea = NODE_SYSTEM.CreateNodeArea();
-	std::string DownstreamAreaID = DownstreamArea->GetID();
+	FEUUID DownstreamAreaID = DownstreamArea->GetID();
 	DownstreamArea->SetSaveExecutedNodes(true);
 
 	BoolVariableNode* DownstreamBoolNode = new BoolVariableNode();
@@ -131,7 +131,7 @@ TEST(LinkNodeTests, MultipleSockets)
 	DownstreamFloatNode->SetData(0.0f);
 	DownstreamArea->AddNode(DownstreamFloatNode);
 
-	std::pair<std::string, std::string> LinkResult;
+	std::pair<FEUUID, FEUUID> LinkResult;
 	ASSERT_TRUE(NODE_SYSTEM.LinkNodeAreas(UpstreamAreaID, DownstreamAreaID, &LinkResult));
 
 	LinkNode* CurrentLinkNode = dynamic_cast<LinkNode*>(NODE_SYSTEM.GetNodeByID(LinkResult.first));
@@ -167,7 +167,7 @@ TEST(LinkNodeTests, ArithmeticAcrossLink)
 	NODE_SYSTEM.Clear();
 
 	NodeArea* UpstreamArea = NODE_SYSTEM.CreateNodeArea();
-	std::string UpstreamAreaID = UpstreamArea->GetID();
+	FEUUID UpstreamAreaID = UpstreamArea->GetID();
 	UpstreamArea->SetSaveExecutedNodes(true);
 
 	Node* BeginNode = NODE_FACTORY.CreateNode("BeginNode");
@@ -191,14 +191,14 @@ TEST(LinkNodeTests, ArithmeticAcrossLink)
 	ASSERT_EQ(UpstreamArea->TryToConnect(BeginNode, 0, AddNode, 0), true);
 
 	NodeArea* DownstreamArea = NODE_SYSTEM.CreateNodeArea();
-	std::string DownstreamAreaID = DownstreamArea->GetID();
+	FEUUID DownstreamAreaID = DownstreamArea->GetID();
 	DownstreamArea->SetSaveExecutedNodes(true);
 
 	IntegerVariableNode* ResultNode = new IntegerVariableNode();
 	ResultNode->SetData(0);
 	DownstreamArea->AddNode(ResultNode);
 
-	std::pair<std::string, std::string> LinkResult;
+	std::pair<FEUUID, FEUUID> LinkResult;
 	ASSERT_TRUE(NODE_SYSTEM.LinkNodeAreas(UpstreamAreaID, DownstreamAreaID, &LinkResult));
 	LinkNode* CurrentLinkNode = dynamic_cast<LinkNode*>(NODE_SYSTEM.GetNodeByID(LinkResult.first));
 	ASSERT_TRUE(CurrentLinkNode->AddSocket({ "INT" }));
@@ -225,7 +225,7 @@ TEST(LinkNodeTests, SocketIndexRoutesDataCorrectly)
 	NODE_SYSTEM.Clear();
 
 	NodeArea* UpstreamArea = NODE_SYSTEM.CreateNodeArea();
-	std::string UpstreamAreaID = UpstreamArea->GetID();
+	FEUUID UpstreamAreaID = UpstreamArea->GetID();
 	UpstreamArea->SetSaveExecutedNodes(true);
 
 	Node* BeginNode = NODE_FACTORY.CreateNode("BeginNode");
@@ -237,14 +237,14 @@ TEST(LinkNodeTests, SocketIndexRoutesDataCorrectly)
 	UpstreamArea->AddNode(IntegerA);
 
 	NodeArea* DownstreamArea = NODE_SYSTEM.CreateNodeArea();
-	std::string DownstreamAreaID = DownstreamArea->GetID();
+	FEUUID DownstreamAreaID = DownstreamArea->GetID();
 	DownstreamArea->SetSaveExecutedNodes(true);
 
 	IntegerVariableNode* IntegerB = new IntegerVariableNode();
 	IntegerB->SetData(0);
 	DownstreamArea->AddNode(IntegerB);
 
-	std::pair<std::string, std::string> LinkResult;
+	std::pair<FEUUID, FEUUID> LinkResult;
 	ASSERT_TRUE(NODE_SYSTEM.LinkNodeAreas(UpstreamAreaID, DownstreamAreaID, &LinkResult));
 	LinkNode* CurrentLinkNode = dynamic_cast<LinkNode*>(NODE_SYSTEM.GetNodeByID(LinkResult.first));
 	ASSERT_TRUE(CurrentLinkNode->AddSocket({ "INT" }, "INT_0"));
@@ -308,7 +308,7 @@ TEST(LinkNodeTests, SocketIndexRoutesDataCorrectly_AfterDeletion)
 	NODE_SYSTEM.Clear();
 
 	NodeArea* UpstreamArea = NODE_SYSTEM.CreateNodeArea();
-	std::string UpstreamAreaID = UpstreamArea->GetID();
+	FEUUID UpstreamAreaID = UpstreamArea->GetID();
 	UpstreamArea->SetSaveExecutedNodes(true);
 
 	Node* BeginNode = NODE_FACTORY.CreateNode("BeginNode");
@@ -320,14 +320,14 @@ TEST(LinkNodeTests, SocketIndexRoutesDataCorrectly_AfterDeletion)
 	UpstreamArea->AddNode(IntegerA);
 
 	NodeArea* DownstreamArea = NODE_SYSTEM.CreateNodeArea();
-	std::string DownstreamAreaID = DownstreamArea->GetID();
+	FEUUID DownstreamAreaID = DownstreamArea->GetID();
 	DownstreamArea->SetSaveExecutedNodes(true);
 
 	IntegerVariableNode* IntegerB = new IntegerVariableNode();
 	IntegerB->SetData(0);
 	DownstreamArea->AddNode(IntegerB);
 
-	std::pair<std::string, std::string> LinkResult;
+	std::pair<FEUUID, FEUUID> LinkResult;
 	ASSERT_TRUE(NODE_SYSTEM.LinkNodeAreas(UpstreamAreaID, DownstreamAreaID, &LinkResult));
 	LinkNode* CurrentLinkNode = dynamic_cast<LinkNode*>(NODE_SYSTEM.GetNodeByID(LinkResult.first));
 	ASSERT_TRUE(CurrentLinkNode->AddSocket({ "INT" }, "INT_0"));
@@ -350,7 +350,7 @@ TEST(LinkNodeTests, SocketIndexRoutesDataCorrectly_AfterDeletion)
 	EXPECT_EQ(IntegerB->GetData(), 0);
 
 	// Now delete first data socket in link node.
-	std::string SocketIDToDelete = UpstreamLinkNode->GetSocketIDByIndex(1, NodeSocket::SocketFlow::Input);
+	FEUUID SocketIDToDelete = UpstreamLinkNode->GetSocketIDByIndex(1, NodeSocket::SocketFlow::Input);
 	ASSERT_EQ(UpstreamLinkNode->DeleteSocket(SocketIDToDelete), true);
 	// Connection on downstream area should also be deleted since the socket was removed.
 	ASSERT_EQ(DownstreamArea->IsConnected(DownstreamLinkNode, 1, IntegerB, 1), false);
@@ -382,7 +382,7 @@ TEST(LinkNodeTests, ReExecuteWithChangedData)
 	NODE_SYSTEM.Clear();
 
 	NodeArea* UpstreamArea = NODE_SYSTEM.CreateNodeArea();
-	std::string UpstreamAreaID = UpstreamArea->GetID();
+	FEUUID UpstreamAreaID = UpstreamArea->GetID();
 	UpstreamArea->SetSaveExecutedNodes(true);
 
 	Node* BeginNode = NODE_FACTORY.CreateNode("BeginNode");
@@ -394,14 +394,14 @@ TEST(LinkNodeTests, ReExecuteWithChangedData)
 	UpstreamArea->AddNode(UpstreamFloatNode);
 
 	NodeArea* DownstreamArea = NODE_SYSTEM.CreateNodeArea();
-	std::string DownstreamAreaID = DownstreamArea->GetID();
+	FEUUID DownstreamAreaID = DownstreamArea->GetID();
 	DownstreamArea->SetSaveExecutedNodes(true);
 
 	FloatVariableNode* DownstreamFloatNode = new FloatVariableNode();
 	DownstreamFloatNode->SetData(0.0f);
 	DownstreamArea->AddNode(DownstreamFloatNode);
 
-	std::pair<std::string, std::string> LinkResult;
+	std::pair<FEUUID, FEUUID> LinkResult;
 	ASSERT_TRUE(NODE_SYSTEM.LinkNodeAreas(UpstreamAreaID, DownstreamAreaID, &LinkResult));
 	LinkNode* CurrentLinkNode = dynamic_cast<LinkNode*>(NODE_SYSTEM.GetNodeByID(LinkResult.first));
 	ASSERT_TRUE(CurrentLinkNode->AddSocket({ "FLOAT" }));
@@ -431,7 +431,7 @@ TEST(LinkNodeTests, ReExecute_DownstreamLastExecutedNodesDoNotAccumulate)
 	NODE_SYSTEM.Clear();
 
 	NodeArea* UpstreamArea = NODE_SYSTEM.CreateNodeArea();
-	std::string UpstreamAreaID = UpstreamArea->GetID();
+	FEUUID UpstreamAreaID = UpstreamArea->GetID();
 	UpstreamArea->SetSaveExecutedNodes(true);
 
 	// The execution entry point lives only in the upstream area.
@@ -440,14 +440,14 @@ TEST(LinkNodeTests, ReExecute_DownstreamLastExecutedNodesDoNotAccumulate)
 	UpstreamArea->SetExecutionEntryNode(BeginNode);
 
 	NodeArea* DownstreamArea = NODE_SYSTEM.CreateNodeArea();
-	std::string DownstreamAreaID = DownstreamArea->GetID();
+	FEUUID DownstreamAreaID = DownstreamArea->GetID();
 	DownstreamArea->SetSaveExecutedNodes(true);
 
 	// A sink node in the downstream area. BoolVariableNode has an EXECUTE input at socket 0.
 	BoolVariableNode* DownstreamBoolNode = new BoolVariableNode();
 	DownstreamArea->AddNode(DownstreamBoolNode);
 
-	std::pair<std::string, std::string> LinkResult;
+	std::pair<FEUUID, FEUUID> LinkResult;
 	ASSERT_TRUE(NODE_SYSTEM.LinkNodeAreas(UpstreamAreaID, DownstreamAreaID, &LinkResult));
 
 	Node* UpstreamLinkNode = UpstreamArea->GetNodeByID(LinkResult.first);
@@ -496,7 +496,7 @@ TEST(LinkNodeTests, ReExecute_DownstreamFromInsideSubArea_LastExecutedNodesDoNot
 	BoolVariableNode* DownstreamBoolNode = new BoolVariableNode();
 	DownstreamArea->AddNode(DownstreamBoolNode);
 
-	std::pair<std::string, std::string> LinkResult;
+	std::pair<FEUUID, FEUUID> LinkResult;
 	ASSERT_TRUE(NODE_SYSTEM.LinkNodeAreas(OwnedArea->GetID(), DownstreamArea->GetID(), &LinkResult));
 
 	Node* OwnedAreaLinkNode = OwnedArea->GetNodeByID(LinkResult.first);
@@ -524,17 +524,17 @@ TEST(LinkNodeTests, Deletion_Basic)
 	NODE_SYSTEM.Clear();
 
 	NodeArea* UpstreamArea = NODE_SYSTEM.CreateNodeArea();
-	std::string UpstreamAreaID = UpstreamArea->GetID();
+	FEUUID UpstreamAreaID = UpstreamArea->GetID();
 	ASSERT_NE(UpstreamArea, nullptr);
 
 	NodeArea* DownstreamArea = NODE_SYSTEM.CreateNodeArea();
-	std::string DownstreamAreaID = DownstreamArea->GetID();
+	FEUUID DownstreamAreaID = DownstreamArea->GetID();
 	ASSERT_NE(DownstreamArea, nullptr);
 
-	std::pair<std::string, std::string > LinkResult;
+	std::pair<FEUUID, FEUUID> LinkResult;
 	EXPECT_EQ(NODE_SYSTEM.LinkNodeAreas(UpstreamAreaID, DownstreamAreaID, &LinkResult), true);
-	ASSERT_NE(LinkResult.first, "");
-	ASSERT_NE(LinkResult.second, "");
+	ASSERT_FALSE(IsNull(LinkResult.first));
+	ASSERT_FALSE(IsNull(LinkResult.second));
 
 	UpstreamArea->Delete(UpstreamArea->GetNodeByID(LinkResult.first));
 
@@ -542,7 +542,7 @@ TEST(LinkNodeTests, Deletion_Basic)
 	EXPECT_EQ(UpstreamArea->GetNodeByID(LinkResult.first), nullptr);
 	EXPECT_EQ(DownstreamArea->GetNodeByID(LinkResult.second), nullptr);
 
-	std::vector<std::pair<std::string, std::string>> LinkingNodes = NODE_SYSTEM.GetLinkingNodesForAreas(UpstreamAreaID, DownstreamAreaID);
+	std::vector<std::pair<FEUUID, FEUUID>> LinkingNodes = NODE_SYSTEM.GetLinkingNodesForAreas(UpstreamAreaID, DownstreamAreaID);
 	EXPECT_EQ(LinkingNodes.size(), 0);
 
 	NODE_SYSTEM.Clear();
@@ -553,7 +553,7 @@ TEST(LinkNodeTests, DeletingDownstreamArea_RemovesUpstreamLinkNode)
 	NODE_SYSTEM.Clear();
 
 	NodeArea* UpstreamArea = NODE_SYSTEM.CreateNodeArea();
-	std::string UpstreamAreaID = UpstreamArea->GetID();
+	FEUUID UpstreamAreaID = UpstreamArea->GetID();
 	UpstreamArea->SetSaveExecutedNodes(true);
 
 	Node* BeginNode = NODE_FACTORY.CreateNode("BeginNode");
@@ -561,9 +561,9 @@ TEST(LinkNodeTests, DeletingDownstreamArea_RemovesUpstreamLinkNode)
 	UpstreamArea->SetExecutionEntryNode(BeginNode);
 
 	NodeArea* DownstreamArea = NODE_SYSTEM.CreateNodeArea();
-	std::string DownstreamAreaID = DownstreamArea->GetID();
+	FEUUID DownstreamAreaID = DownstreamArea->GetID();
 
-	std::pair<std::string, std::string> LinkResult;
+	std::pair<FEUUID, FEUUID> LinkResult;
 	ASSERT_TRUE(NODE_SYSTEM.LinkNodeAreas(UpstreamAreaID, DownstreamAreaID, &LinkResult));
 
 	Node* UpstreamLinkNode = UpstreamArea->GetNodeByID(LinkResult.first);
@@ -588,11 +588,11 @@ TEST(LinkNodeTests, Deletion_FiresDestroyedCallbackOncePerNode)
 	ASSERT_NE(UpstreamArea, nullptr);
 	ASSERT_NE(DownstreamArea, nullptr);
 
-	std::pair<std::string, std::string> LinkIDs;
+	std::pair<FEUUID, FEUUID> LinkIDs;
 	ASSERT_TRUE(NODE_SYSTEM.LinkNodeAreas(UpstreamArea->GetID(), DownstreamArea->GetID(), &LinkIDs));
 
-	const std::string UpstreamLinkID = LinkIDs.first;
-	const std::string DownstreamLinkID = LinkIDs.second;
+	const FEUUID UpstreamLinkID = LinkIDs.first;
+	const FEUUID DownstreamLinkID = LinkIDs.second;
 
 	int UpstreamDestroyedCount = 0;
 	int DownstreamDestroyedCount = 0;
@@ -627,15 +627,15 @@ TEST(LinkNodeTests, Basic_Tiny_Graph)
 
 	// Create a 3-level hierarchy (Parent => Child => Grandchild).
 	NodeArea* UpstreamArea = NODE_SYSTEM.CreateNodeArea();
-	std::string UpstreamAreaID = UpstreamArea->GetID();
+	FEUUID UpstreamAreaID = UpstreamArea->GetID();
 	ASSERT_NE(UpstreamArea, nullptr);
 
 	NodeArea* DownstreamArea = NODE_SYSTEM.CreateNodeArea();
-	std::string DownstreamAreaID = DownstreamArea->GetID();
+	FEUUID DownstreamAreaID = DownstreamArea->GetID();
 	ASSERT_NE(DownstreamArea, nullptr);
 
 	NodeArea* GrandDownstreamArea = NODE_SYSTEM.CreateNodeArea();
-	std::string GrandDownstreamAreaID = GrandDownstreamArea->GetID();
+	FEUUID GrandDownstreamAreaID = GrandDownstreamArea->GetID();
 	ASSERT_NE(GrandDownstreamArea, nullptr);
 
 	NODE_SYSTEM.LinkNodeAreas(UpstreamAreaID, DownstreamAreaID);
@@ -683,19 +683,19 @@ TEST(LinkNodeTests, InfiniteLoop)
 
 	// Create a loop (Parent => Child => Grandchild => Parent).
 	NodeArea* UpstreamArea = NODE_SYSTEM.CreateNodeArea();
-	std::string UpstreamAreaID = UpstreamArea->GetID();
+	FEUUID UpstreamAreaID = UpstreamArea->GetID();
 	ASSERT_NE(UpstreamArea, nullptr);
 
 	NodeArea* DownstreamArea = NODE_SYSTEM.CreateNodeArea();
-	std::string DownstreamAreaID = DownstreamArea->GetID();
+	FEUUID DownstreamAreaID = DownstreamArea->GetID();
 	ASSERT_NE(DownstreamArea, nullptr);
 
 	NodeArea* GrandDownstreamArea = NODE_SYSTEM.CreateNodeArea();
-	std::string GrandDownstreamAreaID = GrandDownstreamArea->GetID();
+	FEUUID GrandDownstreamAreaID = GrandDownstreamArea->GetID();
 	ASSERT_NE(GrandDownstreamArea, nullptr);
 
 	// Link Parent => Child.
-	std::pair<std::string, std::string > LinkResult;
+	std::pair<FEUUID, FEUUID> LinkResult;
 	EXPECT_TRUE(NODE_SYSTEM.LinkNodeAreas(UpstreamAreaID, DownstreamAreaID, &LinkResult));
 
 	// Link Child => Grandchild.
@@ -843,7 +843,7 @@ void IntCalculationInSmallLinkedNodeAreaGraph()
 		IndexNode->SetData(static_cast<int>(CurrentAreaIndex));
 		CurrentArea->AddNode(IndexNode);
 
-		std::vector<std::pair<std::string, std::string>> UpstreamLinkingNodeIDs;
+		std::vector<std::pair<FEUUID, FEUUID>> UpstreamLinkingNodeIDs;
 		LinkNode* UpstreamLinkNode = nullptr;
 		Node* BeginNode = nullptr;
 		if (UpstreamArea != nullptr)
@@ -887,7 +887,7 @@ void IntCalculationInSmallLinkedNodeAreaGraph()
 			ArithmeticAddNode* AddNode = new ArithmeticAddNode();
 			CurrentArea->AddNode(AddNode);
 
-			std::vector<std::pair<std::string, std::string>> DownstreamLinkingNodeIDs =
+			std::vector<std::pair<FEUUID, FEUUID>> DownstreamLinkingNodeIDs =
 				NODE_SYSTEM.GetLinkingNodesForAreas(CurrentArea->GetID(), DownstreamAreas[i]->GetID());
 			LinkNode* DownstreamLinkNode = reinterpret_cast<LinkNode*>(CurrentArea->GetNodeByID(DownstreamLinkingNodeIDs[0].first));
 
@@ -972,7 +972,7 @@ TEST(LinkNodeTests, SaveLoad_With_Execute_Connections_Small)
 
 	Areas[0]->ExecuteNodeNetwork();
 
-	std::unordered_map<std::string, std::vector<Node*>> ExecutedNodes = NODE_SYSTEM.GetLastExecutedNodes(Areas[0]->GetID());
+	std::unordered_map<FEUUID, std::vector<Node*>> ExecutedNodes = NODE_SYSTEM.GetLastExecutedNodes(Areas[0]->GetID());
 	size_t ExecutedNodeAreaCount = ExecutedNodes.size();
 	std::vector<size_t> ExecutedNodesPerArea;
 	for (auto Area : Areas)
@@ -1035,7 +1035,7 @@ TEST(LinkNodeTests, SaveLoad_With_Execute_Connections_Small)
 
 	Areas[0]->ExecuteNodeNetwork();
 
-	std::unordered_map<std::string, std::vector<Node*>> AfterLoadExecutedNodes = NODE_SYSTEM.GetLastExecutedNodes(Areas[0]->GetID());
+	std::unordered_map<FEUUID, std::vector<Node*>> AfterLoadExecutedNodes = NODE_SYSTEM.GetLastExecutedNodes(Areas[0]->GetID());
 	size_t AfterLoadExecutedNodeAreaCount = AfterLoadExecutedNodes.size();
 	ASSERT_EQ(ExecutedNodeAreaCount, AfterLoadExecutedNodeAreaCount);
 	for (int i = 0; i < Areas.size(); i++)
@@ -1104,7 +1104,7 @@ TEST(LinkNodeTests, SetSocketAllowedTypes_DisconnectsIncompatible)
 	NODE_SYSTEM.Clear();
 
 	NodeArea* UpstreamArea = NODE_SYSTEM.CreateNodeArea();
-	std::string UpstreamAreaID = UpstreamArea->GetID();
+	FEUUID UpstreamAreaID = UpstreamArea->GetID();
 	UpstreamArea->SetSaveExecutedNodes(true);
 
 	Node* BeginNode = NODE_FACTORY.CreateNode("BeginNode");
@@ -1116,14 +1116,14 @@ TEST(LinkNodeTests, SetSocketAllowedTypes_DisconnectsIncompatible)
 	UpstreamArea->AddNode(UpstreamBoolNode);
 
 	NodeArea* DownstreamArea = NODE_SYSTEM.CreateNodeArea();
-	std::string DownstreamAreaID = DownstreamArea->GetID();
+	FEUUID DownstreamAreaID = DownstreamArea->GetID();
 	DownstreamArea->SetSaveExecutedNodes(true);
 
 	BoolVariableNode* DownstreamBoolNode = new BoolVariableNode();
 	DownstreamBoolNode->SetData(false);
 	DownstreamArea->AddNode(DownstreamBoolNode);
 
-	std::pair<std::string, std::string> LinkResult;
+	std::pair<FEUUID, FEUUID> LinkResult;
 	ASSERT_TRUE(NODE_SYSTEM.LinkNodeAreas(UpstreamAreaID, DownstreamAreaID, &LinkResult));
 	LinkNode* UpstreamLinkNode = dynamic_cast<LinkNode*>(NODE_SYSTEM.GetNodeByID(LinkResult.first));
 	ASSERT_NE(UpstreamLinkNode, nullptr);
@@ -1144,7 +1144,7 @@ TEST(LinkNodeTests, SetSocketAllowedTypes_DisconnectsIncompatible)
 	EXPECT_TRUE(DownstreamBoolNode->GetData());
 
 	// Change socket type on upstream link node to something incompatible.
-	std::string SocketID = UpstreamLinkNode->GetSocketIDByIndex(1, NodeSocket::SocketFlow::Input);
+	FEUUID SocketID = UpstreamLinkNode->GetSocketIDByIndex(1, NodeSocket::SocketFlow::Input);
 	NodeSocket* Socket = UpstreamLinkNode->GetSocketByID(SocketID);
 	ASSERT_NE(Socket, nullptr);
 
@@ -1155,8 +1155,8 @@ TEST(LinkNodeTests, SetSocketAllowedTypes_DisconnectsIncompatible)
 	ASSERT_FALSE(UpstreamArea->IsConnected(UpstreamBoolNode, 0, UpstreamLinkNode, 1));
 
 	// Partner socket on downstream link node should also have changed type.
-	std::string PartnerSocketID = DownstreamLinkNode->GetSocketIDByIndex(1, NodeSocket::SocketFlow::Output);
-	ASSERT_FALSE(PartnerSocketID.empty());
+	FEUUID PartnerSocketID = DownstreamLinkNode->GetSocketIDByIndex(1, NodeSocket::SocketFlow::Output);
+	ASSERT_FALSE(IsNull(PartnerSocketID));
 	const NodeSocket* PartnerSocket = DownstreamLinkNode->GetSocketByID(PartnerSocketID);
 	ASSERT_NE(PartnerSocket, nullptr);
 	ASSERT_EQ(PartnerSocket->GetAllowedTypes().size(), 1);
@@ -1173,7 +1173,7 @@ TEST(LinkNodeTests, SetSocketAllowedTypes_KeepsCompatible)
 	NODE_SYSTEM.Clear();
 
 	NodeArea* UpstreamArea = NODE_SYSTEM.CreateNodeArea();
-	std::string UpstreamAreaID = UpstreamArea->GetID();
+	FEUUID UpstreamAreaID = UpstreamArea->GetID();
 	UpstreamArea->SetSaveExecutedNodes(true);
 
 	Node* BeginNode = NODE_FACTORY.CreateNode("BeginNode");
@@ -1185,14 +1185,14 @@ TEST(LinkNodeTests, SetSocketAllowedTypes_KeepsCompatible)
 	UpstreamArea->AddNode(UpstreamIntNode);
 
 	NodeArea* DownstreamArea = NODE_SYSTEM.CreateNodeArea();
-	std::string DownstreamAreaID = DownstreamArea->GetID();
+	FEUUID DownstreamAreaID = DownstreamArea->GetID();
 	DownstreamArea->SetSaveExecutedNodes(true);
 
 	IntegerVariableNode* DownstreamIntNode = new IntegerVariableNode();
 	DownstreamIntNode->SetData(0);
 	DownstreamArea->AddNode(DownstreamIntNode);
 
-	std::pair<std::string, std::string> LinkResult;
+	std::pair<FEUUID, FEUUID> LinkResult;
 	ASSERT_TRUE(NODE_SYSTEM.LinkNodeAreas(UpstreamAreaID, DownstreamAreaID, &LinkResult));
 	LinkNode* UpstreamLinkNode = dynamic_cast<LinkNode*>(NODE_SYSTEM.GetNodeByID(LinkResult.first));
 	ASSERT_NE(UpstreamLinkNode, nullptr);
@@ -1207,7 +1207,7 @@ TEST(LinkNodeTests, SetSocketAllowedTypes_KeepsCompatible)
 	ASSERT_EQ(DownstreamArea->TryToConnect(DownstreamLinkNode, 1, DownstreamIntNode, 1), true);
 
 	// Widen type to include INT and FLOAT, INT connections should survive.
-	std::string SocketID = UpstreamLinkNode->GetSocketIDByIndex(1, NodeSocket::SocketFlow::Input);
+	FEUUID SocketID = UpstreamLinkNode->GetSocketIDByIndex(1, NodeSocket::SocketFlow::Input);
 	NodeSocket* Socket = UpstreamLinkNode->GetSocketByID(SocketID);
 	ASSERT_NE(Socket, nullptr);
 
@@ -1232,7 +1232,7 @@ TEST(LinkNodeTests, SetSocketAllowedTypes_PartialDisconnect_MultipleSockets)
 	NODE_SYSTEM.Clear();
 
 	NodeArea* UpstreamArea = NODE_SYSTEM.CreateNodeArea();
-	std::string UpstreamAreaID = UpstreamArea->GetID();
+	FEUUID UpstreamAreaID = UpstreamArea->GetID();
 	UpstreamArea->SetSaveExecutedNodes(true);
 
 	Node* BeginNode = NODE_FACTORY.CreateNode("BeginNode");
@@ -1248,7 +1248,7 @@ TEST(LinkNodeTests, SetSocketAllowedTypes_PartialDisconnect_MultipleSockets)
 	UpstreamArea->AddNode(UpstreamFloatNode);
 
 	NodeArea* DownstreamArea = NODE_SYSTEM.CreateNodeArea();
-	std::string DownstreamAreaID = DownstreamArea->GetID();
+	FEUUID DownstreamAreaID = DownstreamArea->GetID();
 	DownstreamArea->SetSaveExecutedNodes(true);
 
 	BoolVariableNode* DownstreamBoolNode = new BoolVariableNode();
@@ -1259,7 +1259,7 @@ TEST(LinkNodeTests, SetSocketAllowedTypes_PartialDisconnect_MultipleSockets)
 	DownstreamFloatNode->SetData(0.0f);
 	DownstreamArea->AddNode(DownstreamFloatNode);
 
-	std::pair<std::string, std::string> LinkResult;
+	std::pair<FEUUID, FEUUID> LinkResult;
 	ASSERT_TRUE(NODE_SYSTEM.LinkNodeAreas(UpstreamAreaID, DownstreamAreaID, &LinkResult));
 	LinkNode* UpstreamLinkNode = dynamic_cast<LinkNode*>(NODE_SYSTEM.GetNodeByID(LinkResult.first));
 	ASSERT_NE(UpstreamLinkNode, nullptr);
@@ -1287,7 +1287,7 @@ TEST(LinkNodeTests, SetSocketAllowedTypes_PartialDisconnect_MultipleSockets)
 	EXPECT_EQ(DownstreamFloatNode->GetData(), 3.14f);
 
 	// Change only the BOOL socket (index 1) to INT, FLOAT socket (index 2) should be unaffected.
-	std::string BoolSocketID = UpstreamLinkNode->GetSocketIDByIndex(1, NodeSocket::SocketFlow::Input);
+	FEUUID BoolSocketID = UpstreamLinkNode->GetSocketIDByIndex(1, NodeSocket::SocketFlow::Input);
 	NodeSocket* Socket = UpstreamLinkNode->GetSocketByID(BoolSocketID);
 	ASSERT_NE(Socket, nullptr);
 
@@ -1310,12 +1310,12 @@ TEST(LinkNodeTests, RenameSocket_PropagatesPartnerName)
 	NODE_SYSTEM.Clear();
 
 	NodeArea* UpstreamArea = NODE_SYSTEM.CreateNodeArea();
-	std::string UpstreamAreaID = UpstreamArea->GetID();
+	FEUUID UpstreamAreaID = UpstreamArea->GetID();
 
 	NodeArea* DownstreamArea = NODE_SYSTEM.CreateNodeArea();
-	std::string DownstreamAreaID = DownstreamArea->GetID();
+	FEUUID DownstreamAreaID = DownstreamArea->GetID();
 
-	std::pair<std::string, std::string> LinkResult;
+	std::pair<FEUUID, FEUUID> LinkResult;
 	ASSERT_TRUE(NODE_SYSTEM.LinkNodeAreas(UpstreamAreaID, DownstreamAreaID, &LinkResult));
 	LinkNode* UpstreamLinkNode = dynamic_cast<LinkNode*>(NODE_SYSTEM.GetNodeByID(LinkResult.first));
 	ASSERT_NE(UpstreamLinkNode, nullptr);
@@ -1325,12 +1325,12 @@ TEST(LinkNodeTests, RenameSocket_PropagatesPartnerName)
 	ASSERT_NE(DownstreamLinkNode, nullptr);
 
 	// Get the socket on the upstream link node (index 1, after the execution socket).
-	std::string UpstreamSocketID = UpstreamLinkNode->GetSocketIDByIndex(1, NodeSocket::SocketFlow::Input);
+	FEUUID UpstreamSocketID = UpstreamLinkNode->GetSocketIDByIndex(1, NodeSocket::SocketFlow::Input);
 	NodeSocket* UpstreamSocket = UpstreamLinkNode->GetSocketByID(UpstreamSocketID);
 	ASSERT_NE(UpstreamSocket, nullptr);
 
 	// Get the partner socket on the downstream link node.
-	std::string DownstreamSocketID = DownstreamLinkNode->GetSocketIDByIndex(1, NodeSocket::SocketFlow::Output);
+	FEUUID DownstreamSocketID = DownstreamLinkNode->GetSocketIDByIndex(1, NodeSocket::SocketFlow::Output);
 	NodeSocket* DownstreamSocket = DownstreamLinkNode->GetSocketByID(DownstreamSocketID);
 	ASSERT_NE(DownstreamSocket, nullptr);
 
@@ -1360,7 +1360,7 @@ TEST(LinkNodeTests, Copy_Paste_Dangling)
 	NODE_SYSTEM.Clear();
 
 	NodeArea* UpstreamArea = NODE_SYSTEM.CreateNodeArea();
-	std::string UpstreamAreaID = UpstreamArea->GetID();
+	FEUUID UpstreamAreaID = UpstreamArea->GetID();
 
 	Node* BeginNode = NODE_FACTORY.CreateNode("BeginNode");
 	UpstreamArea->AddNode(BeginNode);
@@ -1372,14 +1372,14 @@ TEST(LinkNodeTests, Copy_Paste_Dangling)
 	UpstreamArea->AddNode(UpstreamIntNode);
 
 	NodeArea* DownstreamArea = NODE_SYSTEM.CreateNodeArea();
-	std::string DownstreamAreaID = DownstreamArea->GetID();
+	FEUUID DownstreamAreaID = DownstreamArea->GetID();
 	DownstreamArea->SetSaveExecutedNodes(true);
 
 	IntegerVariableNode* DownstreamIntNode = new IntegerVariableNode();
 	DownstreamIntNode->SetData(0);
 	DownstreamArea->AddNode(DownstreamIntNode);
 	
-	std::pair<std::string, std::string> LinkResult;
+	std::pair<FEUUID, FEUUID> LinkResult;
 	ASSERT_TRUE(NODE_SYSTEM.LinkNodeAreas(UpstreamAreaID, DownstreamAreaID, &LinkResult));
 	LinkNode* UpstreamLinkNode = dynamic_cast<LinkNode*>(NODE_SYSTEM.GetNodeByID(LinkResult.first));
 	ASSERT_NE(UpstreamLinkNode, nullptr);
@@ -1533,7 +1533,7 @@ TEST(LinkNodeTests, TryToFixDanglingLinkNode_RestoredPartner_CanMirrorSockets)
 	NODE_SYSTEM.Clear();
 
 	NodeArea* UpstreamArea = NODE_SYSTEM.CreateNodeArea();
-	std::string UpstreamAreaID = UpstreamArea->GetID();
+	FEUUID UpstreamAreaID = UpstreamArea->GetID();
 
 	Node* BeginNode = NODE_FACTORY.CreateNode("BeginNode");
 	UpstreamArea->AddNode(BeginNode);
@@ -1544,13 +1544,13 @@ TEST(LinkNodeTests, TryToFixDanglingLinkNode_RestoredPartner_CanMirrorSockets)
 	UpstreamArea->AddNode(UpstreamIntNode);
 
 	NodeArea* DownstreamArea = NODE_SYSTEM.CreateNodeArea();
-	std::string DownstreamAreaID = DownstreamArea->GetID();
+	FEUUID DownstreamAreaID = DownstreamArea->GetID();
 
 	IntegerVariableNode* DownstreamIntNode = new IntegerVariableNode();
 	DownstreamIntNode->SetData(0);
 	DownstreamArea->AddNode(DownstreamIntNode);
 
-	std::pair<std::string, std::string> LinkResult;
+	std::pair<FEUUID, FEUUID> LinkResult;
 	ASSERT_TRUE(NODE_SYSTEM.LinkNodeAreas(UpstreamAreaID, DownstreamAreaID, &LinkResult));
 	LinkNode* UpstreamLinkNode = dynamic_cast<LinkNode*>(NODE_SYSTEM.GetNodeByID(LinkResult.first));
 	ASSERT_NE(UpstreamLinkNode, nullptr);
@@ -1627,8 +1627,8 @@ TEST(LinkNodeTests, GetImmediateDownstreamAreas_Deduplicates_DuplicateLinks)
 
 	NodeArea* UpstreamArea = NODE_SYSTEM.CreateNodeArea();
 	NodeArea* DownstreamArea = NODE_SYSTEM.CreateNodeArea();
-	const std::string UpstreamID = UpstreamArea->GetID();
-	const std::string DownstreamID = DownstreamArea->GetID();
+	const FEUUID UpstreamID = UpstreamArea->GetID();
+	const FEUUID DownstreamID = DownstreamArea->GetID();
 
 	ASSERT_TRUE(NODE_SYSTEM.LinkNodeAreas(UpstreamID, DownstreamID));
 	ASSERT_TRUE(NODE_SYSTEM.LinkNodeAreas(UpstreamID, DownstreamID));
@@ -1651,7 +1651,7 @@ TEST(LinkNodeTests, MoveNodesTo_UnrelatedArea_UpdatesLinkRecord)
 	ASSERT_NE(DownstreamArea, nullptr);
 	ASSERT_NE(UnrelatedArea, nullptr);
 
-	std::pair<std::string, std::string> LinkIDs;
+	std::pair<FEUUID, FEUUID> LinkIDs;
 	ASSERT_TRUE(NODE_SYSTEM.LinkNodeAreas(UpstreamArea->GetID(), DownstreamArea->GetID(), &LinkIDs));
 
 	LinkNode* UpstreamLinkNode = static_cast<LinkNode*>(UpstreamArea->GetNodeByID(LinkIDs.first));
@@ -1691,7 +1691,7 @@ TEST(LinkNodeTests, MoveNodesTo_UnrelatedArea_PartnerStaysLinked_AndDataFlows)
 	ASSERT_NE(DownstreamArea, nullptr);
 	ASSERT_NE(UnrelatedArea, nullptr);
 
-	std::pair<std::string, std::string> LinkIDs;
+	std::pair<FEUUID, FEUUID> LinkIDs;
 	ASSERT_TRUE(NODE_SYSTEM.LinkNodeAreas(UpstreamArea->GetID(), DownstreamArea->GetID(), &LinkIDs));
 
 	LinkNode* UpstreamLinkNode = static_cast<LinkNode*>(UpstreamArea->GetNodeByID(LinkIDs.first));
@@ -1755,18 +1755,18 @@ TEST(LinkNodeTests, Load_LinkNodeWithNonLinkNodePartner_IsHandledSafely)
 	Node* NonLinkNode = NODE_FACTORY.CreateNode("BeginNode");
 	ASSERT_NE(NonLinkNode, nullptr);
 	ASSERT_TRUE(PartnerArea->AddNode(NonLinkNode));
-	const std::string PartnerAreaID = PartnerArea->GetID();
-	const std::string NonLinkNodeID = NonLinkNode->GetID();
+	const FEUUID PartnerAreaID = PartnerArea->GetID();
+	const FEUUID NonLinkNodeID = NonLinkNode->GetID();
 
 	// LinkArea holds a real LinkNode, created as a proper pair with a throwaway area.
 	NodeArea* LinkArea = NODE_SYSTEM.CreateNodeArea();
 	NodeArea* ThrowawayArea = NODE_SYSTEM.CreateNodeArea();
-	std::pair<std::string, std::string> LinkResult;
+	std::pair<FEUUID, FEUUID> LinkResult;
 	ASSERT_TRUE(NODE_SYSTEM.LinkNodeAreas(LinkArea->GetID(), ThrowawayArea->GetID(), &LinkResult));
-	const std::string LinkAreaID = LinkArea->GetID();
-	const std::string ThrowawayAreaID = ThrowawayArea->GetID();
-	const std::string LinkNodeID = LinkResult.first;
-	const std::string PartnerLinkNodeID = LinkResult.second;
+	const FEUUID LinkAreaID = LinkArea->GetID();
+	const FEUUID ThrowawayAreaID = ThrowawayArea->GetID();
+	const FEUUID LinkNodeID = LinkResult.first;
+	const FEUUID PartnerLinkNodeID = LinkResult.second;
 
 	auto ReplaceFirst = [](std::string& Text, const std::string& Needle, const std::string& Replacement) -> bool
 	{
@@ -1780,15 +1780,15 @@ TEST(LinkNodeTests, Load_LinkNodeWithNonLinkNodePartner_IsHandledSafely)
 	// Repoint the LinkNode's partner at the non LinkNode (simulating a hand edited save).
 	std::string LinkAreaJson = LinkArea->ToJson();
 	std::string PartnerAreaJson = PartnerArea->ToJson();
-	ASSERT_TRUE(ReplaceFirst(LinkAreaJson, "\"PartnerNodeID\":\"" + PartnerLinkNodeID + "\"", "\"PartnerNodeID\":\"" + NonLinkNodeID + "\""));
-	ASSERT_TRUE(ReplaceFirst(LinkAreaJson, "\"LinkedAreaID\":\"" + ThrowawayAreaID + "\"", "\"LinkedAreaID\":\"" + PartnerAreaID + "\""));
+	ASSERT_TRUE(ReplaceFirst(LinkAreaJson, "\"PartnerNodeID\":\"" + ToString(PartnerLinkNodeID) + "\"", "\"PartnerNodeID\":\"" + ToString(NonLinkNodeID) + "\""));
+	ASSERT_TRUE(ReplaceFirst(LinkAreaJson, "\"LinkedAreaID\":\"" + ToString(ThrowawayAreaID) + "\"", "\"LinkedAreaID\":\"" + ToString(PartnerAreaID) + "\""));
 
 	// Assemble a NodeSystem JSON containing only LinkArea and PartnerArea.
 	Json::Value Root;
 	Root["SocketTypeToColorAssociations"] = Json::objectValue;
 	Json::Value AreasJson(Json::objectValue);
-	AreasJson[LinkAreaID] = LinkAreaJson;
-	AreasJson[PartnerAreaID] = PartnerAreaJson;
+	AreasJson[ToString(LinkAreaID)] = LinkAreaJson;
+	AreasJson[ToString(PartnerAreaID)] = PartnerAreaJson;
 	Root["NodeAreas"] = AreasJson;
 	Json::StreamWriterBuilder Builder;
 	Builder.settings_["indentation"] = "";
@@ -1816,7 +1816,7 @@ TEST(LinkNodeTests, CopyArea_IntoLinkedArea_RejectedLinkNode_SkipsConnection)
 	// SourceArea holds a LinkNode whose partner lives in LinkedArea.
 	NodeArea* SourceArea = NODE_SYSTEM.CreateNodeArea();
 	NodeArea* LinkedArea = NODE_SYSTEM.CreateNodeArea();
-	std::pair<std::string, std::string> LinkResult;
+	std::pair<FEUUID, FEUUID> LinkResult;
 	ASSERT_TRUE(NODE_SYSTEM.LinkNodeAreas(SourceArea->GetID(), LinkedArea->GetID(), &LinkResult));
 	Node* UpstreamLinkNode = NODE_SYSTEM.GetNodeByID(LinkResult.first);
 	ASSERT_NE(UpstreamLinkNode, nullptr);
@@ -1847,7 +1847,7 @@ TEST(LinkNodeTests, DeleteSocket_IsAtomicAcrossMirrorPartners)
 	NodeArea* SourceArea = NODE_SYSTEM.CreateNodeArea();
 	NodeArea* TargetArea = NODE_SYSTEM.CreateNodeArea();
 
-	std::pair<std::string, std::string> LinkIDs;
+	std::pair<FEUUID, FEUUID> LinkIDs;
 	ASSERT_TRUE(NODE_SYSTEM.LinkNodeAreas(SourceArea->GetID(), TargetArea->GetID(), &LinkIDs));
 	LinkNode* UpstreamLink = dynamic_cast<LinkNode*>(NODE_SYSTEM.GetNodeByID(LinkIDs.first));
 	LinkNode* DownstreamLink = dynamic_cast<LinkNode*>(NODE_SYSTEM.GetNodeByID(LinkIDs.second));
@@ -1864,7 +1864,7 @@ TEST(LinkNodeTests, DeleteSocket_IsAtomicAcrossMirrorPartners)
 
 	NodeSocket* AddedSocket = UpstreamLink->GetSocketByIndex(UpstreamLink->GetInputSocketCount() - 1, NodeSocket::SocketFlow::Input);
 	ASSERT_NE(AddedSocket, nullptr);
-	const std::string AddedSocketID = AddedSocket->GetID();
+	const FEUUID AddedSocketID = AddedSocket->GetID();
 
 	// A non-user-deletable socket can not be deleted, and neither side changes.
 	AddedSocket->SetCanBeDeletedByUser(false);
@@ -1888,7 +1888,7 @@ TEST(LinkNodeTests, DeleteSocket_PartnerRefusal_KeepsPairInSync)
 	NodeArea* SourceArea = NODE_SYSTEM.CreateNodeArea();
 	NodeArea* TargetArea = NODE_SYSTEM.CreateNodeArea();
 
-	std::pair<std::string, std::string> LinkIDs;
+	std::pair<FEUUID, FEUUID> LinkIDs;
 	ASSERT_TRUE(NODE_SYSTEM.LinkNodeAreas(SourceArea->GetID(), TargetArea->GetID(), &LinkIDs));
 	LinkNode* UpstreamLink = dynamic_cast<LinkNode*>(NODE_SYSTEM.GetNodeByID(LinkIDs.first));
 	LinkNode* DownstreamLink = dynamic_cast<LinkNode*>(NODE_SYSTEM.GetNodeByID(LinkIDs.second));
@@ -1904,7 +1904,7 @@ TEST(LinkNodeTests, DeleteSocket_PartnerRefusal_KeepsPairInSync)
 
 	NodeSocket* AddedSocket = UpstreamLink->GetSocketByIndex(UpstreamLink->GetInputSocketCount() - 1, NodeSocket::SocketFlow::Input);
 	ASSERT_NE(AddedSocket, nullptr);
-	const std::string AddedSocketID = AddedSocket->GetID();
+	const FEUUID AddedSocketID = AddedSocket->GetID();
 
 	// Lock the PARTNER's mirrored socket, the local one stays deletable.
 	NodeSocket* PartnerSocket = DownstreamLink->GetSocketByIndex(DownstreamLink->GetOutputSocketCount() - 1, NodeSocket::SocketFlow::Output);

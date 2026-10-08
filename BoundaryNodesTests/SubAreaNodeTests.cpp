@@ -9,8 +9,8 @@ TEST(SubAreaNodeTests, Basic_Creation)
 	ASSERT_NE(ParentArea, nullptr);
 
 	// Creating with invalid area ID should fail.
-	EXPECT_EQ(NODE_SYSTEM.CreateSubAreaNode(""), nullptr);
-	EXPECT_EQ(NODE_SYSTEM.CreateSubAreaNode("NonExistentID"), nullptr);
+	EXPECT_EQ(NODE_SYSTEM.CreateSubAreaNode(FEUUID()), nullptr);
+	EXPECT_EQ(NODE_SYSTEM.CreateSubAreaNode(GenerateID()), nullptr);
 
 	SubAreaNode* NewNode = NODE_SYSTEM.CreateSubAreaNode(ParentArea->GetID());
 	ASSERT_NE(NewNode, nullptr);
@@ -45,7 +45,7 @@ TEST(SubAreaNodeTests, Basic_Creation)
 	std::vector<SubAreaOutputNode*> OutputNodes = OwnedArea->GetNodesByType<SubAreaOutputNode>();
 	EXPECT_EQ(OutputNodes.size(), 1);
 
-	std::string OwnedAreaID = OwnedArea->GetID();
+	FEUUID OwnedAreaID = OwnedArea->GetID();
 	NODE_SYSTEM.DeleteNodeArea(ParentArea);
 
 	// Owned area should be cleaned up along with the parent.
@@ -245,8 +245,8 @@ TEST(SubAreaNodeTests, DeleteSocket_OnlyRemoves_CorrespondingDirection_From_Part
 	EXPECT_EQ(OutputNode->GetInputSocketCount(), 2);
 
 	// Get the ID of the BOOL input socket on the SubAreaNode (index 1).
-	std::string BoolInputSocketID = SubArea->GetSocketIDByIndex(1, NodeSocket::SocketFlow::Input);
-	ASSERT_NE(BoolInputSocketID, "");
+	FEUUID BoolInputSocketID = SubArea->GetSocketIDByIndex(1, NodeSocket::SocketFlow::Input);
+	ASSERT_FALSE(IsNull(BoolInputSocketID));
 
 	// Delete it via SubAreaNode.
 	EXPECT_TRUE(SubArea->DeleteSocket(BoolInputSocketID));
@@ -260,8 +260,8 @@ TEST(SubAreaNodeTests, DeleteSocket_OnlyRemoves_CorrespondingDirection_From_Part
 	EXPECT_EQ(OutputNode->GetInputSocketCount(), 2);
 
 	// Delete the BOOL output socket (now at index 1).
-	std::string BoolOutputSocketID = SubArea->GetSocketIDByIndex(1, NodeSocket::SocketFlow::Output);
-	ASSERT_NE(BoolOutputSocketID, "");
+	FEUUID BoolOutputSocketID = SubArea->GetSocketIDByIndex(1, NodeSocket::SocketFlow::Output);
+	ASSERT_FALSE(IsNull(BoolOutputSocketID));
 	EXPECT_TRUE(SubArea->DeleteSocket(BoolOutputSocketID));
 
 	EXPECT_EQ(SubArea->GetOutputSocketCount(), 1);
@@ -305,11 +305,11 @@ TEST(SubAreaNodeTests, RenameSocket_PropagatesPartnerName)
 	std::string OutputNodeExecOriginalName = OutputNodeExec->GetName();
 
 	// Input side: SubAreaNode input socket <=> SubAreaInputNode output socket.
-	std::string SubAreaInputSocketID = SubArea->GetSocketIDByIndex(1, NodeSocket::SocketFlow::Input);
+	FEUUID SubAreaInputSocketID = SubArea->GetSocketIDByIndex(1, NodeSocket::SocketFlow::Input);
 	NodeSocket* SubAreaInputSocket = SubArea->GetSocketByID(SubAreaInputSocketID);
 	ASSERT_NE(SubAreaInputSocket, nullptr);
 
-	std::string InputNodeMirrorSocketID = InputNode->GetSocketIDByIndex(1, NodeSocket::SocketFlow::Output);
+	FEUUID InputNodeMirrorSocketID = InputNode->GetSocketIDByIndex(1, NodeSocket::SocketFlow::Output);
 	NodeSocket* InputNodeMirrorSocket = InputNode->GetSocketByID(InputNodeMirrorSocketID);
 	ASSERT_NE(InputNodeMirrorSocket, nullptr);
 
@@ -335,11 +335,11 @@ TEST(SubAreaNodeTests, RenameSocket_PropagatesPartnerName)
 	EXPECT_EQ(OutputNodeExec->GetName(), OutputNodeExecOriginalName);
 
 	// Output side: SubAreaNode output socket <=> SubAreaOutputNode input socket.
-	std::string SubAreaOutputSocketID = SubArea->GetSocketIDByIndex(1, NodeSocket::SocketFlow::Output);
+	FEUUID SubAreaOutputSocketID = SubArea->GetSocketIDByIndex(1, NodeSocket::SocketFlow::Output);
 	NodeSocket* SubAreaOutputSocket = SubArea->GetSocketByID(SubAreaOutputSocketID);
 	ASSERT_NE(SubAreaOutputSocket, nullptr);
 
-	std::string OutputNodeMirrorSocketID = OutputNode->GetSocketIDByIndex(1, NodeSocket::SocketFlow::Input);
+	FEUUID OutputNodeMirrorSocketID = OutputNode->GetSocketIDByIndex(1, NodeSocket::SocketFlow::Input);
 	NodeSocket* OutputNodeMirrorSocket = OutputNode->GetSocketByID(OutputNodeMirrorSocketID);
 	ASSERT_NE(OutputNodeMirrorSocket, nullptr);
 
@@ -387,7 +387,7 @@ TEST(SubAreaNodeTests, CopyPaste_CreatesIndependentOwnedArea)
 
 	NodeArea* OriginalOwnedArea = SubArea->GetOwnedArea();
 	ASSERT_NE(OriginalOwnedArea, nullptr);
-	std::string OriginalOwnedAreaID = OriginalOwnedArea->GetID();
+	FEUUID OriginalOwnedAreaID = OriginalOwnedArea->GetID();
 
 	// Simulating copy-paste.
 	TEST_TOOLS.SimulateCopyPasteNodes({ SubArea }, ParentArea);
@@ -430,7 +430,7 @@ TEST(SubAreaNodeTests, CopyPaste_CreatesIndependentOwnedArea)
 	EXPECT_EQ(PastedSubArea->GetSubAreaOutputNode()->GetInputSocketCount(), SubArea->GetSubAreaOutputNode()->GetInputSocketCount());
 
 	// Cleanup should remove both owned areas.
-	std::string PastedOwnedAreaID = PastedOwnedArea->GetID();
+	FEUUID PastedOwnedAreaID = PastedOwnedArea->GetID();
 	NODE_SYSTEM.DeleteNodeArea(ParentArea);
 
 	EXPECT_EQ(NODE_SYSTEM.GetNodeAreaByID(OriginalOwnedAreaID), nullptr);
@@ -486,7 +486,7 @@ TEST(SubAreaNodeTests, CopyPaste_CreatesIndependentCopy)
 	NodeArea* OwnedArea = SubArea->GetOwnedArea();
 	ASSERT_NE(OwnedArea, nullptr);
 	OwnedArea->SetSaveExecutedNodes(true);
-	std::string OriginalOwnedAreaID = OwnedArea->GetID();
+	FEUUID OriginalOwnedAreaID = OwnedArea->GetID();
 
 	BoolVariableNode* InnerBoolNode = new BoolVariableNode();
 	InnerBoolNode->SetName("InnerBoolNode");
@@ -630,7 +630,7 @@ TEST(SubAreaNodeTests, CopyPaste_CreatesIndependentCopy)
 	ASSERT_TRUE(ParentArea->ExecuteNodeNetwork());
 	EXPECT_FALSE(ParentBoolResult->GetData());
 
-	std::string PastedOwnedAreaID = PastedOwnedArea->GetID();
+	FEUUID PastedOwnedAreaID = PastedOwnedArea->GetID();
 	NODE_SYSTEM.DeleteNodeArea(ParentArea);
 
 	EXPECT_EQ(NODE_SYSTEM.GetNodeAreaByID(OriginalOwnedAreaID), nullptr);
@@ -786,7 +786,7 @@ TEST(SubAreaNodeTests, SetSocketAllowedTypes_DisconnectsIncompatible)
 	EXPECT_TRUE(BoolOutput->GetData());
 
 	// Change SubAreaNode input socket type to FLOAT (incompatible with BOOL connections).
-	std::string InputSocketID = SubArea->GetSocketIDByIndex(1, NodeSocket::SocketFlow::Input);
+	FEUUID InputSocketID = SubArea->GetSocketIDByIndex(1, NodeSocket::SocketFlow::Input);
 	NodeSocket* InputSocket = SubArea->GetSocketByID(InputSocketID);
 	ASSERT_NE(InputSocket, nullptr);
 
@@ -797,8 +797,8 @@ TEST(SubAreaNodeTests, SetSocketAllowedTypes_DisconnectsIncompatible)
 	EXPECT_FALSE(ParentArea->IsConnected(BoolInput, 0, SubArea, 1));
 
 	// Mirror socket on InputNode should also have changed type.
-	std::string MirrorSocketID = InputNode->GetSocketIDByIndex(1, NodeSocket::SocketFlow::Output);
-	ASSERT_FALSE(MirrorSocketID.empty());
+	FEUUID MirrorSocketID = InputNode->GetSocketIDByIndex(1, NodeSocket::SocketFlow::Output);
+	ASSERT_FALSE(IsNull(MirrorSocketID));
 	const NodeSocket* MirrorSocket = InputNode->GetSocketByID(MirrorSocketID);
 	ASSERT_NE(MirrorSocket, nullptr);
 	EXPECT_EQ(MirrorSocket->GetAllowedTypes().size(), 1);
@@ -810,7 +810,7 @@ TEST(SubAreaNodeTests, SetSocketAllowedTypes_DisconnectsIncompatible)
 	ASSERT_TRUE(ParentArea->IsConnected(SubArea, 1, BoolOutput, 1));
 
 	// Now test the output side.
-	std::string OutputSocketID = SubArea->GetSocketIDByIndex(1, NodeSocket::SocketFlow::Output);
+	FEUUID OutputSocketID = SubArea->GetSocketIDByIndex(1, NodeSocket::SocketFlow::Output);
 	NodeSocket* OutputSocket = SubArea->GetSocketByID(OutputSocketID);
 	ASSERT_NE(OutputSocket, nullptr);
 
@@ -833,8 +833,8 @@ TEST(SubAreaNodeTests, SetSocketAllowedTypes_DisconnectsIncompatible)
 	EXPECT_FALSE(ParentArea->IsConnected(SubArea, 1, BoolOutput, 1));
 
 	// Mirror socket on OutputNode should also have changed.
-	std::string OutputMirrorSocketID = OutputNode->GetSocketIDByIndex(1, NodeSocket::SocketFlow::Input);
-	ASSERT_FALSE(OutputMirrorSocketID.empty());
+	FEUUID OutputMirrorSocketID = OutputNode->GetSocketIDByIndex(1, NodeSocket::SocketFlow::Input);
+	ASSERT_FALSE(IsNull(OutputMirrorSocketID));
 	const NodeSocket* OutputMirrorSocket = OutputNode->GetSocketByID(OutputMirrorSocketID);
 	ASSERT_NE(OutputMirrorSocket, nullptr);
 	EXPECT_EQ(OutputMirrorSocket->GetAllowedTypes().size(), 1);
@@ -896,7 +896,7 @@ TEST(SubAreaNodeTests, SetSocketAllowedTypes_KeepsCompatible)
 	EXPECT_EQ(IntOutput->GetData(), 42);
 
 	// Widen input type to INT + FLOAT; INT connections should survive.
-	std::string InputSocketID = SubArea->GetSocketIDByIndex(1, NodeSocket::SocketFlow::Input);
+	FEUUID InputSocketID = SubArea->GetSocketIDByIndex(1, NodeSocket::SocketFlow::Input);
 	NodeSocket* InputSocket = SubArea->GetSocketByID(InputSocketID);
 	ASSERT_NE(InputSocket, nullptr);
 
@@ -969,7 +969,7 @@ TEST(SubAreaNodeTests, SaveLoad_WithExecutionAndData)
 	ASSERT_TRUE(ParentArea->ExecuteNodeNetwork());
 	EXPECT_EQ(IntOutput->GetData(), 77);
 
-	std::string ParentAreaID = ParentArea->GetID();
+	FEUUID ParentAreaID = ParentArea->GetID();
 
 	NODE_SYSTEM.SaveToFile("SubAreaNodeTests_SaveLoad.json");
 	NODE_SYSTEM.Clear();
@@ -1022,10 +1022,10 @@ TEST(SubAreaNodeTests, SaveLoad_RestoresInputOutputNodeRelationship)
 	EXPECT_TRUE(SubArea->AddSocket({ "BOOL" }, "Bool IN", NodeSocket::SocketFlow::Input));
 	EXPECT_TRUE(SubArea->AddSocket({ "BOOL" }, "Bool OUT", NodeSocket::SocketFlow::Output));
 
-	std::string ParentAreaID = ParentArea->GetID();
-	std::string SubAreaNodeID = SubArea->GetID();
-	std::string InputNodeID = SubArea->GetSubAreaInputNode()->GetID();
-	std::string OutputNodeID = SubArea->GetSubAreaOutputNode()->GetID();
+	FEUUID ParentAreaID = ParentArea->GetID();
+	FEUUID SubAreaNodeID = SubArea->GetID();
+	FEUUID InputNodeID = SubArea->GetSubAreaInputNode()->GetID();
+	FEUUID OutputNodeID = SubArea->GetSubAreaOutputNode()->GetID();
 
 	NODE_SYSTEM.SaveToFile("SubAreaNodeTests_SaveLoad_Relationship.json");
 	NODE_SYSTEM.Clear();
@@ -1082,7 +1082,7 @@ TEST(SubAreaNodeTests, FromJson_MalformedOwnedAreaData_FailsWithoutLeakOrDanglin
 
 	NodeArea* OwnedArea = SubArea->GetOwnedArea();
 	ASSERT_NE(OwnedArea, nullptr);
-	std::string OwnedAreaID = OwnedArea->GetID();
+	FEUUID OwnedAreaID = OwnedArea->GetID();
 
 	Json::Value SerializedNode = SubArea->ToJson();
 	// Fresh id, not owned and not already loaded.
@@ -1111,7 +1111,7 @@ TEST(SubAreaNodeTests, FromJson_OnEstablishedNode_ReleasesPreviousOwnedArea)
 
 	SubAreaNode* SubArea = NODE_SYSTEM.CreateSubAreaNode(ParentArea->GetID());
 	ASSERT_NE(SubArea, nullptr);
-	std::string OldOwnedAreaID = SubArea->GetOwnedArea()->GetID();
+	FEUUID OldOwnedAreaID = SubArea->GetOwnedArea()->GetID();
 
 	// Build a valid SubAreaNode JSON describing a different owned area, then delete its source
 	// so the described area ID is free and unowned at FromJson time.
@@ -1477,14 +1477,14 @@ TEST(SubAreaNodeTests, ExecSocket_CannotBeDeletedOrRetyped)
 	EXPECT_EQ(OutputNodeExecIn->GetAllowedTypes(), std::vector<std::string>{"EXECUTE"});
 
 	// Deleting the exec socket (index 0) must fail on all three nodes.
-	std::string SubAreaExecInID = SubArea->GetSocketIDByIndex(0, NodeSocket::SocketFlow::Input);
-	std::string SubAreaExecOutID = SubArea->GetSocketIDByIndex(0, NodeSocket::SocketFlow::Output);
-	std::string InputNodeExecOutID = InputNode->GetSocketIDByIndex(0, NodeSocket::SocketFlow::Output);
-	std::string OutputNodeExecInID = OutputNode->GetSocketIDByIndex(0, NodeSocket::SocketFlow::Input);
-	ASSERT_NE(SubAreaExecInID, "");
-	ASSERT_NE(SubAreaExecOutID, "");
-	ASSERT_NE(InputNodeExecOutID, "");
-	ASSERT_NE(OutputNodeExecInID, "");
+	FEUUID SubAreaExecInID = SubArea->GetSocketIDByIndex(0, NodeSocket::SocketFlow::Input);
+	FEUUID SubAreaExecOutID = SubArea->GetSocketIDByIndex(0, NodeSocket::SocketFlow::Output);
+	FEUUID InputNodeExecOutID = InputNode->GetSocketIDByIndex(0, NodeSocket::SocketFlow::Output);
+	FEUUID OutputNodeExecInID = OutputNode->GetSocketIDByIndex(0, NodeSocket::SocketFlow::Input);
+	ASSERT_FALSE(IsNull(SubAreaExecInID));
+	ASSERT_FALSE(IsNull(SubAreaExecOutID));
+	ASSERT_FALSE(IsNull(InputNodeExecOutID));
+	ASSERT_FALSE(IsNull(OutputNodeExecInID));
 
 	EXPECT_FALSE(SubArea->DeleteSocket(SubAreaExecInID));
 	EXPECT_FALSE(SubArea->DeleteSocket(SubAreaExecOutID));
@@ -1528,7 +1528,7 @@ TEST(SubAreaNodeTests, Small_Graph)
 	ASSERT_NE(SubAreaOwningArea1, nullptr);
 
 	// Remember the IDs of every area that is expected to disappear (Areas[1] and its full subtree).
-	std::vector<std::string> DoomedAreaIDs;
+	std::vector<FEUUID> DoomedAreaIDs;
 	for (int Index : std::vector<int>{ 1, 4, 5, 6, 13, 14, 15, 23, 24 })
 		DoomedAreaIDs.push_back(Areas[Index]->GetID());
 
@@ -1536,7 +1536,7 @@ TEST(SubAreaNodeTests, Small_Graph)
 	RootArea->Delete(SubAreaOwningArea1);
 
 	// All 9 areas in branch 1 should be gone.
-	for (const std::string& DoomedID : DoomedAreaIDs)
+	for (const FEUUID& DoomedID : DoomedAreaIDs)
 		EXPECT_EQ(NODE_SYSTEM.GetNodeAreaByID(DoomedID), nullptr);
 
 	// The verifier relies on there being exactly 30 areas and should now fail.
@@ -1818,7 +1818,7 @@ TEST(SubAreaNodeTests, SaveLoad_With_Execute_Connections_Small)
 
 	Areas[0]->ExecuteNodeNetwork();
 
-	std::unordered_map<std::string, std::vector<Node*>> ExecutedNodes = NODE_SYSTEM.GetLastExecutedNodes(Areas[0]->GetID());
+	std::unordered_map<FEUUID, std::vector<Node*>> ExecutedNodes = NODE_SYSTEM.GetLastExecutedNodes(Areas[0]->GetID());
 	size_t ExecutedNodeAreaCount = ExecutedNodes.size();
 	std::vector<size_t> ExecutedNodesPerArea;
 	for (auto Area : Areas)
@@ -1887,7 +1887,7 @@ TEST(SubAreaNodeTests, SaveLoad_With_Execute_Connections_Small)
 
 	Areas[0]->ExecuteNodeNetwork();
 
-	std::unordered_map<std::string, std::vector<Node*>> AfterLoadExecutedNodes = NODE_SYSTEM.GetLastExecutedNodes(Areas[0]->GetID());
+	std::unordered_map<FEUUID, std::vector<Node*>> AfterLoadExecutedNodes = NODE_SYSTEM.GetLastExecutedNodes(Areas[0]->GetID());
 	size_t AfterLoadExecutedNodeAreaCount = AfterLoadExecutedNodes.size();
 	ASSERT_EQ(ExecutedNodeAreaCount, AfterLoadExecutedNodeAreaCount);
 	for (int i = 0; i < Areas.size(); i++)
@@ -1921,8 +1921,8 @@ TEST(SubAreaNodeTests, DeleteOwnedArea_Removes_OrphanedSubAreaNode_From_Parent)
 	NodeArea* OwnedArea = CurrentSubAreaNode->GetOwnedArea();
 	ASSERT_NE(OwnedArea, nullptr);
 
-	const std::string OwnedAreaID = OwnedArea->GetID();
-	const std::string SubNodeID = CurrentSubAreaNode->GetID();
+	const FEUUID OwnedAreaID = OwnedArea->GetID();
+	const FEUUID SubNodeID = CurrentSubAreaNode->GetID();
 
 	ASSERT_EQ(ParentArea->GetNodeCount(), 1);
 
@@ -1964,8 +1964,8 @@ TEST(SubAreaNodeTests, DeleteOwnedArea_OnNonDestroyableSubAreaOwner_DeletesArea)
 	ASSERT_EQ(SubAreas.size(), 1);
 	SubAreaNode* LoadedSubArea = SubAreas[0];
 	ASSERT_NE(LoadedSubArea->GetOwnedArea(), nullptr);
-	std::string OwnedAreaID = LoadedSubArea->GetOwnedArea()->GetID();
-	std::string SubAreaNodeID = LoadedSubArea->GetID();
+	FEUUID OwnedAreaID = LoadedSubArea->GetOwnedArea()->GetID();
+	FEUUID SubAreaNodeID = LoadedSubArea->GetID();
 
 	size_t AreaCountBefore = NODE_SYSTEM.GetNodeAreaCount();
 	NODE_SYSTEM.DeleteNodeArea(LoadedSubArea->GetOwnedArea());
@@ -2399,8 +2399,8 @@ TEST(SubAreaNodeTests, SetName_Propagation_SurvivesSaveLoad)
 	ASSERT_NE(SubArea, nullptr);
 	SubArea->SetName("Persisted");
 
-	const std::string ParentAreaID = ParentArea->GetID();
-	const std::string SubAreaID = SubArea->GetID();
+	const FEUUID ParentAreaID = ParentArea->GetID();
+	const FEUUID SubAreaID = SubArea->GetID();
 
 	NODE_SYSTEM.SaveToFile("SubAreaNodeTests_SetName_Propagation.json");
 	NODE_SYSTEM.Clear();
@@ -2544,7 +2544,7 @@ TEST(SubAreaNodeTests, MoveNodesTo_IntoOwnOwnedArea_IsRejected_AndPreservesOwner
 	ASSERT_NE(SubArea, nullptr);
 	NodeArea* Owned = SubArea->GetOwnedArea();
 	ASSERT_NE(Owned, nullptr);
-	const std::string OwnedID = Owned->GetID();
+	const FEUUID OwnedID = Owned->GetID();
 
 	// Moving Root's nodes (just SubArea) into the area SubArea itself owns would form a cycle.
 	EXPECT_FALSE(NODE_SYSTEM.MoveNodesTo(Root, Owned));
@@ -2577,7 +2577,7 @@ TEST(SubAreaNodeTests, MoveNodesTo_DoesNotMoveSubAreaBoundaryNodes)
 	// A regular node in the owned area should still be movable.
 	Node* RegularNode = new BeginNode();
 	ASSERT_TRUE(OwnedArea->AddNode(RegularNode));
-	const std::string RegularNodeID = RegularNode->GetID();
+	const FEUUID RegularNodeID = RegularNode->GetID();
 
 	EXPECT_TRUE(NODE_SYSTEM.MoveNodesTo(OwnedArea, ParentArea));
 
@@ -2959,11 +2959,11 @@ TEST(SubAreaNodeTests, ConvertNodesToSubArea_SaveLoadCycle)
 	SubAreaNode* SubArea = NODE_SYSTEM.ConvertNodesToSubArea(ParentArea, { MiddleBoolNode });
 	ASSERT_NE(SubArea, nullptr);
 
-	const std::string ParentAreaID = ParentArea->GetID();
-	const std::string SubAreaNodeID = SubArea->GetID();
-	const std::string MiddleNodeID = MiddleBoolNode->GetID();
-	const std::string BeginNodeID = ExecutionBeginNode->GetID();
-	const std::string ResultNodeID = ParentBoolResult->GetID();
+	const FEUUID ParentAreaID = ParentArea->GetID();
+	const FEUUID SubAreaNodeID = SubArea->GetID();
+	const FEUUID MiddleNodeID = MiddleBoolNode->GetID();
+	const FEUUID BeginNodeID = ExecutionBeginNode->GetID();
+	const FEUUID ResultNodeID = ParentBoolResult->GetID();
 
 	const std::string SavedJson = NODE_SYSTEM.ToJson();
 	NODE_SYSTEM.Clear();
