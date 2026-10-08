@@ -41,9 +41,9 @@ LinkNode::LinkNode(const LinkNode& Other) : VisNodeSys::SocketMirrorNode(Other)
 	LinkedAreaID = Other.LinkedAreaID;
 
 	// After copying node would be dangling.
-	PartnerNodeID = "";
+	PartnerNodeID = FEUUID();
 	bIsInProcessOfBeingDestroyed = false;
-	SocketIDBeingModified = "";
+	SocketIDBeingModified = FEUUID();
 	bInEditMode = false;
 
 	SetTitleBarHeight(54.0f);
@@ -86,8 +86,8 @@ Json::Value LinkNode::ToJson()
 {
 	Json::Value Result = SocketMirrorNode::ToJson();
 
-	Result["PartnerNodeID"] = PartnerNodeID;
-	Result["LinkedAreaID"] = LinkedAreaID;
+	Result["PartnerNodeID"] = ToString(PartnerNodeID);
+	Result["LinkedAreaID"] = ToString(LinkedAreaID);
 
 	return Result;
 }
@@ -104,8 +104,8 @@ bool LinkNode::FromJson(Json::Value Json)
 	if (!Json.isMember("LinkedAreaID") || !Json["LinkedAreaID"].isString())
 		return false;
 
-	PartnerNodeID = Json["PartnerNodeID"].asString();
-	LinkedAreaID = Json["LinkedAreaID"].asString();
+	PartnerNodeID = FromStringLegacyCompatible(Json["PartnerNodeID"].asString());
+	LinkedAreaID = FromStringLegacyCompatible(Json["LinkedAreaID"].asString());
 
 	return true;
 }

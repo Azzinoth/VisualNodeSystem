@@ -18,7 +18,7 @@ namespace VisNodeSys
 		SubAreaInputNode(const SubAreaInputNode& Other);
 		~SubAreaInputNode();
 
-		std::string OwnerSubAreaNodeID = "";
+		FEUUID OwnerSubAreaNodeID;
 
 		void SetCorrectSize();
 

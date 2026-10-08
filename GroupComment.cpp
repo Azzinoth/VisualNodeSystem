@@ -4,11 +4,11 @@ using namespace VisNodeSys;
 
 char GroupComment::GroupCommentRename[GROUP_COMMENT_CAPTION_MAX_LENGTH] = "";
 
-GroupComment::GroupComment(const std::string ID)
+GroupComment::GroupComment(const FEUUID& ID)
 {
 	this->ID = ID;
-	if (ID.empty())
-		this->ID = NODE_CORE.GetUniqueHexID();
+	if (IsNull(ID))
+		this->ID = GenerateID();
 
 	SetSize(ImVec2(200, 200));
 }
@@ -16,7 +16,7 @@ GroupComment::GroupComment(const std::string ID)
 GroupComment::GroupComment(const GroupComment& Other)
 {
 	ParentArea = nullptr;
-	ID = NODE_CORE.GetUniqueHexID();
+	ID = GenerateID();
 	Position = Other.Position;
 	Size = Other.Size;
 	Caption = Other.Caption;
@@ -24,7 +24,7 @@ GroupComment::GroupComment(const GroupComment& Other)
 	BackgroundColor = Other.BackgroundColor;
 }
 
-std::string GroupComment::GetID()
+FEUUID GroupComment::GetID()
 {
 	return ID;
 }
@@ -63,7 +63,7 @@ Json::Value GroupComment::ToJson()
 {
 	Json::Value Result;
 
-	Result["ID"] = ID;
+	Result["ID"] = ToString(ID);
 	Result["Position"]["X"] = Position.x;
 	Result["Position"]["Y"] = Position.y;
 	Result["Size"]["X"] = Size.x;
@@ -109,7 +109,7 @@ bool GroupComment::FromJson(Json::Value Json)
 		!Json["BackgroundColor"].isMember("W") || !Json["BackgroundColor"]["W"].isNumeric())
 		return false;
 
-	ID = Json["ID"].asCString();
+	ID = FromStringLegacyCompatible(Json["ID"].asCString());
 	Position.x = Json["Position"]["X"].asFloat();
 	Position.y = Json["Position"]["Y"].asFloat();
 	Size.x = Json["Size"]["X"].asFloat();

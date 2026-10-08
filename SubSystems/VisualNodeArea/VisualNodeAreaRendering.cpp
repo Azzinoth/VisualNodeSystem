@@ -7,7 +7,7 @@ void NodeArea::RenderNode(Node* Node) const
 	if (CurrentDrawList == nullptr || Node == nullptr)
 		return;
 
-	ImGui::PushID(Node->GetID().c_str());
+	ImGui::PushID(ToString(Node->GetID()).c_str());
 
 	Node->LeftTop = LocalToScreen(Node->GetPosition());
 	if (Node->GetStyle() == DEFAULT)
@@ -595,7 +595,7 @@ void NodeArea::RenderReroute(const RerouteNode* RerouteNode) const
 	CurrentDrawList->AddCircleFilled(LocalToScreen(RerouteNode->Position), GetRerouteNodeSize(), ImColor(DEFAULT_NODE_SOCKET_COLOR.Value + ImColor(15, 25, 15).Value));
 }
 
-ImVec2 NodeArea::SocketToPosition(Node* Node, const std::string& SocketID) const
+ImVec2 NodeArea::SocketToPosition(Node* Node, const FEUUID& SocketID) const
 {
 	if (Node == nullptr)
 		return ImVec2(0, 0);
@@ -875,7 +875,7 @@ void NodeArea::RenderGroupComment(GroupComment* GroupComment)
 	if (CurrentDrawList == nullptr || GroupComment == nullptr)
 		return;
 
-	ImGui::PushID(GroupComment->ID.c_str());
+	ImGui::PushID(ToString(GroupComment->ID).c_str());
 
 	ImVec2 LocalPosition = LocalToScreen(GroupComment->GetPosition());
 	ImVec2 CommentSize = GroupComment->GetSize() * Zoom;
@@ -993,8 +993,8 @@ void NodeArea::RenderDefaultMainContextMenu()
 		ImGui::Separator();
 		if (ImGui::MenuItem("Rename socket"))
 		{
-			std::string TargetNodeID = ContextMenuOpenState.GetNodeID();
-			std::string TargetSocketID = HoveredSocket->GetID();
+			FEUUID TargetNodeID = ContextMenuOpenState.GetNodeID();
+			FEUUID TargetSocketID = HoveredSocket->GetID();
 
 			TEXT_INPUT_POPUP.Show(
 				"Rename socket",
@@ -1096,7 +1096,7 @@ void NodeArea::RenderDefaultMainContextMenu()
 	{
 		if (ImGui::MenuItem("Rename Node"))
 		{
-			std::string TargetNodeID = ContextMenuOpenState.GetNodeID();
+			FEUUID TargetNodeID = ContextMenuOpenState.GetNodeID();
 			TEXT_INPUT_POPUP.Show(
 				"Rename node",
 				"Enter new node name:",

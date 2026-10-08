@@ -12,8 +12,8 @@ namespace VisNodeSys
 
 		static bool bIsRegistered;
 
-		std::string PartnerNodeID;
-		std::string LinkedAreaID;
+		FEUUID PartnerNodeID;
+		FEUUID LinkedAreaID;
 		// Prevents mutual destruction cycle, deleting one LinkNode triggers deletion of its partner, which would try to delete this node again.
 		bool bIsInProcessOfBeingDestroyed = false;
 

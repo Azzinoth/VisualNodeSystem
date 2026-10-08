@@ -18,7 +18,7 @@ namespace VisNodeSys
 		SubAreaOutputNode(const SubAreaOutputNode& Other);
 		~SubAreaOutputNode();
 
-		std::string OwnerSubAreaNodeID = "";
+		FEUUID OwnerSubAreaNodeID;
 
 		void SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSocket, NODE_SOCKET_EVENT EventType);
 

@@ -28,6 +28,7 @@
 #include "glm/geometric.hpp"
 
 #include "jsoncpp/json/json.h"
+#include "stduuid/uuid.h"
 
 #include "VisualNodeSystemAPI.h"
 
@@ -54,17 +55,15 @@ namespace VisNodeSys
     CLASS_NAME(const CLASS_NAME &);			\
     void operator= (const CLASS_NAME &);
 
+	using FEUUID = uuids::uuid;
 
-#define FE_MAP_TO_STR_VECTOR(map)          \
-	std::vector<std::string> result;       \
-	auto iterator = map.begin();           \
-	while (iterator != map.end())          \
-	{                                      \
-		result.push_back(iterator->first); \
-		iterator++;                        \
-	}                                      \
-										   \
-	return result;
+	VISUAL_NODE_SYSTEM_API FEUUID GenerateID();
+	VISUAL_NODE_SYSTEM_API FEUUID ConvertLegacyHexID(const std::string& HexID);
+	VISUAL_NODE_SYSTEM_API bool IsNull(const FEUUID& ID);
+
+	VISUAL_NODE_SYSTEM_API std::string ToString(const FEUUID& ID);
+	VISUAL_NODE_SYSTEM_API FEUUID FromString(const std::string& ID);
+	VISUAL_NODE_SYSTEM_API FEUUID FromStringLegacyCompatible(const std::string& ID);
 
 	enum class EllipsisPosition
 	{
@@ -81,8 +80,6 @@ namespace VisNodeSys
 		friend class NodeSystem;
 
 		bool bIsInTestMode = false;
-
-		std::string GetUniqueID();
 
 		bool bIsFontsInitialized = false;
 		std::vector<ImFont*> Fonts;
@@ -141,11 +138,6 @@ namespace VisNodeSys
 			;
 	public:
 		SINGLETON_PUBLIC_PART(NodeCore)
-
-		// This function can produce ID's that are "unique" with very rare collisions.
-		// For most purposes it can be considered unique.
-		// ID is a 24 long string.
-		std::string GetUniqueHexID();
 
 		bool SetClipboardText(std::string Text);
 		std::string GetClipboardText();

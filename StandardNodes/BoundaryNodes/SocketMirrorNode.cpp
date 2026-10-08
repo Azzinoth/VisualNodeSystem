@@ -11,14 +11,14 @@ ImTextureID SocketMirrorNode::RenameIconTextureID = 0;
 ImTextureID SocketMirrorNode::ChangeAllowedTypesIconTextureID = 0;
 ImTextureID SocketMirrorNode::SubAreaIconTextureID = 0;
 
-SocketMirrorNode::SocketMirrorNode(const std::string ID) : Node(ID)
+SocketMirrorNode::SocketMirrorNode(const FEUUID& ID) : Node(ID)
 {
 	
 }
 
 SocketMirrorNode::SocketMirrorNode(const SocketMirrorNode& Other) : Node(Other)
 {
-	SocketIDBeingModified = "";
+	SocketIDBeingModified = FEUUID();
 
 	bHaveInput = Other.bHaveInput;
 	bHaveOutput = Other.bHaveOutput;
@@ -209,7 +209,7 @@ bool SocketMirrorNode::AddSocket(NodeSocket* Socket)
 	SocketIDBeingModified = Socket->GetID();
 	if (!NODE_SYSTEM.AddSocketToMirrorNode(ID, Socket->GetAllowedTypes(), Socket->GetName(), Socket->GetFlowDirection()))
 	{
-		SocketIDBeingModified = "";
+		SocketIDBeingModified = FEUUID();
 		return false;
 	}
 
@@ -222,11 +222,11 @@ bool SocketMirrorNode::AddSocket(NodeSocket* Socket)
 		Output[SocketIndex]->SetFunctionToOutputData(CreateCrossAreaDataGetter(SocketIndex));
 	}
 
-	SocketIDBeingModified = "";
+	SocketIDBeingModified = FEUUID();
 	return bLocalAdded;
 }
 
-bool SocketMirrorNode::DeleteSocket(std::string SocketID)
+bool SocketMirrorNode::DeleteSocket(const FEUUID& SocketID)
 {
 	return DeleteSocket(GetSocketByID(SocketID));
 }
@@ -249,7 +249,7 @@ bool SocketMirrorNode::DeleteSocket(NodeSocket* Socket)
 	// Dangling nodes have no partner to sync with, their sockets are deleted locally.
 	if (!NODE_SYSTEM.DeleteSocketFromMirrorNode(ID, Socket->GetID()) && !IsDangling())
 	{
-		SocketIDBeingModified = "";
+		SocketIDBeingModified = FEUUID();
 		return false;
 	}
 
@@ -263,7 +263,7 @@ bool SocketMirrorNode::DeleteSocket(NodeSocket* Socket)
 			Output[i]->SetFunctionToOutputData(CreateCrossAreaDataGetter(static_cast<int>(i)));
 	}
 
-	SocketIDBeingModified = "";
+	SocketIDBeingModified = FEUUID();
 	return bLocalDeleted;
 }
 
@@ -384,7 +384,7 @@ void SocketMirrorNode::Draw()
 			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
 			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
 
-			if (ImGui::ImageButton(("PlusIcon_LinkNode_ID" + ID + (bInputFlowSide ? "_Input" : "_Output")).c_str(), PlusIconTextureID, ImVec2(PlusIconSize, PlusIconSize), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImVec4(0, 0, 0, 0)))
+			if (ImGui::ImageButton(("PlusIcon_LinkNode_ID" + ToString(ID) + (bInputFlowSide ? "_Input" : "_Output")).c_str(), PlusIconTextureID, ImVec2(PlusIconSize, PlusIconSize), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImVec4(0, 0, 0, 0)))
 			{
 				AddSocket({ "INT" }, "TEST", bInputFlowSide ? NodeSocket::SocketFlow::Input : NodeSocket::SocketFlow::Output);
 			}
@@ -401,7 +401,7 @@ void SocketMirrorNode::Draw()
 			std::vector<NodeSocket*>& SocketsToWorkWith = bInputFlowSide ? Input : Output;
 			for (size_t i = 0; i < SocketsToWorkWith.size(); i++)
 			{
-				std::string SocketID = SocketsToWorkWith[i]->GetID();
+				FEUUID SocketID = SocketsToWorkWith[i]->GetID();
 				ImVec2 SocketPosition = ParentArea->SocketToPosition(this, SocketID);
 
 				glm::vec2 EditButtonCenter = GetEditButtonCenter(bInputFlowSide);
@@ -413,10 +413,10 @@ void SocketMirrorNode::Draw()
 				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
 				ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
 
-				if (ImGui::ImageButton(("Rename_LinkNode_ID" + SocketID).c_str(), RenameIconTextureID, ImVec2(RenameIconSize, RenameIconSize), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImVec4(0, 0, 0, 0)))
+				if (ImGui::ImageButton(("Rename_LinkNode_ID" + ToString(SocketID)).c_str(), RenameIconTextureID, ImVec2(RenameIconSize, RenameIconSize), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImVec4(0, 0, 0, 0)))
 				{
-					std::string ParentNodeID = GetID();
-					std::string TargetSocketID = SocketID;
+					FEUUID ParentNodeID = GetID();
+					FEUUID TargetSocketID = SocketID;
 
 					TEXT_INPUT_POPUP.Show(
 						"Rename socket",
@@ -456,7 +456,7 @@ void SocketMirrorNode::Draw()
 				if (i == 0)
 					continue;
 
-				std::string SocketID = SocketsToWorkWith[i]->GetID();
+				FEUUID SocketID = SocketsToWorkWith[i]->GetID();
 				ImVec2 SocketPosition = ParentArea->SocketToPosition(this, SocketID);
 
 				glm::vec2 EditButtonCenter = GetEditButtonCenter(bInputFlowSide);
@@ -469,10 +469,10 @@ void SocketMirrorNode::Draw()
 				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
 				ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
 
-				if (ImGui::ImageButton(("ChangeAllowedTypes_LinkNode_ID" + SocketID).c_str(), ChangeAllowedTypesIconTextureID, ImVec2(ChangeTypesIconSize, ChangeTypesIconSize), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImVec4(0, 0, 0, 0)))
+				if (ImGui::ImageButton(("ChangeAllowedTypes_LinkNode_ID" + ToString(SocketID)).c_str(), ChangeAllowedTypesIconTextureID, ImVec2(ChangeTypesIconSize, ChangeTypesIconSize), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImVec4(0, 0, 0, 0)))
 				{
-					std::string ParentNodeID = GetID();
-					std::string TargetSocketID = SocketID;
+					FEUUID ParentNodeID = GetID();
+					FEUUID TargetSocketID = SocketID;
 
 					std::vector<std::string> CurrentTypes = SocketsToWorkWith[i]->GetAllowedTypes();
 					std::string InitialText;
@@ -532,7 +532,7 @@ void SocketMirrorNode::Draw()
 				if (i == 0)
 					continue;
 
-				std::string SocketID = SocketsToWorkWith[i]->GetID();
+				FEUUID SocketID = SocketsToWorkWith[i]->GetID();
 				ImVec2 SocketPosition = ParentArea->SocketToPosition(this, SocketID);
 
 				glm::vec2 EditButtonCenter = GetEditButtonCenter(bInputFlowSide);
@@ -545,7 +545,7 @@ void SocketMirrorNode::Draw()
 				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
 				ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
 
-				if (ImGui::ImageButton(("TrashBinIcon_LinkNode_ID" + SocketID).c_str(), TrashBinIconTextureID, ImVec2(TrashBinIconSize, TrashBinIconSize), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImVec4(0, 0, 0, 0)))
+				if (ImGui::ImageButton(("TrashBinIcon_LinkNode_ID" + ToString(SocketID)).c_str(), TrashBinIconTextureID, ImVec2(TrashBinIconSize, TrashBinIconSize), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImVec4(0, 0, 0, 0)))
 				{
 					DeleteSocket(SocketID);
 
@@ -568,7 +568,7 @@ void SocketMirrorNode::Draw()
 		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
 		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
 
-		if (ImGui::ImageButton(("EditIcon_LinkNode_ID" + ID).c_str(), EditIconTextureID, ImVec2(32.0f, 32.0f) * Zoom, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImVec4(0, 0, 0, 0)))
+		if (ImGui::ImageButton(("EditIcon_LinkNode_ID" + ToString(ID)).c_str(), EditIconTextureID, ImVec2(32.0f, 32.0f) * Zoom, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImVec4(0, 0, 0, 0)))
 			bInEditMode = !bInEditMode;
 		NODE_CORE.ShowToolTip("Edit node");
 

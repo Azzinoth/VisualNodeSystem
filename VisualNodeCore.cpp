@@ -1,6 +1,9 @@
 #include "VisualNodeCore.h"
 #include "StandardNodes/BoundaryNodes/LinkNode/LinkNode.h"
 #include <filesystem>
+#include <algorithm>
+#include <array>
+#include <mutex>
 using namespace VisNodeSys;
 
 #ifdef VISUAL_NODE_SYSTEM_SHARED
@@ -50,64 +53,61 @@ void NodeCore::InitializeFonts()
 	Fonts.push_back(ImGui::GetIO().Fonts->AddFontFromMemoryTTF((void*)FontData, static_cast<int>(RawData.size()), 16.0f));
 }
 
-std::string NodeCore::GetUniqueID()
+FEUUID VisNodeSys::GenerateID()
 {
-	static std::random_device RandomDevice;
-	static std::mt19937 RandomEngine(RandomDevice());
-	static std::uniform_int_distribution<int> Distribution(0, 128);
+	static std::mutex IDGenerationMutex;
+	static std::mt19937 RandomEngine = []() {
+		std::random_device RandomDevice;
+		std::array<unsigned int, std::mt19937::state_size> SeedData;
+		std::generate(SeedData.begin(), SeedData.end(), std::ref(RandomDevice));
+		std::seed_seq Sequence(SeedData.begin(), SeedData.end());
+		return std::mt19937(Sequence);
+	}();
+	static uuids::uuid_random_generator Generator(RandomEngine);
 
-	static bool FirstInitialization = true;
-	if (FirstInitialization)
-	{
-		srand(static_cast<unsigned>(time(nullptr)));
-		FirstInitialization = false;
-	}
-
-	std::string ID;
-	ID += static_cast<char>(Distribution(RandomEngine));
-	for (size_t j = 0; j < 11; j++)
-	{
-		ID.insert(rand() % ID.size(), 1, static_cast<char>(Distribution(RandomEngine)));
-	}
-
-	return ID;
+	std::lock_guard<std::mutex> Lock(IDGenerationMutex);
+	return Generator();
 }
 
-std::string NodeCore::GetUniqueHexID()
+FEUUID VisNodeSys::ConvertLegacyHexID(const std::string& HexID)
 {
-	const std::string ID = GetUniqueID();
-	std::string IDinHex;
-
-	for (size_t i = 0; i < ID.size(); i++)
-	{
-		IDinHex.push_back("0123456789ABCDEF"[(ID[i] >> 4) & 15]);
-		IDinHex.push_back("0123456789ABCDEF"[ID[i] & 15]);
-	}
-
-	const std::string AdditionalRandomness = GetUniqueID();
-	std::string AdditionalString;
-	for (size_t i = 0; i < ID.size(); i++)
-	{
-		AdditionalString.push_back("0123456789ABCDEF"[(AdditionalRandomness[i] >> 4) & 15]);
-		AdditionalString.push_back("0123456789ABCDEF"[AdditionalRandomness[i] & 15]);
-	}
-	std::string FinalID;
-
-	for (size_t i = 0; i < ID.size() * 2; i++)
-	{
-		if (rand() % 2 - 1)
-		{
-			FinalID += IDinHex[i];
-		}
-		else
-		{
-			FinalID += AdditionalString[i];
-		}
-	}
-
-	return FinalID;
+	// Fixed namespace for converting old hex IDs, must never change.
+	// Must be the same as in FEBasicApplication, so the same legacy ID gives the same FEUUID in every module.
+	static const FEUUID LegacyIDNamespace = uuids::uuid::from_string("040bcbf8-3a7c-4815-9da7-117bfb3f9bde").value();
+	uuids::uuid_name_generator NameGenerator(LegacyIDNamespace);
+	return NameGenerator(HexID);
 }
 
+bool VisNodeSys::IsNull(const FEUUID& ID)
+{
+	return ID.is_nil();
+}
+
+std::string VisNodeSys::ToString(const FEUUID& ID)
+{
+	return uuids::to_string(ID);
+}
+
+FEUUID VisNodeSys::FromString(const std::string& ID)
+{
+	auto Result = uuids::uuid::from_string(ID);
+	if (!Result.has_value())
+		return FEUUID();
+
+	return Result.value();
+}
+
+FEUUID VisNodeSys::FromStringLegacyCompatible(const std::string& ID)
+{
+	if (ID.empty())
+		return FEUUID();
+
+	auto Result = uuids::uuid::from_string(ID);
+	if (Result.has_value())
+		return Result.value();
+
+	return ConvertLegacyHexID(ID);
+}
 bool NodeCore::SetClipboardText(std::string Text)
 {
 #ifdef _WIN32
@@ -400,7 +400,7 @@ void NodeCore::LoadTextureFromBase64(const std::string& Base64Data, ImTextureID&
 	if (ErrorCode)
 		return;
 
-	const std::filesystem::path TemporaryFilePath = TemporaryDirectory / ("VisualNodeSystem_Icon_" + GetUniqueHexID() + ".png");
+	const std::filesystem::path TemporaryFilePath = TemporaryDirectory / ("VisualNodeSystem_Icon_" + ToString(GenerateID()) + ".png");
 	std::ofstream OutFile(TemporaryFilePath, std::ios::binary);
 	if (!OutFile.is_open())
 		return;

@@ -80,7 +80,7 @@ Node* SubAreaOutputNode::GetOwnerSubAreaNode() const
 Json::Value SubAreaOutputNode::ToJson()
 {
 	Json::Value Result = SocketMirrorNode::ToJson();
-	Result["OwnerSubAreaNodeID"] = OwnerSubAreaNodeID;
+	Result["OwnerSubAreaNodeID"] = ToString(OwnerSubAreaNodeID);
 	return Result;
 }
 
@@ -93,7 +93,7 @@ bool SubAreaOutputNode::FromJson(Json::Value Json)
 	if (!Json.isMember("OwnerSubAreaNodeID") || !Json["OwnerSubAreaNodeID"].isString())
 		return false;
 
-	OwnerSubAreaNodeID = Json["OwnerSubAreaNodeID"].asString();
+	OwnerSubAreaNodeID = FromStringLegacyCompatible(Json["OwnerSubAreaNodeID"].asString());
 	return true;
 }
 

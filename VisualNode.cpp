@@ -3,11 +3,11 @@
 #include "VisualNodeSystem.h"
 using namespace VisNodeSys;
 
-Node::Node(const std::string ID)
+Node::Node(const FEUUID& ID)
 {
 	this->ID = ID;
-	if (ID.empty())
-		this->ID = NODE_CORE.GetUniqueHexID();
+	if (IsNull(ID))
+		this->ID = GenerateID();
 
 	SetSize(ImVec2(200, 80));
 	SetName("VisualNode");
@@ -17,7 +17,7 @@ Node::Node(const std::string ID)
 Node::Node(const Node& Other)
 {
 	ParentArea = nullptr;
-	ID = NODE_CORE.GetUniqueHexID();
+	ID = GenerateID();
 	Position = Other.Position;
 	Size = Other.Size;
 
@@ -78,7 +78,7 @@ Node::~Node()
 	}
 }
 
-std::string Node::GetID() const
+FEUUID Node::GetID() const
 {
 	return ID;
 }
@@ -134,7 +134,7 @@ bool Node::AddSocket(NodeSocket* Socket)
 	return true;
 }
 
-bool Node::DeleteSocket(std::string SocketID)
+bool Node::DeleteSocket(const FEUUID& SocketID)
 {
 	return DeleteSocket(GetSocketByID(SocketID));
 }
@@ -244,7 +244,7 @@ Json::Value Node::ToJson()
 {
 	Json::Value Result;
 
-	Result["ID"] = ID;
+	Result["ID"] = ToString(ID);
 	Result["NodeType"] = Type;
 	Result["NodeStyle"] = Style;
 	Result["Position"]["X"] = Position.x;
@@ -265,7 +265,7 @@ Json::Value Node::ToJson()
 
 	for (size_t i = 0; i < Input.size(); i++)
 	{
-		Result["Input"][std::to_string(i)]["ID"] = Input[i]->GetID();
+		Result["Input"][std::to_string(i)]["ID"] = ToString(Input[i]->GetID());
 		Result["Input"][std::to_string(i)]["Name"] = Input[i]->GetName();
 		Result["Input"][std::to_string(i)]["CanBeDeletedByUser"] = Input[i]->CanBeDeletedByUser();
 		for (size_t j = 0; j < Input[i]->GetAllowedTypes().size(); j++)
@@ -274,7 +274,7 @@ Json::Value Node::ToJson()
 
 	for (size_t i = 0; i < Output.size(); i++)
 	{
-		Result["Output"][std::to_string(i)]["ID"] = Output[i]->GetID();
+		Result["Output"][std::to_string(i)]["ID"] = ToString(Output[i]->GetID());
 		Result["Output"][std::to_string(i)]["Name"] = Output[i]->GetName();
 		Result["Output"][std::to_string(i)]["CanBeDeletedByUser"] = Output[i]->CanBeDeletedByUser();
 		for (size_t j = 0; j < Output[i]->GetAllowedTypes().size(); j++)
@@ -295,7 +295,7 @@ void Node::SetToDefaultState()
 	Output.clear();
 
 	Node* NewNode = new Node();
-	std::string CurrentID = ID;
+	FEUUID CurrentID = ID;
 	*this = *NewNode;
 	delete NewNode;
 
@@ -326,7 +326,7 @@ bool Node::FromJson(Json::Value Json)
 		return false;
 	}
 
-	ID = Json["ID"].asCString();
+	ID = FromStringLegacyCompatible(Json["ID"].asCString());
 	Type = Json["NodeType"].asCString();
 	if (Json.isMember("NodeStyle") && Json["NodeStyle"].isNumeric())
 		Style = NODE_STYLE(Json["NodeStyle"].asInt());
@@ -386,7 +386,7 @@ bool Node::FromJson(Json::Value Json)
 			return false;
 		}
 
-		const std::string ID = Json["Input"][Key]["ID"].asCString();
+		FEUUID ID = FromStringLegacyCompatible(Json["Input"][Key]["ID"].asCString());
 		const std::string Name = Json["Input"][Key]["Name"].asCString();
 
 		Json::Value AllowedTypesArray = Json["Input"][Key]["AllowedTypes"];
@@ -439,7 +439,7 @@ bool Node::FromJson(Json::Value Json)
 			return false;
 		}
 
-		const std::string ID = Json["Output"][Key]["ID"].asCString();
+		FEUUID ID = FromStringLegacyCompatible(Json["Output"][Key]["ID"].asCString());
 		const std::string Name = Json["Output"][Key]["Name"].asCString();
 
 		Json::Value AllowedTypesArray = Json["Output"][Key]["AllowedTypes"];
@@ -612,7 +612,7 @@ bool Node::CouldBeDestroyed() const
 	return bCouldBeDestroyedByUser;
 }
 
-bool Node::IsNodeWithIDInList(const std::string ID, const std::vector<Node*> List)
+bool Node::IsNodeWithIDInList(const FEUUID& ID, const std::vector<Node*> List)
 {
 	for (size_t i = 0; i < List.size(); i++)
 	{
@@ -623,7 +623,7 @@ bool Node::IsNodeWithIDInList(const std::string ID, const std::vector<Node*> Lis
 	return false;
 }
 
-NodeSocket* Node::GetSocketByID(std::string SocketID) const
+NodeSocket* Node::GetSocketByID(const FEUUID& SocketID) const
 {
 	for (size_t i = 0; i < Input.size(); i++)
 	{
@@ -640,7 +640,7 @@ NodeSocket* Node::GetSocketByID(std::string SocketID) const
 	return nullptr;
 }
 
-size_t Node::GetSocketIndexByID(std::string SocketID) const
+size_t Node::GetSocketIndexByID(const FEUUID& SocketID) const
 {
 	for (size_t i = 0; i < Input.size(); i++)
 	{
@@ -666,11 +666,11 @@ NodeSocket* Node::GetSocketByIndex(size_t SocketIndex, NodeSocket::SocketFlow Fl
 	return SocketList[SocketIndex];
 }
 
-std::string Node::GetSocketIDByIndex(size_t SocketIndex, NodeSocket::SocketFlow FlowDirection) const
+FEUUID Node::GetSocketIDByIndex(size_t SocketIndex, NodeSocket::SocketFlow FlowDirection) const
 {
 	const NodeSocket* Socket = GetSocketByIndex(SocketIndex, FlowDirection);
 	if (!Socket)
-		return "";
+		return FEUUID();
 
 	return Socket->GetID();
 }

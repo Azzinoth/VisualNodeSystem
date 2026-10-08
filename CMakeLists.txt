@@ -283,6 +283,7 @@ else()
 endif()
 
 target_include_directories(VisualNodeSystem PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/jsoncpp)
+target_include_directories(VisualNodeSystem PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/stduuid)
 
 source_group("Source Files" FILES ${VisualNodeSystem_SRC})
 source_group("Source Files/SubSystems/VisualNodeArea/" FILES ${VisualNodeArea_SRC})
@@ -348,7 +349,7 @@ add_custom_target(VisualNodeSystemPreBuild
         -D PROJECT_VERSION_PREFIX=VISUAL_NODE_SYSTEM_
         -D PROJECT_VERSION_MAJOR=0
         -D PROJECT_VERSION_MINOR=2
-        -D PROJECT_VERSION_PATCH=0
+        -D PROJECT_VERSION_PATCH=4
         -D PROJECT_VERSION_DIR=${CMAKE_CURRENT_SOURCE_DIR}/VersionInfo
         -P ${CMAKE_CURRENT_SOURCE_DIR}/VersionInfo/UpdateProjectVersion.cmake
 	BYPRODUCTS

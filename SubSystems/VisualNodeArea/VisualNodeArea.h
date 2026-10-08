@@ -135,19 +135,19 @@ namespace VisNodeSys
 		void Reset();
 		void CaptureState(NodeArea* ParentNodeArea);
 
-		std::string GetNodeID() const;
-		std::string GetGroupCommentID() const;
-		std::string GetSocketID() const;
+		FEUUID GetNodeID() const;
+		FEUUID GetGroupCommentID() const;
+		FEUUID GetSocketID() const;
 
 		Node* GetNode();
 		GroupComment* GetGroupComment();
 		NodeSocket* GetSocket();
 	private:
-		std::string NodeAreaID;
+		FEUUID NodeAreaID;
 
-		std::string NodeID;
-		std::string GroupCommentID;
-		std::string SocketID;
+		FEUUID NodeID;
+		FEUUID GroupCommentID;
+		FEUUID SocketID;
 	};
 
 	class VISUAL_NODE_SYSTEM_API NodeArea
@@ -155,11 +155,11 @@ namespace VisNodeSys
 		friend class GroupComment;
 		friend NodeSystem;
 	public:
-		NodeArea(std::string ID = "");
+		NodeArea(const FEUUID& ID = FEUUID());
 		NodeArea(const NodeArea& Other) = delete;
 		NodeArea& operator=(const NodeArea& Other) = delete;
 
-		std::string GetID() const;
+		FEUUID GetID() const;
 
 		std::string GetName() const;
 		void SetName(std::string NewValue);
@@ -227,10 +227,10 @@ namespace VisNodeSys
 
 		bool CenterViewOnAllElements();
 
-		bool DeleteByID(std::string ID);
+		bool DeleteByID(const FEUUID& ID);
 
 		// *********************** Nodes ************************
-		Node* GetNodeByID(std::string NodeID) const;
+		Node* GetNodeByID(const FEUUID& NodeID) const;
 		std::vector<Node*> GetNodesByName(std::string NodeName) const;
 		std::vector<Node*> GetNodesByStringType(std::string NodeType) const;
 		template<typename T>
@@ -248,7 +248,7 @@ namespace VisNodeSys
 		bool TriggerOrphanSocketEvent(Node* Node, NODE_SOCKET_EVENT EventType);
 
 		// *********************** Group Comments ************************
-		GroupComment* GetGroupCommentByID(std::string GroupCommentID) const;
+		GroupComment* GetGroupCommentByID(const FEUUID& GroupCommentID) const;
 		std::vector<GroupComment*> GetGroupCommentsByName(std::string GroupCommentName) const;
 
 		bool AddGroupComment(GroupComment* NewGroupComment);
@@ -267,34 +267,34 @@ namespace VisNodeSys
 		size_t GetConnectionCount() const;
 
 		bool TryToConnect(const Node* OutNode, size_t OutNodeSocketIndex, const Node* InNode, size_t InNodeSocketIndex);
-		bool TryToConnect(const Node* OutNode, std::string OutSocketID, const Node* InNode, std::string InSocketID);
+		bool TryToConnect(const Node* OutNode, const FEUUID& OutSocketID, const Node* InNode, const FEUUID& InSocketID);
 
 		bool TryToDisconnect(const Node* OutNode, size_t OutNodeSocketIndex, const Node* InNode, size_t InNodeSocketIndex);
-		bool TryToDisconnect(const Node* OutNode, std::string OutSocketID, const Node* InNode, std::string InSocketID);
-		bool TryToDisconnect(const Node* Node, std::string SocketID);
+		bool TryToDisconnect(const Node* OutNode, const FEUUID& OutSocketID, const Node* InNode, const FEUUID& InSocketID);
+		bool TryToDisconnect(const Node* Node, const FEUUID& SocketID);
 
 		bool IsConnected(const Node* OutNode, size_t OutNodeSocketIndex, const Node* InNode, size_t InNodeSocketIndex);
-		bool IsConnected(const Node* OutNode, std::string OutSocketID, const Node* InNode, std::string InSocketID);
+		bool IsConnected(const Node* OutNode, const FEUUID& OutSocketID, const Node* InNode, const FEUUID& InSocketID);
 		bool IsConnected(const Node* FirstNode,  const Node* SecondNode);
 
 		std::vector<std::pair<ImVec2, ImVec2>> GetConnectionSegments(const Node* OutNode, size_t OutNodeSocketIndex, const Node* InNode, size_t InNodeSocketIndex) const;
-		std::vector<std::pair<ImVec2, ImVec2>> GetConnectionSegments(const Node* OutNode, std::string OutSocketID, const Node* InNode, std::string InSocketID) const;
+		std::vector<std::pair<ImVec2, ImVec2>> GetConnectionSegments(const Node* OutNode, const FEUUID& OutSocketID, const Node* InNode, const FEUUID& InSocketID) const;
 		RerouteNode* AddRerouteNodeToConnection(const Node* OutNode, size_t OutNodeSocketIndex, const Node* InNode, size_t InNodeSocketIndex, size_t SegmentToDivide, ImVec2 Position);
-		RerouteNode* AddRerouteNodeToConnection(const Node* OutNode, std::string OutSocketID, const Node* InNode, std::string InSocketID, size_t SegmentToDivide, ImVec2 Position);
-		RerouteNode* GetRerouteNodeByID(std::string ID) const;
-		bool DeleteRerouteNodeByID(std::string RerouteNodeID);
+		RerouteNode* AddRerouteNodeToConnection(const Node* OutNode, const FEUUID& OutSocketID, const Node* InNode, const FEUUID& InSocketID, size_t SegmentToDivide, ImVec2 Position);
+		RerouteNode* GetRerouteNodeByID(const FEUUID& ID) const;
+		bool DeleteRerouteNodeByID(const FEUUID& RerouteNodeID);
 
 		bool GetConnectionStyle(Node* Node, bool bOutputSocket, size_t SocketIndex, ConnectionStyle& Style) const;
 		void SetConnectionStyle(Node* Node, bool bOutputSocket, size_t SocketIndex, ConnectionStyle NewStyle);
 
-		ImVec2 SocketToPosition(Node* Node, const std::string& SocketID) const;
+		ImVec2 SocketToPosition(Node* Node, const FEUUID& SocketID) const;
 
 		size_t GetRerouteConnectionCount() const;
 
 #ifdef VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES
 		Node* GetExecutionEntryNode() const;
 		bool SetExecutionEntryNode(Node* NewEntryNode);
-		bool SetExecutionEntryNodeByID(std::string NewEntryNodeID);
+		bool SetExecutionEntryNodeByID(const FEUUID& NewEntryNodeID);
 		bool ExecuteNodeNetwork();
 		std::vector<Node*> GetLastExecutedNodes() const;
 
@@ -312,7 +312,7 @@ namespace VisNodeSys
 		std::vector<NodeArea*> GetImediateChildren() const;
 		std::vector<NodeArea*> GetRecursiveChildren() const;
 	private:
-		std::string ID;
+		FEUUID ID;
 		std::string Name = "New Node Area";
 
 		~NodeArea();
@@ -355,11 +355,11 @@ namespace VisNodeSys
 		int GetNodeIndex(const Node* Node) const;
 
 #ifdef VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES
-		std::string ExecutionEntryNodeID;
+		FEUUID ExecutionEntryNodeID;
 		std::vector<Node*> LastExecutedNodes;
 #endif
 
-		std::string HoveredNodeID;
+		FEUUID HoveredNodeID;
 		NodeSocket* SocketLookingForConnection = nullptr;
 		Connection* HoveredConnection = nullptr;
 		NodeSocket* SocketHovered = nullptr;
@@ -407,7 +407,7 @@ namespace VisNodeSys
 
 		bool IsThisAreaResponsibleFor(const Node* NodeToCheck) const;
 		bool IsThisAreaResponsibleFor(const Node* OutNode, const Node* InNode) const;
-		bool ValidateSocketPair(const Node* OutNode, const std::string& OutSocketID, const Node* InNode, const std::string& InSocketID) const;
+		bool ValidateSocketPair(const Node* OutNode, const FEUUID& OutSocketID, const Node* InNode, const FEUUID& InSocketID) const;
 
 		static bool IsEmptyOrFilledByNulls(const std::vector<Node*> Vector);
 
@@ -474,7 +474,7 @@ namespace VisNodeSys
 
 		void GroupCommentDoubleMouseClick();
 		void AttachElementsToGroupComment(GroupComment* GroupComment);
-		void MoveGroupCommentInternal(GroupComment* GroupComment, ImVec2 Delta, std::unordered_set<std::string>& MovedElementIDs);
+		void MoveGroupCommentInternal(GroupComment* GroupComment, ImVec2 Delta, std::unordered_set<FEUUID>& MovedElementIDs);
 
 		void Render();
 		void RenderGrid(ImVec2 CurrentPosition) const;
@@ -500,8 +500,8 @@ namespace VisNodeSys
 		ImGuiWindow* GetCurrentWindowImpl() const;
 
 		// Scans the connection list to find a pair requiring reordering based on dependencies.
-		std::pair<int, int> FindOutOfOrderConnectionPair(Json::Value& Root, std::vector<Json::String>& ConnectionList, std::unordered_map<std::string, Node*>& LoadedNodes);
-		bool WorkOnLoadedConnection(Json::Value& Root, const Json::Value& ConnectionData, std::unordered_map<std::string, Node*>& LoadedNodes);
+		std::pair<int, int> FindOutOfOrderConnectionPair(Json::Value& Root, std::vector<Json::String>& ConnectionList, std::unordered_map<FEUUID, Node*>& LoadedNodes);
+		bool WorkOnLoadedConnection(Json::Value& Root, const Json::Value& ConnectionData, std::unordered_map<FEUUID, Node*>& LoadedNodes);
 	};
 #include "VisualNodeArea.inl"
 }

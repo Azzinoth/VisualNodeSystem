@@ -87,3 +87,5 @@ This project uses the following third-party libraries:
 1) **GLM**: This library is licensed under a permissive open-source license, similar to the MIT license. The full license text can be found at [GLM's GitHub repository](https://github.com/g-truc/glm/blob/master/copying.txt).
 
 2) **jsoncpp**: This library is licensed under the MIT License. The full license text can be found at [jsoncpp's GitHub repository](https://github.com/open-source-parsers/jsoncpp/blob/master/LICENSE).
+
+3) **stduuid**: This library is licensed under the MIT License. The full license text can be found at [stduuid's GitHub repository](https://github.com/mariusbancila/stduuid/blob/master/LICENSE). It includes a bundled copy of [Microsoft GSL](https://github.com/microsoft/GSL), which is also licensed under the MIT License.

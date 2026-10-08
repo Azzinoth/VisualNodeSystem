@@ -62,7 +62,7 @@ SubAreaNode::SubAreaNode(const SubAreaNode& Other) : VisNodeSys::SocketMirrorNod
 	NodeArea* OtherOwnedArea = Other.GetOwnedArea();
 	if (OtherOwnedArea == nullptr)
 	{
-		OwnedAreaID = "";
+		OwnedAreaID = FEUUID();
 		SetName(Other.GetName());
 		return;
 	}
@@ -105,7 +105,7 @@ SubAreaNode::SubAreaNode(const SubAreaNode& Other) : VisNodeSys::SocketMirrorNod
 SubAreaNode::~SubAreaNode()
 {
 	NodeArea* OwnedArea = GetOwnedArea();
-	OwnedAreaID = "";
+	OwnedAreaID = FEUUID();
 	NODE_SYSTEM.DeleteNodeArea(OwnedArea);
 }
 
@@ -131,10 +131,10 @@ Json::Value SubAreaNode::ToJson()
 	NodeArea* OwnedArea = GetOwnedArea();
 	if (OwnedArea != nullptr)
 	{
-		Result["OwnedAreaID"] = OwnedArea->GetID();
+		Result["OwnedAreaID"] = ToString(OwnedArea->GetID());
 		Result["OwnedAreaData"] = OwnedArea->ToJson();
-		Result["SubAreaInputNodeID"] = SubAreaInputNodeID;
-		Result["SubAreaOutputNodeID"] = SubAreaOutputNodeID;
+		Result["SubAreaInputNodeID"] = ToString(SubAreaInputNodeID);
+		Result["SubAreaOutputNodeID"] = ToString(SubAreaOutputNodeID);
 	}
 	else
 	{
@@ -162,11 +162,11 @@ bool SubAreaNode::FromJson(Json::Value Json)
 	if (!Json.isMember("SubAreaOutputNodeID") || !Json["SubAreaOutputNodeID"].isString())
 		return false;
 
-	const std::string CandidateOwnedAreaID = Json["OwnedAreaID"].asString();
+	FEUUID CandidateOwnedAreaID = FromStringLegacyCompatible(Json["OwnedAreaID"].asString());
 
 	// Detach current owned area if it exists.
 	NodeArea* PreviouslyOwnedArea = GetOwnedArea();
-	OwnedAreaID = "";
+	OwnedAreaID = FEUUID();
 
 	// Refuse an area another SubAreaNode already owns.
 	if (NODE_SYSTEM.FindOwnerSubAreaNode(CandidateOwnedAreaID) != nullptr)
@@ -209,8 +209,8 @@ bool SubAreaNode::FromJson(Json::Value Json)
 
 	OwnedAreaID = LoadedArea->GetID();
 
-	SubAreaInputNodeID = Json["SubAreaInputNodeID"].asString();
-	SubAreaOutputNodeID = Json["SubAreaOutputNodeID"].asString();
+	SubAreaInputNodeID = FromStringLegacyCompatible(Json["SubAreaInputNodeID"].asString());
+	SubAreaOutputNodeID = FromStringLegacyCompatible(Json["SubAreaOutputNodeID"].asString());
 
 	// The serialized OwnerSubAreaNodeID refers to the node that produced the JSON.
 	SubAreaInputNode* InputNode = GetSubAreaInputNode();

@@ -578,7 +578,7 @@ void NodeSystem::ProcessConnections(const std::vector<NodeSocket*>& Sockets,
 						{
 							RerouteNode* OldReroute = OldConnection->RerouteNodes[j];
 							RerouteNode* NewReroute = new RerouteNode();
-							NewReroute->ID = NODE_CORE.GetUniqueHexID();
+							NewReroute->ID = GenerateID();
 							NewReroute->Parent = NewConnection;
 							NewReroute->Position = OldReroute->Position;
 
@@ -702,7 +702,7 @@ void NodeSystem::CopyElementsTo(NodeArea* SourceNodeArea, NodeArea* TargetNodeAr
 	}
 }
 
-NodeArea* NodeSystem::GetNodeAreaByID(const std::string& NodeAreaID) const
+NodeArea* NodeSystem::GetNodeAreaByID(const FEUUID& NodeAreaID) const
 {
 	for (size_t i = 0; i < Areas.size(); i++)
 	{
@@ -735,7 +735,7 @@ void NodeSystem::OnNodeDeletion(Node* DeletedNode)
 	if (Data == nullptr)
 		return;
 
-	std::string LinkID = Data->ID;
+	FEUUID LinkID = Data->ID;
 	LinkNode* CurrentLinkNode = dynamic_cast<LinkNode*>(DeletedNode);
 	if (CurrentLinkNode == nullptr || CurrentLinkNode->bIsInProcessOfBeingDestroyed)
 		return;
@@ -795,7 +795,7 @@ void NodeSystem::DeleteNodeArea(const NodeArea* NodeAreaToDelete)
 	}
 }
 
-void NodeSystem::DeleteNodeAreaByID(const std::string& NodeAreaID)
+void NodeSystem::DeleteNodeAreaByID(const FEUUID& NodeAreaID)
 {
 	NodeArea* AreaToDelete = GetNodeAreaByID(NodeAreaID);
 	if (AreaToDelete != nullptr)
@@ -807,7 +807,7 @@ size_t NodeSystem::GetNodeAreaCount() const
 	return Areas.size();
 }
 
-size_t NodeSystem::GetTotalNodeCount(std::vector<std::string> AreaIDFilter) const
+size_t NodeSystem::GetTotalNodeCount(std::vector<FEUUID> AreaIDFilter) const
 {
 	if (!AreaIDFilter.empty())
 		AreaIDFilter = DeduplicateIDList(AreaIDFilter);
@@ -831,7 +831,7 @@ size_t NodeSystem::GetTotalNodeCount(std::vector<std::string> AreaIDFilter) cons
 	return Result;
 }
 
-size_t NodeSystem::GetTotalConnectionCount(std::vector<std::string> AreaIDFilter) const
+size_t NodeSystem::GetTotalConnectionCount(std::vector<FEUUID> AreaIDFilter) const
 {
 	if (!AreaIDFilter.empty())
 		AreaIDFilter = DeduplicateIDList(AreaIDFilter);
@@ -855,7 +855,7 @@ size_t NodeSystem::GetTotalConnectionCount(std::vector<std::string> AreaIDFilter
 	return Result;
 }
 
-size_t NodeSystem::GetGroupCommentCount(std::vector<std::string> AreaIDFilter) const
+size_t NodeSystem::GetGroupCommentCount(std::vector<FEUUID> AreaIDFilter) const
 {
 	if (!AreaIDFilter.empty())
 		AreaIDFilter = DeduplicateIDList(AreaIDFilter);
@@ -879,7 +879,7 @@ size_t NodeSystem::GetGroupCommentCount(std::vector<std::string> AreaIDFilter) c
 	return Result;
 }
 
-size_t NodeSystem::GetRerouteConnectionCount(std::vector<std::string> AreaIDFilter) const
+size_t NodeSystem::GetRerouteConnectionCount(std::vector<FEUUID> AreaIDFilter) const
 {
 	if (!AreaIDFilter.empty())
 		AreaIDFilter = DeduplicateIDList(AreaIDFilter);
@@ -904,10 +904,10 @@ size_t NodeSystem::GetRerouteConnectionCount(std::vector<std::string> AreaIDFilt
 }
 
 #ifdef VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES
-std::unordered_map<std::string, std::vector<Node*>> NodeSystem::GetLastExecutedNodes(std::string StartingAreaID) const
+std::unordered_map<FEUUID, std::vector<Node*>> NodeSystem::GetLastExecutedNodes(const FEUUID& StartingAreaID) const
 {
-	std::unordered_map<std::string, std::vector<Node*>> Result;
-	if (StartingAreaID.empty())
+	std::unordered_map<FEUUID, std::vector<Node*>> Result;
+	if (IsNull(StartingAreaID))
 	{
 		for (size_t i = 0; i < Areas.size(); i++)
 		{
@@ -987,7 +987,7 @@ bool NodeSystem::MoveNodesTo(NodeArea* SourceNodeArea, NodeArea* TargetNodeArea,
 			NodeAreaLinkRecord* Record = GetLinkDataByNodeID(CurrentNode->GetID());
 			if (Record != nullptr)
 			{
-				std::string PartnerNodeID;
+				FEUUID PartnerNodeID;
 				if (Record->InNodeID == CurrentNode->GetID())
 				{
 					Record->InAreaID = TargetNodeArea->GetID();
@@ -1084,7 +1084,7 @@ bool NodeSystem::MoveNodesTo(NodeArea* SourceNodeArea, NodeArea* TargetNodeArea,
 	return true;
 }
 
-NodeSystem::NodeAreaLinkRecord* NodeSystem::GetLinkDataByNodeID(const std::string& NodeID)
+NodeSystem::NodeAreaLinkRecord* NodeSystem::GetLinkDataByNodeID(const FEUUID& NodeID)
 {
 	auto RecordIterator = NodeAreaLinkRecords.begin();
 	while (RecordIterator != NodeAreaLinkRecords.end())
@@ -1098,7 +1098,7 @@ NodeSystem::NodeAreaLinkRecord* NodeSystem::GetLinkDataByNodeID(const std::strin
 	return nullptr;
 }
 
-std::vector<NodeSystem::NodeAreaLinkRecord*> NodeSystem::GetLinkDataByAreaID(const std::string& AreaID)
+std::vector<NodeSystem::NodeAreaLinkRecord*> NodeSystem::GetLinkDataByAreaID(const FEUUID& AreaID)
 {
 	auto RecordIterator = NodeAreaLinkRecords.begin();
 	std::vector<NodeAreaLinkRecord*> Result;
@@ -1113,7 +1113,7 @@ std::vector<NodeSystem::NodeAreaLinkRecord*> NodeSystem::GetLinkDataByAreaID(con
 	return Result;
 }
 
-bool NodeSystem::LinkNodeAreas(const std::string& UpstreamAreaID, const std::string& DownstreamAreaID, std::pair<std::string, std::string>* CreatedLinkNodeIDs)
+bool NodeSystem::LinkNodeAreas(const FEUUID& UpstreamAreaID, const FEUUID& DownstreamAreaID, std::pair<FEUUID, FEUUID>* CreatedLinkNodeIDs)
 {
 	NodeArea* UpstreamArea = GetNodeAreaByID(UpstreamAreaID);
 	NodeArea* DownstreamArea = GetNodeAreaByID(DownstreamAreaID);
@@ -1146,7 +1146,7 @@ bool NodeSystem::LinkNodeAreas(const std::string& UpstreamAreaID, const std::str
 	OutNode->LinkedAreaID = UpstreamArea->GetID();
 
 	NodeAreaLinkRecord NewRecord;
-	NewRecord.ID = InNode->GetID() + "_" + OutNode->GetID();
+	NewRecord.ID = GenerateID();
 	NewRecord.InNodeID = InNode->GetID();
 	NewRecord.OutNodeID = OutNode->GetID();
 	NewRecord.InAreaID = UpstreamArea->GetID();
@@ -1159,7 +1159,7 @@ bool NodeSystem::LinkNodeAreas(const std::string& UpstreamAreaID, const std::str
 	return true;
 }
 
-bool NodeSystem::IsLinked(const std::string& FirstAreaID, const std::string& SecondAreaID) const
+bool NodeSystem::IsLinked(const FEUUID& FirstAreaID, const FEUUID& SecondAreaID) const
 {
 	NodeArea* FirstArea = GetNodeAreaByID(FirstAreaID);
 	NodeArea* SecondArea = GetNodeAreaByID(SecondAreaID);
@@ -1180,7 +1180,7 @@ bool NodeSystem::IsLinked(const std::string& FirstAreaID, const std::string& Sec
 	return false;
 }
 
-bool NodeSystem::UnlinkNodeAreas(const std::string& FirstAreaID, const std::string& SecondAreaID)
+bool NodeSystem::UnlinkNodeAreas(const FEUUID& FirstAreaID, const FEUUID& SecondAreaID)
 {
 	NodeArea* FirstArea = GetNodeAreaByID(FirstAreaID);
 	NodeArea* SecondArea = GetNodeAreaByID(SecondAreaID);
@@ -1188,7 +1188,7 @@ bool NodeSystem::UnlinkNodeAreas(const std::string& FirstAreaID, const std::stri
 		return false;
 
 	// First pass: collect matching records.
-	std::vector<std::string> RecordIDsToRemove;
+	std::vector<FEUUID> RecordIDsToRemove;
 	auto RecordIterator = NodeAreaLinkRecords.begin();
 	while (RecordIterator != NodeAreaLinkRecords.end())
 	{
@@ -1211,7 +1211,7 @@ bool NodeSystem::UnlinkNodeAreas(const std::string& FirstAreaID, const std::stri
 			continue;
 
 		NodeAreaLinkRecord Record = LinkRecordIterator->second;
-		std::string RecordID = LinkRecordIterator->first;
+		FEUUID RecordID = LinkRecordIterator->first;
 		NodeArea* InArea = GetNodeAreaByID(Record.InAreaID);
 		if (InArea != nullptr)
 		{
@@ -1226,11 +1226,11 @@ bool NodeSystem::UnlinkNodeAreas(const std::string& FirstAreaID, const std::stri
 	return !RecordIDsToRemove.empty();
 }
 
-std::vector<std::pair<std::string, std::string>> NodeSystem::GetLinkingNodesForAreas(const std::string& FirstAreaID, const std::string& SecondAreaID) const
+std::vector<std::pair<FEUUID, FEUUID>> NodeSystem::GetLinkingNodesForAreas(const FEUUID& FirstAreaID, const FEUUID& SecondAreaID) const
 {
 	NodeArea* FirstArea = GetNodeAreaByID(FirstAreaID);
 	NodeArea* SecondArea = GetNodeAreaByID(SecondAreaID);
-	std::vector<std::pair<std::string, std::string>> Result;
+	std::vector<std::pair<FEUUID, FEUUID>> Result;
 	if (FirstArea == nullptr || SecondArea == nullptr)
 		return Result;
 
@@ -1254,7 +1254,7 @@ std::vector<std::pair<std::string, std::string>> NodeSystem::GetLinkingNodesForA
 	return Result;
 }
 
-bool NodeSystem::DeleteLinkRecord(const std::string& LinkID)
+bool NodeSystem::DeleteLinkRecord(const FEUUID& LinkID)
 {
 	auto RecordIterator = NodeAreaLinkRecords.find(LinkID);
 	if (RecordIterator == NodeAreaLinkRecords.end())
@@ -1323,7 +1323,7 @@ std::string NodeSystem::ToJson() const
 	// Finally we need to save all node areas.
 	Json::Value NodeAreasJson(Json::objectValue);
 	for (size_t i = 0; i < Areas.size(); i++)
-		NodeAreasJson[Areas[i]->GetID()] = Areas[i]->ToJson();
+		NodeAreasJson[ToString(Areas[i]->GetID())] = Areas[i]->ToJson();
 	Root["NodeAreas"] = NodeAreasJson;
 
 	Json::StreamWriterBuilder Builder;
@@ -1402,7 +1402,7 @@ bool NodeSystem::LoadFromJson(const std::string& JsonText)
 	std::vector<Json::String> NodeAreaListKeys = Root["NodeAreas"].getMemberNames();
 	for (size_t i = 0; i < NodeAreaListKeys.size(); i++)
 	{
-		std::string NodeAreaID = NodeAreaListKeys[i];
+		const FEUUID NodeAreaID = FromStringLegacyCompatible(NodeAreaListKeys[i]);
 		// We should check if that node was already loaded as a part of SubAreaNode to avoid loading it twice.
 		NodeArea* AlreadyLoadedArea = GetNodeAreaByID(NodeAreaID);
 		if (AlreadyLoadedArea != nullptr)
@@ -1424,7 +1424,7 @@ bool NodeSystem::LoadFromJson(const std::string& JsonText)
 	std::vector<LinkNode*> RecoveredDanglingLinkNodes = TryToFixAllDanglingLinkNodes();
 
 	// Create a list of all link records that are still dangling after recovery attempt, to clean them up.
-	std::vector<std::string> LinkRecordsToDelete;
+	std::vector<FEUUID> LinkRecordsToDelete;
 	for (LinkNode* LinkNode : DanglingLinkNodes)
 	{
 		if (std::find(RecoveredDanglingLinkNodes.begin(), RecoveredDanglingLinkNodes.end(), LinkNode) == RecoveredDanglingLinkNodes.end())
@@ -1466,7 +1466,7 @@ void NodeSystem::Clear()
 	NodeSocket::SocketTypeToColorAssociations.clear();
 }
 
-bool NodeSystem::IsInAListOfAreas(const std::string& AreaID, const std::vector<std::string>& AreaIDList) const
+bool NodeSystem::IsInAListOfAreas(const FEUUID& AreaID, const std::vector<FEUUID>& AreaIDList) const
 {
 	for (size_t i = 0; i < AreaIDList.size(); i++)
 	{
@@ -1488,7 +1488,7 @@ bool NodeSystem::IsInAListOfAreas(const NodeArea* Area, const std::vector<NodeAr
 	return false;
 }
 
-std::vector<NodeArea*> NodeSystem::GetImmediateDownstreamAreas(const std::string& AreaID)
+std::vector<NodeArea*> NodeSystem::GetImmediateDownstreamAreas(const FEUUID& AreaID)
 {
 	std::vector<NodeArea*> Result;
 	NodeArea* CurrentArea = GetNodeAreaByID(AreaID);
@@ -1513,7 +1513,7 @@ std::vector<NodeArea*> NodeSystem::GetImmediateDownstreamAreas(const std::string
 	return Result;
 }
 
-std::vector<NodeArea*> NodeSystem::GetAllDownstreamAreas(const std::string& AreaID)
+std::vector<NodeArea*> NodeSystem::GetAllDownstreamAreas(const FEUUID& AreaID)
 {
 	NodeArea* CurrentNodeArea = GetNodeAreaByID(AreaID);
 	std::vector<NodeArea*> Result;
@@ -1521,7 +1521,7 @@ std::vector<NodeArea*> NodeSystem::GetAllDownstreamAreas(const std::string& Area
 		return Result;
 
 	// Using visited map to avoid infinite loops in case of cycles in the graph.
-	std::unordered_map<std::string, bool> Visited;
+	std::unordered_map<FEUUID, bool> Visited;
 	// We should add current area to visited to avoid adding it to result in case of cycles.
 	Visited[CurrentNodeArea->GetID()] = true;
 	std::function<void(const NodeArea*)> Collect = [&](const NodeArea* CurrentArea) {
@@ -1543,7 +1543,7 @@ std::vector<NodeArea*> NodeSystem::GetAllDownstreamAreas(const std::string& Area
 	return Result;
 }
 
-std::vector<NodeArea*> NodeSystem::GetImmediateUpstreamAreas(const std::string& AreaID)
+std::vector<NodeArea*> NodeSystem::GetImmediateUpstreamAreas(const FEUUID& AreaID)
 {
 	std::vector<NodeArea*> Result;
 	NodeArea* CurrentNodeArea = GetNodeAreaByID(AreaID);
@@ -1568,7 +1568,7 @@ std::vector<NodeArea*> NodeSystem::GetImmediateUpstreamAreas(const std::string& 
 	return Result;
 }
 
-std::vector<NodeArea*> NodeSystem::GetAllUpstreamAreas(const std::string& AreaID)
+std::vector<NodeArea*> NodeSystem::GetAllUpstreamAreas(const FEUUID& AreaID)
 {
 	std::vector<NodeArea*> Result;
 	NodeArea* CurrentNodeArea = GetNodeAreaByID(AreaID);
@@ -1576,7 +1576,7 @@ std::vector<NodeArea*> NodeSystem::GetAllUpstreamAreas(const std::string& AreaID
 		return Result;
 
 	// Using visited map to avoid infinite loops in case of cycles in the graph.
-	std::unordered_map<std::string, bool> Visited;
+	std::unordered_map<FEUUID, bool> Visited;
 	// We should add current area to visited to avoid adding it to result in case of cycles.
 	Visited[CurrentNodeArea->GetID()] = true;
 	std::function<void(const NodeArea*)> Collect = [&](const NodeArea* CurrentArea) {
@@ -1598,9 +1598,9 @@ std::vector<NodeArea*> NodeSystem::GetAllUpstreamAreas(const std::string& AreaID
 	return Result;
 }
 
-std::vector<std::string> NodeSystem::GetNodeAreaIDList() const
+std::vector<FEUUID> NodeSystem::GetNodeAreaIDList() const
 {
-	std::vector<std::string> Result;
+	std::vector<FEUUID> Result;
 	for (size_t i = 0; i < Areas.size(); i++)
 		Result.push_back(Areas[i]->GetID());
 
@@ -1670,7 +1670,7 @@ bool NodeSystem::TryToFixDanglingLinkNode(LinkNode* LinkNodeToFix, bool bForceRe
 		LinkNode* OutNode = LinkNodeToFix->IsInputNode() ? PartnerNode : LinkNodeToFix;
 
 		NodeAreaLinkRecord NewRecord;
-		NewRecord.ID = InNode->GetID() + "_" + OutNode->GetID();
+		NewRecord.ID = GenerateID();
 		NewRecord.InNodeID = InNode->GetID();
 		NewRecord.OutNodeID = OutNode->GetID();
 		NewRecord.InAreaID = InNode->GetParentArea()->GetID();
@@ -1691,7 +1691,7 @@ bool NodeSystem::TryToFixDanglingLinkNode(LinkNode* LinkNodeToFix, bool bForceRe
 		LinkNode* OutNode = LinkNodeToFix->IsInputNode() ? CastedPartnerNode : LinkNodeToFix;
 
 		NodeAreaLinkRecord NewRecord;
-		NewRecord.ID = InNode->GetID() + "_" + OutNode->GetID();
+		NewRecord.ID = GenerateID();
 		NewRecord.InNodeID = InNode->GetID();
 		NewRecord.OutNodeID = OutNode->GetID();
 		NewRecord.InAreaID = OutNode->LinkedAreaID;
@@ -1724,7 +1724,7 @@ std::vector<LinkNode*> NodeSystem::TryToFixAllDanglingLinkNodes()
 	return Result;
 }
 
-Node* NodeSystem::GetNodeByID(const std::string& NodeID) const
+Node* NodeSystem::GetNodeByID(const FEUUID& NodeID) const
 {
 	for (NodeArea* Area : Areas)
 	{
@@ -1837,7 +1837,7 @@ std::pair<SocketMirrorNode*, NodeSocket*> NodeSystem::GetAppropriatePartnerAndSo
 	return std::make_pair(nullptr, nullptr);
 }
 
-bool NodeSystem::AddSocketToMirrorNode(const std::string& NodeID, std::vector<std::string> AllowedTypes, std::string Name, NodeSocket::SocketFlow SocketDirection)
+bool NodeSystem::AddSocketToMirrorNode(const FEUUID& NodeID, std::vector<std::string> AllowedTypes, std::string Name, NodeSocket::SocketFlow SocketDirection)
 {
 	Node* CurrentNode = GetNodeByID(NodeID);
 	if (CurrentNode == nullptr)
@@ -1855,7 +1855,7 @@ bool NodeSystem::AddSocketToMirrorNode(const std::string& NodeID, std::vector<st
 	if (PartnerNode == nullptr)
 		return false;
 
-	if (PartnerNode->SocketIDBeingModified.empty())
+	if (IsNull(PartnerNode->SocketIDBeingModified))
 	{
 		NodeSocket* PartnerNodeSocket = new NodeSocket(PartnerNode, AllowedTypes, Name, !SocketDirection);
 		if (!PartnerNode->AddSocket(PartnerNodeSocket))
@@ -1868,7 +1868,7 @@ bool NodeSystem::AddSocketToMirrorNode(const std::string& NodeID, std::vector<st
 	return true;
 }
 
-bool NodeSystem::DeleteSocket(const std::string& NodeID, std::string SocketID)
+bool NodeSystem::DeleteSocket(const FEUUID& NodeID, const FEUUID& SocketID)
 {
 	Node* Node = GetNodeByID(NodeID);
 	if (Node == nullptr)
@@ -1914,7 +1914,7 @@ bool NodeSystem::DeleteSocket(NodeSocket* Socket)
 	}
 }
 
-bool NodeSystem::DeleteSocketFromMirrorNode(const std::string& NodeID, std::string SocketID)
+bool NodeSystem::DeleteSocketFromMirrorNode(const FEUUID& NodeID, const FEUUID& SocketID)
 {
 	Node* CurrentNode = GetNodeByID(NodeID);
 	if (CurrentNode == nullptr)
@@ -1980,7 +1980,7 @@ bool NodeSystem::RevalidateSocketConnections(NodeSocket* Socket)
 	return bAnyDisconnected;
 }
 
-bool NodeSystem::SyncMirrorNodeSocketAllowedTypes(const std::string& NodeID, std::string SocketID, std::vector<std::string> NewTypes)
+bool NodeSystem::SyncMirrorNodeSocketAllowedTypes(const FEUUID& NodeID, const FEUUID& SocketID, std::vector<std::string> NewTypes)
 {
 	Node* CurrentNode = GetNodeByID(NodeID);
 	if (CurrentNode == nullptr)
@@ -2008,7 +2008,7 @@ bool NodeSystem::SyncMirrorNodeSocketAllowedTypes(const std::string& NodeID, std
 	return true;
 }
 
-void NodeSystem::SyncMirrorNodeSocketName(const std::string& NodeID, std::string SocketID, std::string NewName)
+void NodeSystem::SyncMirrorNodeSocketName(const FEUUID& NodeID, const FEUUID& SocketID, std::string NewName)
 {
 	Node* CurrentNode = GetNodeByID(NodeID);
 	if (CurrentNode == nullptr)
@@ -2029,7 +2029,7 @@ void NodeSystem::SyncMirrorNodeSocketName(const std::string& NodeID, std::string
 		PartnerData.second->SetName(NewName);
 }
 
-SubAreaNode* NodeSystem::CreateSubAreaNode(const std::string& ParentAreaID)
+SubAreaNode* NodeSystem::CreateSubAreaNode(const FEUUID& ParentAreaID)
 {
 	NodeArea* ParentArea = GetNodeAreaByID(ParentAreaID);
 	if (ParentArea == nullptr)
@@ -2087,7 +2087,7 @@ SubAreaNode* NodeSystem::ConvertNodesToSubArea(NodeArea* ParentArea, const std::
 			continue;
 
 		// A SubAreaNode without an owned area is broken and would be rejected by AddNode.
-		if (CurrentNode->GetType() == "SubAreaNode" && static_cast<SubAreaNode*>(CurrentNode)->OwnedAreaID.empty())
+		if (CurrentNode->GetType() == "SubAreaNode" && IsNull(static_cast<SubAreaNode*>(CurrentNode)->OwnedAreaID))
 			continue;
 
 		NodesToMove.push_back(CurrentNode);
@@ -2102,15 +2102,15 @@ SubAreaNode* NodeSystem::ConvertNodesToSubArea(NodeArea* ParentArea, const std::
 	// crossing point and separate producers stay separate (which preserves EXECUTE semantics).
 	struct CrossingGroup
 	{
-		std::string ProducerNodeID;
-		std::string ProducerSocketID;
+		FEUUID ProducerNodeID;
+		FEUUID ProducerSocketID;
 		// True if the producer is outside of the selection, false if it is inside.
 		bool bInbound = false;
-		std::vector<std::pair<std::string, std::string>> Consumers; // Node ID, socket ID.
+		std::vector<std::pair<FEUUID, FEUUID>> Consumers; // Node ID, socket ID.
 	};
 
 	std::vector<CrossingGroup> CrossingGroups;
-	std::unordered_map<std::string, size_t> ProducerSocketToGroupIndex;
+	std::unordered_map<FEUUID, size_t> ProducerSocketToGroupIndex;
 
 	auto IsCrossingConnection = [&](Connection* CurrentConnection, bool& bOutIsInbound) -> bool {
 		if (CurrentConnection == nullptr || CurrentConnection->Out == nullptr || CurrentConnection->In == nullptr)
@@ -2138,7 +2138,7 @@ SubAreaNode* NodeSystem::ConvertNodesToSubArea(NodeArea* ParentArea, const std::
 		if (!IsCrossingConnection(CurrentConnection, bInbound))
 			continue;
 
-		const std::string ProducerSocketID = CurrentConnection->Out->GetID();
+		const FEUUID ProducerSocketID = CurrentConnection->Out->GetID();
 		auto GroupIterator = ProducerSocketToGroupIndex.find(ProducerSocketID);
 		if (GroupIterator == ProducerSocketToGroupIndex.end())
 		{
@@ -2248,7 +2248,7 @@ SubAreaNode* NodeSystem::ConvertNodesToSubArea(NodeArea* ParentArea, const std::
 				NodeAreaLinkRecord* Record = GetLinkDataByNodeID(CurrentNode->GetID());
 				if (Record != nullptr)
 				{
-					std::string PartnerNodeID;
+					FEUUID PartnerNodeID;
 					if (Record->InNodeID == CurrentNode->GetID())
 					{
 						Record->InAreaID = OwnedArea->GetID();
@@ -2455,11 +2455,11 @@ SubAreaNode* NodeSystem::ConvertNodesToSubArea(NodeArea* ParentArea, const std::
 
 void NodeSystem::BreakSubAreaOwnershipCycles()
 {
-	std::unordered_set<std::string> FullyVisited;
-	std::unordered_set<std::string> OnCurrentPath;
+	std::unordered_set<FEUUID> FullyVisited;
+	std::unordered_set<FEUUID> OnCurrentPath;
 	std::vector<SubAreaNode*> NodesToBreak;
 
-	std::function<void(const std::string&)> DepthFirstSearch = [&](const std::string& AreaID) {
+	std::function<void(const FEUUID&)> DepthFirstSearch = [&](const FEUUID& AreaID) {
 		if (FullyVisited.count(AreaID))
 			return;
 		// Should not happen when called from the top of the loop below, but guards against re-entry through a malformed graph.
@@ -2475,8 +2475,8 @@ void NodeSystem::BreakSubAreaOwnershipCycles()
 			std::vector<SubAreaNode*> SubAreaNodesInArea = Area->GetNodesByType<SubAreaNode>();
 			for (SubAreaNode* CurrentSubAreaNode : SubAreaNodesInArea)
 			{
-				const std::string& OwnedID = CurrentSubAreaNode->OwnedAreaID;
-				if (OwnedID.empty())
+				const FEUUID& OwnedID = CurrentSubAreaNode->OwnedAreaID;
+				if (IsNull(OwnedID))
 					continue;
 
 				// A SubAreaNode pointing at a non-existent area is dangling, not a cycle, do nothing.
@@ -2499,18 +2499,18 @@ void NodeSystem::BreakSubAreaOwnershipCycles()
 	};
 
 	// Snapshot the area list as well, since deletes below mutate Areas.
-	std::vector<std::string> AreaIDsToVisit;
+	std::vector<FEUUID> AreaIDsToVisit;
 	AreaIDsToVisit.reserve(Areas.size());
 	for (NodeArea* Area : Areas)
 		AreaIDsToVisit.push_back(Area->GetID());
 
-	for (const std::string& AreaID : AreaIDsToVisit)
+	for (const FEUUID& AreaID : AreaIDsToVisit)
 		DepthFirstSearch(AreaID);
 
 	for (SubAreaNode* CurrentSubAreaNode : NodesToBreak)
 	{
 		// Clear OwnedAreaID first.
-		CurrentSubAreaNode->OwnedAreaID = "";
+		CurrentSubAreaNode->OwnedAreaID = FEUUID();
 
 		NodeArea* Parent = CurrentSubAreaNode->GetParentArea();
 		if (Parent != nullptr)
@@ -2521,7 +2521,7 @@ void NodeSystem::BreakSubAreaOwnershipCycles()
 	}
 }
 
-SubAreaNode* NodeSystem::FindOwnerSubAreaNode(const std::string& AreaID) const
+SubAreaNode* NodeSystem::FindOwnerSubAreaNode(const FEUUID& AreaID) const
 {
 	for (size_t i = 0; i < Areas.size(); i++)
 	{
@@ -2538,8 +2538,8 @@ SubAreaNode* NodeSystem::FindOwnerSubAreaNode(const std::string& AreaID) const
 	return nullptr;
 }
 
-std::vector<std::string> NodeSystem::DeduplicateIDList(const std::vector<std::string>& ListOfIDs) const
+std::vector<FEUUID> NodeSystem::DeduplicateIDList(const std::vector<FEUUID>& ListOfIDs) const
 {
-	std::unordered_set<std::string> SeenIDs(ListOfIDs.begin(), ListOfIDs.end());
-	return std::vector<std::string>(SeenIDs.begin(), SeenIDs.end());
+	std::unordered_set<FEUUID> SeenIDs(ListOfIDs.begin(), ListOfIDs.end());
+	return std::vector<FEUUID>(SeenIDs.begin(), SeenIDs.end());
 }

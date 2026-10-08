@@ -10,7 +10,7 @@ namespace VisNodeSys
         bool AddSocketInternal(std::vector<std::string> AllowedTypes, std::string Name = "", NodeSocket::SocketFlow FlowDirection = NodeSocket::SocketFlow::Input);
     protected:
         // Prevents cycle when working with socket modification, when NODE_SYSTEM will trigger modification of partner node's socket, which would trigger modification of this node's socket again.
-        std::string SocketIDBeingModified = "";
+        FEUUID SocketIDBeingModified;
 
 		bool bHaveInput = false;
 		bool bHaveOutput = false;
@@ -22,7 +22,7 @@ namespace VisNodeSys
         Json::Value ToJson();
         bool FromJson(Json::Value Json);
 
-        SocketMirrorNode(const std::string ID = "");
+        SocketMirrorNode(const FEUUID& ID = FEUUID());
         SocketMirrorNode(const SocketMirrorNode& Other);
 
         void SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSocket, NODE_SOCKET_EVENT EventType);
@@ -45,7 +45,7 @@ namespace VisNodeSys
         bool AddSocket(NodeSocket* Socket);
         bool AddSocket(std::vector<std::string> AllowedTypes, std::string Name = "", NodeSocket::SocketFlow FlowDirection = NodeSocket::SocketFlow::Input);
 
-        bool DeleteSocket(std::string SocketID);
+        bool DeleteSocket(const FEUUID& SocketID);
         bool DeleteSocket(NodeSocket* Socket);
     };
 }

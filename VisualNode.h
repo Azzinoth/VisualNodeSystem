@@ -35,7 +35,7 @@ namespace VisNodeSys
 		virtual ~Node();
 
 		NodeArea* ParentArea = nullptr;
-		std::string ID;
+		FEUUID ID;
 		ImVec2 Position;
 		ImVec2 Size;
 
@@ -78,14 +78,14 @@ namespace VisNodeSys
 
 		void UpdateClientRegion();
 
-		static bool IsNodeWithIDInList(std::string ID, std::vector<Node*> List);
+		static bool IsNodeWithIDInList(const FEUUID& ID, std::vector<Node*> List);
 
 		void SetToDefaultState();
 	public:
-		Node(std::string ID = "");
+		Node(const FEUUID& ID = FEUUID());
 		Node(const Node& Other);
 
-		std::string GetID() const;
+		FEUUID GetID() const;
 
 		ImVec2 GetPosition() const;
 		void SetPosition(ImVec2 NewValue);
@@ -121,16 +121,16 @@ namespace VisNodeSys
 
 		virtual bool AddSocket(NodeSocket* Socket);
 		virtual bool DeleteSocket(NodeSocket* Socket);
-		virtual bool DeleteSocket(std::string SocketID);
+		virtual bool DeleteSocket(const FEUUID& SocketID);
 
 		virtual Json::Value ToJson();
 		virtual bool FromJson(Json::Value Json);
 
-		NodeSocket* GetSocketByID(std::string SocketID) const;
-		size_t GetSocketIndexByID(std::string SocketID) const;
+		NodeSocket* GetSocketByID(const FEUUID& SocketID) const;
+		size_t GetSocketIndexByID(const FEUUID& SocketID) const;
 
 		NodeSocket* GetSocketByIndex(size_t SocketIndex, NodeSocket::SocketFlow FlowDirection) const;
-		std::string GetSocketIDByIndex(size_t SocketIndex, NodeSocket::SocketFlow FlowDirection) const;
+		FEUUID GetSocketIDByIndex(size_t SocketIndex, NodeSocket::SocketFlow FlowDirection) const;
 
 		size_t GetInputSocketCount() const;
 		std::vector<std::pair<size_t, std::vector<std::string>>> GetInputSocketTypes() const;

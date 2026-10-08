@@ -27,12 +27,12 @@ bool NodeArea::AddNode(Node* NewNode)
 		if (AsSubArea->OwnedAreaID == GetID())
 		{
 			// Clear the OwnedAreaID before rejecting.
-			AsSubArea->OwnedAreaID = "";
+			AsSubArea->OwnedAreaID = FEUUID();
 			return false;
 		}
 
 		// A SubAreaNode without an owned area considered broken, and we should not allow adding it to the area.
-		if (AsSubArea->OwnedAreaID.empty())
+		if (IsNull(AsSubArea->OwnedAreaID))
 			return false;
 	}
 
@@ -40,14 +40,14 @@ bool NodeArea::AddNode(Node* NewNode)
 	if (NewNode->GetType() == "SubAreaInputNode")
 	{
 		SubAreaInputNode* AsSubAreaInput = static_cast<SubAreaInputNode*>(NewNode);
-		if (!AsSubAreaInput->OwnerSubAreaNodeID.empty())
+		if (!IsNull(AsSubAreaInput->OwnerSubAreaNodeID))
 		{
 			Node* OwnerNode = NODE_SYSTEM.GetNodeByID(AsSubAreaInput->OwnerSubAreaNodeID);
 			if (OwnerNode != nullptr && OwnerNode->GetType() == "SubAreaNode")
 			{
 				SubAreaNode* OwnerSubArea = static_cast<SubAreaNode*>(OwnerNode);
 				if (OwnerSubArea->GetOwnedArea() != this)
-					AsSubAreaInput->OwnerSubAreaNodeID = "";
+					AsSubAreaInput->OwnerSubAreaNodeID = FEUUID();
 			}
 		}
 	}
@@ -56,14 +56,14 @@ bool NodeArea::AddNode(Node* NewNode)
 	if (NewNode->GetType() == "SubAreaOutputNode")
 	{
 		SubAreaOutputNode* AsSubAreaOutput = static_cast<SubAreaOutputNode*>(NewNode);
-		if (!AsSubAreaOutput->OwnerSubAreaNodeID.empty())
+		if (!IsNull(AsSubAreaOutput->OwnerSubAreaNodeID))
 		{
 			Node* OwnerNode = NODE_SYSTEM.GetNodeByID(AsSubAreaOutput->OwnerSubAreaNodeID);
 			if (OwnerNode != nullptr && OwnerNode->GetType() == "SubAreaNode")
 			{
 				SubAreaNode* OwnerSubArea = static_cast<SubAreaNode*>(OwnerNode);
 				if (OwnerSubArea->GetOwnedArea() != this)
-					AsSubAreaOutput->OwnerSubAreaNodeID = "";
+					AsSubAreaOutput->OwnerSubAreaNodeID = FEUUID();
 			}
 		}
 	}
@@ -153,7 +153,7 @@ bool NodeArea::Delete(Connection* Connection)
 	}
 
 	// Callbacks may delete the nodes, so they are stored as IDs and resolved before each use.
-	std::vector<std::string> NodesToNotifyIDs;
+	std::vector<FEUUID> NodesToNotifyIDs;
 	for (int i = 0; i < static_cast<int>(Connection->In->ConnectedSockets.size()); i++)
 	{
 		if (Connection->In->ConnectedSockets[i] == Connection->Out)
@@ -235,7 +235,7 @@ bool NodeArea::Delete(Connection* Connection)
 	return true;
 }
 
-bool NodeArea::DeleteRerouteNodeByID(std::string RerouteNodeID)
+bool NodeArea::DeleteRerouteNodeByID(const FEUUID& RerouteNodeID)
 {
 	Connection* OwnerConnection = nullptr;
 	RerouteNode* RerouteNode = nullptr;
@@ -324,7 +324,7 @@ bool NodeArea::Delete(const Node* NodeToDelete)
 	UnSelect(NodeToDelete);
 
 	// Capture the ID before firing DESTROYED callback.
-	const std::string NodeToDeleteID = NodeToDelete->GetID();
+	const FEUUID NodeToDeleteID = NodeToDelete->GetID();
 	PropagateNodeEventsCallbacks(Nodes[Index], DESTROYED);
 
 	// After propagating the DESTROYED event, the node might be already deleted.
@@ -447,8 +447,8 @@ void NodeArea::RemoveStaleSelectionAndHoverReferences()
 		}
 	}
 
-	if (!HoveredNodeID.empty() && GetNodeByID(HoveredNodeID) == nullptr)
-		HoveredNodeID.clear();
+	if (!IsNull(HoveredNodeID) && GetNodeByID(HoveredNodeID) == nullptr)
+		HoveredNodeID = FEUUID();
 
 	if (HoveredConnection != nullptr)
 	{
@@ -555,7 +555,7 @@ bool NodeArea::IsThisAreaResponsibleFor(const Node* OutNode, const Node* InNode)
 	return true;
 }
 
-bool NodeArea::ValidateSocketPair(const Node* OutNode, const std::string& OutSocketID, const Node* InNode, const std::string& InSocketID) const
+bool NodeArea::ValidateSocketPair(const Node* OutNode, const FEUUID& OutSocketID, const Node* InNode, const FEUUID& InSocketID) const
 {
 	if (OutNode == nullptr || InNode == nullptr)
 		return false;
@@ -590,10 +590,10 @@ bool NodeArea::TryToConnect(const Node* OutNode, const size_t OutNodeSocketIndex
 	if (bResult)
 	{
 		// The BEFORE_CONNECTED callbacks may delete a involved nodes.
-		const std::string OutNodeID = OutSocket->GetParent()->GetID();
-		const std::string InNodeID = InSocket->GetParent()->GetID();
-		const std::string OutSocketID = OutSocket->GetID();
-		const std::string InSocketID = InSocket->GetID();
+		const FEUUID OutNodeID = OutSocket->GetParent()->GetID();
+		const FEUUID InNodeID = InSocket->GetParent()->GetID();
+		const FEUUID OutSocketID = OutSocket->GetID();
+		const FEUUID InSocketID = InSocket->GetID();
 
 		auto RevalidateSockets = [&]() -> bool {
 			Node* CurrentOutNode = GetNodeByID(OutNodeID);
@@ -658,7 +658,7 @@ bool NodeArea::TryToDisconnect(const Node* OutNode, size_t OutNodeSocketIndex, c
 	return true;
 }
 
-bool NodeArea::TryToDisconnect(const Node* OutNode, std::string OutSocketID, const Node* InNode, std::string InSocketID)
+bool NodeArea::TryToDisconnect(const Node* OutNode, const FEUUID& OutSocketID, const Node* InNode, const FEUUID& InSocketID)
 {
 	if (!IsThisAreaResponsibleFor(OutNode, InNode))
 		return false;
@@ -669,7 +669,7 @@ bool NodeArea::TryToDisconnect(const Node* OutNode, std::string OutSocketID, con
 	return TryToDisconnect(OutNode, OutNode->GetSocketIndexByID(OutSocketID), InNode, InNode->GetSocketIndexByID(InSocketID));
 }
 
-bool NodeArea::TryToDisconnect(const Node* Node, std::string SocketID)
+bool NodeArea::TryToDisconnect(const Node* Node, const FEUUID& SocketID)
 {
 	if (Node == nullptr || Node->GetParentArea() != this)
 		return false;
@@ -713,7 +713,7 @@ bool NodeArea::IsConnected(const Node* OutNode, size_t OutNodeSocketIndex, const
 	return false;
 }
 
-bool NodeArea::IsConnected(const Node* OutNode, std::string OutSocketID, const Node* InNode, std::string InSocketID)
+bool NodeArea::IsConnected(const Node* OutNode, const FEUUID& OutSocketID, const Node* InNode, const FEUUID& InSocketID)
 {
 	if (!IsThisAreaResponsibleFor(OutNode, InNode))
 		return false;
@@ -813,7 +813,7 @@ void NodeArea::RunOnEachConnectedNode(Node* StartNode, const std::function<void(
 	}
 }
 
-bool NodeArea::TryToConnect(const Node* OutNode, const std::string OutSocketID, const Node* InNode, const std::string InSocketID)
+bool NodeArea::TryToConnect(const Node* OutNode, const FEUUID& OutSocketID, const Node* InNode, const FEUUID& InSocketID)
 {
 	if (!IsThisAreaResponsibleFor(OutNode, InNode))
 		return false;
@@ -929,7 +929,7 @@ RerouteNode* NodeArea::AddRerouteNode(Connection* Connection, size_t SegmentToDi
 		return nullptr;
 
 	RerouteNode* NewReroute = new RerouteNode();
-	NewReroute->ID = NODE_CORE.GetUniqueHexID();
+	NewReroute->ID = GenerateID();
 	NewReroute->Parent = Connection;
 	NewReroute->Position = Position;
 
@@ -1010,7 +1010,7 @@ std::vector<std::pair<ImVec2, ImVec2>> NodeArea::GetConnectionSegments(const Nod
 	return Result;
 }
 
-std::vector<std::pair<ImVec2, ImVec2>> NodeArea::GetConnectionSegments(const Node* OutNode, std::string OutSocketID, const Node* InNode, std::string InSocketID) const
+std::vector<std::pair<ImVec2, ImVec2>> NodeArea::GetConnectionSegments(const Node* OutNode, const FEUUID& OutSocketID, const Node* InNode, const FEUUID& InSocketID) const
 {
 	std::vector<std::pair<ImVec2, ImVec2>> Result;
 	if (!IsThisAreaResponsibleFor(OutNode, InNode))
@@ -1022,7 +1022,7 @@ std::vector<std::pair<ImVec2, ImVec2>> NodeArea::GetConnectionSegments(const Nod
 	return GetConnectionSegments(OutNode, OutNode->GetSocketIndexByID(OutSocketID), InNode, InNode->GetSocketIndexByID(InSocketID));
 }
 
-RerouteNode* NodeArea::GetRerouteNodeByID(std::string ID) const
+RerouteNode* NodeArea::GetRerouteNodeByID(const FEUUID& ID) const
 {
 	for (size_t i = 0; i < Connections.size(); i++)
 	{
@@ -1054,7 +1054,7 @@ RerouteNode* NodeArea::AddRerouteNodeToConnection(const Node* OutNode, size_t Ou
 	return AddRerouteNode(Connection, SegmentToDivide, Position);
 }
 
-RerouteNode* NodeArea::AddRerouteNodeToConnection(const Node* OutNode, std::string OutSocketID, const Node* InNode, std::string InSocketID, size_t SegmentToDivide, ImVec2 Position)
+RerouteNode* NodeArea::AddRerouteNodeToConnection(const Node* OutNode, const FEUUID& OutSocketID, const Node* InNode, const FEUUID& InSocketID, size_t SegmentToDivide, ImVec2 Position)
 {
 	if (!IsThisAreaResponsibleFor(OutNode, InNode))
 		return nullptr;
@@ -1065,7 +1065,7 @@ RerouteNode* NodeArea::AddRerouteNodeToConnection(const Node* OutNode, std::stri
 	return AddRerouteNodeToConnection(OutNode, OutNode->GetSocketIndexByID(OutSocketID), InNode, InNode->GetSocketIndexByID(InSocketID), SegmentToDivide, Position);
 }
 
-GroupComment* NodeArea::GetGroupCommentByID(std::string GroupCommentID) const
+GroupComment* NodeArea::GetGroupCommentByID(const FEUUID& GroupCommentID) const
 {
 	for (size_t i = 0; i < GroupComments.size(); i++)
 	{
@@ -1263,7 +1263,7 @@ bool NodeArea::IsRerouteNodeValid(const RerouteNode* RerouteNode)
 	return true;
 }
 
-bool NodeArea::DeleteByID(std::string ID)
+bool NodeArea::DeleteByID(const FEUUID& ID)
 {
 	Node* FoundNode = GetNodeByID(ID);
 	if (FoundNode != nullptr)

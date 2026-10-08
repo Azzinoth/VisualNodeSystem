@@ -5,9 +5,9 @@ using namespace VisNodeSys;
 void NodeAreaContextMenuOpenState::Reset()
 {
 	MousePositionRecorded = ImVec2(0, 0);
-	NodeID = "";
-	GroupCommentID = "";
-	SocketID = "";
+	NodeID = FEUUID();
+	GroupCommentID = FEUUID();
+	SocketID = FEUUID();
 }
 
 void NodeAreaContextMenuOpenState::CaptureState(NodeArea* ParentNodeArea)
@@ -34,36 +34,36 @@ void NodeAreaContextMenuOpenState::CaptureState(NodeArea* ParentNodeArea)
 		if (ParentNodeArea->GetHoveredSocket() != nullptr)
 		{
 			SocketID = ParentNodeArea->GetHoveredSocket()->GetID();
-			if (NodeID.empty() && ParentNodeArea->GetHoveredSocket()->GetParent() != nullptr)
+			if (IsNull(NodeID) && ParentNodeArea->GetHoveredSocket()->GetParent() != nullptr)
 				NodeID = ParentNodeArea->GetHoveredSocket()->GetParent()->GetID();
 		}
 	}
 	else
 	{
-		NodeID = "";
-		GroupCommentID = "";
-		SocketID = "";
+		NodeID = FEUUID();
+		GroupCommentID = FEUUID();
+		SocketID = FEUUID();
 	}
 }
 
-std::string NodeAreaContextMenuOpenState::GetNodeID() const
+FEUUID NodeAreaContextMenuOpenState::GetNodeID() const
 {
 	return NodeID;
 }
 
-std::string NodeAreaContextMenuOpenState::GetGroupCommentID() const
+FEUUID NodeAreaContextMenuOpenState::GetGroupCommentID() const
 {
 	return GroupCommentID;
 }
 
-std::string NodeAreaContextMenuOpenState::GetSocketID() const
+FEUUID NodeAreaContextMenuOpenState::GetSocketID() const
 {
 	return SocketID;
 }
 
 Node* NodeAreaContextMenuOpenState::GetNode()
 {
-	if (NodeID.empty())
+	if (IsNull(NodeID))
 		return nullptr;
 
 	NodeArea* ParentNodeArea = NODE_SYSTEM.GetNodeAreaByID(NodeAreaID);
@@ -75,7 +75,7 @@ Node* NodeAreaContextMenuOpenState::GetNode()
 
 GroupComment* NodeAreaContextMenuOpenState::GetGroupComment()
 {
-	if (GroupCommentID.empty())
+	if (IsNull(GroupCommentID))
 		return nullptr;
 
 	NodeArea* ParentNodeArea = NODE_SYSTEM.GetNodeAreaByID(NodeAreaID);
@@ -87,7 +87,7 @@ GroupComment* NodeAreaContextMenuOpenState::GetGroupComment()
 
 NodeSocket* NodeAreaContextMenuOpenState::GetSocket()
 {
-	if (SocketID.empty())
+	if (IsNull(SocketID))
 		return nullptr;
 
 	Node* ParentNode = GetNode();
@@ -237,7 +237,7 @@ void NodeArea::LeftMouseReleasedGroupCommentUpdate()
 
 void NodeArea::MouseInputUpdateNodes()
 {
-	HoveredNodeID.clear();
+	HoveredNodeID = FEUUID();
 	SocketHovered = nullptr;
 
 	for (size_t i = 0; i < Nodes.size(); i++)
@@ -246,7 +246,7 @@ void NodeArea::MouseInputUpdateNodes()
 	for (size_t i = 0; i < Nodes.size(); i++)
 	{
 		InputUpdateNode(Nodes[i]);
-		if (!HoveredNodeID.empty())
+		if (!IsNull(HoveredNodeID))
 			break;
 	}
 }
@@ -729,7 +729,7 @@ void NodeArea::MouseDraggingGroupCommentUpdate()
 		else
 		{
 			// One shared set for the whole selection, so an element attached to several selected comments moves only once.
-			std::unordered_set<std::string> MovedElementIDs;
+			std::unordered_set<FEUUID> MovedElementIDs;
 			for (size_t i = 0; i < SelectedGroupComments.size(); i++)
 				MovedElementIDs.insert(SelectedGroupComments[i]->GetID());
 
@@ -744,12 +744,12 @@ void NodeArea::MoveGroupComment(GroupComment* Comment, ImVec2 Delta)
 	if (Comment == nullptr)
 		return;
 
-	std::unordered_set<std::string> MovedElementIDs;
+	std::unordered_set<FEUUID> MovedElementIDs;
 	MovedElementIDs.insert(Comment->GetID());
 	MoveGroupCommentInternal(Comment, Delta, MovedElementIDs);
 }
 
-void NodeArea::MoveGroupCommentInternal(GroupComment* Comment, ImVec2 Delta, std::unordered_set<std::string>& MovedElementIDs)
+void NodeArea::MoveGroupCommentInternal(GroupComment* Comment, ImVec2 Delta, std::unordered_set<FEUUID>& MovedElementIDs)
 {
 	Comment->Position += Delta;
 

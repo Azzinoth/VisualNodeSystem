@@ -10,7 +10,7 @@ NodeSocket::NodeSocket(Node* Parent, const std::string Type, const std::string N
 	this->AllowedTypes.push_back(Type);
 	StripEmptyTypes(this->AllowedTypes);
 	this->Name = Name;
-	this->ID = NODE_CORE.GetUniqueHexID();
+	this->ID = GenerateID();
 	this->Flow = Flow;
 	if (!OutputDataFunction)
 	{
@@ -28,7 +28,7 @@ NodeSocket::NodeSocket(Node* Parent, const std::vector<std::string> Types, const
 	this->AllowedTypes = Types;
 	StripEmptyTypes(this->AllowedTypes);
 	this->Name = Name;
-	this->ID = NODE_CORE.GetUniqueHexID();
+	this->ID = GenerateID();
 	this->Flow = Flow;
 	if (!OutputDataFunction)
 	{
@@ -52,7 +52,7 @@ void NodeSocket::StripEmptyTypes(std::vector<std::string>& Types)
 	}
 }
 
-std::string NodeSocket::GetID() const
+FEUUID NodeSocket::GetID() const
 {
 	return ID;
 }

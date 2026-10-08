@@ -2,11 +2,11 @@
 #include "../../VisualNodeSystem.h"
 using namespace VisNodeSys;
 
-NodeArea::NodeArea(std::string ID)
+NodeArea::NodeArea(const FEUUID& ID)
 {
 	this->ID = ID;
-	if (ID.empty())
-		this->ID = NODE_CORE.GetUniqueHexID();
+	if (IsNull(ID))
+		this->ID = GenerateID();
 
 	SetSize(ImVec2(256, 256));
 }
@@ -16,7 +16,7 @@ NodeArea::~NodeArea()
 	Clear();
 }
 
-std::string NodeArea::GetID() const
+FEUUID NodeArea::GetID() const
 {
 	return ID;
 }
@@ -99,7 +99,7 @@ void NodeArea::Clear()
 	GroupComments.clear();
 	SelectedGroupComments.clear();
 
-	std::vector<std::string> NodesIDsToDelete;
+	std::vector<FEUUID> NodesIDsToDelete;
 	for (size_t i = 0; i < Nodes.size(); i++)
 		NodesIDsToDelete.push_back(Nodes[i]->GetID());
 
@@ -190,7 +190,7 @@ std::string NodeArea::ToJson() const
 	Json::Value Root;
 	std::ofstream SaveFile;
 
-	Root["ID"] = GetID();
+	Root["ID"] = ToString(GetID());
 	Root["Name"] = GetName();
 
 	Json::Value NodesData;
@@ -199,7 +199,7 @@ std::string NodeArea::ToJson() const
 		NodesData[std::to_string(i)] = Nodes[i]->ToJson();
 	}
 #ifdef VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES
-	NodesData["ExecutionEntryNodeID"] = ExecutionEntryNodeID;
+	NodesData["ExecutionEntryNodeID"] = ToString(ExecutionEntryNodeID);
 #endif
 
 	Root["Nodes"] = NodesData;
@@ -207,7 +207,7 @@ std::string NodeArea::ToJson() const
 	Json::Value ConnectionsData(Json::objectValue);
 	for (size_t i = 0; i < Connections.size(); i++)
 	{
-		ConnectionsData[std::to_string(i)]["In"]["SocketID"] = Connections[i]->In->GetID();
+		ConnectionsData[std::to_string(i)]["In"]["SocketID"] = ToString(Connections[i]->In->GetID());
 		size_t SocketIndex = 0;
 		for (size_t j = 0; j < Connections[i]->In->GetParent()->Input.size(); j++)
 		{
@@ -215,9 +215,9 @@ std::string NodeArea::ToJson() const
 				SocketIndex = j;
 		}
 		ConnectionsData[std::to_string(i)]["In"]["SocketIndex"] = SocketIndex;
-		ConnectionsData[std::to_string(i)]["In"]["NodeID"] = Connections[i]->In->GetParent()->GetID();
+		ConnectionsData[std::to_string(i)]["In"]["NodeID"] = ToString(Connections[i]->In->GetParent()->GetID());
 
-		ConnectionsData[std::to_string(i)]["Out"]["SocketID"] = Connections[i]->Out->GetID();
+		ConnectionsData[std::to_string(i)]["Out"]["SocketID"] = ToString(Connections[i]->Out->GetID());
 		SocketIndex = 0;
 		for (size_t j = 0; j < Connections[i]->Out->GetParent()->Output.size(); j++)
 		{
@@ -225,32 +225,32 @@ std::string NodeArea::ToJson() const
 				SocketIndex = j;
 		}
 		ConnectionsData[std::to_string(i)]["Out"]["SocketIndex"] = SocketIndex;
-		ConnectionsData[std::to_string(i)]["Out"]["NodeID"] = Connections[i]->Out->GetParent()->GetID();
+		ConnectionsData[std::to_string(i)]["Out"]["NodeID"] = ToString(Connections[i]->Out->GetParent()->GetID());
 
 		for (size_t j = 0; j < Connections[i]->RerouteNodes.size(); j++)
 		{
-			ConnectionsData[std::to_string(i)]["RerouteConnections"][std::to_string(j)]["RerouteID"] = Connections[i]->RerouteNodes[j]->ID;
+			ConnectionsData[std::to_string(i)]["RerouteConnections"][std::to_string(j)]["RerouteID"] = ToString(Connections[i]->RerouteNodes[j]->ID);
 			ConnectionsData[std::to_string(i)]["RerouteConnections"][std::to_string(j)]["PositionX"] = Connections[i]->RerouteNodes[j]->Position.x;
 			ConnectionsData[std::to_string(i)]["RerouteConnections"][std::to_string(j)]["PositionY"] = Connections[i]->RerouteNodes[j]->Position.y;
 
 			std::string BeginSocketID = "";
 			if (Connections[i]->RerouteNodes[j]->BeginSocket)
-				BeginSocketID = Connections[i]->RerouteNodes[j]->BeginSocket->GetID();
+				BeginSocketID = ToString(Connections[i]->RerouteNodes[j]->BeginSocket->GetID());
 			ConnectionsData[std::to_string(i)]["RerouteConnections"][std::to_string(j)]["BeginSocketID"] = BeginSocketID;
 
 			std::string EndSocketID = "";
 			if (Connections[i]->RerouteNodes[j]->EndSocket)
-				EndSocketID = Connections[i]->RerouteNodes[j]->EndSocket->GetID();
+				EndSocketID = ToString(Connections[i]->RerouteNodes[j]->EndSocket->GetID());
 			ConnectionsData[std::to_string(i)]["RerouteConnections"][std::to_string(j)]["EndSocketID"] = EndSocketID;
 
 			std::string BeginRerouteID = "";
 			if (Connections[i]->RerouteNodes[j]->BeginReroute)
-				BeginRerouteID = Connections[i]->RerouteNodes[j]->BeginReroute->ID;
+				BeginRerouteID = ToString(Connections[i]->RerouteNodes[j]->BeginReroute->ID);
 			ConnectionsData[std::to_string(i)]["RerouteConnections"][std::to_string(j)]["BeginRerouteID"] = BeginRerouteID;
 
 			std::string EndRerouteID = "";
 			if (Connections[i]->RerouteNodes[j]->EndReroute)
-				EndRerouteID = Connections[i]->RerouteNodes[j]->EndReroute->ID;
+				EndRerouteID = ToString(Connections[i]->RerouteNodes[j]->EndReroute->ID);
 			ConnectionsData[std::to_string(i)]["RerouteConnections"][std::to_string(j)]["EndRerouteID"] = EndRerouteID;
 		}
 	}
@@ -275,14 +275,14 @@ std::string NodeArea::ToJson() const
 	return JsonText;
 }
 
-std::pair<int, int> NodeArea::FindOutOfOrderConnectionPair(Json::Value& Root, std::vector<Json::String>& ConnectionList, std::unordered_map<std::string, Node*>& LoadedNodes)
+std::pair<int, int> NodeArea::FindOutOfOrderConnectionPair(Json::Value& Root, std::vector<Json::String>& ConnectionList, std::unordered_map<FEUUID, Node*>& LoadedNodes)
 {
 	for (size_t i = 0; i < ConnectionList.size(); i++)
 	{
 		const Json::Value& ConnectionData = Root["Connections"][ConnectionList[i]];
 
-		std::string OutSocketID = ConnectionData["Out"]["SocketID"].asCString();
-		std::string OutNodeID = ConnectionData["Out"]["NodeID"].asCString();
+		FEUUID OutSocketID = FromStringLegacyCompatible(ConnectionData["Out"]["SocketID"].asCString());
+		FEUUID OutNodeID = FromStringLegacyCompatible(ConnectionData["Out"]["NodeID"].asCString());
 
 		Node* ConnectionOutNode = LoadedNodes[OutNodeID];
 
@@ -291,8 +291,8 @@ std::pair<int, int> NodeArea::FindOutOfOrderConnectionPair(Json::Value& Root, st
 		{
 			const Json::Value& NextConnectionData = Root["Connections"][ConnectionList[j]];
 
-			std::string NextInSocketID = NextConnectionData["In"]["SocketID"].asCString();
-			std::string NextInNodeID = NextConnectionData["In"]["NodeID"].asCString();
+			FEUUID NextInSocketID = FromStringLegacyCompatible(NextConnectionData["In"]["SocketID"].asCString());
+			FEUUID NextInNodeID = FromStringLegacyCompatible(NextConnectionData["In"]["NodeID"].asCString());
 
 			Node* NextConnectionInNode = LoadedNodes[NextInNodeID];
 
@@ -331,13 +331,13 @@ bool NodeArea::LoadFromJson(std::string JsonText)
 		return false;
 
 	if (Root.isMember("ID") && Root["ID"].isString())
-		ID = Root["ID"].asCString();
+		ID = FromStringLegacyCompatible(Root["ID"].asCString());
 
 	// Compatibility check, older versions did not have Name field.
 	if (Root.isMember("Name") && Root["Name"].isString())
 		Name = Root["Name"].asCString();
 
-	std::unordered_map<std::string, Node*> LoadedNodes;
+	std::unordered_map<FEUUID, Node*> LoadedNodes;
 	std::vector<Json::String> NodesList = Root["Nodes"].getMemberNames();
 	for (size_t i = 0; i < NodesList.size(); i++)
 	{
@@ -389,7 +389,7 @@ bool NodeArea::LoadFromJson(std::string JsonText)
 
 #ifdef VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES
 	if (Root["Nodes"].isMember("ExecutionEntryNodeID") && Root["Nodes"]["ExecutionEntryNodeID"].isString())
-		SetExecutionEntryNodeByID(Root["Nodes"]["ExecutionEntryNodeID"].asString());
+		SetExecutionEntryNodeByID(FromStringLegacyCompatible(Root["Nodes"]["ExecutionEntryNodeID"].asString()));
 #endif
 
 	if (Root.isMember("Connections"))
@@ -415,11 +415,11 @@ bool NodeArea::LoadFromJson(std::string JsonText)
 				!ConnectionData["Out"].isMember("NodeID") || !ConnectionData["Out"]["NodeID"].isString())
 				continue;
 
-			std::string InSocketID = ConnectionData["In"]["SocketID"].asCString();
-			std::string InNodeID = ConnectionData["In"]["NodeID"].asCString();
+			FEUUID InSocketID = FromStringLegacyCompatible(ConnectionData["In"]["SocketID"].asCString());
+			FEUUID InNodeID = FromStringLegacyCompatible(ConnectionData["In"]["NodeID"].asCString());
 
-			std::string OutSocketID = ConnectionData["Out"]["SocketID"].asCString();
-			std::string OutNodeID = ConnectionData["Out"]["NodeID"].asCString();
+			FEUUID OutSocketID = FromStringLegacyCompatible(ConnectionData["Out"]["SocketID"].asCString());
+			FEUUID OutNodeID = FromStringLegacyCompatible(ConnectionData["Out"]["NodeID"].asCString());
 
 			if (LoadedNodes.find(InNodeID) == LoadedNodes.end() || LoadedNodes.find(OutNodeID) == LoadedNodes.end())
 				continue;
@@ -503,13 +503,13 @@ bool NodeArea::LoadFromJson(std::string JsonText)
 	return true;
 }
 
-bool NodeArea::WorkOnLoadedConnection(Json::Value& Root, const Json::Value& ConnectionData, std::unordered_map<std::string, Node*>& LoadedNodes)
+bool NodeArea::WorkOnLoadedConnection(Json::Value& Root, const Json::Value& ConnectionData, std::unordered_map<FEUUID, Node*>& LoadedNodes)
 {
-	std::string InSocketID = ConnectionData["In"]["SocketID"].asCString();
-	std::string InNodeID = ConnectionData["In"]["NodeID"].asCString();
+	FEUUID InSocketID = FromStringLegacyCompatible(ConnectionData["In"]["SocketID"].asCString());
+	FEUUID InNodeID = FromStringLegacyCompatible(ConnectionData["In"]["NodeID"].asCString());
 
-	std::string OutSocketID = ConnectionData["Out"]["SocketID"].asCString();
-	std::string OutNodeID = ConnectionData["Out"]["NodeID"].asCString();
+	FEUUID OutSocketID = FromStringLegacyCompatible(ConnectionData["Out"]["SocketID"].asCString());
+	FEUUID OutNodeID = FromStringLegacyCompatible(ConnectionData["Out"]["NodeID"].asCString());
 
 	if (!TryToConnect(LoadedNodes[OutNodeID], OutSocketID, LoadedNodes[InNodeID], InSocketID))
 		return false;
@@ -541,7 +541,7 @@ bool NodeArea::WorkOnLoadedConnection(Json::Value& Root, const Json::Value& Conn
 			continue;
 
 		RerouteNode* NewReroute = new RerouteNode();
-		NewReroute->ID = CurrentReroute["RerouteID"].asCString();
+		NewReroute->ID = FromStringLegacyCompatible(CurrentReroute["RerouteID"].asCString());
 		NewReroute->Parent = NewConnection;
 
 		NewReroute->Position.x = CurrentReroute["PositionX"].asFloat();
@@ -569,24 +569,24 @@ bool NodeArea::WorkOnLoadedConnection(Json::Value& Root, const Json::Value& Conn
 		if (!CurrentReroute["BeginSocketID"].isString() || !CurrentReroute["EndSocketID"].isString() || !CurrentReroute["BeginRerouteID"].isString() || !CurrentReroute["EndRerouteID"].isString())
 			continue;
 
-		std::string BeginSocketID = CurrentReroute["BeginSocketID"].asCString();
-		if (!BeginSocketID.empty())
+		FEUUID BeginSocketID = FromStringLegacyCompatible(CurrentReroute["BeginSocketID"].asCString());
+		if (!IsNull(BeginSocketID))
 		{
 			NodeSocket* BeginSocket = NewConnection->Out;
 			if (BeginSocketID == BeginSocket->GetID())
 				CurrentRerouteNode->BeginSocket = BeginSocket;
 		}
 
-		std::string EndSocketID = CurrentReroute["EndSocketID"].asCString();
-		if (!EndSocketID.empty())
+		FEUUID EndSocketID = FromStringLegacyCompatible(CurrentReroute["EndSocketID"].asCString());
+		if (!IsNull(EndSocketID))
 		{
 			NodeSocket* EndSocket = NewConnection->In;
 			if (EndSocketID == EndSocket->GetID())
 				CurrentRerouteNode->EndSocket = EndSocket;
 		}
 
-		std::string BeginRerouteID = CurrentReroute["BeginRerouteID"].asCString();
-		if (!BeginRerouteID.empty())
+		FEUUID BeginRerouteID = FromStringLegacyCompatible(CurrentReroute["BeginRerouteID"].asCString());
+		if (!IsNull(BeginRerouteID))
 		{
 			RerouteNode* BeginReroute = nullptr;
 			for (size_t k = 0; k < NewConnection->RerouteNodes.size(); k++)
@@ -599,8 +599,8 @@ bool NodeArea::WorkOnLoadedConnection(Json::Value& Root, const Json::Value& Conn
 				CurrentRerouteNode->BeginReroute = BeginReroute;
 		}
 
-		std::string EndRerouteID = CurrentReroute["EndRerouteID"].asCString();
-		if (!EndRerouteID.empty())
+		FEUUID EndRerouteID = FromStringLegacyCompatible(CurrentReroute["EndRerouteID"].asCString());
+		if (!IsNull(EndRerouteID))
 		{
 			RerouteNode* EndReroute = nullptr;
 			for (size_t k = 0; k < NewConnection->RerouteNodes.size(); k++)
@@ -645,7 +645,7 @@ bool NodeArea::LoadFromFile(std::string FilePath)
 	return LoadFromJson(FileData);
 }
 
-Node* NodeArea::GetNodeByID(std::string NodeID) const
+Node* NodeArea::GetNodeByID(const FEUUID& NodeID) const
 {
 	for (size_t i = 0; i < Nodes.size(); i++)
 	{
@@ -859,9 +859,9 @@ bool NodeArea::SetExecutionEntryNode(Node* TargetNode)
 	return SetExecutionEntryNodeByID(TargetNode->GetID());
 }
 
-bool NodeArea::SetExecutionEntryNodeByID(std::string NewEntryNodeID)
+bool NodeArea::SetExecutionEntryNodeByID(const FEUUID& NewEntryNodeID)
 {
-	if (NewEntryNodeID.empty())
+	if (IsNull(NewEntryNodeID))
 		return false;
 
 	Node* EntryNode = GetNodeByID(NewEntryNodeID);

@@ -14,7 +14,7 @@ namespace VisNodeSys
 		friend class NodeArea;
 
 		NodeArea* ParentArea = nullptr;
-		std::string ID;
+		FEUUID ID;
 		ImVec2 Position;
 		ImVec2 Size;
 
@@ -38,18 +38,18 @@ namespace VisNodeSys
 		ImVec2 GetCaptionSize(float Zoom) const;
 
 		// IDs of the elements captured when a move-with-comment drag starts.
-		std::vector<std::string> AttachedNodeIDs;
-		std::vector<std::string> AttachedRerouteNodeIDs;
-		std::vector<std::string> AttachedGroupCommentIDs;
+		std::vector<FEUUID> AttachedNodeIDs;
+		std::vector<FEUUID> AttachedRerouteNodeIDs;
+		std::vector<FEUUID> AttachedGroupCommentIDs;
 
 		ImVec4 BackgroundColor = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
 
 		bool bMoveElementsWithComment = true;
 	public:
-		GroupComment(std::string ID = "");
+		GroupComment(const FEUUID& ID = FEUUID());
 		GroupComment(const GroupComment& Other);
 
-		std::string GetID();
+		FEUUID GetID();
 
 		ImVec2 GetPosition() const;
 		void SetPosition(ImVec2 NewValue);

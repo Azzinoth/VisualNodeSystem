@@ -27,7 +27,7 @@ namespace VisNodeSys
 
 		~NodeSocket() = default;
 
-		std::string ID;
+		FEUUID ID;
 		SocketFlow Flow;
 		std::vector<std::string> AllowedTypes;
 		std::string Name;
@@ -49,7 +49,7 @@ namespace VisNodeSys
 		Node* GetParent() const;
 		const std::vector<NodeSocket*>& GetConnectedSockets() const;
 
-		std::string GetID() const;
+		FEUUID GetID() const;
 
 		std::string GetName() const;
 		void SetName(std::string NewValue);
@@ -96,7 +96,7 @@ namespace VisNodeSys
 		friend class Connection;
 		friend Node;
 
-		std::string ID;
+		FEUUID ID;
 		Connection* Parent = nullptr;
 		ImVec2 Position;
 
@@ -111,7 +111,7 @@ namespace VisNodeSys
 
 		RerouteNode() {};
 	public:
-		std::string GetID() const { return ID; }
+		FEUUID GetID() const { return ID; }
 	};
 
 	struct ConnectionSegment
