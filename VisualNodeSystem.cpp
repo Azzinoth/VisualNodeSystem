@@ -1211,7 +1211,6 @@ bool NodeSystem::UnlinkNodeAreas(const FEUUID& FirstAreaID, const FEUUID& Second
 			continue;
 
 		NodeAreaLinkRecord Record = LinkRecordIterator->second;
-		FEUUID RecordID = LinkRecordIterator->first;
 		NodeArea* InArea = GetNodeAreaByID(Record.InAreaID);
 		if (InArea != nullptr)
 		{

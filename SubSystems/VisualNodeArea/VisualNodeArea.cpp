@@ -214,7 +214,7 @@ std::string NodeArea::ToJson() const
 			if (Connections[i]->In->GetParent()->Input[j]->GetID() == Connections[i]->In->GetID())
 				SocketIndex = j;
 		}
-		ConnectionsData[std::to_string(i)]["In"]["SocketIndex"] = SocketIndex;
+		ConnectionsData[std::to_string(i)]["In"]["SocketIndex"] = static_cast<Json::UInt64>(SocketIndex);
 		ConnectionsData[std::to_string(i)]["In"]["NodeID"] = ToString(Connections[i]->In->GetParent()->GetID());
 
 		ConnectionsData[std::to_string(i)]["Out"]["SocketID"] = ToString(Connections[i]->Out->GetID());
@@ -224,7 +224,7 @@ std::string NodeArea::ToJson() const
 			if (Connections[i]->Out->GetParent()->Output[j]->GetID() == Connections[i]->Out->GetID())
 				SocketIndex = j;
 		}
-		ConnectionsData[std::to_string(i)]["Out"]["SocketIndex"] = SocketIndex;
+		ConnectionsData[std::to_string(i)]["Out"]["SocketIndex"] = static_cast<Json::UInt64>(SocketIndex);
 		ConnectionsData[std::to_string(i)]["Out"]["NodeID"] = ToString(Connections[i]->Out->GetParent()->GetID());
 
 		for (size_t j = 0; j < Connections[i]->RerouteNodes.size(); j++)

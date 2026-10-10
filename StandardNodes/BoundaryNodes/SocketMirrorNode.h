@@ -6,6 +6,7 @@ namespace VisNodeSys
     class VISUAL_NODE_SYSTEM_API SocketMirrorNode : public Node
     {
         friend class NodeSystem;
+        friend class NodeCore;
 
         bool AddSocketInternal(std::vector<std::string> AllowedTypes, std::string Name = "", NodeSocket::SocketFlow FlowDirection = NodeSocket::SocketFlow::Input);
     protected:
