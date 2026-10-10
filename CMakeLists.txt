@@ -285,6 +285,11 @@ endif()
 target_include_directories(VisualNodeSystem PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/jsoncpp)
 target_include_directories(VisualNodeSystem PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/stduuid)
 
+if(UNIX AND NOT APPLE AND NOT EMSCRIPTEN)
+	find_package(X11 REQUIRED)
+	target_link_libraries(VisualNodeSystem PUBLIC X11::X11)
+endif()
+
 source_group("Source Files" FILES ${VisualNodeSystem_SRC})
 source_group("Source Files/SubSystems/VisualNodeArea/" FILES ${VisualNodeArea_SRC})
 source_group("Source Files/SubSystems/TextInputPopup/" FILES ${TextInputPopup_SRC})
