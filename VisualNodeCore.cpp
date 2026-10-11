@@ -4,6 +4,12 @@
 #include <algorithm>
 #include <array>
 #include <mutex>
+
+// Xlib defines macros such as None and Bool, so it is kept out of the public header.
+#ifdef __linux__
+#include <X11/Xlib.h>
+#include <X11/Xatom.h>
+#endif
 using namespace VisNodeSys;
 
 #ifdef VISUAL_NODE_SYSTEM_SHARED

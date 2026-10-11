@@ -59,9 +59,8 @@ private:
 		}
 	}
 
-	// Specialization for integer type.
-	template <>
-	int PerformOperation<int>(const int& A, const int& B)
+	// Overload for integer type.
+	int PerformOperation(const int& A, const int& B)
 	{
 		switch (OperatorType)
 		{
@@ -107,9 +106,8 @@ private:
 		}
 	}
 
-	// Specialization for floating-point type
-	template <>
-	float PerformOperation<float>(const float& A, const float& B)
+	// Overload for floating-point type
+	float PerformOperation(const float& A, const float& B)
 	{
 		switch (OperatorType)
 		{

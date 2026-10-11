@@ -127,7 +127,7 @@ void BaseComparisonOperatorNode::Draw()
 	float CaptionHeight = NODE_TITLE_HEIGHT * Zoom;
 	ImVec2 TextPosition = ImVec2(ImGui::GetCursorScreenPos().x + (GetSize().x * Zoom - TextSize.x) / 2, ImGui::GetCursorScreenPos().y + CaptionHeight + (GetSize().y * Zoom - CaptionHeight - TextSize.y) / 2);
 	ImGui::SetCursorScreenPos(TextPosition);
-	ImGui::Text(Text.c_str());
+	ImGui::TextUnformatted(Text.c_str());
 }
 
 std::string BaseComparisonOperatorNode::ResolveConnectedSocketType(NodeSocket* ConnectedSocket) const

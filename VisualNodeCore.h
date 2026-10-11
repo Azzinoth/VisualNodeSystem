@@ -3,9 +3,6 @@
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include "windows.h"
-#elif __linux__
-#include <X11/Xlib.h>
-#include <X11/Xatom.h>
 #endif
 
 #define IMGUI_DEFINE_MATH_OPERATORS
