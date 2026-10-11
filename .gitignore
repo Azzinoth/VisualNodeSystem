@@ -29,5 +29,6 @@ Release/
 .idea/
 CMakeFiles/
 build-web/
+build-tests/
 Emscripten_SDK/
 Ninja/
