@@ -110,6 +110,12 @@ FEUUID VisNodeSys::FromStringLegacyCompatible(const std::string& ID)
 }
 bool NodeCore::SetClipboardText(std::string Text)
 {
+	if (ImGui::GetCurrentContext() != nullptr)
+	{
+		ImGui::SetClipboardText(Text.c_str());
+		return true;
+	}
+
 #ifdef _WIN32
 	if (OpenClipboard(nullptr))
 	{
@@ -151,6 +157,15 @@ bool NodeCore::SetClipboardText(std::string Text)
 std::string NodeCore::GetClipboardText()
 {
 	std::string Text;
+
+	if (ImGui::GetCurrentContext() != nullptr)
+	{
+		const char* ImGuiClipboardText = ImGui::GetClipboardText();
+		if (ImGuiClipboardText != nullptr)
+			Text = ImGuiClipboardText;
+
+		return Text;
+	}
 
 #ifdef _WIN32
 	if (OpenClipboard(nullptr))
