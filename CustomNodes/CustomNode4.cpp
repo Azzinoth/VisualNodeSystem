@@ -82,6 +82,10 @@ void CustomNode4::SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSocket
 		case UPDATE:
 			EventTypeStr = "Update";
 		break;
+
+		case EXECUTE:
+			EventTypeStr = "Execute";
+		break;
 	}
 
 	LastSocketEventDiscription = "Node ID: " + ToString(ConnectedSocket->GetParent()->GetID()) + "\nEvent type: " + EventTypeStr;

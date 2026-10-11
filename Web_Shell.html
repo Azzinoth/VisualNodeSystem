@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>VisualNodeSystem tests</title>
+	<style>
+		body { margin: 0; padding: 16px; background: #1e1e1e; color: #ddd; font: 13px/1.4 monospace; }
+		#status { margin-bottom: 12px; font: bold 16px/1.5 sans-serif; white-space: pre-wrap; }
+		#status.passed { color: #6c6; }
+		#status.failed { color: #f66; }
+		#output { margin: 0; white-space: pre-wrap; }
+	</style>
+</head>
+<body>
+	<div id="status">Loading and running tests...</div>
+	<pre id="output"></pre>
+	<script>
+		// Optional test filter from the page address, e.g. ?filter=ExecutionFlowNodesTests.*
+		var Filter = new URLSearchParams(location.search).get("filter");
+		var StatusElement = document.getElementById("status");
+		var OutputLines = [];
+
+		// The tests run without yielding to the browser, so the output is shown once they finish.
+		function ShowResult(Text, bPassed)
+		{
+			StatusElement.textContent = Text;
+			StatusElement.className = bPassed ? "passed" : "failed";
+			document.getElementById("output").textContent = OutputLines.join("\n");
+		}
+
+		var Module = {
+			arguments: Filter ? ["--gtest_filter=" + Filter] : [],
+			print: function (Text) { OutputLines.push(Text); console.log(Text); },
+			printErr: function (Text) { OutputLines.push(Text); console.error(Text); },
+			onExit: function (Code) { ShowResult(Code === 0 ? "All tests passed." : "Some tests failed (exit code " + Code + ").", Code === 0); },
+			onAbort: function (What) { ShowResult("The tests stopped because of an error.\n\n" + What, false); }
+		};
+
+		window.addEventListener("error", function (Event) { ShowResult("The tests stopped because of an error.\n\n" + Event.message, false); });
+		// A failed download of the packaged Resources is reported as a rejected promise.
+		window.addEventListener("unhandledrejection", function (Event) { ShowResult("The tests stopped because of an error.\n\n" + Event.reason, false); });
+	</script>
+	{{{ SCRIPT }}}
+</body>
+</html>

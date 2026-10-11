@@ -45,6 +45,11 @@ if(MSVC)
 		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MDd")
 		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MD")
 	endif()
+elseif(EMSCRIPTEN)
+	# Emscripten provides GLFW through -sUSE_GLFW=3.
+	set(VISUAL_NODE_SYSTEM_GLFW_LIBRARY "" CACHE PATH "Path to GLFW library." FORCE)
+	# TestTools catches exceptions, without exception support a throw would abort all tests.
+	add_compile_options(-fwasm-exceptions)
 elseif(UNIX)
 	set(VISUAL_NODE_SYSTEM_GLFW_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/GLFW/lib/Linux/libglfw3.a CACHE PATH "Path to GLFW library." FORCE)
 endif()
@@ -157,6 +162,8 @@ if(MSVC)
 	else()
 		link_directories(${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/googletest/lib/$(Configuration)/Dynamic)
 	endif()
+elseif(EMSCRIPTEN)
+	link_directories(${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/googletest/lib/Emscripten)
 elseif(UNIX)
 	link_directories(${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/googletest/lib/Linux)
 endif()
@@ -187,7 +194,22 @@ target_link_libraries(Visual_Node_System_Tests
 		gtest_main
 )
 
-if(UNIX)
+if(EMSCRIPTEN)
+	# The tests run in a web page made from Web_Shell.html, Resources are packaged into its virtual file system.
+	file(GLOB TestResources "Resources/*")
+	set_target_properties(Visual_Node_System_Tests PROPERTIES
+		SUFFIX ".html"
+		LINK_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Web_Shell.html;${TestResources}"
+	)
+	target_link_options(Visual_Node_System_Tests PRIVATE
+		-sUSE_GLFW=3
+		-sALLOW_MEMORY_GROWTH=1
+		-sEXIT_RUNTIME=1
+		-fwasm-exceptions
+		"--shell-file=${CMAKE_CURRENT_SOURCE_DIR}/Web_Shell.html"
+		"SHELL:--preload-file ${CMAKE_CURRENT_SOURCE_DIR}/Resources@/Resources"
+	)
+elseif(UNIX)
 	# The static GLFW and googletest libraries need these system libraries.
 	find_package(Threads REQUIRED)
 	target_link_libraries(Visual_Node_System_Tests PRIVATE Threads::Threads ${CMAKE_DL_LIBS})

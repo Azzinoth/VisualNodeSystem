@@ -28,3 +28,6 @@ Release/
 .vs/
 .idea/
 CMakeFiles/
+build-web/
+Emscripten_SDK/
+Ninja/
