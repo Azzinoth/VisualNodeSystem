@@ -1,7 +1,9 @@
 cmake_minimum_required(VERSION 3.10)
 
 set(BUILD_TYPE "Debug and Release" CACHE STRING "Choose Build type")
-set(CMAKE_BUILD_TYPE Debug)
+if(NOT CMAKE_BUILD_TYPE)
+	set(CMAKE_BUILD_TYPE Debug)
+endif()
 set(CMAKE_CONFIGURATION_TYPES Debug Release)
 
 # set the project name
