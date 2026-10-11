@@ -1,7 +1,9 @@
 <div align="center">
 	<h1> Visual Node System </h1>
 	<img src="https://github.com/Azzinoth/VisualNodeSystem/actions/workflows/Build.yml/badge.svg" alt="Build Status">
-	<img src="https://github.com/Azzinoth/VisualNodeSystem/actions/workflows/ContinuousIntegration.yml/badge.svg" alt="Continuous Integration">
+	<img src="https://github.com/Azzinoth/VisualNodeSystem/actions/workflows/ContinuousIntegration_Windows.yml/badge.svg" alt="Continuous Integration Windows">
+	<img src="https://github.com/Azzinoth/VisualNodeSystem/actions/workflows/ContinuousIntegration_Linux.yml/badge.svg" alt="Continuous Integration Linux">
+	<img src="https://github.com/Azzinoth/VisualNodeSystem/actions/workflows/ContinuousIntegration_Web.yml/badge.svg" alt="Continuous Integration Web">
 	<h3><a href="https://azzinoth.github.io/VisualNodeSystem-Example/">Try the live demo in your browser</a></h3>
 	<sub>Needs a browser with WebGPU support.</sub>
 </div>

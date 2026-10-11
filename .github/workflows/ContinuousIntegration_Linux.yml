@@ -1,0 +1,47 @@
+name: ContinuousIntegration_Linux
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+    types: [opened, reopened, synchronize]
+
+jobs:
+  ContinuousIntegration_Linux:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        build_type: [Debug, Release]
+
+    steps:
+    # On a push this checks out the pushed commit, on a pull request the pull request merged into master.
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    # In order to build we need to use tests branch, with master branch files in the MasterBranchCode folder.
+    - name: Copy master branch files to MasterBranchCode folder of tests branch
+      run: |
+        mkdir "${{runner.temp}}/master_temp"
+        git archive HEAD | tar -x -C "${{runner.temp}}/master_temp"
+        git checkout tests
+        mkdir -p MasterBranchCode
+        cp -a "${{runner.temp}}/master_temp/." MasterBranchCode/
+
+    - name: Install dependencies
+      run: sudo apt-get update && sudo apt-get install -y ninja-build libx11-dev
+
+    - name: Configure CMake
+      run: cmake -S ${{github.workspace}} -B ${{github.workspace}}/build -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+
+    - name: Build
+      run: cmake --build ${{github.workspace}}/build
+
+    - name: Run test
+      run: timeout 600 ${{github.workspace}}/build/Visual_Node_System_Tests
+
+    - name: Print additional test results if failed
+      if: failure()
+      run: cat Results.xml || true

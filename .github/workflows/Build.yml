@@ -14,14 +14,12 @@ jobs:
         build_type: [Debug, Release]
     
     steps:
+    # On a push this checks out the pushed commit, on a pull request the pull request merged into master.
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
         
-    - name: Checkout master branch
-      run: git checkout master
-
     # In order to build we need to use tests branch.
     - name: Copy files from master branch to temporary folder 
       run: |

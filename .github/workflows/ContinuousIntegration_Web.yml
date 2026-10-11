@@ -1,0 +1,48 @@
+name: ContinuousIntegration_Web
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+    types: [opened, reopened, synchronize]
+
+jobs:
+  ContinuousIntegration_Web:
+    runs-on: ubuntu-latest
+
+    steps:
+    # On a push this checks out the pushed commit, on a pull request the pull request merged into master.
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    # In order to build we need to use tests branch, with master branch files in the MasterBranchCode folder.
+    - name: Copy master branch files to MasterBranchCode folder of tests branch
+      run: |
+        mkdir "${{runner.temp}}/master_temp"
+        git archive HEAD | tar -x -C "${{runner.temp}}/master_temp"
+        git checkout tests
+        mkdir -p MasterBranchCode
+        cp -a "${{runner.temp}}/master_temp/." MasterBranchCode/
+
+    # Same version that was used to build ThirdParty/googletest/lib/Emscripten in tests branch.
+    - name: Set up Emscripten
+      uses: mymindstorm/setup-emsdk@v14
+      with:
+        version: 6.0.12
+
+    - name: Install dependencies
+      run: sudo apt-get update && sudo apt-get install -y ninja-build
+
+    - name: Configure CMake
+      run: emcmake cmake -S ${{github.workspace}} -B ${{github.workspace}}/build-web -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+    - name: Build
+      run: cmake --build ${{github.workspace}}/build-web
+
+    # Node.js runs the same WebAssembly as the browser test page, Resources are read from the .data file next to it.
+    - name: Run test in Node.js
+      working-directory: ${{github.workspace}}/build-web
+      run: timeout 600 node Visual_Node_System_Tests.js
