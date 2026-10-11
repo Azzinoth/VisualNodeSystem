@@ -2,9 +2,13 @@
 	<h1> Visual Node System </h1>
 	<img src="https://github.com/Azzinoth/VisualNodeSystem/actions/workflows/Build.yml/badge.svg" alt="Build Status">
 	<img src="https://github.com/Azzinoth/VisualNodeSystem/actions/workflows/ContinuousIntegration.yml/badge.svg" alt="Continuous Integration">
+	<h3><a href="https://azzinoth.github.io/VisualNodeSystem-Example/">Try the live demo in your browser</a></h3>
+	<sub>Needs a browser with WebGPU support.</sub>
 </div>
 
 This library provides a powerful framework for creating and managing visual node systems. These are typically used in graphical programming environments, game logic builders, and AI behavior tree editors.
+
+The library draws everything through Dear ImGui and does not depend on a specific graphics API. The [Visual Node System Example](https://github.com/Azzinoth/VisualNodeSystem-Example/tree/multi-backend) builds it for Windows, MacOS, Linux and the web.
 
 Master branch is free of tests to keep it lightweight. All test-related stuff (except GitHub Actions) is located in the [Tests Branch](https://github.com/Azzinoth/VisualNodeSystem/tree/tests)
 
