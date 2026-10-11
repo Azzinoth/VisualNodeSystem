@@ -57,7 +57,7 @@ void CustomNode4::Draw()
 
 	ImGui::SetCursorScreenPos(NodePosition + ImVec2(55.0f, 70.0f) * Zoom);
 	std::string OutputText = "Last socket event: \n" + LastSocketEventDiscription;
-	ImGui::Text(OutputText.c_str());
+	ImGui::TextUnformatted(OutputText.c_str());
 }
 
 void CustomNode4::SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSocket, NODE_SOCKET_EVENT EventType)

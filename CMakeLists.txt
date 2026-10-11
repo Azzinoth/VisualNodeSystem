@@ -1,7 +1,9 @@
 cmake_minimum_required(VERSION 3.10)
 
 set(BUILD_TYPE "Debug and Release" CACHE STRING "Choose Build type")
-set(CMAKE_BUILD_TYPE Debug)
+if(NOT CMAKE_BUILD_TYPE)
+	set(CMAKE_BUILD_TYPE Debug)
+endif()
 set(CMAKE_CONFIGURATION_TYPES Debug Release)
 
 # set the project name
@@ -10,8 +12,10 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # set different compiler flags depending on build type
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MP")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MP")
+if(MSVC)
+	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MP")
+	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MP")
+endif()
 
 # Turn on the ability to create folders to organize projects (.vcproj)
 # It creates "CMakePredefinedTargets" folder by default and adds CMake
@@ -23,22 +27,26 @@ set(DEAR_IMGUI_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/imgui CACHE PA
 
 # Force to build standard nodes.
 set(VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES ON CACHE BOOL "Build the Visual Node System with execution flow nodes module" FORCE)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /DVISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES")
+add_compile_definitions(VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES)
 
 set(USE_STATIC_RUNTIME ON CACHE BOOL "Use static runtime (/MT) instead of dynamic (/MD)")
 
-if(USE_STATIC_RUNTIME)
-	set(VISUAL_NODE_SYSTEM_USE_STATIC_RUNTIME ON CACHE BOOL "Use static runtime (/MT) instead of dynamic (/MD) for VisualNodeSystem" FORCE)
-	set(VISUAL_NODE_SYSTEM_GLFW_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/GLFW/lib/x64/glfw3_mt.lib CACHE PATH "Path to GLFW library." FORCE)
+if(MSVC)
+	if(USE_STATIC_RUNTIME)
+		set(VISUAL_NODE_SYSTEM_USE_STATIC_RUNTIME ON CACHE BOOL "Use static runtime (/MT) instead of dynamic (/MD) for VisualNodeSystem" FORCE)
+		set(VISUAL_NODE_SYSTEM_GLFW_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/GLFW/lib/x64/glfw3_mt.lib CACHE PATH "Path to GLFW library." FORCE)
 
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
-else()
-	set(VISUAL_NODE_SYSTEM_USE_STATIC_RUNTIME OFF CACHE BOOL "Use static runtime (/MT) instead of dynamic (/MD) for VisualNodeSystem" FORCE)
-	set(VISUAL_NODE_SYSTEM_GLFW_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/GLFW/lib/x64/glfw3.lib CACHE PATH "Path to GLFW library." FORCE)
+		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
+		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
+	else()
+		set(VISUAL_NODE_SYSTEM_USE_STATIC_RUNTIME OFF CACHE BOOL "Use static runtime (/MT) instead of dynamic (/MD) for VisualNodeSystem" FORCE)
+		set(VISUAL_NODE_SYSTEM_GLFW_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/GLFW/lib/x64/glfw3.lib CACHE PATH "Path to GLFW library." FORCE)
 
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MDd")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MD")
+		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MDd")
+		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MD")
+	endif()
+elseif(UNIX)
+	set(VISUAL_NODE_SYSTEM_GLFW_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/GLFW/lib/Linux/libglfw3.a CACHE PATH "Path to GLFW library." FORCE)
 endif()
 
 if(NOT TARGET VisualNodeSystem)
@@ -142,11 +150,15 @@ file(GLOB source_SRC
 	"main.cpp"
 )
 
-link_directories(${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/GLFW/lib/$(PlatformTarget))
-if(USE_STATIC_RUNTIME)
-	link_directories(${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/googletest/lib/$(Configuration)/Static)
-else()
-	link_directories(${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/googletest/lib/$(Configuration)/Dynamic)
+if(MSVC)
+	link_directories(${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/GLFW/lib/$(PlatformTarget))
+	if(USE_STATIC_RUNTIME)
+		link_directories(${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/googletest/lib/$(Configuration)/Static)
+	else()
+		link_directories(${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/googletest/lib/$(Configuration)/Dynamic)
+	endif()
+elseif(UNIX)
+	link_directories(${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/googletest/lib/Linux)
 endif()
 
 # add the executable
@@ -174,6 +186,12 @@ target_link_libraries(Visual_Node_System_Tests
 		gtest
 		gtest_main
 )
+
+if(UNIX)
+	# The static GLFW and googletest libraries need these system libraries.
+	find_package(Threads REQUIRED)
+	target_link_libraries(Visual_Node_System_Tests PRIVATE Threads::Threads ${CMAKE_DL_LIBS})
+endif()
 
 source_group("Source Files" FILES ${source_SRC})
 source_group("Source Files/CustomNodes" FILES ${CustomNodes_SRC})
