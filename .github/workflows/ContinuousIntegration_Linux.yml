@@ -30,8 +30,9 @@ jobs:
         mkdir -p MasterBranchCode
         cp -a "${{runner.temp}}/master_temp/." MasterBranchCode/
 
+    # GLFW headers used by ImGui's GLFW backend need the OpenGL and Xrandr headers, VisualNodeSystem needs Xlib.
     - name: Install dependencies
-      run: sudo apt-get update && sudo apt-get install -y ninja-build libx11-dev
+      run: sudo apt-get update && sudo apt-get install -y ninja-build libx11-dev libxrandr-dev libgl-dev
 
     - name: Configure CMake
       run: cmake -S ${{github.workspace}} -B ${{github.workspace}}/build -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
