@@ -11,9 +11,7 @@
 
 This library provides a powerful framework for creating and managing visual node systems. These are typically used in graphical programming environments, game logic builders, and AI behavior tree editors.
 
-The library draws everything through Dear ImGui and does not depend on a specific graphics API. The [Visual Node System Example](https://github.com/Azzinoth/VisualNodeSystem-Example/tree/multi-backend) builds it for Windows, MacOS, Linux and the web.
-
-Master branch is free of tests to keep it lightweight. All test-related stuff (except GitHub Actions) is located in the [Tests Branch](https://github.com/Azzinoth/VisualNodeSystem/tree/tests)
+The library draws everything through Dear ImGui and does not depend on a specific graphics API.
 
 ## Key Features
 
@@ -71,9 +69,16 @@ I have personally used it in two of my projects:
 [Focal Engine Editor](https://github.com/Azzinoth/FocalEngineEditor)
 ![Focal Engine Editor material window](https://github.com/Azzinoth/VisualNodeSystem/blob/media/Focal%20Engine%20Editor%20example.png)
 
+## Examples
+
+The [Visual Node System Example](https://github.com/Azzinoth/VisualNodeSystem-Example) shows how to use the library and has two branches:
+
+- [`master`](https://github.com/Azzinoth/VisualNodeSystem-Example/tree/master) is the simpler one. It sets up the window with GLFW and Dear ImGui with OpenGL directly in `main.cpp`, so it shows the least code needed to use the library. It builds on Windows.
+- [`multi-backend`](https://github.com/Azzinoth/VisualNodeSystem-Example/tree/multi-backend) is more complex. It is built on [FEBasicApplication](https://github.com/Azzinoth/FEBasicApplication), which handles the window, Dear ImGui and the graphics backend (OpenGL or WebGPU), and builds for Windows, MacOS, Linux and the Web. The [live demo](https://azzinoth.github.io/VisualNodeSystem-Example/) runs this branch.
+
 ## Usage
 
-**When using this project as a Git submodule, ensure you provide the path to Dear ImGui in your project. For a simple example of how to use the library, see the [Visual Node System Example](https://github.com/Azzinoth/VisualNodeSystem-Example).**
+**When using this project as a Git submodule, ensure you provide the path to Dear ImGui in your project.**
 
 To add this module to your project, use the following command:
 
@@ -86,6 +91,10 @@ If you want to move the submodule to a folder named "SubSystems", for example, u
 ```bash
 git mv VisualNodeSystem SubSystems/
 ```
+
+## Tests
+
+The master branch has no tests, to keep it lightweight. Everything test-related (except the GitHub Actions workflows) is in the [tests branch](https://github.com/Azzinoth/VisualNodeSystem/tree/tests).
 
 ## Third Party Licenses
 
