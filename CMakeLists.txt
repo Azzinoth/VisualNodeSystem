@@ -351,16 +351,20 @@ include_directories(
 set(VISUAL_NODE_SYSTEM_THIRDPARTY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty PARENT_SCOPE)
 set(VISUAL_NODE_SYSTEM_DIR ${CMAKE_CURRENT_SOURCE_DIR} PARENT_SCOPE)
 
-add_custom_target(VisualNodeSystemPreBuild
-    COMMAND ${CMAKE_COMMAND}
-        -D PROJECT_VERSION_PREFIX=VISUAL_NODE_SYSTEM_
-        -D PROJECT_VERSION_MAJOR=0
-        -D PROJECT_VERSION_MINOR=3
-        -D PROJECT_VERSION_PATCH=0
-        -D PROJECT_VERSION_DIR=${CMAKE_CURRENT_SOURCE_DIR}/VersionInfo
-        -P ${CMAKE_CURRENT_SOURCE_DIR}/VersionInfo/UpdateProjectVersion.cmake
-	BYPRODUCTS
-		${CMAKE_CURRENT_SOURCE_DIR}/VersionInfo/VISUAL_NODE_SYSTEM_Version.h
+set(VISUAL_NODE_SYSTEM_VERSION_ARGS
+    -D PROJECT_VERSION_PREFIX=VISUAL_NODE_SYSTEM_
+    -D PROJECT_VERSION_MAJOR=0
+    -D PROJECT_VERSION_MINOR=3
+    -D PROJECT_VERSION_PATCH=0
+    -D PROJECT_VERSION_DIR=${CMAKE_CURRENT_SOURCE_DIR}/VersionInfo
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/VersionInfo/UpdateProjectVersion.cmake
 )
 
-add_dependencies(VisualNodeSystem VisualNodeSystemPreBuild)
+# Generate version header at configure time so it exists before any compilation begins.
+execute_process(
+    COMMAND ${CMAKE_COMMAND} ${VISUAL_NODE_SYSTEM_VERSION_ARGS}
+)
+
+add_custom_command(TARGET VisualNodeSystem PRE_BUILD
+    COMMAND ${CMAKE_COMMAND} ${VISUAL_NODE_SYSTEM_VERSION_ARGS}
+)
