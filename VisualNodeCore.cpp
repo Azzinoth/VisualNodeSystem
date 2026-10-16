@@ -137,24 +137,24 @@ bool NodeCore::SetClipboardText(std::string Text)
 		return true;
 	}
 #elif __linux__
-	Display* display = XOpenDisplay(nullptr);
-	Window root = DefaultRootWindow(display);
+	Display* DisplayConnection = XOpenDisplay(nullptr);
+	Window Root = DefaultRootWindow(DisplayConnection);
 
-	Atom clipboard = XInternAtom(display, "CLIPBOARD", False);
-	Atom utf8 = XInternAtom(display, "UTF8_STRING", False);
+	Atom ClipboardAtom = XInternAtom(DisplayConnection, "CLIPBOARD", False);
+	Atom UTF8StringAtom = XInternAtom(DisplayConnection, "UTF8_STRING", False);
 
-	XSetSelectionOwner(display, clipboard, None, CurrentTime);
+	XSetSelectionOwner(DisplayConnection, ClipboardAtom, None, CurrentTime);
 
-	if (XGetSelectionOwner(display, clipboard) != None)
+	if (XGetSelectionOwner(DisplayConnection, ClipboardAtom) != None)
 	{
-		XSetSelectionOwner(display, clipboard, None, CurrentTime);
-		XCloseDisplay(display);
+		XSetSelectionOwner(DisplayConnection, ClipboardAtom, None, CurrentTime);
+		XCloseDisplay(DisplayConnection);
 		return false;
 	}
 
-	XChangeProperty(display, root, clipboard, utf8, 8, PropModeReplace, (unsigned char*)Text.c_str(), Text.size());
+	XChangeProperty(DisplayConnection, Root, ClipboardAtom, UTF8StringAtom, 8, PropModeReplace, (unsigned char*)Text.c_str(), Text.size());
 
-	XCloseDisplay(display);
+	XCloseDisplay(DisplayConnection);
 	return true;
 #endif
 	return false;
@@ -188,35 +188,35 @@ std::string NodeCore::GetClipboardText()
 		CloseClipboard();
 	}
 #elif __linux__
-	Display* display = XOpenDisplay(nullptr);
-	Window root = DefaultRootWindow(display);
+	Display* DisplayConnection = XOpenDisplay(nullptr);
+	Window Root = DefaultRootWindow(DisplayConnection);
 
-	Atom clipboard = XInternAtom(display, "CLIPBOARD", False);
+	Atom ClipboardAtom = XInternAtom(DisplayConnection, "CLIPBOARD", False);
 
-	Atom actualType;
-	int actualFormat;
-	unsigned long itemCount, bytesAfter;
-	unsigned char* data = nullptr;
+	Atom ActualType;
+	int ActualFormat;
+	unsigned long ItemCount, BytesAfter;
+	unsigned char* PropertyData = nullptr;
 
-	XGetWindowProperty(display, root, clipboard, 0, 0, False, AnyPropertyType,
-		&actualType, &actualFormat, &itemCount, &bytesAfter, &data);
+	XGetWindowProperty(DisplayConnection, Root, ClipboardAtom, 0, 0, False, AnyPropertyType,
+		&ActualType, &ActualFormat, &ItemCount, &BytesAfter, &PropertyData);
 
-	if (data != nullptr)
+	if (PropertyData != nullptr)
 	{
-		XFree(data);
-		data = nullptr;
+		XFree(PropertyData);
+		PropertyData = nullptr;
 
-		XGetWindowProperty(display, root, clipboard, 0, bytesAfter, False, AnyPropertyType,
-			&actualType, &actualFormat, &itemCount, &bytesAfter, &data);
+		XGetWindowProperty(DisplayConnection, Root, ClipboardAtom, 0, BytesAfter, False, AnyPropertyType,
+			&ActualType, &ActualFormat, &ItemCount, &BytesAfter, &PropertyData);
 
-		if (data != nullptr)
+		if (PropertyData != nullptr)
 		{
-			Text = reinterpret_cast<char*>(data);
-			XFree(data);
+			Text = reinterpret_cast<char*>(PropertyData);
+			XFree(PropertyData);
 		}
 	}
 
-	XCloseDisplay(display);
+	XCloseDisplay(DisplayConnection);
 #endif
 	return Text;
 }

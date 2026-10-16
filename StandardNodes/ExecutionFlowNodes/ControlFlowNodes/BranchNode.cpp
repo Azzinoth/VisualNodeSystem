@@ -46,9 +46,9 @@ void BranchNode::SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSocket,
 
 		if (Input.size() > 1 && Input[1]->GetConnectedSockets().size() > 0)
 		{
-			void* TempData = Input[1]->GetConnectedSockets()[0]->GetData();
-			if (TempData != nullptr)
-				bConditionState = *reinterpret_cast<bool*>(TempData);
+			void* TemporaryData = Input[1]->GetConnectedSockets()[0]->GetData();
+			if (TemporaryData != nullptr)
+				bConditionState = *reinterpret_cast<bool*>(TemporaryData);
 		}
 
 		if (bConditionState)

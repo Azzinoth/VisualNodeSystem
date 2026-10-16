@@ -1324,10 +1324,10 @@ bool NodeArea::IsMouseOverSegment(ImVec2 Begin, ImVec2 End, const int Steps, con
 		// Compute the shortest distance from mousePos to the line defined by the segment.
 		ImVec2 SegmentDirection = SegmentEnd - SegmentStart;
 		float SegmentLengthSq = ImDot(SegmentDirection, SegmentDirection);
-		ImVec2 ToMousePos = MouseCursorPosition - SegmentStart;
-		float TProj = ImClamp(ImDot(ToMousePos, SegmentDirection) / SegmentLengthSq, 0.0f, 1.0f);
+		ImVec2 ToMousePosition = MouseCursorPosition - SegmentStart;
+		float ProjectionParameter = ImClamp(ImDot(ToMousePosition, SegmentDirection) / SegmentLengthSq, 0.0f, 1.0f);
 
-		ImVec2 Projection = SegmentStart + ImVec2(TProj, TProj) * SegmentDirection;
+		ImVec2 Projection = SegmentStart + ImVec2(ProjectionParameter, ProjectionParameter) * SegmentDirection;
 		float Distance = ImLengthSqr(MouseCursorPosition - Projection);
 
 		// If the distance is less than the threshold, the mouse is over the connection.
@@ -1405,8 +1405,8 @@ bool NodeArea::IsConnectionInRegion(Connection* Connection, const int Steps)
 
 bool NodeArea::IsSegmentInRegion(ImVec2 Begin, ImVec2 End, const int Steps)
 {
-	const ImVec2 t1 = ImVec2(80.0f, 0.0f);
-	const ImVec2 t2 = ImVec2(80.0f, 0.0f);
+	const ImVec2 StartTangent = ImVec2(80.0f, 0.0f);
+	const ImVec2 EndTangent = ImVec2(80.0f, 0.0f);
 
 	ImVec2 RegionCorners[4] = {
 		MouseSelectRegionMin,
@@ -1417,8 +1417,8 @@ bool NodeArea::IsSegmentInRegion(ImVec2 Begin, ImVec2 End, const int Steps)
 
 	for (int Step = 0; Step <= Steps; Step++)
 	{
-		ImVec2 SegmentStart = EvaluateHermiteSpline(static_cast<float>(Step) / static_cast<float>(Steps), Begin, End, std::vector<ImVec2>{t1, t2});
-		ImVec2 SegmentEnd = EvaluateHermiteSpline(static_cast<float>(Step + 1) / static_cast<float>(Steps), Begin, End, std::vector<ImVec2>{t1, t2});
+		ImVec2 SegmentStart = EvaluateHermiteSpline(static_cast<float>(Step) / static_cast<float>(Steps), Begin, End, std::vector<ImVec2>{StartTangent, EndTangent});
+		ImVec2 SegmentEnd = EvaluateHermiteSpline(static_cast<float>(Step + 1) / static_cast<float>(Steps), Begin, End, std::vector<ImVec2>{StartTangent, EndTangent});
 
 		// If either of the segment's points are in the region, the connection is in the region.
 		if (IsPointInRegion(SegmentStart, MouseSelectRegionMin, MouseSelectRegionMax) ||

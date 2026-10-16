@@ -122,16 +122,16 @@ void LoopNode::SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSocket, N
 		// If we have no connections, we will use values that was set by int input by user.
 		if (Input.size() > 1 && Input[1]->GetConnectedSockets().size() > 0)
 		{
-			void* TempData = Input[1]->GetConnectedSockets()[0]->GetData();
-			if (TempData != nullptr)
-				LocalFirstIndex = *reinterpret_cast<int*>(TempData);
+			void* TemporaryData = Input[1]->GetConnectedSockets()[0]->GetData();
+			if (TemporaryData != nullptr)
+				LocalFirstIndex = *reinterpret_cast<int*>(TemporaryData);
 		}
 
 		if (Input.size() > 2 && Input[2]->GetConnectedSockets().size() > 0)
 		{
-			void* TempData = Input[2]->GetConnectedSockets()[0]->GetData();
-			if (TempData != nullptr)
-				LocalLastIndex = *reinterpret_cast<int*>(TempData);
+			void* TemporaryData = Input[2]->GetConnectedSockets()[0]->GetData();
+			if (TemporaryData != nullptr)
+				LocalLastIndex = *reinterpret_cast<int*>(TemporaryData);
 		}
 
 		for (int i = LocalFirstIndex; i < LocalLastIndex; i++)

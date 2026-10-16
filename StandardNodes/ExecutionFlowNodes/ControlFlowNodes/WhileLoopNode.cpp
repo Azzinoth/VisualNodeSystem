@@ -35,9 +35,9 @@ void WhileLoopNode::SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSock
 		bool bCurrentConditionState = false;
 		if (Input.size() > 1 && Input[1]->GetConnectedSockets().size() > 0)
 		{
-			void* TempData = Input[1]->GetConnectedSockets()[0]->GetData();
-			if (TempData != nullptr)
-				bCurrentConditionState = *reinterpret_cast<bool*>(TempData);
+			void* TemporaryData = Input[1]->GetConnectedSockets()[0]->GetData();
+			if (TemporaryData != nullptr)
+				bCurrentConditionState = *reinterpret_cast<bool*>(TemporaryData);
 		}
 
 		while (bCurrentConditionState)
@@ -52,9 +52,9 @@ void WhileLoopNode::SocketEvent(NodeSocket* OwnSocket, NodeSocket* ConnectedSock
 
 			if (Input.size() > 1 && Input[1]->GetConnectedSockets().size() > 0)
 			{
-				void* TempData = Input[1]->GetConnectedSockets()[0]->GetData();
-				if (TempData != nullptr)
-					bCurrentConditionState = *reinterpret_cast<bool*>(TempData);
+				void* TemporaryData = Input[1]->GetConnectedSockets()[0]->GetData();
+				if (TemporaryData != nullptr)
+					bCurrentConditionState = *reinterpret_cast<bool*>(TemporaryData);
 			}
 			else
 			{

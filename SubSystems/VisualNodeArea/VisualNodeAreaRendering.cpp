@@ -783,16 +783,16 @@ void NodeArea::SetIsFillingWindow(bool NewValue)
 
 void NodeArea::ApplyZoom(float Delta)
 {
-	ImVec2 MousePosBeforeZoom = ScreenToLocal(ImGui::GetMousePos());
+	ImVec2 MousePositionBeforeZoom = ScreenToLocal(ImGui::GetMousePos());
 
 	Zoom += Delta * Settings.ZoomSpeed;
 	Zoom = std::max(Zoom, MIN_ZOOM_LEVEL);
 	Zoom = std::min(Zoom, MAX_ZOOM_LEVEL);
 
-	ImVec2 MousePosAfterZoom = ScreenToLocal(ImGui::GetMousePos());
+	ImVec2 MousePositionAfterZoom = ScreenToLocal(ImGui::GetMousePos());
 
 	// Adjust render offset to keep the mouse over the same point after zooming
-	RenderOffset -= (MousePosBeforeZoom - MousePosAfterZoom) * Zoom;
+	RenderOffset -= (MousePositionBeforeZoom - MousePositionAfterZoom) * Zoom;
 
 	Settings.Style.GeneralConnection.LineSegments = static_cast<int>(16 * Zoom);
 }
@@ -820,10 +820,10 @@ bool NodeArea::GetConnectionStyle(Node* Node, bool bOutputSocket, size_t SocketI
 		if (SocketIndex >= Node->Output.size())
 			return false;
 
-		ConnectionStyle* TempVariable = GetConnectionStyle(Node->Output[SocketIndex]);
-		if (TempVariable != nullptr)
+		ConnectionStyle* TemporaryVariable = GetConnectionStyle(Node->Output[SocketIndex]);
+		if (TemporaryVariable != nullptr)
 		{
-			Style = *TempVariable;
+			Style = *TemporaryVariable;
 			return true;
 		}
 
@@ -834,10 +834,10 @@ bool NodeArea::GetConnectionStyle(Node* Node, bool bOutputSocket, size_t SocketI
 		if (SocketIndex >= Node->Input.size())
 			return false;
 
-		ConnectionStyle* TempVariable = GetConnectionStyle(Node->Input[SocketIndex]);
-		if (TempVariable != nullptr)
+		ConnectionStyle* TemporaryVariable = GetConnectionStyle(Node->Input[SocketIndex]);
+		if (TemporaryVariable != nullptr)
 		{
-			Style = *TempVariable;
+			Style = *TemporaryVariable;
 			return true;
 		}
 
@@ -855,18 +855,18 @@ void NodeArea::SetConnectionStyle(Node* Node, bool bOutputSocket, size_t SocketI
 		if (SocketIndex >= Node->Output.size())
 			return;
 
-		ConnectionStyle* TempVariable = GetConnectionStyle(Node->Output[SocketIndex]);
-		if (TempVariable != nullptr)
-			*TempVariable = NewStyle;
+		ConnectionStyle* TemporaryVariable = GetConnectionStyle(Node->Output[SocketIndex]);
+		if (TemporaryVariable != nullptr)
+			*TemporaryVariable = NewStyle;
 	}
 	else
 	{
 		if (SocketIndex >= Node->Input.size())
 			return;
 
-		ConnectionStyle* TempVariable = GetConnectionStyle(Node->Input[SocketIndex]);
-		if (TempVariable != nullptr)
-			*TempVariable = NewStyle;
+		ConnectionStyle* TemporaryVariable = GetConnectionStyle(Node->Input[SocketIndex]);
+		if (TemporaryVariable != nullptr)
+			*TemporaryVariable = NewStyle;
 	}
 }
 
