@@ -188,18 +188,15 @@ void NodeArea::RenderNodeSocket(NodeSocket* Socket) const
 		// If potential connection can't be established we will provide visual indication.
 		if (SocketLookingForConnection != nullptr)
 		{
-			char** Message = new char*;
-			*Message = nullptr;
-			SocketColor = SocketHovered->GetParent()->CanConnect(SocketHovered, SocketLookingForConnection, Message) ?
+			char* Message = nullptr;
+			SocketColor = SocketHovered->GetParent()->CanConnect(SocketHovered, SocketLookingForConnection, &Message) ?
 																				ImColor(50, 200, 50) : ImColor(200, 50, 50);
 
-			if (*Message != nullptr)
+			if (Message != nullptr)
 			{
 				ImGui::Begin("socket connection info", nullptr, ImGuiWindowFlags_Tooltip | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar);
-				ImGui::Text("%s",*Message);
+				ImGui::Text("%s", Message);
 				ImGui::End();
-
-				delete Message;
 			}
 		}
 	}
