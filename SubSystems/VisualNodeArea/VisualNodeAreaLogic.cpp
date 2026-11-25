@@ -381,14 +381,7 @@ void NodeArea::DeleteNodeInternal(const Node* Node, int Index)
 
 #ifdef VISUAL_NODE_SYSTEM_BUILD_EXECUTION_FLOW_NODES
 	// Remove node from LastExecutedNodes vector.
-	for (size_t i = 0; i < LastExecutedNodes.size(); i++)
-	{
-		if (LastExecutedNodes[i] == Nodes[Index])
-		{
-			LastExecutedNodes.erase(LastExecutedNodes.begin() + i, LastExecutedNodes.begin() + i + 1);
-			i--;
-		}
-	}
+	LastExecutedNodes.erase(std::remove(LastExecutedNodes.begin(), LastExecutedNodes.end(), Nodes[Index]), LastExecutedNodes.end());
 #endif
 
 	delete Nodes[Index];
