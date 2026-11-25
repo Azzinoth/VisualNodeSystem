@@ -15,7 +15,7 @@ public:
 	Vec2LiteralNode(const Vec2LiteralNode& Other);
 
 	Json::Value ToJson();
-	bool FromJson(Json::Value Json);
+	bool FromJson(const Json::Value& Json);
 
 	glm::vec2 GetData() const;
 	void SetData(glm::vec2 NewValue);

@@ -144,7 +144,7 @@ Json::Value SubAreaNode::ToJson()
 	return Result;
 }
 
-bool SubAreaNode::FromJson(Json::Value Json)
+bool SubAreaNode::FromJson(const Json::Value& Json)
 {
 	bool bResult = SocketMirrorNode::FromJson(Json);
 	if (!bResult)

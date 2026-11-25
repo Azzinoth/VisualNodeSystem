@@ -39,7 +39,7 @@ Json::Value BoolLiteralNode::ToJson()
 	return Result;
 }
 
-bool BoolLiteralNode::FromJson(Json::Value Json)
+bool BoolLiteralNode::FromJson(const Json::Value& Json)
 {
 	bool bResult = Node::FromJson(Json);
 	if (!bResult)

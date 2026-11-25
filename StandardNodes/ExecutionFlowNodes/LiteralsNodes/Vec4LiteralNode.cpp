@@ -44,7 +44,7 @@ Json::Value Vec4LiteralNode::ToJson()
 	return Result;
 }
 
-bool Vec4LiteralNode::FromJson(Json::Value Json)
+bool Vec4LiteralNode::FromJson(const Json::Value& Json)
 {
 	bool bResult = Node::FromJson(Json);
 	if (!bResult)

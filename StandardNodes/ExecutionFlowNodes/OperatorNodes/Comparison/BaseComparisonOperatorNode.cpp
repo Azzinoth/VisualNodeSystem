@@ -61,7 +61,7 @@ Json::Value BaseComparisonOperatorNode::ToJson()
 	return Result;
 }
 
-bool BaseComparisonOperatorNode::FromJson(Json::Value Json)
+bool BaseComparisonOperatorNode::FromJson(const Json::Value& Json)
 {
 	bool bResult = Node::FromJson(Json);
 	if (!bResult)

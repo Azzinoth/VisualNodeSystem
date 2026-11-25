@@ -60,13 +60,13 @@ namespace VisNodeSys
 		NodeArea* GetParentArea() const;
 
 		Json::Value ToJson();
-		bool FromJson(Json::Value Json);
+		bool FromJson(const Json::Value& Json);
 
 		bool IsHovered() const;
 		bool IsSelected() const;
 
 		void SetCaption(std::string NewValue);
-		std::string GetCaption() const;
+		const std::string& GetCaption() const;
 
 		bool MoveElementsWithComment() const;
 		void SetMoveElementsWithComment(bool bNewValue);

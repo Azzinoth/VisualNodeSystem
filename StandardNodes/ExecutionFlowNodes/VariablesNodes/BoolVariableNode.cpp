@@ -46,7 +46,7 @@ Json::Value BoolVariableNode::ToJson()
 	return Result;
 }
 
-bool BoolVariableNode::FromJson(Json::Value Json)
+bool BoolVariableNode::FromJson(const Json::Value& Json)
 {
 	bool bResult = Node::FromJson(Json);
 	if (!bResult)

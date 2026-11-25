@@ -1317,13 +1317,13 @@ std::string NodeSystem::ToJson() const
 		SocketTypeToColorAssociationsJson[SocketTypeToColorIterator->first] = ColorJson;
 		SocketTypeToColorIterator++;
 	}
-	Root["SocketTypeToColorAssociations"] = SocketTypeToColorAssociationsJson;
+	Root["SocketTypeToColorAssociations"] = std::move(SocketTypeToColorAssociationsJson);
 
 	// Finally we need to save all node areas.
 	Json::Value NodeAreasJson(Json::objectValue);
 	for (size_t i = 0; i < Areas.size(); i++)
 		NodeAreasJson[ToString(Areas[i]->GetID())] = Areas[i]->ToJson();
-	Root["NodeAreas"] = NodeAreasJson;
+	Root["NodeAreas"] = std::move(NodeAreasJson);
 
 	Json::StreamWriterBuilder Builder;
 	// Tweak the builder settings for a more compact JSON output.
@@ -1446,10 +1446,11 @@ bool NodeSystem::LoadFromFile(const std::string& FilePath)
 	if (!NodeSystemFile.is_open())
 		return false;
 
-	const std::string FileData((std::istreambuf_iterator<char>(NodeSystemFile)), std::istreambuf_iterator<char>());
+	std::stringstream FileData;
+	FileData << NodeSystemFile.rdbuf();
 	NodeSystemFile.close();
 
-	return LoadFromJson(FileData);
+	return LoadFromJson(FileData.str());
 }
 
 void NodeSystem::Clear()

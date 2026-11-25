@@ -48,7 +48,7 @@ Json::Value BaseLogicalOperatorNode::ToJson()
 	return Result;
 }
 
-bool BaseLogicalOperatorNode::FromJson(Json::Value Json)
+bool BaseLogicalOperatorNode::FromJson(const Json::Value& Json)
 {
 	bool bResult = Node::FromJson(Json);
 	if (!bResult)

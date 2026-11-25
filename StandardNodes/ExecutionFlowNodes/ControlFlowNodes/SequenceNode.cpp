@@ -42,7 +42,7 @@ Json::Value SequenceNode::ToJson()
 	return Result;
 }
 
-bool SequenceNode::FromJson(Json::Value Json)
+bool SequenceNode::FromJson(const Json::Value& Json)
 {
 	bool bResult = Node::FromJson(Json);
 

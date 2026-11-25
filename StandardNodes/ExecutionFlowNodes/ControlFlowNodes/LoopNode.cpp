@@ -61,7 +61,7 @@ Json::Value LoopNode::ToJson()
 	return Result;
 }
 
-bool LoopNode::FromJson(Json::Value Json)
+bool LoopNode::FromJson(const Json::Value& Json)
 {
 	bool bResult = Node::FromJson(Json);
 	if (!bResult)

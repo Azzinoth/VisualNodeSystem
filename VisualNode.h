@@ -96,10 +96,10 @@ namespace VisNodeSys
 		ImVec2 GetClientRegionSize();
 		ImVec2 GetClientRegionPosition();
 
-		virtual std::string GetName() const;
+		virtual const std::string& GetName() const;
 		virtual void SetName(std::string NewValue);
 
-		std::string GetType() const;
+		const std::string& GetType() const;
 		
 		NODE_STYLE GetStyle() const;
 		void SetStyle(NODE_STYLE NewValue);
@@ -124,7 +124,7 @@ namespace VisNodeSys
 		virtual bool DeleteSocket(const FEUUID& SocketID);
 
 		virtual Json::Value ToJson();
-		virtual bool FromJson(Json::Value Json);
+		virtual bool FromJson(const Json::Value& Json);
 
 		NodeSocket* GetSocketByID(const FEUUID& SocketID) const;
 		size_t GetSocketIndexByID(const FEUUID& SocketID) const;

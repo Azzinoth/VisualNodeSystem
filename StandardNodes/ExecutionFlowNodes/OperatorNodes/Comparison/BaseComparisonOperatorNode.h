@@ -180,7 +180,7 @@ public:
 	virtual ~BaseComparisonOperatorNode() = default;
 
 	Json::Value ToJson();
-	bool FromJson(Json::Value Json);
+	bool FromJson(const Json::Value& Json);
 
 	void Draw();
 

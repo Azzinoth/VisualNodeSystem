@@ -51,7 +51,7 @@ Json::Value Vec3VariableNode::ToJson()
 	return Result;
 }
 
-bool Vec3VariableNode::FromJson(Json::Value Json)
+bool Vec3VariableNode::FromJson(const Json::Value& Json)
 {
 	bool bResult = Node::FromJson(Json);
 	if (!bResult)

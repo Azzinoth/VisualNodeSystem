@@ -47,7 +47,7 @@ Json::Value FloatVariableNode::ToJson()
 	return Result;
 }
 
-bool FloatVariableNode::FromJson(Json::Value Json)
+bool FloatVariableNode::FromJson(const Json::Value& Json)
 {
 	bool bResult = Node::FromJson(Json);
 	if (!bResult)

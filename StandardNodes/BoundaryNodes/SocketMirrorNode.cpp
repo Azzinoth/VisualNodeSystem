@@ -79,7 +79,7 @@ Json::Value SocketMirrorNode::ToJson()
 	return Result;
 }
 
-bool SocketMirrorNode::FromJson(Json::Value Json)
+bool SocketMirrorNode::FromJson(const Json::Value& Json)
 {
 	bool bResult = Node::FromJson(Json);
 	if (!bResult)

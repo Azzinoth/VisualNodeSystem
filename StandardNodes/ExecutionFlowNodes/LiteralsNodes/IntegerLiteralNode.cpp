@@ -39,7 +39,7 @@ Json::Value IntegerLiteralNode::ToJson()
 	return Result;
 }
 
-bool IntegerLiteralNode::FromJson(Json::Value Json)
+bool IntegerLiteralNode::FromJson(const Json::Value& Json)
 {
 	bool bResult = Node::FromJson(Json);
 	if (!bResult)

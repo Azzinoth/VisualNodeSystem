@@ -21,7 +21,7 @@ namespace VisNodeSys
         std::function<void* ()> CreateCrossAreaDataGetter(int SocketIndex);
 
         Json::Value ToJson();
-        bool FromJson(Json::Value Json);
+        bool FromJson(const Json::Value& Json);
 
         SocketMirrorNode(const FEUUID& ID = FEUUID());
         SocketMirrorNode(const SocketMirrorNode& Other);

@@ -106,7 +106,7 @@ void Node::SetSize(const ImVec2 NewValue)
 	Size = NewValue;
 }
 
-std::string Node::GetName() const
+const std::string& Node::GetName() const
 {
 	return Name;
 }
@@ -225,7 +225,7 @@ bool Node::CanConnect(NodeSocket* OwnSocket, NodeSocket* CandidateSocket, char**
 	return true;
 }
 
-std::string Node::GetType() const
+const std::string& Node::GetType() const
 {
 	return Type;
 }
@@ -265,20 +265,22 @@ Json::Value Node::ToJson()
 
 	for (size_t i = 0; i < Input.size(); i++)
 	{
-		Result["Input"][std::to_string(i)]["ID"] = ToString(Input[i]->GetID());
-		Result["Input"][std::to_string(i)]["Name"] = Input[i]->GetName();
-		Result["Input"][std::to_string(i)]["CanBeDeletedByUser"] = Input[i]->CanBeDeletedByUser();
+		Json::Value& SocketData = Result["Input"][std::to_string(i)];
+		SocketData["ID"] = ToString(Input[i]->GetID());
+		SocketData["Name"] = Input[i]->GetName();
+		SocketData["CanBeDeletedByUser"] = Input[i]->CanBeDeletedByUser();
 		for (size_t j = 0; j < Input[i]->GetAllowedTypes().size(); j++)
-			Result["Input"][std::to_string(i)]["AllowedTypes"].append(Input[i]->GetAllowedTypes()[j]);
+			SocketData["AllowedTypes"].append(Input[i]->GetAllowedTypes()[j]);
 	}
 
 	for (size_t i = 0; i < Output.size(); i++)
 	{
-		Result["Output"][std::to_string(i)]["ID"] = ToString(Output[i]->GetID());
-		Result["Output"][std::to_string(i)]["Name"] = Output[i]->GetName();
-		Result["Output"][std::to_string(i)]["CanBeDeletedByUser"] = Output[i]->CanBeDeletedByUser();
+		Json::Value& SocketData = Result["Output"][std::to_string(i)];
+		SocketData["ID"] = ToString(Output[i]->GetID());
+		SocketData["Name"] = Output[i]->GetName();
+		SocketData["CanBeDeletedByUser"] = Output[i]->CanBeDeletedByUser();
 		for (size_t j = 0; j < Output[i]->GetAllowedTypes().size(); j++)
-			Result["Output"][std::to_string(i)]["AllowedTypes"].append(Output[i]->GetAllowedTypes()[j]);
+			SocketData["AllowedTypes"].append(Output[i]->GetAllowedTypes()[j]);
 	}
 
 	return Result;
@@ -303,7 +305,7 @@ void Node::SetToDefaultState()
 	ID = CurrentID;
 }
 
-bool Node::FromJson(Json::Value Json)
+bool Node::FromJson(const Json::Value& Json)
 {
 	if (!Json.isObject())
 	{
@@ -389,7 +391,7 @@ bool Node::FromJson(Json::Value Json)
 		FEUUID ID = FromStringLegacyCompatible(Json["Input"][Key]["ID"].asCString());
 		const std::string Name = Json["Input"][Key]["Name"].asCString();
 
-		Json::Value AllowedTypesArray = Json["Input"][Key]["AllowedTypes"];
+		const Json::Value& AllowedTypesArray = Json["Input"][Key]["AllowedTypes"];
 		std::vector<std::string> AllowedTypes;
 		for (unsigned int j = 0; j < AllowedTypesArray.size(); j++)
 		{
@@ -442,7 +444,7 @@ bool Node::FromJson(Json::Value Json)
 		FEUUID ID = FromStringLegacyCompatible(Json["Output"][Key]["ID"].asCString());
 		const std::string Name = Json["Output"][Key]["Name"].asCString();
 
-		Json::Value AllowedTypesArray = Json["Output"][Key]["AllowedTypes"];
+		const Json::Value& AllowedTypesArray = Json["Output"][Key]["AllowedTypes"];
 		std::vector<std::string> AllowedTypes;
 		for (unsigned int j = 0; j < AllowedTypesArray.size(); j++)
 		{

@@ -42,7 +42,7 @@ Json::Value BoolVec2LiteralNode::ToJson()
 	return Result;
 }
 
-bool BoolVec2LiteralNode::FromJson(Json::Value Json)
+bool BoolVec2LiteralNode::FromJson(const Json::Value& Json)
 {
 	bool bResult = Node::FromJson(Json);
 	if (!bResult)

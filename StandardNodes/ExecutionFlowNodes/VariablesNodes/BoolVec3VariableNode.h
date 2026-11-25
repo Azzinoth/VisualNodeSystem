@@ -18,7 +18,7 @@ public:
 	BoolVec3VariableNode(const BoolVec3VariableNode& Other);
 
 	Json::Value ToJson();
-	bool FromJson(Json::Value Json);
+	bool FromJson(const Json::Value& Json);
 
 	glm::bvec3 GetData() const;
 	void SetData(glm::bvec3 NewValue);

@@ -47,7 +47,7 @@ Json::Value BaseArithmeticOperatorNode::ToJson()
 	return Result;
 }
 
-bool BaseArithmeticOperatorNode::FromJson(Json::Value Json)
+bool BaseArithmeticOperatorNode::FromJson(const Json::Value& Json)
 {
 	bool bResult = Node::FromJson(Json);
 	if (!bResult)

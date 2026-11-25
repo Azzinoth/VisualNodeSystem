@@ -50,7 +50,7 @@ Json::Value BoolVec3VariableNode::ToJson()
 	return Result;
 }
 
-bool BoolVec3VariableNode::FromJson(Json::Value Json)
+bool BoolVec3VariableNode::FromJson(const Json::Value& Json)
 {
 	bool bResult = Node::FromJson(Json);
 	if (!bResult)

@@ -161,12 +161,12 @@ namespace VisNodeSys
 
 		FEUUID GetID() const;
 
-		std::string GetName() const;
+		const std::string& GetName() const;
 		void SetName(std::string NewValue);
 
 		std::string ToJson() const;
 		bool SaveToFile(std::string FilePath) const;
-		bool LoadFromJson(std::string JsonText);
+		bool LoadFromJson(const std::string& JsonText);
 		bool LoadFromFile(std::string FilePath);
 		bool SaveNodesToFile(std::string FilePath, std::vector<Node*> Nodes);
 

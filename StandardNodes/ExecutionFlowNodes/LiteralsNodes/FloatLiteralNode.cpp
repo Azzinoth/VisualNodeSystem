@@ -39,7 +39,7 @@ Json::Value FloatLiteralNode::ToJson()
 	return Result;
 }
 
-bool FloatLiteralNode::FromJson(Json::Value Json)
+bool FloatLiteralNode::FromJson(const Json::Value& Json)
 {
 	bool bResult = Node::FromJson(Json);
 	if (!bResult)

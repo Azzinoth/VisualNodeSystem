@@ -21,7 +21,7 @@ FEUUID NodeArea::GetID() const
 	return ID;
 }
 
-std::string NodeArea::GetName() const
+const std::string& NodeArea::GetName() const
 {
 	return Name;
 }
@@ -202,66 +202,68 @@ std::string NodeArea::ToJson() const
 	NodesData["ExecutionEntryNodeID"] = ToString(ExecutionEntryNodeID);
 #endif
 
-	Root["Nodes"] = NodesData;
+	Root["Nodes"] = std::move(NodesData);
 
 	Json::Value ConnectionsData(Json::objectValue);
 	for (size_t i = 0; i < Connections.size(); i++)
 	{
-		ConnectionsData[std::to_string(i)]["In"]["SocketID"] = ToString(Connections[i]->In->GetID());
+		Json::Value& ConnectionData = ConnectionsData[std::to_string(i)];
+		ConnectionData["In"]["SocketID"] = ToString(Connections[i]->In->GetID());
 		size_t SocketIndex = 0;
 		for (size_t j = 0; j < Connections[i]->In->GetParent()->Input.size(); j++)
 		{
 			if (Connections[i]->In->GetParent()->Input[j]->GetID() == Connections[i]->In->GetID())
 				SocketIndex = j;
 		}
-		ConnectionsData[std::to_string(i)]["In"]["SocketIndex"] = static_cast<Json::UInt64>(SocketIndex);
-		ConnectionsData[std::to_string(i)]["In"]["NodeID"] = ToString(Connections[i]->In->GetParent()->GetID());
+		ConnectionData["In"]["SocketIndex"] = static_cast<Json::UInt64>(SocketIndex);
+		ConnectionData["In"]["NodeID"] = ToString(Connections[i]->In->GetParent()->GetID());
 
-		ConnectionsData[std::to_string(i)]["Out"]["SocketID"] = ToString(Connections[i]->Out->GetID());
+		ConnectionData["Out"]["SocketID"] = ToString(Connections[i]->Out->GetID());
 		SocketIndex = 0;
 		for (size_t j = 0; j < Connections[i]->Out->GetParent()->Output.size(); j++)
 		{
 			if (Connections[i]->Out->GetParent()->Output[j]->GetID() == Connections[i]->Out->GetID())
 				SocketIndex = j;
 		}
-		ConnectionsData[std::to_string(i)]["Out"]["SocketIndex"] = static_cast<Json::UInt64>(SocketIndex);
-		ConnectionsData[std::to_string(i)]["Out"]["NodeID"] = ToString(Connections[i]->Out->GetParent()->GetID());
+		ConnectionData["Out"]["SocketIndex"] = static_cast<Json::UInt64>(SocketIndex);
+		ConnectionData["Out"]["NodeID"] = ToString(Connections[i]->Out->GetParent()->GetID());
 
 		for (size_t j = 0; j < Connections[i]->RerouteNodes.size(); j++)
 		{
-			ConnectionsData[std::to_string(i)]["RerouteConnections"][std::to_string(j)]["RerouteID"] = ToString(Connections[i]->RerouteNodes[j]->ID);
-			ConnectionsData[std::to_string(i)]["RerouteConnections"][std::to_string(j)]["PositionX"] = Connections[i]->RerouteNodes[j]->Position.x;
-			ConnectionsData[std::to_string(i)]["RerouteConnections"][std::to_string(j)]["PositionY"] = Connections[i]->RerouteNodes[j]->Position.y;
+			Json::Value& RerouteData = ConnectionData["RerouteConnections"][std::to_string(j)];
+			RerouteData["RerouteID"] = ToString(Connections[i]->RerouteNodes[j]->ID);
+			RerouteData["PositionX"] = Connections[i]->RerouteNodes[j]->Position.x;
+			RerouteData["PositionY"] = Connections[i]->RerouteNodes[j]->Position.y;
 
 			std::string BeginSocketID = "";
 			if (Connections[i]->RerouteNodes[j]->BeginSocket)
 				BeginSocketID = ToString(Connections[i]->RerouteNodes[j]->BeginSocket->GetID());
-			ConnectionsData[std::to_string(i)]["RerouteConnections"][std::to_string(j)]["BeginSocketID"] = BeginSocketID;
+			RerouteData["BeginSocketID"] = BeginSocketID;
 
 			std::string EndSocketID = "";
 			if (Connections[i]->RerouteNodes[j]->EndSocket)
 				EndSocketID = ToString(Connections[i]->RerouteNodes[j]->EndSocket->GetID());
-			ConnectionsData[std::to_string(i)]["RerouteConnections"][std::to_string(j)]["EndSocketID"] = EndSocketID;
+			RerouteData["EndSocketID"] = EndSocketID;
 
 			std::string BeginRerouteID = "";
 			if (Connections[i]->RerouteNodes[j]->BeginReroute)
 				BeginRerouteID = ToString(Connections[i]->RerouteNodes[j]->BeginReroute->ID);
-			ConnectionsData[std::to_string(i)]["RerouteConnections"][std::to_string(j)]["BeginRerouteID"] = BeginRerouteID;
+			RerouteData["BeginRerouteID"] = BeginRerouteID;
 
 			std::string EndRerouteID = "";
 			if (Connections[i]->RerouteNodes[j]->EndReroute)
 				EndRerouteID = ToString(Connections[i]->RerouteNodes[j]->EndReroute->ID);
-			ConnectionsData[std::to_string(i)]["RerouteConnections"][std::to_string(j)]["EndRerouteID"] = EndRerouteID;
+			RerouteData["EndRerouteID"] = EndRerouteID;
 		}
 	}
-	Root["Connections"] = ConnectionsData;
+	Root["Connections"] = std::move(ConnectionsData);
 
 	Json::Value GroupCommentsData;
 	for (size_t i = 0; i < GroupComments.size(); i++)
 	{
 		GroupCommentsData[std::to_string(i)] = GroupComments[i]->ToJson();
 	}
-	Root["GroupComments"] = GroupCommentsData;
+	Root["GroupComments"] = std::move(GroupCommentsData);
 
 	Root["RenderOffset"]["X"] = RenderOffset.x;
 	Root["RenderOffset"]["Y"] = RenderOffset.y;
@@ -306,7 +308,7 @@ std::pair<int, int> NodeArea::FindOutOfOrderConnectionPair(Json::Value& Root, st
 	return std::make_pair(-1, -1);
 }
 
-bool NodeArea::LoadFromJson(std::string JsonText)
+bool NodeArea::LoadFromJson(const std::string& JsonText)
 {
 	Clear();
 
@@ -639,10 +641,11 @@ bool NodeArea::LoadFromFile(std::string FilePath)
 	if (!NodesFile.is_open())
 		return false;
 
-	const std::string FileData((std::istreambuf_iterator<char>(NodesFile)), std::istreambuf_iterator<char>());
+	std::stringstream FileData;
+	FileData << NodesFile.rdbuf();
 	NodesFile.close();
 
-	return LoadFromJson(FileData);
+	return LoadFromJson(FileData.str());
 }
 
 Node* NodeArea::GetNodeByID(const FEUUID& NodeID) const

@@ -18,7 +18,7 @@ public:
 	IntegerVariableNode(const IntegerVariableNode& Other);
 
 	Json::Value ToJson();
-	bool FromJson(Json::Value Json);
+	bool FromJson(const Json::Value& Json);
 
 	int GetData() const;
 	void SetData(int NewValue);

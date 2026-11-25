@@ -51,7 +51,7 @@ namespace VisNodeSys
 
 		FEUUID GetID() const;
 
-		std::string GetName() const;
+		const std::string& GetName() const;
 		void SetName(std::string NewValue);
 
 		SocketFlow GetFlowDirection() const;

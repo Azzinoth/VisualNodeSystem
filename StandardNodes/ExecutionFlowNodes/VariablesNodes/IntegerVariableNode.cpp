@@ -47,7 +47,7 @@ Json::Value IntegerVariableNode::ToJson()
 	return Result;
 }
 
-bool IntegerVariableNode::FromJson(Json::Value Json)
+bool IntegerVariableNode::FromJson(const Json::Value& Json)
 {
 	bool bResult = Node::FromJson(Json);
 	if (!bResult)

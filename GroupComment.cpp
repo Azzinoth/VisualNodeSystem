@@ -78,7 +78,7 @@ Json::Value GroupComment::ToJson()
 	return Result;
 }
 
-bool GroupComment::FromJson(Json::Value Json)
+bool GroupComment::FromJson(const Json::Value& Json)
 {
 	if (!Json.isObject())
 		return false;
@@ -147,7 +147,7 @@ void GroupComment::SetCaption(std::string NewValue)
 	Caption = NewValue;
 }
 
-std::string GroupComment::GetCaption() const
+const std::string& GroupComment::GetCaption() const
 {
 	return Caption;
 }

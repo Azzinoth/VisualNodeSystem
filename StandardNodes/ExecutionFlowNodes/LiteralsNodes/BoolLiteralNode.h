@@ -18,7 +18,7 @@ public:
 	BoolLiteralNode(const BoolLiteralNode& Other);
 
 	Json::Value ToJson();
-	bool FromJson(Json::Value Json);
+	bool FromJson(const Json::Value& Json);
 
 	bool GetData() const;
 	void SetData(bool NewValue);

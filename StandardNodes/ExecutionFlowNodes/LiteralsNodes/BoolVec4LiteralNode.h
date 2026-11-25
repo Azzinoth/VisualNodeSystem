@@ -15,7 +15,7 @@ public:
 	BoolVec4LiteralNode(const BoolVec4LiteralNode& Other);
 
 	Json::Value ToJson();
-	bool FromJson(Json::Value Json);
+	bool FromJson(const Json::Value& Json);
 
 	glm::bvec4 GetData() const;
 	void SetData(glm::bvec4 NewValue);

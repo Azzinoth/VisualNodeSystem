@@ -67,7 +67,7 @@ const std::vector<NodeSocket*>& NodeSocket::GetConnectedSockets() const
 	return ConnectedSockets;
 }
 
-std::string NodeSocket::GetName() const
+const std::string& NodeSocket::GetName() const
 {
 	return Name;
 }
